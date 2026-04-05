@@ -22,6 +22,7 @@ sealed class AppRoute(val route: String) {
         }
     }
     data object TransactionHistory : AppRoute("transaction_history")
+    data object CategoryManagement : AppRoute("category_management")
     data object Profile : AppRoute("profile")
 
     data object Notifications : AppRoute("notifications")

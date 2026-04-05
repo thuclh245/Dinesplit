@@ -73,6 +73,7 @@ fun PersonalScreen(
     onAddExpense: () -> Unit = {},
     onAddIncome: () -> Unit = {},
     onOpenHistory: () -> Unit = {},
+    onOpenCategoryManagement: () -> Unit = {},
     uiState: PersonalDashboardUiState = PersonalDashboardUiState.default()
 ) {
     AppScaffold(
@@ -89,7 +90,8 @@ fun PersonalScreen(
                 modifier = Modifier.verticalScroll(rememberScrollState()),
                 onAddExpense = onAddExpense,
                 onAddIncome = onAddIncome,
-                onOpenHistory = onOpenHistory
+                onOpenHistory = onOpenHistory,
+                onOpenCategoryManagement = onOpenCategoryManagement
             )
             is PersonalDashboardUiState.HasData -> PersonalDashboardContent(
                 modifier = Modifier.verticalScroll(rememberScrollState()),
@@ -97,7 +99,8 @@ fun PersonalScreen(
                 categoryBreakdowns = uiState.categoryBreakdowns,
                 onAddExpense = onAddExpense,
                 onAddIncome = onAddIncome,
-                onOpenHistory = onOpenHistory
+                onOpenHistory = onOpenHistory,
+                onOpenCategoryManagement = onOpenCategoryManagement
             )
         }
     }
@@ -110,7 +113,8 @@ private fun PersonalDashboardContent(
     categoryBreakdowns: List<CategoryBreakdown>,
     onAddExpense: () -> Unit,
     onAddIncome: () -> Unit,
-    onOpenHistory: () -> Unit
+    onOpenHistory: () -> Unit,
+    onOpenCategoryManagement: () -> Unit
 ) {
     Column(
         modifier = modifier,
@@ -211,6 +215,10 @@ private fun PersonalDashboardContent(
                 TextButton(onClick = onOpenHistory) {
                     Text("View Transaction History")
                 }
+
+                TextButton(onClick = onOpenCategoryManagement) {
+                    Text("Manage Categories")
+                }
             }
         }
 
@@ -223,7 +231,8 @@ private fun PersonalDashboardEmptyContent(
     modifier: Modifier = Modifier,
     onAddExpense: () -> Unit,
     onAddIncome: () -> Unit,
-    onOpenHistory: () -> Unit
+    onOpenHistory: () -> Unit,
+    onOpenCategoryManagement: () -> Unit
 ) {
     Column(
         modifier = modifier,
@@ -255,6 +264,10 @@ private fun PersonalDashboardEmptyContent(
 
                 TextButton(onClick = onOpenHistory) {
                     Text("Open Transaction History")
+                }
+
+                TextButton(onClick = onOpenCategoryManagement) {
+                    Text("Open Category Management")
                 }
             }
         }
