@@ -19,6 +19,7 @@ import com.example.dinesplit.core.navigation.AppRoute
 import com.example.dinesplit.core.navigation.BottomTab
 import com.example.dinesplit.presentation.feed.FeedScreen
 import com.example.dinesplit.presentation.personal.AddTransactionScreen
+import com.example.dinesplit.presentation.personal.HistoryScreen
 import com.example.dinesplit.presentation.personal.PersonalScreen
 import com.example.dinesplit.presentation.personal.TransactionTypeOption
 import com.example.dinesplit.presentation.profile.ProfileScreen
@@ -92,6 +93,9 @@ fun MainContainerScreen(
                         mainNavController.navigate(
                             AppRoute.AddTransaction.createRoute(TransactionTypeOption.INCOME.routeValue)
                         )
+                    },
+                    onOpenHistory = {
+                        mainNavController.navigate(AppRoute.TransactionHistory.route)
                     }
                 )
             }
@@ -111,6 +115,12 @@ fun MainContainerScreen(
                 AddTransactionScreen(
                     onBack = { mainNavController.navigateUp() },
                     initialType = initialType
+                )
+            }
+
+            composable(AppRoute.TransactionHistory.route) {
+                HistoryScreen(
+                    onBack = { mainNavController.navigateUp() }
                 )
             }
 

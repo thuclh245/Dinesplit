@@ -21,6 +21,7 @@ sealed class AppRoute(val route: String) {
             return "$route?$ARG_TYPE=$type"
         }
     }
+    data object TransactionHistory : AppRoute("transaction_history")
     data object Profile : AppRoute("profile")
 
     data object Notifications : AppRoute("notifications")

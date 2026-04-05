@@ -72,6 +72,7 @@ fun PersonalScreen(
     onOpenAssistant: () -> Unit,
     onAddExpense: () -> Unit = {},
     onAddIncome: () -> Unit = {},
+    onOpenHistory: () -> Unit = {},
     uiState: PersonalDashboardUiState = PersonalDashboardUiState.default()
 ) {
     AppScaffold(
@@ -87,14 +88,16 @@ fun PersonalScreen(
             PersonalDashboardUiState.Empty -> PersonalDashboardEmptyContent(
                 modifier = Modifier.verticalScroll(rememberScrollState()),
                 onAddExpense = onAddExpense,
-                onAddIncome = onAddIncome
+                onAddIncome = onAddIncome,
+                onOpenHistory = onOpenHistory
             )
             is PersonalDashboardUiState.HasData -> PersonalDashboardContent(
                 modifier = Modifier.verticalScroll(rememberScrollState()),
                 summary = uiState.summary,
                 categoryBreakdowns = uiState.categoryBreakdowns,
                 onAddExpense = onAddExpense,
-                onAddIncome = onAddIncome
+                onAddIncome = onAddIncome,
+                onOpenHistory = onOpenHistory
             )
         }
     }
@@ -106,7 +109,8 @@ private fun PersonalDashboardContent(
     summary: PersonalDashboardSummary,
     categoryBreakdowns: List<CategoryBreakdown>,
     onAddExpense: () -> Unit,
-    onAddIncome: () -> Unit
+    onAddIncome: () -> Unit,
+    onOpenHistory: () -> Unit
 ) {
     Column(
         modifier = modifier,
@@ -203,6 +207,10 @@ private fun PersonalDashboardContent(
                     text = "+ Add Income",
                     onClick = onAddIncome
                 )
+
+                TextButton(onClick = onOpenHistory) {
+                    Text("View Transaction History")
+                }
             }
         }
 
@@ -214,7 +222,8 @@ private fun PersonalDashboardContent(
 private fun PersonalDashboardEmptyContent(
     modifier: Modifier = Modifier,
     onAddExpense: () -> Unit,
-    onAddIncome: () -> Unit
+    onAddIncome: () -> Unit,
+    onOpenHistory: () -> Unit
 ) {
     Column(
         modifier = modifier,
@@ -243,6 +252,10 @@ private fun PersonalDashboardEmptyContent(
                     text = "+ Add Income",
                     onClick = onAddIncome
                 )
+
+                TextButton(onClick = onOpenHistory) {
+                    Text("Open Transaction History")
+                }
             }
         }
 
