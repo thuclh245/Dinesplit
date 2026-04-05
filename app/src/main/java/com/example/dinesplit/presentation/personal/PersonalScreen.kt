@@ -117,6 +117,7 @@ fun PersonalScreen(
                 summary = uiState.summary,
                 categoryBreakdowns = uiState.categoryBreakdowns,
                 pieChartData = uiState.pieChartData,
+                dailyExpenseBars = uiState.dailyExpenseBars,
                 onAddExpense = onAddExpense,
                 onAddIncome = onAddIncome,
                 onOpenHistory = onOpenHistory,
@@ -132,6 +133,7 @@ private fun PersonalDashboardContent(
     summary: PersonalDashboardSummary,
     categoryBreakdowns: List<CategoryBreakdown>,
     pieChartData: List<PieCategorySlice>,
+    dailyExpenseBars: List<DailyExpenseBar>,
     onAddExpense: () -> Unit,
     onAddIncome: () -> Unit,
     onOpenHistory: () -> Unit,
@@ -200,6 +202,27 @@ private fun PersonalDashboardContent(
                         CategoryBreakdownRow(item = item)
                     }
                 }
+            }
+        }
+
+        AppCard {
+            Column(
+                verticalArrangement = Arrangement.spacedBy(AppDimens.spaceMd)
+            ) {
+                Text(
+                    text = "Daily expense trend",
+                    style = MaterialTheme.typography.titleMedium
+                )
+                Text(
+                    text = "Expense amount by day in current month",
+                    style = MaterialTheme.typography.bodyMedium,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant
+                )
+
+                PersonalDailyExpenseBarChart(
+                    bars = dailyExpenseBars,
+                    modifier = Modifier.fillMaxWidth()
+                )
             }
         }
 
