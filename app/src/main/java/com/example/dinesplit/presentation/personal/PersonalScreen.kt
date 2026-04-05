@@ -116,6 +116,7 @@ fun PersonalScreen(
                 modifier = Modifier.verticalScroll(rememberScrollState()),
                 summary = uiState.summary,
                 categoryBreakdowns = uiState.categoryBreakdowns,
+                pieChartData = uiState.pieChartData,
                 onAddExpense = onAddExpense,
                 onAddIncome = onAddIncome,
                 onOpenHistory = onOpenHistory,
@@ -130,6 +131,7 @@ private fun PersonalDashboardContent(
     modifier: Modifier = Modifier,
     summary: PersonalDashboardSummary,
     categoryBreakdowns: List<CategoryBreakdown>,
+    pieChartData: List<PieCategorySlice>,
     onAddExpense: () -> Unit,
     onAddIncome: () -> Unit,
     onOpenHistory: () -> Unit,
@@ -180,27 +182,16 @@ private fun PersonalDashboardContent(
                     style = MaterialTheme.typography.titleMedium
                 )
                 Text(
-                    text = "Simple chart placeholder for spending by category this month",
+                    text = "Spending percentage by category this month",
                     style = MaterialTheme.typography.bodyMedium,
                     color = MaterialTheme.colorScheme.onSurfaceVariant
                 )
 
-                Box(
+                PersonalPieChart(
+                    slices = pieChartData,
                     modifier = Modifier
                         .fillMaxWidth()
-                        .height(160.dp)
-                        .background(
-                            color = MaterialTheme.colorScheme.primaryContainer,
-                            shape = MaterialTheme.shapes.large
-                        ),
-                    contentAlignment = Alignment.Center
-                ) {
-                    Text(
-                        text = "Pie chart placeholder",
-                        style = MaterialTheme.typography.titleSmall,
-                        color = MaterialTheme.colorScheme.onPrimaryContainer
-                    )
-                }
+                )
 
                 Column(
                     verticalArrangement = Arrangement.spacedBy(AppDimens.spaceSm)
