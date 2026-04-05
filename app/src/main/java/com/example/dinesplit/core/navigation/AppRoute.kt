@@ -12,6 +12,15 @@ sealed class AppRoute(val route: String) {
     data object Feed : AppRoute("feed")
     data object Split : AppRoute("split")
     data object Personal : AppRoute("personal")
+    data object AddTransaction : AppRoute("add_transaction") {
+        const val ARG_TYPE = "type"
+        val routeWithArg = "$route?$ARG_TYPE={$ARG_TYPE}"
+
+        fun createRoute(type: String? = null): String {
+            if (type.isNullOrBlank()) return route
+            return "$route?$ARG_TYPE=$type"
+        }
+    }
     data object Profile : AppRoute("profile")
 
     data object Notifications : AppRoute("notifications")

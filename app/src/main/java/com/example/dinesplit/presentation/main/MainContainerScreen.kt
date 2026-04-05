@@ -8,15 +8,19 @@ import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
 import androidx.compose.ui.Modifier
+import androidx.navigation.NavType
 import androidx.navigation.NavDestination.Companion.hierarchy
 import androidx.navigation.compose.NavHost
 import androidx.navigation.compose.composable
 import androidx.navigation.compose.currentBackStackEntryAsState
 import androidx.navigation.compose.rememberNavController
+import androidx.navigation.navArgument
 import com.example.dinesplit.core.navigation.AppRoute
 import com.example.dinesplit.core.navigation.BottomTab
 import com.example.dinesplit.presentation.feed.FeedScreen
+import com.example.dinesplit.presentation.personal.AddTransactionScreen
 import com.example.dinesplit.presentation.personal.PersonalScreen
+import com.example.dinesplit.presentation.personal.TransactionTypeOption
 import com.example.dinesplit.presentation.profile.ProfileScreen
 import com.example.dinesplit.presentation.split.SplitScreen
 
@@ -78,7 +82,35 @@ fun MainContainerScreen(
 
             composable(AppRoute.Personal.route) {
                 PersonalScreen(
-                    onOpenAssistant = onOpenAssistant
+                    onOpenAssistant = onOpenAssistant,
+                    onAddExpense = {
+                        mainNavController.navigate(
+                            AppRoute.AddTransaction.createRoute(TransactionTypeOption.EXPENSE.routeValue)
+                        )
+                    },
+                    onAddIncome = {
+                        mainNavController.navigate(
+                            AppRoute.AddTransaction.createRoute(TransactionTypeOption.INCOME.routeValue)
+                        )
+                    }
+                )
+            }
+
+            composable(
+                route = AppRoute.AddTransaction.routeWithArg,
+                arguments = listOf(
+                    navArgument(AppRoute.AddTransaction.ARG_TYPE) {
+                        type = NavType.StringType
+                        defaultValue = ""
+                    }
+                )
+            ) { backStackEntry ->
+                val initialType = TransactionTypeOption.fromRoute(
+                    backStackEntry.arguments?.getString(AppRoute.AddTransaction.ARG_TYPE)
+                )
+                AddTransactionScreen(
+                    onBack = { mainNavController.navigateUp() },
+                    initialType = initialType
                 )
             }
 

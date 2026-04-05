@@ -1,6 +1,7 @@
 package com.example.dinesplit.presentation.personal
 
 import androidx.compose.foundation.background
+import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
@@ -8,6 +9,7 @@ import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
+import androidx.compose.foundation.verticalScroll
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
@@ -83,10 +85,12 @@ fun PersonalScreen(
         when (uiState) {
             PersonalDashboardUiState.Loading -> LoadingBlock(message = "Loading personal finance...")
             PersonalDashboardUiState.Empty -> PersonalDashboardEmptyContent(
+                modifier = Modifier.verticalScroll(rememberScrollState()),
                 onAddExpense = onAddExpense,
                 onAddIncome = onAddIncome
             )
             is PersonalDashboardUiState.HasData -> PersonalDashboardContent(
+                modifier = Modifier.verticalScroll(rememberScrollState()),
                 summary = uiState.summary,
                 categoryBreakdowns = uiState.categoryBreakdowns,
                 onAddExpense = onAddExpense,
@@ -98,12 +102,14 @@ fun PersonalScreen(
 
 @Composable
 private fun PersonalDashboardContent(
+    modifier: Modifier = Modifier,
     summary: PersonalDashboardSummary,
     categoryBreakdowns: List<CategoryBreakdown>,
     onAddExpense: () -> Unit,
     onAddIncome: () -> Unit
 ) {
     Column(
+        modifier = modifier,
         verticalArrangement = Arrangement.spacedBy(AppDimens.spaceLg)
     ) {
         Column(
@@ -206,10 +212,12 @@ private fun PersonalDashboardContent(
 
 @Composable
 private fun PersonalDashboardEmptyContent(
+    modifier: Modifier = Modifier,
     onAddExpense: () -> Unit,
     onAddIncome: () -> Unit
 ) {
     Column(
+        modifier = modifier,
         verticalArrangement = Arrangement.spacedBy(AppDimens.spaceLg)
     ) {
         AppCard {
