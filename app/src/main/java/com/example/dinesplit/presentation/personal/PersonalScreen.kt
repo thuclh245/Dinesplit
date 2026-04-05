@@ -26,6 +26,7 @@ import com.example.dinesplit.core.ui.PrimaryButton
 import com.example.dinesplit.core.ui.SecondaryButton
 import com.example.dinesplit.core.ui.StatCard
 import com.example.dinesplit.ui.theme.DineSplitTheme
+import java.util.Locale
 
 sealed interface PersonalDashboardUiState {
     data object Loading : PersonalDashboardUiState
@@ -40,35 +41,36 @@ sealed interface PersonalDashboardUiState {
     ) : PersonalDashboardUiState
 
     companion object {
-        fun default() = HasData(
-            summary = PersonalDashboardSummary(
-                totalIncome = "3.500.000đ",
-                totalExpense = "1.250.000đ",
-                balance = "2.250.000đ",
-                balanceNote = "+18% compared with last month"
-            ),
-            categoryBreakdowns = listOf(
-                CategoryBreakdown(name = "Food", percentage = "42%", amount = "525.000đ", progress = 0.42f),
-                CategoryBreakdown(name = "Drink", percentage = "18%", amount = "225.000đ", progress = 0.18f),
-                CategoryBreakdown(name = "Travel", percentage = "15%", amount = "187.500đ", progress = 0.15f)
-            ),
-            pieChartData = listOf(
-                PieCategorySlice(category = "Food", amount = 525000.0, percentage = 0.42f),
-                PieCategorySlice(category = "Drink", amount = 225000.0, percentage = 0.18f),
-                PieCategorySlice(category = "Travel", amount = 187500.0, percentage = 0.15f)
-            ),
-            dailyExpenseBars = listOf(
-                DailyExpenseBar(dayOfMonth = 1, amount = 120000.0),
-                DailyExpenseBar(dayOfMonth = 3, amount = 75000.0),
-                DailyExpenseBar(dayOfMonth = 5, amount = 90000.0),
-                DailyExpenseBar(dayOfMonth = 9, amount = 55000.0)
-            ),
-            monthlySummary = MonthlySummary(
+        fun default(): HasData {
+            val monthlySummary = MonthlySummary(
                 totalIncome = 3500000.0,
                 totalExpense = 1250000.0,
                 balance = 2250000.0
             )
-        )
+
+            return HasData(
+                summary = monthlySummary.toDashboardSummary(
+                    balanceNote = "+18% compared with last month"
+                ),
+                categoryBreakdowns = listOf(
+                    CategoryBreakdown(name = "Food", percentage = "42%", amount = "525.000đ", progress = 0.42f),
+                    CategoryBreakdown(name = "Drink", percentage = "18%", amount = "225.000đ", progress = 0.18f),
+                    CategoryBreakdown(name = "Travel", percentage = "15%", amount = "187.500đ", progress = 0.15f)
+                ),
+                pieChartData = listOf(
+                    PieCategorySlice(category = "Food", amount = 525000.0, percentage = 0.42f),
+                    PieCategorySlice(category = "Drink", amount = 225000.0, percentage = 0.18f),
+                    PieCategorySlice(category = "Travel", amount = 187500.0, percentage = 0.15f)
+                ),
+                dailyExpenseBars = listOf(
+                    DailyExpenseBar(dayOfMonth = 1, amount = 120000.0),
+                    DailyExpenseBar(dayOfMonth = 3, amount = 75000.0),
+                    DailyExpenseBar(dayOfMonth = 5, amount = 90000.0),
+                    DailyExpenseBar(dayOfMonth = 9, amount = 55000.0)
+                ),
+                monthlySummary = monthlySummary
+            )
+        }
     }
 }
 
@@ -85,6 +87,22 @@ data class CategoryBreakdown(
     val amount: String,
     val progress: Float
 )
+
+private fun MonthlySummary.toDashboardSummary(
+    balanceNote: String
+): PersonalDashboardSummary {
+    return PersonalDashboardSummary(
+        totalIncome = formatCurrencyVnd(totalIncome),
+        totalExpense = formatCurrencyVnd(totalExpense),
+        balance = formatCurrencyVnd(balance),
+        balanceNote = balanceNote
+    )
+}
+
+private fun formatCurrencyVnd(amount: Double): String {
+    val grouped = String.format(Locale.US, "%,d", amount.toLong())
+    return grouped.replace(',', '.') + "đ"
+}
 
 @Composable
 fun PersonalScreen(
