@@ -99,7 +99,21 @@ enum class TransactionType {
   - Personal Dashboard
   - Add Transaction
   - History
-- [ ] Data models: `Transaction`, `Category`
-- [ ] List state + validation rules
-- [ ] Chart requirement notes
+- [x] Data models: `Transaction`, `Category`, `TransactionType`
+- [x] List state + validation rules (loading/empty/has-data, form validation)
+- [x] Chart requirement notes (đã chuẩn bị data models: pie/bar/monthly summary)
+
+---
+
+## 5. Tiến độ code hiện tại
+- [x] 1.1 Personal Dashboard
+- [x] 1.2 Add Transaction Screen
+- [x] 1.3 Transaction History
+- [x] 1.4 Category Management (basic)
+- [x] 2.1 Transaction Model
+- [x] 2.2 Category Model
+- [x] 2.3 TransactionType enum
+- [x] 3.1 Pie chart requirement (data contract)
+- [x] 3.2 Bar chart requirement (data contract)
+- [x] 3.3 Monthly summary requirement (data contract)
 

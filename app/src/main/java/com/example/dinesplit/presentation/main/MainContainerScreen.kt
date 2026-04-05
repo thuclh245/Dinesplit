@@ -17,12 +17,14 @@ import androidx.navigation.compose.rememberNavController
 import androidx.navigation.navArgument
 import com.example.dinesplit.core.navigation.AppRoute
 import com.example.dinesplit.core.navigation.BottomTab
+import com.example.dinesplit.domain.model.TransactionType
 import com.example.dinesplit.presentation.feed.FeedScreen
 import com.example.dinesplit.presentation.personal.AddTransactionScreen
 import com.example.dinesplit.presentation.personal.CategoryManagementScreen
 import com.example.dinesplit.presentation.personal.HistoryScreen
 import com.example.dinesplit.presentation.personal.PersonalScreen
-import com.example.dinesplit.presentation.personal.TransactionTypeOption
+import com.example.dinesplit.presentation.personal.toRouteValue
+import com.example.dinesplit.presentation.personal.transactionTypeFromRoute
 import com.example.dinesplit.presentation.profile.ProfileScreen
 import com.example.dinesplit.presentation.split.SplitScreen
 
@@ -87,12 +89,12 @@ fun MainContainerScreen(
                     onOpenAssistant = onOpenAssistant,
                     onAddExpense = {
                         mainNavController.navigate(
-                            AppRoute.AddTransaction.createRoute(TransactionTypeOption.EXPENSE.routeValue)
+                            AppRoute.AddTransaction.createRoute(TransactionType.EXPENSE.toRouteValue())
                         )
                     },
                     onAddIncome = {
                         mainNavController.navigate(
-                            AppRoute.AddTransaction.createRoute(TransactionTypeOption.INCOME.routeValue)
+                            AppRoute.AddTransaction.createRoute(TransactionType.INCOME.toRouteValue())
                         )
                     },
                     onOpenHistory = {
@@ -113,7 +115,7 @@ fun MainContainerScreen(
                     }
                 )
             ) { backStackEntry ->
-                val initialType = TransactionTypeOption.fromRoute(
+                val initialType = transactionTypeFromRoute(
                     backStackEntry.arguments?.getString(AppRoute.AddTransaction.ARG_TYPE)
                 )
                 AddTransactionScreen(

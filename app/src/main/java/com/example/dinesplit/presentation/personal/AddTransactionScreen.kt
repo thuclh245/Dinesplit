@@ -28,31 +28,14 @@ import com.example.dinesplit.core.ui.AppDimens
 import com.example.dinesplit.core.ui.AppScaffold
 import com.example.dinesplit.core.ui.AppTextField
 import com.example.dinesplit.core.ui.PrimaryButton
+import com.example.dinesplit.domain.model.TransactionType
 import java.text.SimpleDateFormat
 import java.util.Date
 import java.util.Locale
 
-enum class TransactionTypeOption(
-    val label: String,
-    val routeValue: String
-) {
-    INCOME(label = "Income", routeValue = "income"),
-    EXPENSE(label = "Expense", routeValue = "expense");
-
-    companion object {
-        fun fromRoute(value: String?): TransactionTypeOption? {
-            return entries.firstOrNull { it.routeValue == value }
-        }
-
-        fun fromName(value: String): TransactionTypeOption? {
-            return entries.firstOrNull { it.name == value }
-        }
-    }
-}
-
 data class AddTransactionDraft(
     val amount: Double,
-    val type: TransactionTypeOption,
+    val type: TransactionType,
     val category: String,
     val note: String?,
     val date: String
@@ -62,7 +45,7 @@ data class AddTransactionDraft(
 @Composable
 fun AddTransactionScreen(
     onBack: () -> Unit,
-    initialType: TransactionTypeOption? = null,
+    initialType: TransactionType? = null,
     onSave: (AddTransactionDraft) -> Unit = {}
 ) {
     var amountText by rememberSaveable { mutableStateOf("") }
@@ -73,12 +56,12 @@ fun AddTransactionScreen(
     var isSubmitAttempted by rememberSaveable { mutableStateOf(false) }
 
     val currentDate = remember { currentDateLabel() }
-    val selectedType = TransactionTypeOption.fromName(selectedTypeName)
+    val selectedType = transactionTypeFromRoute(selectedTypeName)
     val amountValue = amountText.toDoubleOrNull()
 
     val categoryOptions = when (selectedType) {
-        TransactionTypeOption.INCOME -> listOf("Salary", "Bonus", "Gift", "Other")
-        TransactionTypeOption.EXPENSE -> listOf("Food", "Drink", "Travel", "Shopping", "Other")
+        TransactionType.INCOME -> listOf("Salary", "Bonus", "Gift", "Other")
+        TransactionType.EXPENSE -> listOf("Food", "Drink", "Travel", "Shopping", "Other")
         null -> emptyList()
     }
 
@@ -127,11 +110,11 @@ fun AddTransactionScreen(
                 Row(
                     horizontalArrangement = Arrangement.spacedBy(AppDimens.spaceSm)
                 ) {
-                    TransactionTypeOption.entries.forEach { typeOption ->
+                    TransactionType.entries.forEach { typeOption ->
                         FilterChip(
                             selected = selectedType == typeOption,
                             onClick = { selectedTypeName = typeOption.name },
-                            label = { Text(typeOption.label) }
+                            label = { Text(typeOption.displayLabel()) }
                         )
                     }
                 }
@@ -213,7 +196,7 @@ fun AddTransactionScreen(
                 onClick = {
                     isSubmitAttempted = true
                     if (!isFormValid) return@PrimaryButton
-                    val type = TransactionTypeOption.fromName(selectedTypeName) ?: return@PrimaryButton
+                    val type = transactionTypeFromRoute(selectedTypeName) ?: return@PrimaryButton
                     val amount = amountText.toDoubleOrNull() ?: return@PrimaryButton
 
                     onSave(

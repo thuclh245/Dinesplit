@@ -15,8 +15,4 @@ data class Transaction(
     val createdAt: Long
 )
 
-enum class TransactionType {
-    INCOME,
-    EXPENSE
-}
 

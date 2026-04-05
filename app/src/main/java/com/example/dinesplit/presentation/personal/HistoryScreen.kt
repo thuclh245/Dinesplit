@@ -29,17 +29,16 @@ import com.example.dinesplit.core.ui.AppCard
 import com.example.dinesplit.core.ui.AppDimens
 import com.example.dinesplit.core.ui.AppScaffold
 import com.example.dinesplit.core.ui.EmptyStateBlock
+import com.example.dinesplit.domain.model.TransactionType
 import com.example.dinesplit.ui.theme.DineSplitTheme
 
-enum class HistoryFilterType(val label: String) {
-    ALL("All"),
-    INCOME("Income"),
-    EXPENSE("Expense")
-}
-
-enum class HistoryTransactionType {
-    INCOME,
-    EXPENSE
+enum class HistoryFilterType(
+    val label: String,
+    val type: TransactionType?
+) {
+    ALL("All", null),
+    INCOME("Income", TransactionType.INCOME),
+    EXPENSE("Expense", TransactionType.EXPENSE)
 }
 
 data class HistoryTransactionItem(
@@ -49,7 +48,7 @@ data class HistoryTransactionItem(
     val amount: String,
     val date: String,
     val month: String,
-    val type: HistoryTransactionType,
+    val type: TransactionType,
     val note: String?
 )
 
@@ -67,11 +66,8 @@ fun HistoryScreen(
     val filteredTransactions = remember(transactions, selectedMonth, selectedType) {
         transactions.filter { item ->
             val monthMatched = selectedMonth.isBlank() || item.month == selectedMonth
-            val typeMatched = when (HistoryFilterType.valueOf(selectedType)) {
-                HistoryFilterType.ALL -> true
-                HistoryFilterType.INCOME -> item.type == HistoryTransactionType.INCOME
-                HistoryFilterType.EXPENSE -> item.type == HistoryTransactionType.EXPENSE
-            }
+            val selectedFilter = HistoryFilterType.valueOf(selectedType)
+            val typeMatched = selectedFilter.type == null || item.type == selectedFilter.type
             monthMatched && typeMatched
         }
     }
@@ -224,7 +220,7 @@ private fun HistoryTransactionRow(
                 }
             }
 
-            val amountColor = if (item.type == HistoryTransactionType.INCOME) {
+            val amountColor = if (item.type == TransactionType.INCOME) {
                 MaterialTheme.colorScheme.primary
             } else {
                 MaterialTheme.colorScheme.error
@@ -248,7 +244,7 @@ private fun defaultHistoryTransactions(): List<HistoryTransactionItem> {
             amount = "-525,000",
             date = "05 Apr 2026",
             month = "Apr 2026",
-            type = HistoryTransactionType.EXPENSE,
+            type = TransactionType.EXPENSE,
             note = "Lunch with team"
         ),
         HistoryTransactionItem(
@@ -258,7 +254,7 @@ private fun defaultHistoryTransactions(): List<HistoryTransactionItem> {
             amount = "-187,500",
             date = "04 Apr 2026",
             month = "Apr 2026",
-            type = HistoryTransactionType.EXPENSE,
+            type = TransactionType.EXPENSE,
             note = null
         ),
         HistoryTransactionItem(
@@ -268,7 +264,7 @@ private fun defaultHistoryTransactions(): List<HistoryTransactionItem> {
             amount = "+3,500,000",
             date = "01 Apr 2026",
             month = "Apr 2026",
-            type = HistoryTransactionType.INCOME,
+            type = TransactionType.INCOME,
             note = "Monthly salary"
         ),
         HistoryTransactionItem(
@@ -278,7 +274,7 @@ private fun defaultHistoryTransactions(): List<HistoryTransactionItem> {
             amount = "-220,000",
             date = "20 Mar 2026",
             month = "Mar 2026",
-            type = HistoryTransactionType.EXPENSE,
+            type = TransactionType.EXPENSE,
             note = null
         ),
         HistoryTransactionItem(
@@ -288,7 +284,7 @@ private fun defaultHistoryTransactions(): List<HistoryTransactionItem> {
             amount = "+750,000",
             date = "15 Mar 2026",
             month = "Mar 2026",
-            type = HistoryTransactionType.INCOME,
+            type = TransactionType.INCOME,
             note = "Project reward"
         )
     )
