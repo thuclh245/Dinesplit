@@ -41,6 +41,8 @@ enum class HistoryFilterType(
     EXPENSE("Expense", TransactionType.EXPENSE)
 }
 
+private const val ALL_MONTHS_LABEL = "All months"
+
 data class HistoryTransactionItem(
     val id: String,
     val categoryIcon: String,
@@ -60,12 +62,12 @@ fun HistoryScreen(
     val months = remember(transactions) {
         transactions.map { it.month }.distinct()
     }
-    var selectedMonth by rememberSaveable { mutableStateOf(months.firstOrNull().orEmpty()) }
+    var selectedMonth by rememberSaveable { mutableStateOf(ALL_MONTHS_LABEL) }
     var selectedType by rememberSaveable { mutableStateOf(HistoryFilterType.ALL.name) }
 
     val filteredTransactions = remember(transactions, selectedMonth, selectedType) {
         transactions.filter { item ->
-            val monthMatched = selectedMonth.isBlank() || item.month == selectedMonth
+            val monthMatched = selectedMonth == ALL_MONTHS_LABEL || item.month == selectedMonth
             val selectedFilter = HistoryFilterType.valueOf(selectedType)
             val typeMatched = selectedFilter.type == null || item.type == selectedFilter.type
             monthMatched && typeMatched
@@ -84,9 +86,15 @@ fun HistoryScreen(
             modifier = Modifier.fillMaxSize(),
             verticalArrangement = Arrangement.spacedBy(AppDimens.spaceLg)
         ) {
+            Text(
+                text = "Browse fake transactions by month and type while the Personal module is still in placeholder mode.",
+                style = MaterialTheme.typography.bodyMedium,
+                color = MaterialTheme.colorScheme.onSurfaceVariant
+            )
+
             if (months.isNotEmpty()) {
                 MonthFilterChips(
-                    months = months,
+                    months = listOf(ALL_MONTHS_LABEL) + months,
                     selectedMonth = selectedMonth,
                     onMonthSelected = { selectedMonth = it }
                 )
