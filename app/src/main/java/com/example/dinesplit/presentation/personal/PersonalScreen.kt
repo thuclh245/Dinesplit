@@ -161,6 +161,22 @@ private fun PersonalDashboardContent(
         modifier = modifier,
         verticalArrangement = Arrangement.spacedBy(AppDimens.spaceLg)
     ) {
+        AppCard {
+            Column(
+                verticalArrangement = Arrangement.spacedBy(AppDimens.spaceXs)
+            ) {
+                Text(
+                    text = "Week 2 placeholder dashboard",
+                    style = MaterialTheme.typography.titleMedium
+                )
+                Text(
+                    text = "This screen is wired with fake data for now. It will later be backed by PersonalViewModel and real transaction data.",
+                    style = MaterialTheme.typography.bodyMedium,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant
+                )
+            }
+        }
+
         Column(
             verticalArrangement = Arrangement.spacedBy(AppDimens.spaceSm)
         ) {
