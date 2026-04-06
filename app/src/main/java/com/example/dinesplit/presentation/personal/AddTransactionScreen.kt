@@ -28,6 +28,7 @@ import com.example.dinesplit.core.ui.AppDimens
 import com.example.dinesplit.core.ui.AppScaffold
 import com.example.dinesplit.core.ui.AppTextField
 import com.example.dinesplit.core.ui.PrimaryButton
+import com.example.dinesplit.core.ui.SecondaryButton
 import com.example.dinesplit.domain.model.TransactionType
 import java.text.SimpleDateFormat
 import java.util.Date
@@ -191,26 +192,36 @@ fun AddTransactionScreen(
                 enabled = false
             )
 
-            PrimaryButton(
-                text = "Save Transaction",
-                onClick = {
-                    isSubmitAttempted = true
-                    if (!isFormValid) return@PrimaryButton
-                    val type = transactionTypeFromRoute(selectedTypeName) ?: return@PrimaryButton
-                    val amount = amountText.toDoubleOrNull() ?: return@PrimaryButton
+            Row(
+                modifier = Modifier.fillMaxWidth(),
+                horizontalArrangement = Arrangement.spacedBy(AppDimens.spaceMd)
+            ) {
+                SecondaryButton(
+                    text = "Cancel",
+                    onClick = onBack
+                )
 
-                    onSave(
-                        AddTransactionDraft(
-                            amount = amount,
-                            type = type,
-                            category = selectedCategory,
-                            note = note.ifBlank { null },
-                            date = currentDate
+                PrimaryButton(
+                    text = "Save Transaction",
+                    onClick = {
+                        isSubmitAttempted = true
+                        if (!isFormValid) return@PrimaryButton
+                        val type = transactionTypeFromRoute(selectedTypeName) ?: return@PrimaryButton
+                        val amount = amountText.toDoubleOrNull() ?: return@PrimaryButton
+
+                        onSave(
+                            AddTransactionDraft(
+                                amount = amount,
+                                type = type,
+                                category = selectedCategory,
+                                note = note.ifBlank { null },
+                                date = currentDate
+                            )
                         )
-                    )
-                    onBack()
-                },
-                enabled = isFormValid
+                        onBack()
+                    },
+                    enabled = isFormValid
+                )
             )
         }
     }
