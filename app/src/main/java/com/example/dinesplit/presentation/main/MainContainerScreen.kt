@@ -22,7 +22,7 @@ import com.example.dinesplit.presentation.feed.FeedScreen
 import com.example.dinesplit.presentation.personal.AddTransactionScreen
 import com.example.dinesplit.presentation.personal.CategoryManagementScreen
 import com.example.dinesplit.presentation.personal.HistoryScreen
-import com.example.dinesplit.presentation.personal.PersonalScreen
+import com.example.dinesplit.presentation.personal.PersonalRoute
 import com.example.dinesplit.presentation.personal.toRouteValue
 import com.example.dinesplit.presentation.personal.transactionTypeFromRoute
 import com.example.dinesplit.presentation.profile.ProfileScreen
@@ -85,7 +85,7 @@ fun MainContainerScreen(
             }
 
             composable(AppRoute.Personal.route) {
-                PersonalScreen(
+                PersonalRoute(
                     onOpenAssistant = onOpenAssistant,
                     onAddExpense = {
                         mainNavController.navigate(

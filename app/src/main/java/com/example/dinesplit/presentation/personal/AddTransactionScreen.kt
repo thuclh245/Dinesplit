@@ -222,7 +222,7 @@ fun AddTransactionScreen(
                     },
                     enabled = isFormValid
                 )
-            )
+            }
         }
     }
 }

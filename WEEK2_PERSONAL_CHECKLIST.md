@@ -92,13 +92,26 @@ data class PersonalUiState(
 ---
 
 ## 5. Deliverables Tuần 2
-- [ ] Personal module chạy được với placeholder
-- [ ] 4 màn hình:
+- [x] Personal module chạy được với placeholder
+- [x] 4 màn hình:
   - Dashboard
   - Add Transaction
   - History
   - Category UI
-- [ ] ViewModel + state flow cơ bản
+- [x] ViewModel + state flow cơ bản
 - [ ] Validation logic
-- [ ] Navigation hoạt động
+- [x] Navigation hoạt động
+
+---
+
+## 6. Tiến độ code hiện tại
+- [x] 1.1 Personal Dashboard
+- [x] 1.2 Add Transaction Screen
+- [x] 1.3 Transaction History
+- [x] 1.4 Category UI (basic)
+- [x] 2.1 PersonalViewModel
+- [x] 2.2 PersonalUiState
+- [x] 2.3 Quy ước state
+- [ ] 3. Validation Logic (Domain layer)
+- [x] 4. Navigation Integration
 
