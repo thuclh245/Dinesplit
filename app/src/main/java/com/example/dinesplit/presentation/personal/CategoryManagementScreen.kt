@@ -15,8 +15,6 @@ import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
-import androidx.compose.runtime.getValue
-import androidx.compose.runtime.mutableStateListOf
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
@@ -28,8 +26,6 @@ import androidx.compose.ui.unit.dp
 import com.example.dinesplit.core.ui.AppCard
 import com.example.dinesplit.core.ui.AppDimens
 import com.example.dinesplit.core.ui.AppScaffold
-import com.example.dinesplit.core.ui.AppTextField
-import com.example.dinesplit.core.ui.PrimaryButton
 import com.example.dinesplit.ui.theme.DineSplitTheme
 
 enum class CategoryTypeFilter(val label: String) {
@@ -50,7 +46,7 @@ fun CategoryManagementScreen(
     onBack: () -> Unit
 ) {
     val categories = remember {
-        mutableStateListOf(
+        listOf(
             ManagedCategory("c_food", "Food", "FD", CategoryTypeFilter.EXPENSE, false),
             ManagedCategory("c_drink", "Drink", "DR", CategoryTypeFilter.EXPENSE, false),
             ManagedCategory("c_travel", "Travel", "TR", CategoryTypeFilter.EXPENSE, false),
@@ -60,9 +56,6 @@ fun CategoryManagementScreen(
     }
 
     var selectedType by remember { mutableStateOf(CategoryTypeFilter.EXPENSE) }
-    var nameInput by remember { mutableStateOf("") }
-    var iconInput by remember { mutableStateOf("") }
-    var errorMessage by remember { mutableStateOf<String?>(null) }
 
     val filteredCategories = categories.filter { it.type == selectedType }
 
@@ -78,6 +71,12 @@ fun CategoryManagementScreen(
             modifier = Modifier.fillMaxSize(),
             verticalArrangement = Arrangement.spacedBy(AppDimens.spaceLg)
         ) {
+            Text(
+                text = "Basic category library used by Add Transaction. Week 2 keeps this screen simple: choose a type and browse sample categories.",
+                style = MaterialTheme.typography.bodyMedium,
+                color = MaterialTheme.colorScheme.onSurfaceVariant
+            )
+
             Row(
                 modifier = Modifier.fillMaxWidth(),
                 horizontalArrangement = Arrangement.spacedBy(AppDimens.spaceSm)
@@ -91,78 +90,6 @@ fun CategoryManagementScreen(
                 }
             }
 
-            AppCard {
-                Column(
-                    verticalArrangement = Arrangement.spacedBy(AppDimens.spaceMd)
-                ) {
-                    Text(
-                        text = "Add custom category",
-                        style = MaterialTheme.typography.titleMedium
-                    )
-
-                    AppTextField(
-                        value = nameInput,
-                        onValueChange = {
-                            nameInput = it
-                            errorMessage = null
-                        },
-                        label = "Category name",
-                        placeholder = "Ex: Snacks"
-                    )
-
-                    AppTextField(
-                        value = iconInput,
-                        onValueChange = { iconInput = it.uppercase() },
-                        label = "Icon (optional)",
-                        placeholder = "Ex: SN"
-                    )
-
-                    if (!errorMessage.isNullOrBlank()) {
-                        Text(
-                            text = errorMessage.orEmpty(),
-                            style = MaterialTheme.typography.bodySmall,
-                            color = MaterialTheme.colorScheme.error
-                        )
-                    }
-
-                    PrimaryButton(
-                        text = "Add Category",
-                        onClick = {
-                            val normalizedName = nameInput.trim()
-                            if (normalizedName.isBlank()) {
-                                errorMessage = "Category name is required"
-                                return@PrimaryButton
-                            }
-
-                            val duplicated = categories.any {
-                                it.type == selectedType && it.name.equals(normalizedName, ignoreCase = true)
-                            }
-                            if (duplicated) {
-                                errorMessage = "Category already exists"
-                                return@PrimaryButton
-                            }
-
-                            val icon = iconInput.trim().takeIf { it.isNotBlank() }
-                                ?: normalizedName.take(2).uppercase()
-
-                            categories.add(
-                                ManagedCategory(
-                                    id = "custom_${System.currentTimeMillis()}",
-                                    name = normalizedName,
-                                    icon = icon,
-                                    type = selectedType,
-                                    isCustom = true
-                                )
-                            )
-
-                            nameInput = ""
-                            iconInput = ""
-                            errorMessage = null
-                        },
-                        enabled = nameInput.isNotBlank()
-                    )
-                }
-            }
 
             Text(
                 text = "${selectedType.label} categories",
