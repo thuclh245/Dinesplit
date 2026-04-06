@@ -22,6 +22,14 @@ sealed class AppRoute(val route: String) {
         }
     }
     data object TransactionHistory : AppRoute("transaction_history")
+    data object TransactionDetail : AppRoute("transaction_detail") {
+        const val ARG_ID = "transactionId"
+        val routeWithArg = "$route/{$ARG_ID}"
+
+        fun createRoute(transactionId: String): String {
+            return "$route/$transactionId"
+        }
+    }
     data object CategoryManagement : AppRoute("category_management")
     data object Profile : AppRoute("profile")
 

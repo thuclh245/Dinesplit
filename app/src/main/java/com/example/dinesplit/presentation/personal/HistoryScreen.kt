@@ -1,6 +1,7 @@
 package com.example.dinesplit.presentation.personal
 
 import androidx.compose.foundation.background
+import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
@@ -57,7 +58,8 @@ data class HistoryTransactionItem(
 @Composable
 fun HistoryScreen(
     onBack: () -> Unit,
-    transactions: List<HistoryTransactionItem> = defaultHistoryTransactions()
+    transactions: List<HistoryTransactionItem> = defaultHistoryTransactions(),
+    onTransactionClick: (HistoryTransactionItem) -> Unit = {}
 ) {
     val months = remember(transactions) {
         transactions.map { it.month }.distinct()
@@ -119,7 +121,10 @@ fun HistoryScreen(
                         items = filteredTransactions,
                         key = { it.id }
                     ) { item ->
-                        HistoryTransactionRow(item = item)
+                        HistoryTransactionRow(
+                            item = item,
+                            onClick = { onTransactionClick(item) }
+                        )
                     }
                 }
             }
@@ -184,11 +189,14 @@ private fun TypeFilterChips(
 
 @Composable
 private fun HistoryTransactionRow(
-    item: HistoryTransactionItem
+    item: HistoryTransactionItem,
+    onClick: () -> Unit
 ) {
     AppCard {
         Row(
-            modifier = Modifier.fillMaxWidth(),
+            modifier = Modifier
+                .fillMaxWidth()
+                .clickable(onClick = onClick),
             horizontalArrangement = Arrangement.spacedBy(AppDimens.spaceMd),
             verticalAlignment = Alignment.CenterVertically
         ) {

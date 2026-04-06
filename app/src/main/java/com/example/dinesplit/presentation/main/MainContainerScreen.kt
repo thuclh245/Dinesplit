@@ -23,6 +23,7 @@ import com.example.dinesplit.presentation.personal.AddTransactionScreen
 import com.example.dinesplit.presentation.personal.CategoryManagementScreen
 import com.example.dinesplit.presentation.personal.HistoryScreen
 import com.example.dinesplit.presentation.personal.PersonalRoute
+import com.example.dinesplit.presentation.personal.TransactionDetailScreen
 import com.example.dinesplit.presentation.personal.toRouteValue
 import com.example.dinesplit.presentation.personal.transactionTypeFromRoute
 import com.example.dinesplit.presentation.profile.ProfileScreen
@@ -126,6 +127,24 @@ fun MainContainerScreen(
 
             composable(AppRoute.TransactionHistory.route) {
                 HistoryScreen(
+                    onBack = { mainNavController.navigateUp() },
+                    onTransactionClick = { item ->
+                        mainNavController.navigate(AppRoute.TransactionDetail.createRoute(item.id))
+                    }
+                )
+            }
+
+            composable(
+                route = AppRoute.TransactionDetail.routeWithArg,
+                arguments = listOf(
+                    navArgument(AppRoute.TransactionDetail.ARG_ID) {
+                        type = NavType.StringType
+                    }
+                )
+            ) { backStackEntry ->
+                val transactionId = backStackEntry.arguments?.getString(AppRoute.TransactionDetail.ARG_ID).orEmpty()
+                TransactionDetailScreen(
+                    transactionId = transactionId,
                     onBack = { mainNavController.navigateUp() }
                 )
             }
