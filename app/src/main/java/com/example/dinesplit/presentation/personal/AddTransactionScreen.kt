@@ -29,25 +29,22 @@ import com.example.dinesplit.core.ui.AppScaffold
 import com.example.dinesplit.core.ui.AppTextField
 import com.example.dinesplit.core.ui.PrimaryButton
 import com.example.dinesplit.core.ui.SecondaryButton
+import com.example.dinesplit.domain.model.Transaction
 import com.example.dinesplit.domain.model.TransactionType
+import com.example.dinesplit.domain.validation.TransactionFormInput
+import com.example.dinesplit.domain.validation.TransactionFormValidator
+import com.example.dinesplit.domain.validation.toTransaction
 import java.text.SimpleDateFormat
 import java.util.Date
 import java.util.Locale
-
-data class AddTransactionDraft(
-    val amount: Double,
-    val type: TransactionType,
-    val category: String,
-    val note: String?,
-    val date: String
-)
+import java.util.UUID
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun AddTransactionScreen(
     onBack: () -> Unit,
     initialType: TransactionType? = null,
-    onSave: (AddTransactionDraft) -> Unit = {}
+    onSave: (Transaction) -> Unit = {}
 ) {
     var amountText by rememberSaveable { mutableStateOf("") }
     var selectedTypeName by rememberSaveable { mutableStateOf(initialType?.name.orEmpty()) }
@@ -56,9 +53,9 @@ fun AddTransactionScreen(
     var isCategoryMenuExpanded by rememberSaveable { mutableStateOf(false) }
     var isSubmitAttempted by rememberSaveable { mutableStateOf(false) }
 
-    val currentDate = remember { currentDateLabel() }
+    val currentDateMillis = remember { System.currentTimeMillis() }
+    val currentDate = remember(currentDateMillis) { currentDateLabel(currentDateMillis) }
     val selectedType = transactionTypeFromRoute(selectedTypeName)
-    val amountValue = amountText.toDoubleOrNull()
 
     val categoryOptions = when (selectedType) {
         TransactionType.INCOME -> listOf("Salary", "Bonus", "Gift", "Other")
@@ -72,10 +69,21 @@ fun AddTransactionScreen(
         }
     }
 
-    val isAmountValid = amountValue != null && amountValue > 0
-    val isTypeValid = selectedType != null
-    val isCategoryValid = selectedCategory.isNotBlank()
-    val isFormValid = isAmountValid && isTypeValid && isCategoryValid
+    val validation = TransactionFormValidator.validate(
+        input = TransactionFormInput(
+            amountText = amountText,
+            type = selectedType,
+            category = selectedCategory,
+            note = note,
+            dateMillis = currentDateMillis
+        ),
+        availableCategories = categoryOptions
+    )
+
+    val isAmountValid = validation.amountError == null
+    val isTypeValid = validation.typeError == null
+    val isCategoryValid = validation.categoryError == null
+    val isFormValid = validation.isValid
 
     AppScaffold(
         title = "Add Transaction",
@@ -97,7 +105,7 @@ fun AddTransactionScreen(
                 label = "Amount",
                 placeholder = "0",
                 isError = isSubmitAttempted && !isAmountValid,
-                supportingText = if (isSubmitAttempted && !isAmountValid) "Amount must be greater than 0" else null
+                supportingText = if (isSubmitAttempted && !isAmountValid) validation.amountError else null
             )
 
             Column(
@@ -122,7 +130,7 @@ fun AddTransactionScreen(
 
                 if (isSubmitAttempted && !isTypeValid) {
                     Text(
-                        text = "Please choose transaction type",
+                        text = validation.typeError.orEmpty(),
                         style = MaterialTheme.typography.bodySmall,
                         color = MaterialTheme.colorScheme.error
                     )
@@ -156,7 +164,7 @@ fun AddTransactionScreen(
                     isError = isSubmitAttempted && !isCategoryValid,
                     supportingText = {
                         if (isSubmitAttempted && !isCategoryValid) {
-                            Text("Category is required")
+                            Text(validation.categoryError.orEmpty())
                         }
                     }
                 )
@@ -206,16 +214,12 @@ fun AddTransactionScreen(
                     onClick = {
                         isSubmitAttempted = true
                         if (!isFormValid) return@PrimaryButton
-                        val type = transactionTypeFromRoute(selectedTypeName) ?: return@PrimaryButton
-                        val amount = amountText.toDoubleOrNull() ?: return@PrimaryButton
+                        val validInput = validation.validInput ?: return@PrimaryButton
 
                         onSave(
-                            AddTransactionDraft(
-                                amount = amount,
-                                type = type,
-                                category = selectedCategory,
-                                note = note.ifBlank { null },
-                                date = currentDate
+                            validInput.toTransaction(
+                                id = UUID.randomUUID().toString(),
+                                userId = "user_1"
                             )
                         )
                         onBack()
@@ -227,8 +231,8 @@ fun AddTransactionScreen(
     }
 }
 
-private fun currentDateLabel(): String {
+private fun currentDateLabel(currentDateMillis: Long): String {
     val formatter = SimpleDateFormat("dd/MM/yyyy", Locale.getDefault())
-    return formatter.format(Date())
+    return formatter.format(Date(currentDateMillis))
 }
 

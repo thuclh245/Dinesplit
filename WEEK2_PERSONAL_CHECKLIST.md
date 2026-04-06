@@ -99,7 +99,7 @@ data class PersonalUiState(
   - History
   - Category UI
 - [x] ViewModel + state flow cơ bản
-- [ ] Validation logic
+- [x] Validation logic
 - [x] Navigation hoạt động
 
 ---
@@ -112,6 +112,6 @@ data class PersonalUiState(
 - [x] 2.1 PersonalViewModel
 - [x] 2.2 PersonalUiState
 - [x] 2.3 Quy ước state
-- [ ] 3. Validation Logic (Domain layer)
+- [x] 3. Validation Logic (Domain layer)
 - [x] 4. Navigation Integration
 
