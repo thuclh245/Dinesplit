@@ -17,7 +17,6 @@ import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
-import androidx.compose.runtime.remember
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.tooling.preview.Preview
@@ -40,6 +39,7 @@ sealed interface PersonalDashboardUiState {
         val categoryBreakdowns: List<CategoryBreakdown>,
         val pieChartData: List<PieCategorySlice>,
         val dailyExpenseBars: List<DailyExpenseBar>,
+        val recentActivity: List<RecentActivityUi>,
         val monthlySummary: MonthlySummary
     ) : PersonalDashboardUiState
 
@@ -70,6 +70,29 @@ sealed interface PersonalDashboardUiState {
                     DailyExpenseBar(dayOfMonth = 3, amount = 75000.0),
                     DailyExpenseBar(dayOfMonth = 5, amount = 90000.0),
                     DailyExpenseBar(dayOfMonth = 9, amount = 55000.0)
+                ),
+                recentActivity = listOf(
+                    RecentActivityUi(
+                        icon = "FD",
+                        title = "Dinner with team",
+                        subtitle = "Dining • Today",
+                        amount = "-124,500",
+                        isIncome = false
+                    ),
+                    RecentActivityUi(
+                        icon = "SL",
+                        title = "Salary deposit",
+                        subtitle = "Income • Yesterday",
+                        amount = "+${formatCurrencyVnd(monthlySummary.totalIncome)}",
+                        isIncome = true
+                    ),
+                    RecentActivityUi(
+                        icon = "TR",
+                        title = "Taxi ride",
+                        subtitle = "Transport • 2 days ago",
+                        amount = "-24,000",
+                        isIncome = false
+                    )
                 ),
                 monthlySummary = monthlySummary
             )
@@ -139,6 +162,7 @@ fun PersonalScreen(
                 categoryBreakdowns = uiState.categoryBreakdowns,
                 pieChartData = uiState.pieChartData,
                 dailyExpenseBars = uiState.dailyExpenseBars,
+                recentActivity = uiState.recentActivity,
                 onAddExpense = onAddExpense,
                 onAddIncome = onAddIncome,
                 onOpenHistory = onOpenHistory,
@@ -155,13 +179,12 @@ private fun PersonalDashboardContent(
     categoryBreakdowns: List<CategoryBreakdown>,
     pieChartData: List<PieCategorySlice>,
     dailyExpenseBars: List<DailyExpenseBar>,
+    recentActivity: List<RecentActivityUi>,
     onAddExpense: () -> Unit,
     onAddIncome: () -> Unit,
     onOpenHistory: () -> Unit,
     onOpenCategoryManagement: () -> Unit
 ) {
-    val recentActivity = rememberRecentActivity(summary)
-
     Column(
         modifier = modifier,
         verticalArrangement = Arrangement.spacedBy(AppDimens.spaceLg)
@@ -317,7 +340,7 @@ private fun SummaryInfoCard(
     }
 }
 
-private data class RecentActivityUi(
+data class RecentActivityUi(
     val icon: String,
     val title: String,
     val subtitle: String,
@@ -325,36 +348,6 @@ private data class RecentActivityUi(
     val isIncome: Boolean
 )
 
-@Composable
-private fun rememberRecentActivity(
-    summary: PersonalDashboardSummary
-): List<RecentActivityUi> {
-    return remember(summary) {
-        listOf(
-            RecentActivityUi(
-                icon = "FD",
-                title = "Dinner with team",
-                subtitle = "Dining • Today",
-                amount = "-124,500",
-                isIncome = false
-            ),
-            RecentActivityUi(
-                icon = "SL",
-                title = "Salary deposit",
-                subtitle = "Income • Yesterday",
-                amount = "+${summary.totalIncome}",
-                isIncome = true
-            ),
-            RecentActivityUi(
-                icon = "TR",
-                title = "Taxi ride",
-                subtitle = "Transport • 2 days ago",
-                amount = "-24,000",
-                isIncome = false
-            )
-        )
-    }
-}
 
 @Composable
 private fun RecentActivityRow(

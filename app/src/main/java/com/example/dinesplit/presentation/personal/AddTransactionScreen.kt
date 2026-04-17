@@ -43,6 +43,7 @@ import com.example.dinesplit.core.ui.AppDimens
 import com.example.dinesplit.core.ui.AppScaffold
 import com.example.dinesplit.core.ui.PrimaryButton
 import com.example.dinesplit.core.ui.SecondaryButton
+import com.example.dinesplit.data.repository.StoredCategory
 import com.example.dinesplit.domain.model.Transaction
 import com.example.dinesplit.domain.model.TransactionType
 import com.example.dinesplit.domain.validation.TransactionFormInput
@@ -58,42 +59,42 @@ import java.util.UUID
 fun AddTransactionScreen(
     onBack: () -> Unit,
     initialType: TransactionType? = null,
-    availableCategoriesByType: Map<TransactionType, List<String>> = emptyMap(),
+    availableCategoriesByType: Map<TransactionType, List<StoredCategory>> = emptyMap(),
     onSave: (Transaction) -> Unit = {}
 ) {
     var amountText by rememberSaveable { mutableStateOf("") }
-    var selectedTypeName by rememberSaveable {
-        mutableStateOf((initialType ?: TransactionType.EXPENSE).name)
-    }
-    var selectedCategory by rememberSaveable { mutableStateOf("") }
+    var selectedType by rememberSaveable { mutableStateOf(initialType ?: TransactionType.EXPENSE) }
+    var selectedCategoryId by rememberSaveable { mutableStateOf("") }
     var note by rememberSaveable { mutableStateOf("") }
     var isSubmitAttempted by rememberSaveable { mutableStateOf(false) }
 
     val currentDateMillis = remember { System.currentTimeMillis() }
     val currentDate = remember(currentDateMillis) { currentDateLabel(currentDateMillis) }
-    val selectedType = transactionTypeFromRoute(selectedTypeName)
     val categoryOptions = remember(selectedType, availableCategoriesByType) {
         categoryTilesForType(
             type = selectedType,
-            availableCategoryNames = availableCategoriesByType[selectedType].orEmpty()
+            availableCategories = availableCategoriesByType[selectedType].orEmpty()
         )
     }
 
-    LaunchedEffect(selectedTypeName) {
-        if (selectedCategory.isNotBlank() && categoryOptions.none { it.name == selectedCategory }) {
-            selectedCategory = ""
+    LaunchedEffect(selectedType) {
+        if (selectedCategoryId.isNotBlank() && categoryOptions.none { it.id == selectedCategoryId }) {
+            selectedCategoryId = ""
         }
     }
+
+    val selectedCategoryName = categoryOptions.firstOrNull { it.id == selectedCategoryId }?.name.orEmpty()
 
     val validation = TransactionFormValidator.validate(
         input = TransactionFormInput(
             amountText = amountText,
             type = selectedType,
-            category = selectedCategory,
+            categoryId = selectedCategoryId,
+            categoryName = selectedCategoryName,
             note = note,
             dateMillis = currentDateMillis
         ),
-        availableCategories = categoryOptions.map { it.name }
+        availableCategoryIds = categoryOptions.map { it.id }
     )
 
     val isAmountValid = validation.amountError == null
@@ -139,7 +140,7 @@ fun AddTransactionScreen(
                     TransactionType.entries.forEach { typeOption ->
                         FilterChip(
                             selected = selectedType == typeOption,
-                            onClick = { selectedTypeName = typeOption.name },
+                            onClick = { selectedType = typeOption },
                             label = { Text(typeOption.displayLabel()) }
                         )
                     }
@@ -147,7 +148,7 @@ fun AddTransactionScreen(
 
                 if (isSubmitAttempted && !isTypeValid) {
                     Text(
-                        text = validation.typeError.orEmpty(),
+                        text = validation.typeError,
                         style = MaterialTheme.typography.bodySmall,
                         color = MaterialTheme.colorScheme.error
                     )
@@ -170,8 +171,10 @@ fun AddTransactionScreen(
                             CategoryTileButton(
                                 modifier = Modifier.weight(1f),
                                 tile = item,
-                                selected = selectedCategory == item.name,
-                                onClick = { selectedCategory = item.name }
+                                selected = selectedCategoryId == item.id,
+                                onClick = {
+                                    selectedCategoryId = item.id
+                                }
                             )
                         }
 
@@ -183,7 +186,7 @@ fun AddTransactionScreen(
 
                 if (isSubmitAttempted && !isCategoryValid) {
                     Text(
-                        text = validation.categoryError.orEmpty(),
+                        text = validation.categoryError,
                         style = MaterialTheme.typography.bodySmall,
                         color = MaterialTheme.colorScheme.error
                     )
@@ -237,34 +240,36 @@ fun AddTransactionScreen(
 }
 
 private data class CategoryTile(
+    val id: String,
     val name: String,
     val iconCode: String
 )
 
 private fun categoryTilesForType(
     type: TransactionType?,
-    availableCategoryNames: List<String>
+    availableCategories: List<StoredCategory>
 ): List<CategoryTile> {
-    val names = if (availableCategoryNames.isNotEmpty()) {
-        availableCategoryNames
+    val categories = if (availableCategories.isNotEmpty()) {
+        availableCategories
     } else {
         when (type) {
-            TransactionType.INCOME -> listOf("Salary", "Bonus", "Gift", "Other")
-            TransactionType.EXPENSE, null -> listOf("Dining Out", "Groceries", "Transit", "Other")
+            TransactionType.INCOME -> listOf(
+                StoredCategory("c_salary", "Salary", "SL", TransactionType.INCOME, false, "", "$0.00", 0f, false),
+                StoredCategory("c_bonus", "Bonus", "BN", TransactionType.INCOME, false, "", "$0.00", 0f, false),
+                StoredCategory("c_gift", "Gift", "GF", TransactionType.INCOME, false, "", "$0.00", 0f, false),
+                StoredCategory("c_other_income", "Other", "OT", TransactionType.INCOME, false, "", "$0.00", 0f, false)
+            )
+            TransactionType.EXPENSE, null -> listOf(
+                StoredCategory("c_food", "Dining Out", "FD", TransactionType.EXPENSE, false, "", "$0.00", 0f, false),
+                StoredCategory("c_grocery", "Groceries", "GR", TransactionType.EXPENSE, false, "", "$0.00", 0f, false),
+                StoredCategory("c_transit", "Transit", "TR", TransactionType.EXPENSE, false, "", "$0.00", 0f, false),
+                StoredCategory("c_fun", "Entertainment", "EN", TransactionType.EXPENSE, false, "", "$0.00", 0f, false)
+            )
         }
     }
 
-    return names.map { name ->
-        CategoryTile(name = name, iconCode = toIconCode(name))
-    }
-}
-
-private fun toIconCode(name: String): String {
-    val parts = name.trim().split(" ").filter { it.isNotBlank() }
-    return when {
-        parts.isEmpty() -> "OT"
-        parts.size == 1 -> parts.first().take(2).uppercase()
-        else -> "${parts[0].first()}${parts[1].first()}".uppercase()
+    return categories.map { category ->
+        CategoryTile(id = category.id, name = category.name, iconCode = category.icon)
     }
 }
 
