@@ -9,11 +9,15 @@ import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
+import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.verticalScroll
+import androidx.compose.material3.HorizontalDivider
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.remember
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.tooling.preview.Preview
@@ -24,7 +28,6 @@ import com.example.dinesplit.core.ui.AppScaffold
 import com.example.dinesplit.core.ui.LoadingBlock
 import com.example.dinesplit.core.ui.PrimaryButton
 import com.example.dinesplit.core.ui.SecondaryButton
-import com.example.dinesplit.core.ui.StatCard
 import com.example.dinesplit.ui.theme.DineSplitTheme
 import java.util.Locale
 
@@ -157,6 +160,8 @@ private fun PersonalDashboardContent(
     onOpenHistory: () -> Unit,
     onOpenCategoryManagement: () -> Unit
 ) {
+    val recentActivity = rememberRecentActivity(summary)
+
     Column(
         modifier = modifier,
         verticalArrangement = Arrangement.spacedBy(AppDimens.spaceLg)
@@ -166,77 +171,36 @@ private fun PersonalDashboardContent(
                 verticalArrangement = Arrangement.spacedBy(AppDimens.spaceXs)
             ) {
                 Text(
-                    text = "Week 2 placeholder dashboard",
-                    style = MaterialTheme.typography.titleMedium
+                    text = "Total wealth",
+                    style = MaterialTheme.typography.labelMedium,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant
                 )
                 Text(
-                    text = "This screen is wired with fake data for now. It will later be backed by PersonalViewModel and real transaction data.",
+                    text = summary.balance,
+                    style = MaterialTheme.typography.displaySmall
+                )
+                Text(
+                    text = summary.balanceNote,
                     style = MaterialTheme.typography.bodyMedium,
-                    color = MaterialTheme.colorScheme.onSurfaceVariant
+                    color = MaterialTheme.colorScheme.primary
                 )
             }
         }
 
-        Column(
-            verticalArrangement = Arrangement.spacedBy(AppDimens.spaceSm)
+        Row(
+            horizontalArrangement = Arrangement.spacedBy(AppDimens.spaceMd)
         ) {
-            Text(
-                text = "Monthly overview",
-                style = MaterialTheme.typography.titleMedium
+            SummaryInfoCard(
+                modifier = Modifier.weight(1f),
+                title = "Income",
+                value = summary.totalIncome
             )
-            Text(
-                text = "Quick snapshot of your personal finance this month",
-                style = MaterialTheme.typography.bodyMedium,
-                color = MaterialTheme.colorScheme.onSurfaceVariant
+
+            SummaryInfoCard(
+                modifier = Modifier.weight(1f),
+                title = "Spent",
+                value = summary.totalExpense
             )
-        }
-
-        StatCard(
-            title = "Total income",
-            value = summary.totalIncome,
-            subtitle = "Money received this month"
-        )
-
-        StatCard(
-            title = "Total expense",
-            value = summary.totalExpense,
-            subtitle = "Money spent this month"
-        )
-
-        StatCard(
-            title = "Balance",
-            value = summary.balance,
-            subtitle = summary.balanceNote
-        )
-
-        AppCard {
-            Column(
-                verticalArrangement = Arrangement.spacedBy(AppDimens.spaceMd)
-            ) {
-                Text(
-                    text = "Category breakdown",
-                    style = MaterialTheme.typography.titleMedium
-                )
-                Text(
-                    text = "Spending percentage by category this month",
-                    style = MaterialTheme.typography.bodyMedium,
-                    color = MaterialTheme.colorScheme.onSurfaceVariant
-                )
-
-                PersonalPieChart(
-                    slices = pieChartData,
-                    modifier = Modifier
-                        .fillMaxWidth()
-                )
-
-                Column(
-                    verticalArrangement = Arrangement.spacedBy(AppDimens.spaceSm)
-                ) {
-                    categoryBreakdowns.forEach { item ->
-                        CategoryBreakdownRow(item = item)
-                    }
-                }
-            }
         }
 
         AppCard {
@@ -244,19 +208,32 @@ private fun PersonalDashboardContent(
                 verticalArrangement = Arrangement.spacedBy(AppDimens.spaceMd)
             ) {
                 Text(
-                    text = "Daily expense trend",
+                    text = "Cash Flow",
                     style = MaterialTheme.typography.titleMedium
-                )
-                Text(
-                    text = "Expense amount by day in current month",
-                    style = MaterialTheme.typography.bodyMedium,
-                    color = MaterialTheme.colorScheme.onSurfaceVariant
                 )
 
                 PersonalDailyExpenseBarChart(
                     bars = dailyExpenseBars,
                     modifier = Modifier.fillMaxWidth()
                 )
+            }
+        }
+
+        AppCard {
+            Column(
+                verticalArrangement = Arrangement.spacedBy(AppDimens.spaceMd)
+            ) {
+                Text(
+                    text = "Recent Activity",
+                    style = MaterialTheme.typography.titleMedium
+                )
+
+                recentActivity.forEachIndexed { index, item ->
+                    RecentActivityRow(item = item)
+                    if (index != recentActivity.lastIndex) {
+                        HorizontalDivider()
+                    }
+                }
             }
         }
 
@@ -289,7 +266,140 @@ private fun PersonalDashboardContent(
             }
         }
 
+        if (categoryBreakdowns.isNotEmpty() || pieChartData.isNotEmpty()) {
+            AppCard {
+                Column(
+                    verticalArrangement = Arrangement.spacedBy(AppDimens.spaceMd)
+                ) {
+                    Text(
+                        text = "Category Breakdown",
+                        style = MaterialTheme.typography.titleMedium
+                    )
+
+                    if (pieChartData.isNotEmpty()) {
+                        PersonalPieChart(
+                            slices = pieChartData,
+                            modifier = Modifier.fillMaxWidth()
+                        )
+                    }
+
+                    categoryBreakdowns.forEach { item ->
+                        CategoryBreakdownRow(item = item)
+                    }
+                }
+            }
+        }
+
         Spacer(modifier = Modifier.height(AppDimens.spaceXs))
+    }
+}
+
+@Composable
+private fun SummaryInfoCard(
+    modifier: Modifier = Modifier,
+    title: String,
+    value: String
+) {
+    AppCard(modifier = modifier) {
+        Column(
+            verticalArrangement = Arrangement.spacedBy(AppDimens.spaceXs)
+        ) {
+            Text(
+                text = title,
+                style = MaterialTheme.typography.labelMedium,
+                color = MaterialTheme.colorScheme.onSurfaceVariant
+            )
+            Text(
+                text = value,
+                style = MaterialTheme.typography.titleLarge
+            )
+        }
+    }
+}
+
+private data class RecentActivityUi(
+    val icon: String,
+    val title: String,
+    val subtitle: String,
+    val amount: String,
+    val isIncome: Boolean
+)
+
+@Composable
+private fun rememberRecentActivity(
+    summary: PersonalDashboardSummary
+): List<RecentActivityUi> {
+    return remember(summary) {
+        listOf(
+            RecentActivityUi(
+                icon = "FD",
+                title = "Dinner with team",
+                subtitle = "Dining • Today",
+                amount = "-124,500",
+                isIncome = false
+            ),
+            RecentActivityUi(
+                icon = "SL",
+                title = "Salary deposit",
+                subtitle = "Income • Yesterday",
+                amount = "+${summary.totalIncome}",
+                isIncome = true
+            ),
+            RecentActivityUi(
+                icon = "TR",
+                title = "Taxi ride",
+                subtitle = "Transport • 2 days ago",
+                amount = "-24,000",
+                isIncome = false
+            )
+        )
+    }
+}
+
+@Composable
+private fun RecentActivityRow(
+    item: RecentActivityUi
+) {
+    Row(
+        modifier = Modifier
+            .fillMaxWidth()
+            .padding(vertical = AppDimens.spaceXs),
+        horizontalArrangement = Arrangement.spacedBy(AppDimens.spaceMd),
+        verticalAlignment = Alignment.CenterVertically
+    ) {
+        Box(
+            modifier = Modifier
+                .size(40.dp)
+                .background(
+                    color = MaterialTheme.colorScheme.primaryContainer,
+                    shape = MaterialTheme.shapes.medium
+                ),
+            contentAlignment = Alignment.Center
+        ) {
+            Text(
+                text = item.icon,
+                style = MaterialTheme.typography.labelLarge,
+                color = MaterialTheme.colorScheme.onPrimaryContainer
+            )
+        }
+
+        Column(modifier = Modifier.weight(1f)) {
+            Text(
+                text = item.title,
+                style = MaterialTheme.typography.titleSmall
+            )
+            Text(
+                text = item.subtitle,
+                style = MaterialTheme.typography.bodySmall,
+                color = MaterialTheme.colorScheme.onSurfaceVariant
+            )
+        }
+
+        Text(
+            text = item.amount,
+            style = MaterialTheme.typography.titleSmall,
+            color = if (item.isIncome) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.onSurface
+        )
     }
 }
 

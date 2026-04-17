@@ -1,19 +1,32 @@
 package com.example.dinesplit.presentation.personal
 
-import androidx.lifecycle.ViewModel
+import android.app.Application
+import androidx.lifecycle.AndroidViewModel
+import androidx.lifecycle.viewModelScope
+import com.example.dinesplit.data.repository.PersonalRepository
+import com.example.dinesplit.data.repository.StoredCategory
 import com.example.dinesplit.domain.model.Transaction
 import com.example.dinesplit.domain.model.TransactionType
+import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
+import kotlinx.coroutines.launch
 import java.util.Calendar
+import java.util.UUID
 
-class PersonalViewModel : ViewModel() {
-    private val allTransactions = MutableStateFlow(seedTransactions())
+class PersonalViewModel(application: Application) : AndroidViewModel(application) {
+    private val repository = PersonalRepository.getInstance(application.applicationContext)
     private val currentMonthFilter = MutableStateFlow<MonthYearFilter?>(null)
 
-    private val _transactions = MutableStateFlow(seedTransactions())
+    private val _transactions = MutableStateFlow<List<Transaction>>(emptyList())
     val transactions: StateFlow<List<Transaction>> = _transactions.asStateFlow()
+
+    private val _categories = MutableStateFlow<List<StoredCategory>>(emptyList())
+    val categories: StateFlow<List<StoredCategory>> = _categories.asStateFlow()
+
+    private val _categoryNamesByType = MutableStateFlow<Map<TransactionType, List<String>>>(emptyMap())
+    val categoryNamesByType: StateFlow<Map<TransactionType, List<String>>> = _categoryNamesByType.asStateFlow()
 
     private val _uiState = MutableStateFlow(PersonalUiState())
     val uiState: StateFlow<PersonalUiState> = _uiState.asStateFlow()
@@ -23,8 +36,65 @@ class PersonalViewModel : ViewModel() {
     }
 
     fun addTransaction(transaction: Transaction) {
-        allTransactions.value = allTransactions.value + transaction
-        refreshState()
+        viewModelScope.launch(Dispatchers.IO) {
+            repository.insertTransaction(transaction)
+            refreshStateInternal()
+        }
+    }
+
+    fun addCategory(
+        name: String,
+        description: String,
+        type: TransactionType,
+        isCustom: Boolean
+    ) {
+        viewModelScope.launch(Dispatchers.IO) {
+            repository.insertCategory(
+                StoredCategory(
+                    id = UUID.randomUUID().toString(),
+                    name = name.trim(),
+                    icon = iconCodeForName(name),
+                    type = type,
+                    isCustom = isCustom,
+                    description = description.trim(),
+                    amountLabel = "$0.00",
+                    progress = 0f,
+                    isActive = false
+                )
+            )
+            refreshStateInternal()
+        }
+    }
+
+    fun updateCategory(
+        categoryId: String,
+        name: String,
+        description: String,
+        type: TransactionType,
+        isCustom: Boolean,
+        isActive: Boolean
+    ) {
+        viewModelScope.launch(Dispatchers.IO) {
+            val existing = _categories.value.firstOrNull { it.id == categoryId } ?: return@launch
+            repository.updateCategory(
+                existing.copy(
+                    name = name.trim(),
+                    icon = iconCodeForName(name),
+                    type = type,
+                    isCustom = isCustom,
+                    description = description.trim(),
+                    isActive = isActive
+                )
+            )
+            refreshStateInternal()
+        }
+    }
+
+    fun deleteCategory(categoryId: String) {
+        viewModelScope.launch(Dispatchers.IO) {
+            repository.deleteCategory(categoryId)
+            refreshStateInternal()
+        }
     }
 
     fun filterByMonth(month: Int, year: Int) {
@@ -37,14 +107,32 @@ class PersonalViewModel : ViewModel() {
         refreshState()
     }
 
-    private fun refreshState() {
+    fun refreshState() {
+        viewModelScope.launch(Dispatchers.IO) {
+            refreshStateInternal()
+        }
+    }
+
+    private fun refreshStateInternal() {
+        _uiState.value = _uiState.value.copy(isLoading = true)
+
+        val allTransactions = repository.getAllTransactions()
         val filteredTransactions = filterTransactions(
-            transactions = allTransactions.value,
+            transactions = allTransactions,
             monthFilter = currentMonthFilter.value
         )
+        val categories = repository.getCategories()
 
         _transactions.value = filteredTransactions
-        _uiState.value = buildUiState(filteredTransactions)
+        _categories.value = categories
+        _categoryNamesByType.value = categories
+            .groupBy { it.type }
+            .mapValues { (_, items) -> items.map { it.name }.sorted() }
+
+        _uiState.value = buildUiState(
+            transactions = filteredTransactions,
+            categories = categories
+        )
     }
 
     private fun filterTransactions(
@@ -63,7 +151,10 @@ class PersonalViewModel : ViewModel() {
         }
     }
 
-    private fun buildUiState(transactions: List<Transaction>): PersonalUiState {
+    private fun buildUiState(
+        transactions: List<Transaction>,
+        categories: List<StoredCategory>
+    ): PersonalUiState {
         val totalIncome = transactions
             .filter { it.type == TransactionType.INCOME }
             .sumOf { it.amount }
@@ -75,82 +166,24 @@ class PersonalViewModel : ViewModel() {
         return PersonalUiState(
             isLoading = false,
             transactions = transactions,
+            categories = categories,
             totalIncome = totalIncome,
             totalExpense = totalExpense,
             balance = balance
         )
     }
 
-    private fun seedTransactions(): List<Transaction> {
-        return listOf(
-            Transaction(
-                id = "tx_1",
-                userId = "user_1",
-                amount = 525000.0,
-                type = TransactionType.EXPENSE,
-                category = "Food",
-                note = "Lunch with team",
-                date = epochMillis(year = 2026, month = 4, day = 5),
-                createdAt = epochMillis(year = 2026, month = 4, day = 5)
-            ),
-            Transaction(
-                id = "tx_2",
-                userId = "user_1",
-                amount = 187500.0,
-                type = TransactionType.EXPENSE,
-                category = "Travel",
-                note = null,
-                date = epochMillis(year = 2026, month = 4, day = 4),
-                createdAt = epochMillis(year = 2026, month = 4, day = 4)
-            ),
-            Transaction(
-                id = "tx_3",
-                userId = "user_1",
-                amount = 3500000.0,
-                type = TransactionType.INCOME,
-                category = "Salary",
-                note = "Monthly salary",
-                date = epochMillis(year = 2026, month = 4, day = 1),
-                createdAt = epochMillis(year = 2026, month = 4, day = 1)
-            ),
-            Transaction(
-                id = "tx_4",
-                userId = "user_1",
-                amount = 220000.0,
-                type = TransactionType.EXPENSE,
-                category = "Drink",
-                note = null,
-                date = epochMillis(year = 2026, month = 3, day = 20),
-                createdAt = epochMillis(year = 2026, month = 3, day = 20)
-            ),
-            Transaction(
-                id = "tx_5",
-                userId = "user_1",
-                amount = 750000.0,
-                type = TransactionType.INCOME,
-                category = "Bonus",
-                note = "Project reward",
-                date = epochMillis(year = 2026, month = 3, day = 15),
-                createdAt = epochMillis(year = 2026, month = 3, day = 15)
-            )
-        )
-    }
-
-    private fun epochMillis(year: Int, month: Int, day: Int): Long {
-        return Calendar.getInstance().apply {
-            set(Calendar.YEAR, year)
-            set(Calendar.MONTH, month - 1)
-            set(Calendar.DAY_OF_MONTH, day)
-            set(Calendar.HOUR_OF_DAY, 12)
-            set(Calendar.MINUTE, 0)
-            set(Calendar.SECOND, 0)
-            set(Calendar.MILLISECOND, 0)
-        }.timeInMillis
-    }
-
     private data class MonthYearFilter(
         val month: Int,
         val year: Int
     )
-}
 
+    private fun iconCodeForName(name: String): String {
+        val parts = name.trim().split(" ").filter { it.isNotBlank() }
+        return when {
+            parts.isEmpty() -> "OT"
+            parts.size == 1 -> parts.first().take(2).uppercase()
+            else -> "${parts[0].first()}${parts[1].first()}".uppercase()
+        }
+    }
+}

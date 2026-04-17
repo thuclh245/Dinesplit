@@ -1,19 +1,25 @@
 package com.example.dinesplit.presentation.personal
 
+import androidx.compose.foundation.BorderStroke
+import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Arrangement
+import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
+import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.rememberScrollState
+import androidx.compose.foundation.text.BasicTextField
+import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.foundation.verticalScroll
-import androidx.compose.material3.DropdownMenuItem
-import androidx.compose.material3.ExperimentalMaterial3Api
-import androidx.compose.material3.ExposedDropdownMenuBox
-import androidx.compose.material3.ExposedDropdownMenuDefaults
 import androidx.compose.material3.FilterChip
+import androidx.compose.material3.HorizontalDivider
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.OutlinedTextField
+import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
@@ -23,10 +29,18 @@ import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.setValue
+import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.graphics.SolidColor
+import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.text.input.KeyboardCapitalization
+import androidx.compose.ui.text.input.KeyboardType
+import androidx.compose.ui.text.style.TextOverflow
+import androidx.compose.ui.tooling.preview.Preview
+import androidx.compose.ui.unit.dp
+import androidx.compose.ui.unit.sp
 import com.example.dinesplit.core.ui.AppDimens
 import com.example.dinesplit.core.ui.AppScaffold
-import com.example.dinesplit.core.ui.AppTextField
 import com.example.dinesplit.core.ui.PrimaryButton
 import com.example.dinesplit.core.ui.SecondaryButton
 import com.example.dinesplit.domain.model.Transaction
@@ -34,37 +48,39 @@ import com.example.dinesplit.domain.model.TransactionType
 import com.example.dinesplit.domain.validation.TransactionFormInput
 import com.example.dinesplit.domain.validation.TransactionFormValidator
 import com.example.dinesplit.domain.validation.toTransaction
+import com.example.dinesplit.ui.theme.DineSplitTheme
 import java.text.SimpleDateFormat
 import java.util.Date
 import java.util.Locale
 import java.util.UUID
 
-@OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun AddTransactionScreen(
     onBack: () -> Unit,
     initialType: TransactionType? = null,
+    availableCategoriesByType: Map<TransactionType, List<String>> = emptyMap(),
     onSave: (Transaction) -> Unit = {}
 ) {
     var amountText by rememberSaveable { mutableStateOf("") }
-    var selectedTypeName by rememberSaveable { mutableStateOf(initialType?.name.orEmpty()) }
+    var selectedTypeName by rememberSaveable {
+        mutableStateOf((initialType ?: TransactionType.EXPENSE).name)
+    }
     var selectedCategory by rememberSaveable { mutableStateOf("") }
     var note by rememberSaveable { mutableStateOf("") }
-    var isCategoryMenuExpanded by rememberSaveable { mutableStateOf(false) }
     var isSubmitAttempted by rememberSaveable { mutableStateOf(false) }
 
     val currentDateMillis = remember { System.currentTimeMillis() }
     val currentDate = remember(currentDateMillis) { currentDateLabel(currentDateMillis) }
     val selectedType = transactionTypeFromRoute(selectedTypeName)
-
-    val categoryOptions = when (selectedType) {
-        TransactionType.INCOME -> listOf("Salary", "Bonus", "Gift", "Other")
-        TransactionType.EXPENSE -> listOf("Food", "Drink", "Travel", "Shopping", "Other")
-        null -> emptyList()
+    val categoryOptions = remember(selectedType, availableCategoriesByType) {
+        categoryTilesForType(
+            type = selectedType,
+            availableCategoryNames = availableCategoriesByType[selectedType].orEmpty()
+        )
     }
 
     LaunchedEffect(selectedTypeName) {
-        if (selectedCategory.isNotBlank() && selectedCategory !in categoryOptions) {
+        if (selectedCategory.isNotBlank() && categoryOptions.none { it.name == selectedCategory }) {
             selectedCategory = ""
         }
     }
@@ -77,7 +93,7 @@ fun AddTransactionScreen(
             note = note,
             dateMillis = currentDateMillis
         ),
-        availableCategories = categoryOptions
+        availableCategories = categoryOptions.map { it.name }
     )
 
     val isAmountValid = validation.amountError == null
@@ -86,7 +102,7 @@ fun AddTransactionScreen(
     val isFormValid = validation.isValid
 
     AppScaffold(
-        title = "Add Transaction",
+        title = "New Entry",
         navigationIcon = {
             TextButton(onClick = onBack) {
                 Text("Back")
@@ -97,28 +113,29 @@ fun AddTransactionScreen(
             modifier = Modifier
                 .fillMaxSize()
                 .verticalScroll(rememberScrollState()),
-            verticalArrangement = Arrangement.spacedBy(AppDimens.spaceLg)
+            verticalArrangement = Arrangement.spacedBy(AppDimens.spaceXl)
         ) {
-            AppTextField(
-                value = amountText,
-                onValueChange = { amountText = it },
-                label = "Amount",
-                placeholder = "0",
-                isError = isSubmitAttempted && !isAmountValid,
-                supportingText = if (isSubmitAttempted && !isAmountValid) validation.amountError else null
+            Text(
+                text = "New Entry.",
+                style = MaterialTheme.typography.displaySmall,
+                fontWeight = FontWeight.ExtraBold
             )
 
-            Column(
-                verticalArrangement = Arrangement.spacedBy(AppDimens.spaceSm)
-            ) {
+            AmountInputBlock(
+                value = amountText,
+                onValueChange = { amountText = it },
+                isError = isSubmitAttempted && !isAmountValid,
+                supportingText = validation.amountError
+            )
+
+            Column(verticalArrangement = Arrangement.spacedBy(AppDimens.spaceSm)) {
                 Text(
                     text = "Type",
-                    style = MaterialTheme.typography.titleSmall
+                    style = MaterialTheme.typography.labelMedium,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant
                 )
 
-                Row(
-                    horizontalArrangement = Arrangement.spacedBy(AppDimens.spaceSm)
-                ) {
+                Row(horizontalArrangement = Arrangement.spacedBy(AppDimens.spaceSm)) {
                     TransactionType.entries.forEach { typeOption ->
                         FilterChip(
                             selected = selectedType == typeOption,
@@ -137,102 +154,257 @@ fun AddTransactionScreen(
                 }
             }
 
-            ExposedDropdownMenuBox(
-                expanded = isCategoryMenuExpanded,
-                onExpandedChange = {
-                    if (categoryOptions.isNotEmpty()) {
-                        isCategoryMenuExpanded = !isCategoryMenuExpanded
-                    }
-                }
-            ) {
-                OutlinedTextField(
-                    value = selectedCategory,
-                    onValueChange = {},
-                    modifier = Modifier
-                        .menuAnchor()
-                        .fillMaxWidth(),
-                    readOnly = true,
-                    label = {
-                        Text("Category")
-                    },
-                    placeholder = {
-                        Text(if (isTypeValid) "Select category" else "Select type first")
-                    },
-                    trailingIcon = {
-                        ExposedDropdownMenuDefaults.TrailingIcon(expanded = isCategoryMenuExpanded)
-                    },
-                    isError = isSubmitAttempted && !isCategoryValid,
-                    supportingText = {
-                        if (isSubmitAttempted && !isCategoryValid) {
-                            Text(validation.categoryError.orEmpty())
+            Column(verticalArrangement = Arrangement.spacedBy(AppDimens.spaceSm)) {
+                Text(
+                    text = "Select Category",
+                    style = MaterialTheme.typography.labelMedium,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant
+                )
+
+                categoryOptions.chunked(4).forEach { rowItems ->
+                    Row(
+                        modifier = Modifier.fillMaxWidth(),
+                        horizontalArrangement = Arrangement.spacedBy(AppDimens.spaceSm)
+                    ) {
+                        rowItems.forEach { item ->
+                            CategoryTileButton(
+                                modifier = Modifier.weight(1f),
+                                tile = item,
+                                selected = selectedCategory == item.name,
+                                onClick = { selectedCategory = item.name }
+                            )
+                        }
+
+                        repeat(4 - rowItems.size) {
+                            Spacer(modifier = Modifier.weight(1f))
                         }
                     }
-                )
+                }
 
-                ExposedDropdownMenu(
-                    expanded = isCategoryMenuExpanded,
-                    onDismissRequest = { isCategoryMenuExpanded = false }
-                ) {
-                    categoryOptions.forEach { category ->
-                        DropdownMenuItem(
-                            text = { Text(category) },
-                            onClick = {
-                                selectedCategory = category
-                                isCategoryMenuExpanded = false
-                            }
-                        )
-                    }
+                if (isSubmitAttempted && !isCategoryValid) {
+                    Text(
+                        text = validation.categoryError.orEmpty(),
+                        style = MaterialTheme.typography.bodySmall,
+                        color = MaterialTheme.colorScheme.error
+                    )
                 }
             }
 
-            AppTextField(
-                value = note,
-                onValueChange = { note = it },
-                label = "Note (optional)",
-                placeholder = "Add note",
-                singleLine = false
-            )
-
-            AppTextField(
+            OutlinedTextField(
+                modifier = Modifier.fillMaxWidth(),
                 value = currentDate,
                 onValueChange = {},
-                label = "Date",
-                enabled = false
+                readOnly = true,
+                label = { Text("Date") }
             )
 
-            Row(
+            OutlinedTextField(
                 modifier = Modifier.fillMaxWidth(),
-                horizontalArrangement = Arrangement.spacedBy(AppDimens.spaceMd)
-            ) {
-                SecondaryButton(
-                    text = "Cancel",
-                    onClick = onBack
+                value = note,
+                onValueChange = { note = it },
+                label = { Text("Note (optional)") },
+                placeholder = { Text("Add a note...") },
+                minLines = 2,
+                keyboardOptions = KeyboardOptions(
+                    capitalization = KeyboardCapitalization.Sentences
                 )
+            )
 
-                PrimaryButton(
-                    text = "Save Transaction",
-                    onClick = {
-                        isSubmitAttempted = true
-                        if (!isFormValid) return@PrimaryButton
-                        val validInput = validation.validInput ?: return@PrimaryButton
+            PrimaryButton(
+                text = "Save Entry",
+                onClick = {
+                    isSubmitAttempted = true
+                    if (!isFormValid) return@PrimaryButton
+                    val validInput = validation.validInput ?: return@PrimaryButton
 
-                        onSave(
-                            validInput.toTransaction(
-                                id = UUID.randomUUID().toString(),
-                                userId = "user_1"
+                    onSave(
+                        validInput.toTransaction(
+                            id = UUID.randomUUID().toString(),
+                            userId = "user_1"
+                        )
+                    )
+                    onBack()
+                },
+                enabled = isFormValid
+            )
+
+            SecondaryButton(
+                text = "Cancel",
+                onClick = onBack
+            )
+        }
+    }
+}
+
+private data class CategoryTile(
+    val name: String,
+    val iconCode: String
+)
+
+private fun categoryTilesForType(
+    type: TransactionType?,
+    availableCategoryNames: List<String>
+): List<CategoryTile> {
+    val names = if (availableCategoryNames.isNotEmpty()) {
+        availableCategoryNames
+    } else {
+        when (type) {
+            TransactionType.INCOME -> listOf("Salary", "Bonus", "Gift", "Other")
+            TransactionType.EXPENSE, null -> listOf("Dining Out", "Groceries", "Transit", "Other")
+        }
+    }
+
+    return names.map { name ->
+        CategoryTile(name = name, iconCode = toIconCode(name))
+    }
+}
+
+private fun toIconCode(name: String): String {
+    val parts = name.trim().split(" ").filter { it.isNotBlank() }
+    return when {
+        parts.isEmpty() -> "OT"
+        parts.size == 1 -> parts.first().take(2).uppercase()
+        else -> "${parts[0].first()}${parts[1].first()}".uppercase()
+    }
+}
+
+@Composable
+private fun AmountInputBlock(
+    value: String,
+    onValueChange: (String) -> Unit,
+    isError: Boolean,
+    supportingText: String?
+) {
+    Column(verticalArrangement = Arrangement.spacedBy(AppDimens.spaceXs)) {
+        Row(
+            modifier = Modifier.fillMaxWidth(),
+            verticalAlignment = Alignment.Bottom,
+            horizontalArrangement = Arrangement.spacedBy(AppDimens.spaceSm)
+        ) {
+            Text(
+                text = "$",
+                style = MaterialTheme.typography.displaySmall,
+                color = MaterialTheme.colorScheme.outline
+            )
+
+            BasicTextField(
+                value = value,
+                onValueChange = onValueChange,
+                singleLine = true,
+                textStyle = MaterialTheme.typography.displayLarge.copy(
+                    color = MaterialTheme.colorScheme.onSurface,
+                    fontSize = 56.sp
+                ),
+                keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Decimal),
+                cursorBrush = SolidColor(MaterialTheme.colorScheme.primary),
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .padding(bottom = 2.dp),
+                decorationBox = { innerField ->
+                    if (value.isBlank()) {
+                        Text(
+                            text = "0.00",
+                            style = MaterialTheme.typography.displayLarge.copy(
+                                color = MaterialTheme.colorScheme.outline,
+                                fontSize = 56.sp
                             )
                         )
-                        onBack()
-                    },
-                    enabled = isFormValid
+                    }
+                    innerField()
+                }
+            )
+        }
+
+        HorizontalDivider(
+            color = if (isError) MaterialTheme.colorScheme.error else MaterialTheme.colorScheme.outlineVariant
+        )
+
+        if (isError && !supportingText.isNullOrBlank()) {
+            Text(
+                text = supportingText,
+                style = MaterialTheme.typography.bodySmall,
+                color = MaterialTheme.colorScheme.error
+            )
+        }
+    }
+}
+
+@Composable
+private fun CategoryTileButton(
+    modifier: Modifier = Modifier,
+    tile: CategoryTile,
+    selected: Boolean,
+    onClick: () -> Unit
+) {
+    val background = if (selected) {
+        MaterialTheme.colorScheme.primary
+    } else {
+        MaterialTheme.colorScheme.surface
+    }
+    val contentColor = if (selected) {
+        MaterialTheme.colorScheme.onPrimary
+    } else {
+        MaterialTheme.colorScheme.onSurface
+    }
+
+    Surface(
+        modifier = modifier,
+        onClick = onClick,
+        shape = MaterialTheme.shapes.large,
+        color = background,
+        contentColor = contentColor,
+        border = if (selected) null else BorderStroke(1.dp, MaterialTheme.colorScheme.outlineVariant)
+    ) {
+        Column(
+            modifier = Modifier
+                .fillMaxWidth()
+                .padding(vertical = AppDimens.spaceMd),
+            horizontalAlignment = Alignment.CenterHorizontally,
+            verticalArrangement = Arrangement.spacedBy(AppDimens.spaceXs)
+        ) {
+            Box(
+                modifier = Modifier
+                    .size(32.dp)
+                    .background(
+                        color = if (selected) {
+                            MaterialTheme.colorScheme.onPrimary.copy(alpha = 0.18f)
+                        } else {
+                            MaterialTheme.colorScheme.primaryContainer
+                        },
+                        shape = MaterialTheme.shapes.small
+                    ),
+                contentAlignment = Alignment.Center
+            ) {
+                Text(
+                    text = tile.iconCode,
+                    style = MaterialTheme.typography.labelMedium,
+                    color = if (selected) {
+                        MaterialTheme.colorScheme.onPrimary
+                    } else {
+                        MaterialTheme.colorScheme.onPrimaryContainer
+                    }
                 )
             }
+
+            Text(
+                text = tile.name,
+                style = MaterialTheme.typography.labelSmall,
+                maxLines = 1,
+                overflow = TextOverflow.Ellipsis
+            )
         }
     }
 }
 
 private fun currentDateLabel(currentDateMillis: Long): String {
-    val formatter = SimpleDateFormat("dd/MM/yyyy", Locale.getDefault())
+    val formatter = SimpleDateFormat("EEE, dd MMM", Locale.getDefault())
     return formatter.format(Date(currentDateMillis))
 }
 
+@Preview(showBackground = true, showSystemUi = true)
+@Composable
+private fun AddTransactionScreenPreview() {
+    DineSplitTheme {
+        AddTransactionScreen(onBack = {})
+    }
+}

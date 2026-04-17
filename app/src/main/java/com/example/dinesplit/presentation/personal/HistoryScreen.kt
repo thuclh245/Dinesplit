@@ -8,13 +8,16 @@ import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
-import androidx.compose.material3.FilterChip
+import androidx.compose.material3.HorizontalDivider
 import androidx.compose.material3.MaterialTheme
+import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
+import androidx.compose.material3.TextFieldDefaults
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
@@ -23,7 +26,7 @@ import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.draw.clip
+import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import com.example.dinesplit.core.ui.AppCard
@@ -32,17 +35,6 @@ import com.example.dinesplit.core.ui.AppScaffold
 import com.example.dinesplit.core.ui.EmptyStateBlock
 import com.example.dinesplit.domain.model.TransactionType
 import com.example.dinesplit.ui.theme.DineSplitTheme
-
-enum class HistoryFilterType(
-    val label: String,
-    val type: TransactionType?
-) {
-    ALL("All", null),
-    INCOME("Income", TransactionType.INCOME),
-    EXPENSE("Expense", TransactionType.EXPENSE)
-}
-
-private const val ALL_MONTHS_LABEL = "All months"
 
 data class HistoryTransactionItem(
     val id: String,
@@ -61,23 +53,32 @@ fun HistoryScreen(
     transactions: List<HistoryTransactionItem> = defaultHistoryTransactions(),
     onTransactionClick: (HistoryTransactionItem) -> Unit = {}
 ) {
-    val months = remember(transactions) {
-        transactions.map { it.month }.distinct()
-    }
-    var selectedMonth by rememberSaveable { mutableStateOf(ALL_MONTHS_LABEL) }
-    var selectedType by rememberSaveable { mutableStateOf(HistoryFilterType.ALL.name) }
+    var query by rememberSaveable { mutableStateOf("") }
 
-    val filteredTransactions = remember(transactions, selectedMonth, selectedType) {
+    val filteredTransactions = remember(transactions, query) {
         transactions.filter { item ->
-            val monthMatched = selectedMonth == ALL_MONTHS_LABEL || item.month == selectedMonth
-            val selectedFilter = HistoryFilterType.valueOf(selectedType)
-            val typeMatched = selectedFilter.type == null || item.type == selectedFilter.type
-            monthMatched && typeMatched
+            if (query.isBlank()) {
+                true
+            } else {
+                val needle = query.trim().lowercase()
+                listOfNotNull(
+                    item.category,
+                    item.amount,
+                    item.date,
+                    item.month,
+                    item.note,
+                    item.type.name
+                ).any { value -> value.lowercase().contains(needle) }
+            }
         }
     }
 
+    val groupedTransactions = remember(filteredTransactions) {
+        filteredTransactions.groupBy { historyGroupLabel(it) }
+    }
+
     AppScaffold(
-        title = "Transaction History",
+        title = "Ledger",
         navigationIcon = {
             TextButton(onClick = onBack) {
                 Text("Back")
@@ -89,42 +90,59 @@ fun HistoryScreen(
             verticalArrangement = Arrangement.spacedBy(AppDimens.spaceLg)
         ) {
             Text(
-                text = "Browse fake transactions by month and type while the Personal module is still in placeholder mode.",
-                style = MaterialTheme.typography.bodyMedium,
-                color = MaterialTheme.colorScheme.onSurfaceVariant
+                text = "Ledger.",
+                style = MaterialTheme.typography.displayLarge,
+                fontWeight = FontWeight.ExtraBold,
+                color = MaterialTheme.colorScheme.primary
             )
 
-            if (months.isNotEmpty()) {
-                MonthFilterChips(
-                    months = listOf(ALL_MONTHS_LABEL) + months,
-                    selectedMonth = selectedMonth,
-                    onMonthSelected = { selectedMonth = it }
+            OutlinedTextField(
+                value = query,
+                onValueChange = { query = it },
+                modifier = Modifier.fillMaxWidth(),
+                placeholder = { Text("Search transactions...") },
+                singleLine = true,
+                colors = TextFieldDefaults.colors(
+                    focusedContainerColor = MaterialTheme.colorScheme.surface,
+                    unfocusedContainerColor = MaterialTheme.colorScheme.surface
                 )
-            }
-
-            TypeFilterChips(
-                selectedType = HistoryFilterType.valueOf(selectedType),
-                onTypeSelected = { selectedType = it.name }
             )
 
-            if (filteredTransactions.isEmpty()) {
+            if (groupedTransactions.isEmpty()) {
                 EmptyStateBlock(
                     title = "No transactions found",
-                    subtitle = "Try another month or transaction type."
+                    subtitle = "Try a different keyword."
                 )
             } else {
                 LazyColumn(
                     modifier = Modifier.fillMaxSize(),
-                    verticalArrangement = Arrangement.spacedBy(AppDimens.spaceMd)
+                    verticalArrangement = Arrangement.spacedBy(AppDimens.spaceLg)
                 ) {
-                    items(
-                        items = filteredTransactions,
-                        key = { it.id }
-                    ) { item ->
-                        HistoryTransactionRow(
-                            item = item,
-                            onClick = { onTransactionClick(item) }
-                        )
+                    groupedTransactions.forEach { (sectionTitle, itemsInSection) ->
+                        item(key = "header_$sectionTitle") {
+                            Text(
+                                text = sectionTitle,
+                                style = MaterialTheme.typography.labelMedium,
+                                color = MaterialTheme.colorScheme.outline,
+                                modifier = Modifier.padding(top = AppDimens.spaceSm)
+                            )
+                        }
+
+                        item(key = "section_$sectionTitle") {
+                            AppCard {
+                                Column {
+                                    itemsInSection.forEachIndexed { index, item ->
+                                        HistoryTransactionRow(
+                                            item = item,
+                                            onClick = { onTransactionClick(item) }
+                                        )
+                                        if (index != itemsInSection.lastIndex) {
+                                            HorizontalDivider(color = MaterialTheme.colorScheme.outlineVariant)
+                                        }
+                                    }
+                                }
+                            }
+                        }
                     }
                 }
             }
@@ -132,58 +150,12 @@ fun HistoryScreen(
     }
 }
 
-@Composable
-private fun MonthFilterChips(
-    months: List<String>,
-    selectedMonth: String,
-    onMonthSelected: (String) -> Unit
-) {
-    Column(
-        verticalArrangement = Arrangement.spacedBy(AppDimens.spaceSm)
-    ) {
-        Text(
-            text = "Month",
-            style = MaterialTheme.typography.titleSmall
-        )
-        Row(
-            modifier = Modifier.fillMaxWidth(),
-            horizontalArrangement = Arrangement.spacedBy(AppDimens.spaceSm)
-        ) {
-            months.forEach { month ->
-                FilterChip(
-                    selected = selectedMonth == month,
-                    onClick = { onMonthSelected(month) },
-                    label = { Text(month) }
-                )
-            }
-        }
-    }
-}
-
-@Composable
-private fun TypeFilterChips(
-    selectedType: HistoryFilterType,
-    onTypeSelected: (HistoryFilterType) -> Unit
-) {
-    Column(
-        verticalArrangement = Arrangement.spacedBy(AppDimens.spaceSm)
-    ) {
-        Text(
-            text = "Type",
-            style = MaterialTheme.typography.titleSmall
-        )
-        Row(
-            modifier = Modifier.fillMaxWidth(),
-            horizontalArrangement = Arrangement.spacedBy(AppDimens.spaceSm)
-        ) {
-            HistoryFilterType.entries.forEach { type ->
-                FilterChip(
-                    selected = selectedType == type,
-                    onClick = { onTypeSelected(type) },
-                    label = { Text(type.label) }
-                )
-            }
-        }
+private fun historyGroupLabel(item: HistoryTransactionItem): String {
+    val dateLower = item.date.lowercase()
+    return when {
+        dateLower.contains("today") -> "TODAY"
+        dateLower.contains("yesterday") -> "YESTERDAY"
+        else -> item.month.uppercase()
     }
 }
 
@@ -192,60 +164,64 @@ private fun HistoryTransactionRow(
     item: HistoryTransactionItem,
     onClick: () -> Unit
 ) {
-    AppCard {
-        Row(
+    Row(
+        modifier = Modifier
+            .fillMaxWidth()
+            .clickable(onClick = onClick)
+            .padding(vertical = AppDimens.spaceMd),
+        horizontalArrangement = Arrangement.spacedBy(AppDimens.spaceMd),
+        verticalAlignment = Alignment.CenterVertically
+    ) {
+        Box(
             modifier = Modifier
-                .fillMaxWidth()
-                .clickable(onClick = onClick),
-            horizontalArrangement = Arrangement.spacedBy(AppDimens.spaceMd),
-            verticalAlignment = Alignment.CenterVertically
+                .size(48.dp)
+                .background(
+                    color = MaterialTheme.colorScheme.primaryContainer.copy(alpha = 0.25f),
+                    shape = MaterialTheme.shapes.large
+                ),
+            contentAlignment = Alignment.Center
         ) {
-            Box(
-                modifier = Modifier
-                    .size(40.dp)
-                    .clip(MaterialTheme.shapes.medium)
-                    .background(MaterialTheme.colorScheme.primaryContainer),
-                contentAlignment = Alignment.Center
-            ) {
-                Text(
-                    text = item.categoryIcon,
-                    style = MaterialTheme.typography.labelLarge,
-                    color = MaterialTheme.colorScheme.onPrimaryContainer
-                )
-            }
+            Text(
+                text = item.categoryIcon,
+                style = MaterialTheme.typography.titleSmall,
+                color = MaterialTheme.colorScheme.primary
+            )
+        }
 
-            Column(
-                modifier = Modifier.weight(1f),
-                verticalArrangement = Arrangement.spacedBy(AppDimens.spaceXs)
-            ) {
-                Text(
-                    text = item.category,
-                    style = MaterialTheme.typography.titleSmall
-                )
-                Text(
-                    text = item.date,
-                    style = MaterialTheme.typography.bodySmall,
-                    color = MaterialTheme.colorScheme.onSurfaceVariant
-                )
-                if (!item.note.isNullOrBlank()) {
-                    Text(
-                        text = item.note,
-                        style = MaterialTheme.typography.bodySmall,
-                        color = MaterialTheme.colorScheme.onSurfaceVariant
-                    )
-                }
-            }
+        Column(
+            modifier = Modifier.weight(1f),
+            verticalArrangement = Arrangement.spacedBy(AppDimens.spaceXs)
+        ) {
+            Text(
+                text = item.category,
+                style = MaterialTheme.typography.titleMedium,
+                color = MaterialTheme.colorScheme.onSurface
+            )
+            Text(
+                text = item.note ?: item.date,
+                style = MaterialTheme.typography.bodySmall,
+                color = MaterialTheme.colorScheme.onSurfaceVariant
+            )
+        }
 
-            val amountColor = if (item.type == TransactionType.INCOME) {
-                MaterialTheme.colorScheme.primary
-            } else {
-                MaterialTheme.colorScheme.error
-            }
-
+        Column(horizontalAlignment = Alignment.End) {
             Text(
                 text = item.amount,
-                style = MaterialTheme.typography.titleSmall,
-                color = amountColor
+                style = MaterialTheme.typography.titleLarge,
+                color = if (item.type == TransactionType.INCOME) {
+                    MaterialTheme.colorScheme.primary
+                } else {
+                    MaterialTheme.colorScheme.onSurface
+                }
+            )
+            Text(
+                text = if (item.type == TransactionType.INCOME) "RECEIVED" else "PERSONAL",
+                style = MaterialTheme.typography.labelSmall,
+                color = if (item.type == TransactionType.INCOME) {
+                    MaterialTheme.colorScheme.secondary
+                } else {
+                    MaterialTheme.colorScheme.outline
+                }
             )
         }
     }
@@ -256,52 +232,52 @@ private fun defaultHistoryTransactions(): List<HistoryTransactionItem> {
         HistoryTransactionItem(
             id = "tx_1",
             categoryIcon = "FD",
-            category = "Food",
-            amount = "-525,000",
-            date = "05 Apr 2026",
+            category = "The Continental",
+            amount = "-84.50",
+            date = "Today, 8:30 PM",
             month = "Apr 2026",
             type = TransactionType.EXPENSE,
-            note = "Lunch with team"
+            note = "Dinner with Sarah"
         ),
         HistoryTransactionItem(
             id = "tx_2",
-            categoryIcon = "TR",
-            category = "Travel",
-            amount = "-187,500",
-            date = "04 Apr 2026",
+            categoryIcon = "PM",
+            category = "Sarah M.",
+            amount = "+42.25",
+            date = "Today, 9:00 PM",
             month = "Apr 2026",
-            type = TransactionType.EXPENSE,
-            note = null
+            type = TransactionType.INCOME,
+            note = "Venmo transfer"
         ),
         HistoryTransactionItem(
             id = "tx_3",
-            categoryIcon = "SL",
-            category = "Salary",
-            amount = "+3,500,000",
-            date = "01 Apr 2026",
+            categoryIcon = "CF",
+            category = "Blue Bottle",
+            amount = "-6.80",
+            date = "Today, 7:45 AM",
             month = "Apr 2026",
-            type = TransactionType.INCOME,
-            note = "Monthly salary"
+            type = TransactionType.EXPENSE,
+            note = "Morning coffee"
         ),
         HistoryTransactionItem(
             id = "tx_4",
-            categoryIcon = "DR",
-            category = "Drink",
-            amount = "-220,000",
-            date = "20 Mar 2026",
-            month = "Mar 2026",
+            categoryIcon = "SP",
+            category = "Whole Foods Market",
+            amount = "-142.90",
+            date = "Yesterday, 2:15 PM",
+            month = "Apr 2026",
             type = TransactionType.EXPENSE,
-            note = null
+            note = "Groceries"
         ),
         HistoryTransactionItem(
             id = "tx_5",
-            categoryIcon = "BS",
-            category = "Bonus",
-            amount = "+750,000",
-            date = "15 Mar 2026",
-            month = "Mar 2026",
-            type = TransactionType.INCOME,
-            note = "Project reward"
+            categoryIcon = "TR",
+            category = "Uber",
+            amount = "-38.50",
+            date = "Yesterday, 10:00 AM",
+            month = "Apr 2026",
+            type = TransactionType.EXPENSE,
+            note = "Ride to airport"
         )
     )
 }
@@ -313,4 +289,3 @@ private fun HistoryScreenPreview() {
         HistoryScreen(onBack = {})
     }
 }
-
