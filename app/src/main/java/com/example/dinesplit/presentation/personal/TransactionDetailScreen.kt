@@ -109,6 +109,7 @@ private fun TransactionDetailScreenPreview() {
                 userId = "user_1",
                 amount = 525000.0,
                 type = TransactionType.EXPENSE,
+                categoryId = "c_food",
                 category = "Dining Out",
                 note = "Dinner with team",
                 date = System.currentTimeMillis(),

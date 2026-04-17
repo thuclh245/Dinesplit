@@ -31,7 +31,8 @@ import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.platform.LocalConfiguration
+import androidx.compose.ui.platform.LocalDensity
+import androidx.compose.ui.platform.LocalWindowInfo
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import com.example.dinesplit.core.ui.AppCard
@@ -67,13 +68,15 @@ data class CategoryEditorInput(
 @Composable
 fun CategoryManagementScreen(
     categories: List<ManagedCategory> = previewManagedCategories(),
-    usedCategoryNames: Set<String> = emptySet(),
+    usedCategoryIds: Set<String> = emptySet(),
     onAddCategory: (CategoryEditorInput) -> Unit = {},
     onUpdateCategory: (ManagedCategory, CategoryEditorInput) -> Unit = { _, _ -> },
     onDeleteCategory: (ManagedCategory) -> Unit = {},
     onBack: () -> Unit
 ) {
-    val isCompact = LocalConfiguration.current.screenWidthDp < 600
+    val isCompact = with(LocalDensity.current) {
+        LocalWindowInfo.current.containerSize.width < 600.dp.roundToPx()
+    }
     var selectedType by remember { mutableStateOf(CategoryTypeFilter.EXPENSE) }
     var creatingType by rememberSaveable { mutableStateOf(CategoryTypeFilter.EXPENSE.name) }
     var editingCategory by remember { mutableStateOf<ManagedCategory?>(null) }
@@ -219,7 +222,7 @@ fun CategoryManagementScreen(
                 confirmButton = {
                     TextButton(
                         onClick = {
-                            if (category.name in usedCategoryNames) {
+                            if (category.id in usedCategoryIds) {
                                 deletingCategory = null
                                 coroutineScope.launch {
                                     snackbarHostState.showSnackbar("Cannot delete category in use by transactions")

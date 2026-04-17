@@ -36,9 +36,11 @@ Các màn core của personal flow đã được dựng và wired điều hướ
 
 - Placeholder đã được nâng cấp dùng SQLite local để app chạy dữ liệu thật ngay:
   - schema `transactions`, `categories`
+  - link transaction-category theo `category_id`
   - seed dữ liệu mẫu
   - repository + viewmodel sync
   - add transaction ghi DB và phản ánh lại dashboard/history/category
+  - rename category cập nhật realtime ở chart/history/detail/category màn hình
 
 **Code tham chiếu:**
 - `app/src/main/java/com/example/dinesplit/data/local/PersonalDatabaseHelper.kt`
@@ -51,11 +53,14 @@ Các màn core của personal flow đã được dựng và wired điều hướ
 - Category Management đã có create/update/delete category.
 - Có guard: không cho xóa category đang được transaction sử dụng.
 - Có snackbar feedback cho create/update/delete.
+- Rename category không làm amount/progress về `0` do toàn bộ mapping dùng `categoryId`.
 
 **Code tham chiếu:**
 - `app/src/main/java/com/example/dinesplit/presentation/personal/CategoryManagementScreen.kt`
 - `app/src/main/java/com/example/dinesplit/presentation/personal/PersonalViewModel.kt`
 - `app/src/main/java/com/example/dinesplit/data/repository/PersonalRepository.kt`
+- `app/src/main/java/com/example/dinesplit/presentation/personal/PersonalRoute.kt`
+- `app/src/main/java/com/example/dinesplit/presentation/main/MainContainerScreen.kt`
 
 ## 5) UI style refresh (theo bộ style cuối)
 
@@ -72,3 +77,14 @@ Các màn core của personal flow đã được dựng và wired điều hướ
 - `app/src/main/java/com/example/dinesplit/core/ui/AppPlaceholderScreen.kt`
 - `app/src/main/java/com/example/dinesplit/presentation/feed/FeedScreen.kt`
 - `app/src/main/java/com/example/dinesplit/core/navigation/BottonTab.kt`
+
+## 6) Data persistence behavior
+
+- Dữ liệu SQLite local được giữ lại sau khi tắt/mở app.
+- Dữ liệu chỉ bị reset khi:
+  - gỡ app/xóa app data, hoặc
+  - tăng `DATABASE_VERSION` và `onUpgrade()` theo cơ chế drop/recreate.
+
+**Code tham chiếu:**
+- `app/src/main/java/com/example/dinesplit/data/local/PersonalDatabaseHelper.kt`
+

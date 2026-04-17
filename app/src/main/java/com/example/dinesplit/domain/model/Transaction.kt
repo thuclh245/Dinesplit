@@ -9,6 +9,7 @@ data class Transaction(
     val userId: String,
     val amount: Double,
     val type: TransactionType,
+    val categoryId: String,
     val category: String,
     val note: String?,
     val date: Long,

@@ -27,7 +27,7 @@ class PersonalRepository private constructor(
         val db = dbHelper.readableDatabase
         val cursor = db.query(
             "transactions",
-            arrayOf("id", "user_id", "amount", "type", "category", "note", "date_millis", "created_at"),
+            arrayOf("id", "user_id", "amount", "type", "category_id", "category", "note", "date_millis", "created_at"),
             null,
             null,
             null,
@@ -45,10 +45,11 @@ class PersonalRepository private constructor(
                     userId = it.getString(1),
                     amount = it.getDouble(2),
                     type = TransactionType.valueOf(it.getString(3)),
-                    category = it.getString(4),
-                    note = it.getString(5),
-                    date = it.getLong(6),
-                    createdAt = it.getLong(7)
+                    categoryId = it.getString(4),
+                    category = it.getString(5),
+                    note = it.getString(6),
+                    date = it.getLong(7),
+                    createdAt = it.getLong(8)
                 )
             } while (it.moveToNext())
 
@@ -107,6 +108,7 @@ class PersonalRepository private constructor(
             put("user_id", transaction.userId)
             put("amount", transaction.amount)
             put("type", transaction.type.name)
+            put("category_id", transaction.categoryId)
             put("category", transaction.category)
             put("note", transaction.note)
             put("date_millis", transaction.date)

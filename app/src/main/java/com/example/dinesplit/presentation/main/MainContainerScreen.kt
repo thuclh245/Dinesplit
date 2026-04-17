@@ -52,12 +52,13 @@ fun MainContainerScreen(
     val personalViewModel: PersonalViewModel = viewModel()
     val transactions by personalViewModel.transactions.collectAsState()
     val categories by personalViewModel.categories.collectAsState()
-    val categoryNamesByType by personalViewModel.categoryNamesByType.collectAsState()
-    val categoryAmountByName = transactions
-        .groupBy { it.category }
+    val categoriesById = categories.associateBy { it.id }
+    val categoriesByType = categories.groupBy { it.type }
+    val amountByCategoryId = transactions
+        .groupBy { it.categoryId }
         .mapValues { (_, items) -> items.sumOf { it.amount } }
     val totalAmountByType = transactions
-        .groupBy { it.type }
+        .groupBy { transaction -> categoriesById[transaction.categoryId]?.type ?: transaction.type }
         .mapValues { (_, items) -> items.sumOf { it.amount } }
     val navBackStackEntry by mainNavController.currentBackStackEntryAsState()
     val currentDestination = navBackStackEntry?.destination
@@ -156,7 +157,7 @@ fun MainContainerScreen(
                 AddTransactionScreen(
                     onBack = { mainNavController.navigateUp() },
                     initialType = initialType,
-                    availableCategoriesByType = categoryNamesByType,
+                    availableCategoriesByType = categoriesByType,
                     onSave = { transaction ->
                         personalViewModel.addTransaction(transaction)
                     }
@@ -166,7 +167,7 @@ fun MainContainerScreen(
             composable(AppRoute.TransactionHistory.route) {
                 HistoryScreen(
                     onBack = { mainNavController.navigateUp() },
-                    transactions = transactions.map { it.toHistoryUi() },
+                    transactions = transactions.map { it.toHistoryUi(categoriesById) },
                     onTransactionClick = { item ->
                         mainNavController.navigate(AppRoute.TransactionDetail.createRoute(item.id))
                     }
@@ -184,7 +185,7 @@ fun MainContainerScreen(
                 val transactionId = backStackEntry.arguments?.getString(AppRoute.TransactionDetail.ARG_ID).orEmpty()
                 TransactionDetailScreen(
                     transactionId = transactionId,
-                    transaction = transactions.firstOrNull { it.id == transactionId },
+                    transaction = transactions.firstOrNull { it.id == transactionId }?.resolveCategory(categoriesById),
                     onBack = { mainNavController.navigateUp() }
                 )
             }
@@ -193,11 +194,11 @@ fun MainContainerScreen(
                 CategoryManagementScreen(
                     categories = categories.map {
                         it.toManagedCategory(
-                            amount = categoryAmountByName[it.name] ?: 0.0,
+                            amount = amountByCategoryId[it.id] ?: 0.0,
                             totalForType = totalAmountByType[it.type] ?: 0.0
                         )
                     },
-                    usedCategoryNames = transactions.map { it.category }.toSet(),
+                    usedCategoryIds = transactions.map { it.categoryId }.toSet(),
                     onAddCategory = { input ->
                         personalViewModel.addCategory(
                             name = input.name,
@@ -232,17 +233,23 @@ fun MainContainerScreen(
     }
 }
 
-private fun Transaction.toHistoryUi(): HistoryTransactionItem {
+private fun Transaction.toHistoryUi(categoriesById: Map<String, StoredCategory>): HistoryTransactionItem {
+    val resolvedCategory = categoriesById[categoryId]
     return HistoryTransactionItem(
         id = id,
-        categoryIcon = category.take(2).uppercase(Locale.US),
-        category = category,
+        categoryIcon = resolvedCategory?.icon ?: category.take(2).uppercase(Locale.US),
+        category = resolvedCategory?.name ?: category,
         amount = formatSignedAmount(type = type, amount = amount),
         date = displayDate(date),
         month = SimpleDateFormat("MMM yyyy", Locale.getDefault()).format(Date(date)),
         type = type,
         note = note
     )
+}
+
+private fun Transaction.resolveCategory(categoriesById: Map<String, StoredCategory>): Transaction {
+    val resolvedCategory = categoriesById[categoryId] ?: return this
+    return copy(category = resolvedCategory.name)
 }
 
 private fun StoredCategory.toManagedCategory(

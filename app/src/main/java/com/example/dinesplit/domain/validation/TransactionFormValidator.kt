@@ -7,7 +7,8 @@ import com.example.dinesplit.domain.model.TransactionType
 data class TransactionFormInput(
     val amountText: String,
     val type: TransactionType?,
-    val category: String,
+    val categoryId: String,
+    val categoryName: String,
     val note: String?,
     val dateMillis: Long
 )
@@ -15,6 +16,7 @@ data class TransactionFormInput(
 data class ValidTransactionFormInput(
     val amount: Double,
     val type: TransactionType,
+    val categoryId: String,
     val category: String,
     val note: String?,
     val dateMillis: Long
@@ -33,7 +35,7 @@ data class TransactionFormValidationResult(
 object TransactionFormValidator {
     fun validate(
         input: TransactionFormInput,
-        availableCategories: List<String> = emptyList()
+        availableCategoryIds: List<String> = emptyList()
     ): TransactionFormValidationResult {
         val amountValue = input.amountText.toDoubleOrNull()
         val amountError = when {
@@ -49,10 +51,10 @@ object TransactionFormValidator {
             null
         }
 
-        val normalizedCategory = input.category.trim()
+        val normalizedCategoryId = input.categoryId.trim()
         val categoryError = when {
-            normalizedCategory.isBlank() -> "Category is required"
-            availableCategories.isNotEmpty() && normalizedCategory !in availableCategories -> {
+            normalizedCategoryId.isBlank() -> "Category is required"
+            availableCategoryIds.isNotEmpty() && normalizedCategoryId !in availableCategoryIds -> {
                 "Please choose a valid category"
             }
             else -> null
@@ -62,7 +64,8 @@ object TransactionFormValidator {
             ValidTransactionFormInput(
                 amount = amountValue!!,
                 type = input.type!!,
-                category = normalizedCategory,
+                categoryId = normalizedCategoryId,
+                category = input.categoryName.trim(),
                 note = input.note?.trim()?.takeIf { it.isNotBlank() },
                 dateMillis = input.dateMillis
             )
@@ -89,6 +92,7 @@ fun ValidTransactionFormInput.toTransaction(
         userId = userId,
         amount = amount,
         type = type,
+        categoryId = categoryId,
         category = category,
         note = note,
         date = dateMillis,

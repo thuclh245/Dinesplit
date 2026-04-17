@@ -5,7 +5,8 @@
 ## 1) Transaction model draft
 
 - Domain transaction model cho personal flow đã được định nghĩa.
-- Bao gồm các trường chính: `id`, `userId`, `amount`, `type`, `category`, `note`, `date`, `createdAt`.
+- Bao gồm các trường chính: `id`, `userId`, `amount`, `type`, `categoryId`, `category`, `note`, `date`, `createdAt`.
+- Thiết kế link category bằng `categoryId` để tránh sai lệch khi đổi tên category.
 
 **Code tham chiếu:**
 - `app/src/main/java/com/example/dinesplit/domain/model/Transaction.kt`

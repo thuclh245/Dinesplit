@@ -16,6 +16,7 @@ class PersonalDatabaseHelper private constructor(
                 user_id TEXT NOT NULL,
                 amount REAL NOT NULL,
                 type TEXT NOT NULL,
+                category_id TEXT NOT NULL,
                 category TEXT NOT NULL,
                 note TEXT,
                 date_millis INTEGER NOT NULL,
@@ -76,16 +77,16 @@ class PersonalDatabaseHelper private constructor(
     private fun seedTransactions(db: SQLiteDatabase) {
         val insertSql = """
             INSERT INTO transactions (
-                id, user_id, amount, type, category, note, date_millis, created_at
-            ) VALUES (?, ?, ?, ?, ?, ?, ?, ?)
+                id, user_id, amount, type, category_id, category, note, date_millis, created_at
+            ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)
         """.trimIndent()
 
         val transactions: List<Array<Any?>> = listOf(
-            arrayOf<Any?>("tx_1", "user_1", 525000.0, "EXPENSE", "Dining Out", "Dinner with team", epochMillis(2026, 4, 5), epochMillis(2026, 4, 5)),
-            arrayOf<Any?>("tx_2", "user_1", 187500.0, "EXPENSE", "Transit", null, epochMillis(2026, 4, 4), epochMillis(2026, 4, 4)),
-            arrayOf<Any?>("tx_3", "user_1", 3500000.0, "INCOME", "Salary", "Monthly salary", epochMillis(2026, 4, 1), epochMillis(2026, 4, 1)),
-            arrayOf<Any?>("tx_4", "user_1", 220000.0, "EXPENSE", "Groceries", null, epochMillis(2026, 3, 20), epochMillis(2026, 3, 20)),
-            arrayOf<Any?>("tx_5", "user_1", 750000.0, "INCOME", "Bonus", "Project reward", epochMillis(2026, 3, 15), epochMillis(2026, 3, 15))
+            arrayOf<Any?>("tx_1", "user_1", 525000.0, "EXPENSE", "c_food", "Dining Out", "Dinner with team", epochMillis(4, 5), epochMillis(4, 5)),
+            arrayOf<Any?>("tx_2", "user_1", 187500.0, "EXPENSE", "c_transit", "Transit", null, epochMillis(4, 4), epochMillis(4, 4)),
+            arrayOf<Any?>("tx_3", "user_1", 3500000.0, "INCOME", "c_salary", "Salary", "Monthly salary", epochMillis(4, 1), epochMillis(4, 1)),
+            arrayOf<Any?>("tx_4", "user_1", 220000.0, "EXPENSE", "c_grocery", "Groceries", null, epochMillis(3, 20), epochMillis(3, 20)),
+            arrayOf<Any?>("tx_5", "user_1", 750000.0, "INCOME", "c_bonus", "Bonus", "Project reward", epochMillis(3, 15), epochMillis(3, 15))
         )
 
         transactions.forEach { row ->
@@ -95,7 +96,7 @@ class PersonalDatabaseHelper private constructor(
 
     companion object {
         private const val DATABASE_NAME = "dinesplit_personal.db"
-        private const val DATABASE_VERSION = 1
+        private const val DATABASE_VERSION = 2
 
         @Volatile
         private var INSTANCE: PersonalDatabaseHelper? = null
@@ -106,9 +107,9 @@ class PersonalDatabaseHelper private constructor(
             }
         }
 
-        private fun epochMillis(year: Int, month: Int, day: Int): Long {
+        private fun epochMillis(month: Int, day: Int): Long {
             val calendar = java.util.Calendar.getInstance().apply {
-                set(java.util.Calendar.YEAR, year)
+                set(java.util.Calendar.YEAR, 2026)
                 set(java.util.Calendar.MONTH, month - 1)
                 set(java.util.Calendar.DAY_OF_MONTH, day)
                 set(java.util.Calendar.HOUR_OF_DAY, 12)
