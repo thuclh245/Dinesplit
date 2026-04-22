@@ -10,6 +10,24 @@ sealed class AppRoute(val route: String) {
     data object MainContainer : AppRoute("main")
 
     data object Feed : AppRoute("feed")
+    data object CreatePost : AppRoute("create_post")
+    data object Search : AppRoute("search")
+    data object PostDetail : AppRoute("post_detail") {
+        const val ARG_ID = "postId"
+        val routeWithArg = "$route/{$ARG_ID}"
+
+        fun createRoute(postId: String): String {
+            return "$route/$postId"
+        }
+    }
+    data object OtherUserProfile : AppRoute("other_user_profile") {
+        const val ARG_USER = "userName"
+        val routeWithArg = "$route/{$ARG_USER}"
+
+        fun createRoute(userName: String): String {
+            return "$route/$userName"
+        }
+    }
     data object Split : AppRoute("split")
     data object Personal : AppRoute("personal")
     data object AddTransaction : AppRoute("add_transaction") {

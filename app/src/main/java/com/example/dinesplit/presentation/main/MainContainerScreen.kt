@@ -25,7 +25,10 @@ import com.example.dinesplit.core.navigation.BottomTab
 import com.example.dinesplit.data.repository.StoredCategory
 import com.example.dinesplit.domain.model.Transaction
 import com.example.dinesplit.domain.model.TransactionType
+import com.example.dinesplit.presentation.feed.CreatePostScreen
 import com.example.dinesplit.presentation.feed.FeedScreen
+import com.example.dinesplit.presentation.feed.PostDetailScreen
+import com.example.dinesplit.presentation.feed.SearchScreen
 import com.example.dinesplit.presentation.personal.AddTransactionScreen
 import com.example.dinesplit.presentation.personal.CategoryManagementScreen
 import com.example.dinesplit.presentation.personal.CategoryTypeFilter
@@ -37,6 +40,7 @@ import com.example.dinesplit.presentation.personal.PersonalViewModel
 import com.example.dinesplit.presentation.personal.TransactionDetailScreen
 import com.example.dinesplit.presentation.personal.toRouteValue
 import com.example.dinesplit.presentation.personal.transactionTypeFromRoute
+import com.example.dinesplit.presentation.profile.OtherUserProfileScreen
 import com.example.dinesplit.presentation.profile.ProfileScreen
 import com.example.dinesplit.presentation.split.SplitScreen
 import java.text.SimpleDateFormat
@@ -111,7 +115,55 @@ fun MainContainerScreen(
             composable(AppRoute.Feed.route) {
                 FeedScreen(
                     onOpenNotifications = onOpenNotifications,
-                    onOpenAssistant = onOpenAssistant
+                    onOpenAssistant = onOpenAssistant,
+                    onCreatePost = {
+                        mainNavController.navigate(AppRoute.CreatePost.route)
+                    },
+                    onOpenPostDetail = { postId ->
+                        mainNavController.navigate(AppRoute.PostDetail.createRoute(postId))
+                    },
+                    onOpenSearch = {
+                        mainNavController.navigate(AppRoute.Search.route)
+                    },
+                    onOpenOtherUserProfile = { userName ->
+                        mainNavController.navigate(AppRoute.OtherUserProfile.createRoute(userName))
+                    }
+                )
+            }
+
+            composable(AppRoute.CreatePost.route) {
+                CreatePostScreen(onBack = { mainNavController.navigateUp() })
+            }
+
+            composable(AppRoute.Search.route) {
+                SearchScreen(onBack = { mainNavController.navigateUp() })
+            }
+
+            composable(
+                route = AppRoute.PostDetail.routeWithArg,
+                arguments = listOf(
+                    navArgument(AppRoute.PostDetail.ARG_ID) {
+                        type = NavType.StringType
+                    }
+                )
+            ) { backStackEntry ->
+                PostDetailScreen(
+                    postId = backStackEntry.arguments?.getString(AppRoute.PostDetail.ARG_ID).orEmpty(),
+                    onBack = { mainNavController.navigateUp() }
+                )
+            }
+
+            composable(
+                route = AppRoute.OtherUserProfile.routeWithArg,
+                arguments = listOf(
+                    navArgument(AppRoute.OtherUserProfile.ARG_USER) {
+                        type = NavType.StringType
+                    }
+                )
+            ) { backStackEntry ->
+                OtherUserProfileScreen(
+                    userName = backStackEntry.arguments?.getString(AppRoute.OtherUserProfile.ARG_USER).orEmpty(),
+                    onBack = { mainNavController.navigateUp() }
                 )
             }
 
