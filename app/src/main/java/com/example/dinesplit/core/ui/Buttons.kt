@@ -32,6 +32,21 @@ fun PrimaryButton(
 }
 
 @Composable
+fun AppButton(
+    text: String,
+    onClick: () -> Unit,
+    modifier: Modifier = Modifier,
+    enabled: Boolean = true
+) {
+    PrimaryButton(
+        text = text,
+        onClick = onClick,
+        modifier = modifier,
+        enabled = enabled
+    )
+}
+
+@Composable
 fun SecondaryButton(
     text: String,
     onClick: () -> Unit,
