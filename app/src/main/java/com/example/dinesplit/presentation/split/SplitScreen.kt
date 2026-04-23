@@ -1,13 +1,11 @@
 package com.example.dinesplit.presentation.split
 
-
-
 import androidx.compose.runtime.Composable
-import com.example.dinesplit.core.ui.AppPlaceholderScreen
 import androidx.navigation.compose.NavHost
 import androidx.navigation.compose.composable
 import androidx.navigation.compose.rememberNavController
 
+// Đã thêm AllGroups vào danh sách quản lý Route
 sealed class SplitRoutes(val route: String) {
     object GroupList : SplitRoutes("group_list")
     object CreateGroup : SplitRoutes("create_group")
@@ -15,6 +13,7 @@ sealed class SplitRoutes(val route: String) {
     object CreateBill : SplitRoutes("create_bill")
     object BillDetail : SplitRoutes("bill_detail")
     object SettleSummary : SplitRoutes("settle_summary")
+    object AllGroups : SplitRoutes("all_groups") // <-- Thêm mới ở đây
 }
 
 @Composable
@@ -27,7 +26,16 @@ fun SplitScreen() {
         composable(SplitRoutes.GroupList.route) {
             GroupListScreen(
                 onNavigateToGroupDetail = { navController.navigate(SplitRoutes.GroupDetail.route) },
-                onNavigateToCreateGroup = { navController.navigate(SplitRoutes.CreateGroup.route) }
+                onNavigateToCreateGroup = { navController.navigate(SplitRoutes.CreateGroup.route) },
+                // Dùng biến từ SplitRoutes thay vì gõ cứng string "all_groups"
+                onNavigateToAllGroups = { navController.navigate(SplitRoutes.AllGroups.route) }
+            )
+        }
+
+        // --- KHAI BÁO MÀN HÌNH ALL GROUPS VÀO HỆ THỐNG ---
+        composable(SplitRoutes.AllGroups.route) {
+            AllGroupsScreen(
+                onBack = { navController.popBackStack() } // Bấm mũi tên lùi lại
             )
         }
 
