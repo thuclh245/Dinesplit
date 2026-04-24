@@ -5,6 +5,7 @@ import androidx.navigation.NavHostController
 import androidx.navigation.compose.NavHost
 import androidx.navigation.compose.composable
 import androidx.navigation.compose.navigation
+import com.example.dinesplit.domain.model.AppStartDestination
 import com.example.dinesplit.presentation.assistant.AssistantScreen
 import com.example.dinesplit.presentation.auth.CompleteProfileScreen
 import com.example.dinesplit.presentation.auth.LoginScreen
@@ -23,9 +24,17 @@ fun AppNavHost(
     ) {
         composable(AppRoute.Splash.route) {
             SplashScreen(
-                onTimeout = {
-                    navController.navigate(NavGraph.AUTH) {
-                        popUpTo(AppRoute.Splash.route) { inclusive = true }
+                onDestinationResolved = { destination ->
+                    when (destination) {
+                        AppStartDestination.AUTH -> navController.navigate(NavGraph.AUTH) {
+                            popUpTo(AppRoute.Splash.route) { inclusive = true }
+                        }
+                        AppStartDestination.COMPLETE_PROFILE -> navController.navigate(AppRoute.CompleteProfile.route) {
+                            popUpTo(AppRoute.Splash.route) { inclusive = true }
+                        }
+                        AppStartDestination.MAIN -> navController.navigate(AppRoute.MainContainer.route) {
+                            popUpTo(AppRoute.Splash.route) { inclusive = true }
+                        }
                     }
                 }
             )
@@ -50,6 +59,9 @@ fun AppNavHost(
 
             composable(AppRoute.Register.route) {
                 RegisterScreen(
+                    onGoToLogin = {
+                        navController.navigateUp()
+                    },
                     onRegisterSuccess = {
                         navController.navigate(AppRoute.CompleteProfile.route)
                     }
@@ -74,6 +86,11 @@ fun AppNavHost(
                 },
                 onOpenAssistant = {
                     navController.navigate(AppRoute.Assistant.route)
+                },
+                onLogout = {
+                    navController.navigate(NavGraph.AUTH) {
+                        popUpTo(AppRoute.MainContainer.route) { inclusive = true }
+                    }
                 }
             )
         }

@@ -1,77 +1,85 @@
 package com.example.dinesplit.presentation.auth
 
-import androidx.compose.foundation.layout.*
-import androidx.compose.foundation.rememberScrollState
-import androidx.compose.foundation.verticalScroll
-import androidx.compose.material3.Text
-import androidx.compose.runtime.*
+import androidx.compose.foundation.layout.Arrangement
+import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.Spacer
+import androidx.compose.foundation.layout.fillMaxSize
+import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
+import androidx.compose.runtime.collectAsState
+import androidx.compose.runtime.getValue
 import androidx.compose.ui.Modifier
-import com.example.dinesplit.core.ui.AppCard
+import androidx.lifecycle.viewmodel.compose.viewModel
 import com.example.dinesplit.core.ui.AppDimens
 import com.example.dinesplit.core.ui.AppScaffold
 import com.example.dinesplit.core.ui.AppTextField
 import com.example.dinesplit.core.ui.PrimaryButton
+import com.example.dinesplit.core.ui.SecondaryButton
+import kotlinx.coroutines.flow.collectLatest
 
 @Composable
 fun RegisterScreen(
-    onRegisterSuccess: () -> Unit
+    onGoToLogin: () -> Unit,
+    onRegisterSuccess: () -> Unit,
+    viewModel: RegisterViewModel = viewModel()
 ) {
-    var email by remember { mutableStateOf("") }
-    var password by remember { mutableStateOf("") }
-    var confirmPassword by remember { mutableStateOf("") }
+    val uiState by viewModel.uiState.collectAsState()
 
-    AppScaffold(title = "DINESPLIT") {
+    LaunchedEffect(viewModel) {
+        viewModel.effect.collectLatest { effect ->
+            if (effect is RegisterUiEffect.NavigateToCompleteProfile) {
+                onRegisterSuccess()
+            }
+        }
+    }
+
+    AppScaffold(title = "Create Account") {
         Column(
-            modifier = Modifier
-                .fillMaxSize()
-                .verticalScroll(rememberScrollState()),
+            modifier = Modifier.fillMaxSize(),
             verticalArrangement = Arrangement.spacedBy(AppDimens.spaceLg)
         ) {
-            Spacer(modifier = Modifier.height(AppDimens.spaceLg))
+            Spacer(modifier = Modifier)
 
-            AppCard {
-                Column(verticalArrangement = Arrangement.spacedBy(AppDimens.spaceSm)) {
-                    Text(
-                        text = "Create account",
-                        style = androidx.compose.material3.MaterialTheme.typography.labelMedium,
-                        color = androidx.compose.material3.MaterialTheme.colorScheme.onSurfaceVariant
-                    )
-                    Text(
-                        text = "Join DineSplit.",
-                        style = androidx.compose.material3.MaterialTheme.typography.displayMedium
-                    )
-                }
-            }
+            AppTextField(
+                value = uiState.email,
+                onValueChange = viewModel::onEmailChange,
+                label = "Email",
+                placeholder = "example@email.com",
+                isError = uiState.emailError != null,
+                supportingText = uiState.emailError
+            )
 
-            AppCard {
-                Column(verticalArrangement = Arrangement.spacedBy(AppDimens.spaceMd)) {
-                    AppTextField(
-                        value = email,
-                        onValueChange = { email = it },
-                        label = "Email",
-                        placeholder = "example@email.com"
-                    )
+            AppTextField(
+                value = uiState.password,
+                onValueChange = viewModel::onPasswordChange,
+                label = "Password",
+                placeholder = "Create a password",
+                isError = uiState.passwordError != null,
+                supportingText = uiState.passwordError
+            )
 
-                    AppTextField(
-                        value = password,
-                        onValueChange = { password = it },
-                        label = "Password",
-                        placeholder = "Create a password"
-                    )
+            AppTextField(
+                value = uiState.confirmPassword,
+                onValueChange = viewModel::onConfirmPasswordChange,
+                label = "Confirm Password",
+                placeholder = "Repeat your password",
+                isError = uiState.confirmPasswordError != null,
+                supportingText = uiState.confirmPasswordError ?: uiState.submitError
+            )
 
-                    AppTextField(
-                        value = confirmPassword,
-                        onValueChange = { confirmPassword = it },
-                        label = "Confirm Password",
-                        placeholder = "Repeat your password"
-                    )
+            Spacer(modifier = Modifier)
 
-                    PrimaryButton(
-                        text = "Register",
-                        onClick = onRegisterSuccess
-                    )
-                }
-            }
+            PrimaryButton(
+                text = if (uiState.isSubmitting) "Creating account..." else "Register",
+                enabled = !uiState.isSubmitting,
+                onClick = viewModel::submit
+            )
+
+            SecondaryButton(
+                text = "Already have an account? Login",
+                enabled = !uiState.isSubmitting,
+                onClick = onGoToLogin
+            )
         }
     }
 }
