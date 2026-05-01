@@ -90,6 +90,7 @@ fun AppNavHost(
                 onLogout = {
                     navController.navigate(NavGraph.AUTH) {
                         popUpTo(AppRoute.MainContainer.route) { inclusive = true }
+                        launchSingleTop = true
                     }
                 }
             )
