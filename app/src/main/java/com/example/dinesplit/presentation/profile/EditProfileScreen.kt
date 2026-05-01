@@ -1,44 +1,34 @@
-package com.example.dinesplit.presentation.auth
+package com.example.dinesplit.presentation.profile
 
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.runtime.Composable
-import androidx.compose.runtime.LaunchedEffect
-import androidx.compose.runtime.collectAsState
-import androidx.compose.runtime.getValue
 import androidx.compose.ui.Modifier
-import androidx.lifecycle.viewmodel.compose.viewModel
 import com.example.dinesplit.core.ui.AppDimens
 import com.example.dinesplit.core.ui.AppScaffold
 import com.example.dinesplit.core.ui.AppTextField
 import com.example.dinesplit.core.ui.PrimaryButton
-import kotlinx.coroutines.flow.collectLatest
+import com.example.dinesplit.core.ui.SecondaryButton
 
 @Composable
-fun CompleteProfileScreen(
-    onCompleteProfileSuccess: () -> Unit,
-    viewModel: CompleteProfileViewModel = viewModel()
+fun EditProfileScreen(
+    uiState: EditProfileUiState,
+    onDisplayNameChange: (String) -> Unit,
+    onUsernameChange: (String) -> Unit,
+    onBioChange: (String) -> Unit,
+    onSave: () -> Unit,
+    onBack: () -> Unit
 ) {
-    val uiState by viewModel.uiState.collectAsState()
-
-    LaunchedEffect(viewModel) {
-        viewModel.effect.collectLatest { effect ->
-            if (effect is CompleteProfileUiEffect.NavigateToMain) {
-                onCompleteProfileSuccess()
-            }
-        }
-    }
-
-    AppScaffold(title = "Complete Profile") {
+    AppScaffold(title = "Edit Profile") {
         Column(
             modifier = Modifier.fillMaxSize(),
             verticalArrangement = Arrangement.spacedBy(AppDimens.spaceLg)
         ) {
             AppTextField(
                 value = uiState.displayName,
-                onValueChange = viewModel::onDisplayNameChange,
+                onValueChange = onDisplayNameChange,
                 label = "Display name",
                 isError = uiState.displayNameError != null,
                 supportingText = uiState.displayNameError
@@ -46,7 +36,7 @@ fun CompleteProfileScreen(
 
             AppTextField(
                 value = uiState.username,
-                onValueChange = viewModel::onUsernameChange,
+                onValueChange = onUsernameChange,
                 label = "Username",
                 placeholder = "your_handle",
                 isError = uiState.usernameError != null,
@@ -55,20 +45,30 @@ fun CompleteProfileScreen(
 
             AppTextField(
                 value = uiState.bio,
-                onValueChange = viewModel::onBioChange,
+                onValueChange = onBioChange,
                 label = "Bio (optional)",
                 placeholder = "A short bio",
                 singleLine = false,
                 supportingText = uiState.submitError
             )
 
+
+
             Spacer(modifier = Modifier)
 
             PrimaryButton(
-                text = if (uiState.isSubmitting) "Saving..." else "Continue",
+                text = if (uiState.isSubmitting) "Saving..." else "Save",
                 enabled = !uiState.isSubmitting,
-                onClick = viewModel::submit
+                onClick = onSave
+            )
+
+            SecondaryButton(
+                text = "Back",
+                enabled = !uiState.isSubmitting,
+                onClick = onBack
             )
         }
     }
 }
+
+

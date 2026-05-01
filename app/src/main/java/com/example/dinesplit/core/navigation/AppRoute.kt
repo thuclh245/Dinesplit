@@ -50,6 +50,7 @@ sealed class AppRoute(val route: String) {
     }
     data object CategoryManagement : AppRoute("category_management")
     data object Profile : AppRoute("profile")
+    data object EditProfile : AppRoute("edit_profile")
 
     data object Notifications : AppRoute("notifications")
     data object Assistant : AppRoute("assistant")

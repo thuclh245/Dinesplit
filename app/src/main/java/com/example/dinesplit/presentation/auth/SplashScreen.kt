@@ -1,17 +1,22 @@
 package com.example.dinesplit.presentation.auth
 
-import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
+import androidx.compose.runtime.getValue
+import androidx.lifecycle.viewmodel.compose.viewModel
+import androidx.compose.runtime.collectAsState
+import com.example.dinesplit.domain.model.AppStartDestination
+import androidx.compose.runtime.Composable
 import com.example.dinesplit.core.ui.AppPlaceholderScreen
-import kotlinx.coroutines.delay
 
 @Composable
 fun SplashScreen(
-    onTimeout: () -> Unit
+    onDestinationResolved: (AppStartDestination) -> Unit,
+    viewModel: SplashViewModel = viewModel()
 ) {
-    LaunchedEffect(Unit) {
-        delay(2000)
-        onTimeout()
+    val uiState by viewModel.uiState.collectAsState()
+
+    LaunchedEffect(uiState.destination) {
+        uiState.destination?.let(onDestinationResolved)
     }
 
     AppPlaceholderScreen(title = "DineSplit Loading...")
