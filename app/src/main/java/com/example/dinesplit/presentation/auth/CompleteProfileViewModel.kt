@@ -94,4 +94,3 @@ class CompleteProfileViewModel(application: Application) : AndroidViewModel(appl
         }
     }
 }
-

@@ -24,10 +24,12 @@ import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
+import androidx.compose.ui.tooling.preview.Preview
 import com.example.dinesplit.core.ui.AppCard
 import com.example.dinesplit.core.ui.AppDimens
 import com.example.dinesplit.core.ui.AppScaffold
 import com.example.dinesplit.core.ui.AppButton
+import com.example.dinesplit.ui.theme.DineSplitTheme
 
 private data class FeedPost(
     val id: String,
@@ -144,5 +146,20 @@ fun FeedScreen(
                 }
             }
         }
+    }
+}
+
+@Preview(showBackground = true)
+@Composable
+fun FeedScreenPreview() {
+    DineSplitTheme {
+        FeedScreen(
+            onOpenNotifications = {},
+            onOpenAssistant = {},
+            onCreatePost = {},
+            onOpenPostDetail = {},
+            onOpenSearch = {},
+            onOpenOtherUserProfile = {}
+        )
     }
 }
