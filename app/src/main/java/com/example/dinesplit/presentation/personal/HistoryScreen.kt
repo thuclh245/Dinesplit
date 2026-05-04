@@ -11,7 +11,6 @@ import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.lazy.LazyColumn
-import androidx.compose.foundation.lazy.items
 import androidx.compose.material3.HorizontalDivider
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.OutlinedTextField
@@ -215,7 +214,7 @@ private fun HistoryTransactionRow(
                 }
             )
             Text(
-                text = if (item.type == TransactionType.INCOME) "RECEIVED" else "PERSONAL",
+                text = if (item.type == TransactionType.INCOME) "INCOME" else "EXPENSE",
                 style = MaterialTheme.typography.labelSmall,
                 color = if (item.type == TransactionType.INCOME) {
                     MaterialTheme.colorScheme.secondary

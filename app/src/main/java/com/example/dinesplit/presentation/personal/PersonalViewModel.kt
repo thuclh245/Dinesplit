@@ -19,6 +19,10 @@ class PersonalViewModel(application: Application) : AndroidViewModel(application
     private val repository = PersonalRepository.getInstance(application.applicationContext)
     private val currentMonthFilter = MutableStateFlow<MonthYearFilter?>(null)
 
+    // ✅ Current user context
+    private val _currentUserId = MutableStateFlow<String?>(null)
+    val currentUserId: StateFlow<String?> = _currentUserId.asStateFlow()
+
     private val _transactions = MutableStateFlow<List<Transaction>>(emptyList())
     val transactions: StateFlow<List<Transaction>> = _transactions.asStateFlow()
 
@@ -35,9 +39,31 @@ class PersonalViewModel(application: Application) : AndroidViewModel(application
         refreshState()
     }
 
+    // ✅ Set current user ID
+    fun setCurrentUserId(userId: String) {
+        if (_currentUserId.value == userId) return
+        _currentUserId.value = userId
+        refreshState()  // Refresh when user changes
+    }
+
+    fun clearCurrentUserId() {
+        if (_currentUserId.value == null) return
+        _currentUserId.value = null
+        _transactions.value = emptyList()
+        _categories.value = emptyList()
+        _categoryNamesByType.value = emptyMap()
+        _uiState.value = PersonalUiState(isLoading = false)
+    }
+
     fun addTransaction(transaction: Transaction) {
         viewModelScope.launch(Dispatchers.IO) {
-            repository.insertTransaction(transaction)
+            val effectiveUserId = _currentUserId.value?.takeIf { it.isNotBlank() }
+                ?: transaction.userId.takeIf { it.isNotBlank() }
+                ?: return@launch
+
+            repository.insertTransaction(
+                if (transaction.userId == effectiveUserId) transaction else transaction.copy(userId = effectiveUserId)
+            )
             refreshStateInternal()
         }
     }
@@ -48,16 +74,18 @@ class PersonalViewModel(application: Application) : AndroidViewModel(application
         type: TransactionType,
         isCustom: Boolean
     ) {
+        val userId = _currentUserId.value ?: return // Cannot add without user context
         viewModelScope.launch(Dispatchers.IO) {
             repository.insertCategory(
                 StoredCategory(
                     id = UUID.randomUUID().toString(),
+                    userId = userId, // ✅ Associate with current user
                     name = name.trim(),
                     icon = iconCodeForName(name),
                     type = type,
                     isCustom = isCustom,
                     description = description.trim(),
-                    amountLabel = "$0.00",
+                    amountLabel = "0đ", // ✅ This is computed in CategoryManagementRoute
                     progress = 0f,
                     isActive = false
                 )
@@ -70,18 +98,15 @@ class PersonalViewModel(application: Application) : AndroidViewModel(application
         categoryId: String,
         name: String,
         description: String,
-        type: TransactionType,
-        isCustom: Boolean,
         isActive: Boolean
     ) {
         viewModelScope.launch(Dispatchers.IO) {
             val existing = _categories.value.firstOrNull { it.id == categoryId } ?: return@launch
+            // ✅ Do NOT change type to prevent transaction type mismatch
             repository.updateCategory(
                 existing.copy(
                     name = name.trim(),
                     icon = iconCodeForName(name),
-                    type = type,
-                    isCustom = isCustom,
                     description = description.trim(),
                     isActive = isActive
                 )
@@ -91,8 +116,9 @@ class PersonalViewModel(application: Application) : AndroidViewModel(application
     }
 
     fun deleteCategory(categoryId: String) {
+        val userId = _currentUserId.value ?: return // Cannot delete without user context
         viewModelScope.launch(Dispatchers.IO) {
-            repository.deleteCategory(categoryId)
+            repository.deleteCategory(categoryId, userId)
             refreshStateInternal()
         }
     }
@@ -114,24 +140,38 @@ class PersonalViewModel(application: Application) : AndroidViewModel(application
     }
 
     private fun refreshStateInternal() {
+        val currentUid = _currentUserId.value
+        
+        // ✅ CRITICAL FIX: If no user is set, clear everything and return
+        if (currentUid == null) {
+            _transactions.value = emptyList()
+            _categories.value = emptyList()
+            _uiState.value = PersonalUiState(isLoading = false)
+            return
+        }
+
         _uiState.value = _uiState.value.copy(isLoading = true)
 
-        val allTransactions = repository.getAllTransactions()
+        // ✅ Use user-scoped repository methods
+        val userTransactions = repository.getTransactions(currentUid)
+
         val filteredTransactions = filterTransactions(
-            transactions = allTransactions,
+            transactions = userTransactions,
             monthFilter = currentMonthFilter.value
         )
-        val categories = repository.getCategories()
+        
+        // ✅ Get user-specific categories (automatically includes global + user custom)
+        val userCategories = repository.getCategories(currentUid)
 
         _transactions.value = filteredTransactions
-        _categories.value = categories
-        _categoryNamesByType.value = categories
+        _categories.value = userCategories
+        _categoryNamesByType.value = userCategories
             .groupBy { it.type }
             .mapValues { (_, items) -> items.map { it.name }.sorted() }
 
         _uiState.value = buildUiState(
             transactions = filteredTransactions,
-            categories = categories
+            categories = userCategories
         )
     }
 

@@ -3,7 +3,10 @@ package com.example.dinesplit.presentation.personal
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.LaunchedEffect
+import androidx.compose.ui.platform.LocalContext
 import androidx.lifecycle.viewmodel.compose.viewModel
+import com.example.dinesplit.data.repository.LocalAuthRepository
 import com.example.dinesplit.domain.model.TransactionType
 import java.util.Calendar
 import java.text.SimpleDateFormat
@@ -19,6 +22,19 @@ fun PersonalRoute(
     viewModel: PersonalViewModel = viewModel()
 ) {
     val uiState by viewModel.uiState.collectAsState()
+
+    val context = LocalContext.current
+    val authRepo = LocalAuthRepository.getInstance(context)
+    val currentSession by authRepo.sessionFlow.collectAsState()
+
+    LaunchedEffect(currentSession) {
+        val session = currentSession
+        if (session == null) {
+            viewModel.clearCurrentUserId()
+        } else {
+            viewModel.setCurrentUserId(session.uid)
+        }
+    }
 
     PersonalScreen(
         onOpenAssistant = onOpenAssistant,
@@ -60,7 +76,7 @@ private fun PersonalUiState.toDashboardUiState(): PersonalDashboardUiState {
             RecentActivityUi(
                 icon = resolvedCategory?.icon ?: categoryName.take(2).uppercase(Locale.US),
                 title = categoryName,
-                subtitle = "${activityLabel(categoryName, transaction.type)} • ${relativeDateTimeLabel(transaction.date)}",
+                subtitle = "${transaction.type.displayLabel()} • ${relativeDateTimeLabel(transaction.date)}",
                 amount = formatSignedCurrencyVnd(transaction.type, transaction.amount),
                 isIncome = transaction.type == TransactionType.INCOME
             )
@@ -123,31 +139,6 @@ private fun formatSignedCurrencyVnd(type: TransactionType, amount: Double): Stri
 }
 
 
-private fun relativeDateLabel(epochMillis: Long): String {
-    val now = Calendar.getInstance()
-    val target = Calendar.getInstance().apply { timeInMillis = epochMillis }
-    val sameYear = now.get(Calendar.YEAR) == target.get(Calendar.YEAR)
-    val dayDiff = dayOfYear(now) - dayOfYear(target)
-
-    return when {
-        sameYear && dayDiff == 0 -> "Today"
-        sameYear && dayDiff == 1 -> "Yesterday"
-        else -> String.format(Locale.getDefault(), "%02d/%02d", target.get(Calendar.DAY_OF_MONTH), target.get(Calendar.MONTH) + 1)
-    }
-}
-
-private fun activityLabel(categoryName: String, type: TransactionType): String {
-    if (type == TransactionType.INCOME) return "Income"
-
-    val lowered = categoryName.lowercase(Locale.getDefault())
-    return when {
-        "dining" in lowered || "food" in lowered -> "Dining"
-        "transit" in lowered || "travel" in lowered || "taxi" in lowered || "uber" in lowered -> "Transport"
-        "grocery" in lowered || "shop" in lowered -> "Shopping"
-        else -> "Personal"
-    }
-}
-
 private fun relativeDateTimeLabel(epochMillis: Long): String {
     val now = Calendar.getInstance()
     val target = Calendar.getInstance().apply { timeInMillis = epochMillis }
@@ -179,4 +170,3 @@ private fun dayOfMonth(epochMillis: Long): Int {
         timeInMillis = epochMillis
     }.get(Calendar.DAY_OF_MONTH)
 }
-

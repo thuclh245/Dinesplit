@@ -5,9 +5,11 @@ import android.content.Context
 import com.example.dinesplit.data.local.PersonalDatabaseHelper
 import com.example.dinesplit.domain.model.Transaction
 import com.example.dinesplit.domain.model.TransactionType
+import com.example.dinesplit.domain.model.transactionTypeFromString
 
 data class StoredCategory(
     val id: String,
+    val userId: String,
     val name: String,
     val icon: String,
     val type: TransactionType,
@@ -23,13 +25,13 @@ class PersonalRepository private constructor(
 ) {
     private val dbHelper = PersonalDatabaseHelper.getInstance(context)
 
-    fun getAllTransactions(): List<Transaction> {
+    fun getTransactions(userId: String): List<Transaction> {
         val db = dbHelper.readableDatabase
         val cursor = db.query(
             "transactions",
             arrayOf("id", "user_id", "amount", "type", "category_id", "category", "note", "date_millis", "created_at"),
-            null,
-            null,
+            "user_id = ?",
+            arrayOf(userId),
             null,
             null,
             "date_millis DESC"
@@ -37,14 +39,13 @@ class PersonalRepository private constructor(
 
         cursor.use {
             if (!it.moveToFirst()) return emptyList()
-
             val result = mutableListOf<Transaction>()
             do {
                 result += Transaction(
                     id = it.getString(0),
                     userId = it.getString(1),
                     amount = it.getDouble(2),
-                    type = TransactionType.valueOf(it.getString(3)),
+                    type = transactionTypeFromString(it.getString(3)),
                     categoryId = it.getString(4),
                     category = it.getString(5),
                     note = it.getString(6),
@@ -52,28 +53,18 @@ class PersonalRepository private constructor(
                     createdAt = it.getLong(8)
                 )
             } while (it.moveToNext())
-
             return result
         }
     }
 
-    fun getCategories(): List<StoredCategory> {
+    fun getCategories(userId: String): List<StoredCategory> {
         val db = dbHelper.readableDatabase
+        // ✅ Get both global categories and user-specific ones
         val cursor = db.query(
             "categories",
-            arrayOf(
-                "id",
-                "name",
-                "icon",
-                "type",
-                "is_custom",
-                "description",
-                "amount_label",
-                "progress",
-                "is_active"
-            ),
-            null,
-            null,
+            arrayOf("id", "user_id", "name", "icon", "type", "is_custom", "description", "amount_label", "progress", "is_active"),
+            "user_id = ? OR user_id = ?",
+            arrayOf("global", userId),
             null,
             null,
             "name ASC"
@@ -81,22 +72,21 @@ class PersonalRepository private constructor(
 
         cursor.use {
             if (!it.moveToFirst()) return emptyList()
-
             val result = mutableListOf<StoredCategory>()
             do {
                 result += StoredCategory(
                     id = it.getString(0),
-                    name = it.getString(1),
-                    icon = it.getString(2),
-                    type = TransactionType.valueOf(it.getString(3)),
-                    isCustom = it.getInt(4) == 1,
-                    description = it.getString(5),
-                    amountLabel = it.getString(6),
-                    progress = it.getFloat(7),
-                    isActive = it.getInt(8) == 1
+                    userId = it.getString(1),
+                    name = it.getString(2),
+                    icon = it.getString(3),
+                    type = transactionTypeFromString(it.getString(4)),
+                    isCustom = it.getInt(5) == 1,
+                    description = it.getString(6),
+                    amountLabel = it.getString(7),
+                    progress = it.getFloat(8),
+                    isActive = it.getInt(9) == 1
                 )
             } while (it.moveToNext())
-
             return result
         }
     }
@@ -127,23 +117,25 @@ class PersonalRepository private constructor(
         db.update(
             "categories",
             category.toContentValues(),
-            "id = ?",
+            "id = ? AND user_id != 'global'", // ✅ Protect global categories
             arrayOf(category.id)
         )
     }
 
-    fun deleteCategory(categoryId: String) {
+    fun deleteCategory(categoryId: String, userId: String) {
         val db = dbHelper.writableDatabase
         db.delete(
             "categories",
-            "id = ?",
-            arrayOf(categoryId)
+            "id = ? AND user_id = ?", // ✅ Only allow deleting own categories
+            arrayOf(categoryId, userId)
         )
     }
+
 
     private fun StoredCategory.toContentValues(): ContentValues {
         return ContentValues().apply {
             put("id", id)
+            put("user_id", userId)
             put("name", name)
             put("icon", icon)
             put("type", type.name)
@@ -158,7 +150,6 @@ class PersonalRepository private constructor(
     companion object {
         @Volatile
         private var INSTANCE: PersonalRepository? = null
-
         fun getInstance(context: Context): PersonalRepository {
             return INSTANCE ?: synchronized(this) {
                 INSTANCE ?: PersonalRepository(context.applicationContext).also { INSTANCE = it }
@@ -166,4 +157,3 @@ class PersonalRepository private constructor(
         }
     }
 }
-

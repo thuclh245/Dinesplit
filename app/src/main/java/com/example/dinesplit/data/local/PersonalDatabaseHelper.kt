@@ -29,6 +29,7 @@ class PersonalDatabaseHelper private constructor(
             """
             CREATE TABLE categories (
                 id TEXT PRIMARY KEY,
+                user_id TEXT NOT NULL,
                 name TEXT NOT NULL,
                 icon TEXT NOT NULL,
                 type TEXT NOT NULL,
@@ -41,32 +42,63 @@ class PersonalDatabaseHelper private constructor(
             """.trimIndent()
         )
 
+        db.execSQL(
+            """
+            CREATE TABLE accounts (
+                uid TEXT PRIMARY KEY,
+                email TEXT NOT NULL UNIQUE,
+                password_hash TEXT NOT NULL
+            )
+            """.trimIndent()
+        )
+
+        db.execSQL(
+            """
+            CREATE TABLE users (
+                uid TEXT PRIMARY KEY,
+                email TEXT NOT NULL UNIQUE,
+                display_name TEXT NOT NULL,
+                username TEXT NOT NULL,
+                avatar_url TEXT,
+                bio TEXT,
+                created_at INTEGER NOT NULL,
+                updated_at INTEGER NOT NULL,
+                FOREIGN KEY(uid) REFERENCES accounts(uid)
+            )
+            """.trimIndent()
+        )
+
         seedCategories(db)
-        seedTransactions(db)
+        // ✅ seedTransactions(db) has been removed to ensure a clean start for new users
     }
 
     override fun onUpgrade(db: SQLiteDatabase, oldVersion: Int, newVersion: Int) {
-        db.execSQL("DROP TABLE IF EXISTS transactions")
-        db.execSQL("DROP TABLE IF EXISTS categories")
-        onCreate(db)
+        // ✅ If version is increased to 5, drop everything for a fresh start
+        if (oldVersion < 5) {
+            db.execSQL("DROP TABLE IF EXISTS transactions")
+            db.execSQL("DROP TABLE IF EXISTS categories")
+            db.execSQL("DROP TABLE IF EXISTS accounts")
+            db.execSQL("DROP TABLE IF EXISTS users")
+            onCreate(db)
+        }
     }
 
     private fun seedCategories(db: SQLiteDatabase) {
         val insertSql = """
             INSERT INTO categories (
-                id, name, icon, type, is_custom, description, amount_label, progress, is_active
-            ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)
+                id, user_id, name, icon, type, is_custom, description, amount_label, progress, is_active
+            ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
         """.trimIndent()
 
         val categories: List<Array<Any?>> = listOf(
-            arrayOf<Any?>("c_food", "Dining Out", "FD", "EXPENSE", 0, "Restaurants, cafes, and delivery.", "$1,450.00", 0.65f, 1),
-            arrayOf<Any?>("c_grocery", "Groceries", "GR", "EXPENSE", 0, "Supermarkets and local markets.", "$820.45", 0.40f, 0),
-            arrayOf<Any?>("c_transit", "Transit", "TR", "EXPENSE", 0, "Rideshares and public transport.", "$340.00", 0f, 0),
-            arrayOf<Any?>("c_fun", "Entertainment", "EN", "EXPENSE", 1, "Movies, events, and subscriptions.", "$210.50", 0f, 0),
-            arrayOf<Any?>("c_salary", "Salary", "SL", "INCOME", 0, "Monthly fixed salary income.", "$3,500.00", 0.72f, 1),
-            arrayOf<Any?>("c_bonus", "Bonus", "BN", "INCOME", 0, "Project and performance rewards.", "$750.00", 0.33f, 0),
-            arrayOf<Any?>("c_gift", "Gift", "GF", "INCOME", 1, "Personal gifts and contributions.", "$220.00", 0f, 0),
-            arrayOf<Any?>("c_other_income", "Other", "OT", "INCOME", 1, "Other incoming cash flows.", "$100.00", 0f, 0)
+            arrayOf<Any?>("c_food", "global", "Dining Out", "FD", "EXPENSE", 0, "Restaurants, cafes, and delivery.", "$0.00", 0f, 1),
+            arrayOf<Any?>("c_grocery", "global", "Groceries", "GR", "EXPENSE", 0, "Supermarkets and local markets.", "$0.00", 0f, 0),
+            arrayOf<Any?>("c_transit", "global", "Transit", "TR", "EXPENSE", 0, "Rideshares and public transport.", "$0.00", 0f, 0),
+            arrayOf<Any?>("c_fun", "global", "Entertainment", "EN", "EXPENSE", 1, "Movies, events, and subscriptions.", "$0.00", 0f, 0),
+            arrayOf<Any?>("c_salary", "global", "Salary", "SL", "INCOME", 0, "Monthly fixed salary income.", "$0.00", 0f, 1),
+            arrayOf<Any?>("c_bonus", "global", "Bonus", "BN", "INCOME", 0, "Project and performance rewards.", "$0.00", 0f, 0),
+            arrayOf<Any?>("c_gift", "global", "Gift", "GF", "INCOME", 1, "Personal gifts and contributions.", "$0.00", 0f, 0),
+            arrayOf<Any?>("c_other_income", "global", "Other", "OT", "INCOME", 1, "Other incoming cash flows.", "$0.00", 0f, 0)
         )
 
         categories.forEach { row ->
@@ -74,29 +106,9 @@ class PersonalDatabaseHelper private constructor(
         }
     }
 
-    private fun seedTransactions(db: SQLiteDatabase) {
-        val insertSql = """
-            INSERT INTO transactions (
-                id, user_id, amount, type, category_id, category, note, date_millis, created_at
-            ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)
-        """.trimIndent()
-
-        val transactions: List<Array<Any?>> = listOf(
-            arrayOf<Any?>("tx_1", "user_1", 525000.0, "EXPENSE", "c_food", "Dining Out", "Dinner with team", epochMillis(4, 5), epochMillis(4, 5)),
-            arrayOf<Any?>("tx_2", "user_1", 187500.0, "EXPENSE", "c_transit", "Transit", null, epochMillis(4, 4), epochMillis(4, 4)),
-            arrayOf<Any?>("tx_3", "user_1", 3500000.0, "INCOME", "c_salary", "Salary", "Monthly salary", epochMillis(4, 1), epochMillis(4, 1)),
-            arrayOf<Any?>("tx_4", "user_1", 220000.0, "EXPENSE", "c_grocery", "Groceries", null, epochMillis(3, 20), epochMillis(3, 20)),
-            arrayOf<Any?>("tx_5", "user_1", 750000.0, "INCOME", "c_bonus", "Bonus", "Project reward", epochMillis(3, 15), epochMillis(3, 15))
-        )
-
-        transactions.forEach { row ->
-            db.execSQL(insertSql, row)
-        }
-    }
-
     companion object {
         private const val DATABASE_NAME = "dinesplit_personal.db"
-        private const val DATABASE_VERSION = 2
+        private const val DATABASE_VERSION = 5 // ✅ Increased to force clean up
 
         @Volatile
         private var INSTANCE: PersonalDatabaseHelper? = null
@@ -106,19 +118,5 @@ class PersonalDatabaseHelper private constructor(
                 INSTANCE ?: PersonalDatabaseHelper(context.applicationContext).also { INSTANCE = it }
             }
         }
-
-        private fun epochMillis(month: Int, day: Int): Long {
-            val calendar = java.util.Calendar.getInstance().apply {
-                set(java.util.Calendar.YEAR, 2026)
-                set(java.util.Calendar.MONTH, month - 1)
-                set(java.util.Calendar.DAY_OF_MONTH, day)
-                set(java.util.Calendar.HOUR_OF_DAY, 12)
-                set(java.util.Calendar.MINUTE, 0)
-                set(java.util.Calendar.SECOND, 0)
-                set(java.util.Calendar.MILLISECOND, 0)
-            }
-            return calendar.timeInMillis
-        }
     }
 }
-

@@ -1,6 +1,7 @@
 package com.example.dinesplit.presentation.personal
 
 import com.example.dinesplit.domain.model.TransactionType
+import com.example.dinesplit.domain.model.transactionTypeFromStringOrNull
 
 fun TransactionType.displayLabel(): String {
     return when (this) {
@@ -17,11 +18,6 @@ fun TransactionType.toRouteValue(): String {
 }
 
 fun transactionTypeFromRoute(value: String?): TransactionType? {
-    if (value.isNullOrBlank()) return null
-    return when (value.trim().lowercase()) {
-        "income" -> TransactionType.INCOME
-        "expense" -> TransactionType.EXPENSE
-        else -> TransactionType.entries.firstOrNull { it.name.equals(value, ignoreCase = true) }
-    }
+    return transactionTypeFromStringOrNull(value)
 }
 

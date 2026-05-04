@@ -35,6 +35,7 @@ import androidx.compose.ui.graphics.SolidColor
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.input.KeyboardCapitalization
 import androidx.compose.ui.text.input.KeyboardType
+import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
@@ -60,7 +61,8 @@ fun AddTransactionScreen(
     onBack: () -> Unit,
     initialType: TransactionType? = null,
     availableCategoriesByType: Map<TransactionType, List<StoredCategory>> = emptyMap(),
-    onSave: (Transaction) -> Unit = {}
+    onSave: (Transaction) -> Unit = {},
+    currentUserId: String = ""
 ) {
     var amountText by rememberSaveable { mutableStateOf("") }
     var selectedType by rememberSaveable { mutableStateOf(initialType ?: TransactionType.EXPENSE) }
@@ -69,15 +71,15 @@ fun AddTransactionScreen(
     var isSubmitAttempted by rememberSaveable { mutableStateOf(false) }
 
     val currentDateMillis = remember { System.currentTimeMillis() }
-    val currentDate = remember(currentDateMillis) { currentDateLabel(currentDateMillis) }
+    val currentDate = currentDateLabel(currentDateMillis)
+
     val categoryOptions = remember(selectedType, availableCategoriesByType) {
-        categoryTilesForType(
-            type = selectedType,
-            availableCategories = availableCategoriesByType[selectedType].orEmpty()
-        )
+        availableCategoriesByType[selectedType].orEmpty().map { category ->
+            CategoryTile(id = category.id, name = category.name, iconCode = category.icon)
+        }
     }
 
-    LaunchedEffect(selectedType) {
+    LaunchedEffect(selectedType, categoryOptions) {
         if (selectedCategoryId.isNotBlank() && categoryOptions.none { it.id == selectedCategoryId }) {
             selectedCategoryId = ""
         }
@@ -97,10 +99,8 @@ fun AddTransactionScreen(
         availableCategoryIds = categoryOptions.map { it.id }
     )
 
-    val isAmountValid = validation.amountError == null
-    val isTypeValid = validation.typeError == null
-    val isCategoryValid = validation.categoryError == null
     val isFormValid = validation.isValid
+    val canSubmit = isFormValid && currentUserId.isNotBlank()
 
     AppScaffold(
         title = "New Entry",
@@ -113,7 +113,8 @@ fun AddTransactionScreen(
         Column(
             modifier = Modifier
                 .fillMaxSize()
-                .verticalScroll(rememberScrollState()),
+                .verticalScroll(rememberScrollState())
+                .padding(AppDimens.spaceLg),
             verticalArrangement = Arrangement.spacedBy(AppDimens.spaceXl)
         ) {
             Text(
@@ -125,7 +126,7 @@ fun AddTransactionScreen(
             AmountInputBlock(
                 value = amountText,
                 onValueChange = { amountText = it },
-                isError = isSubmitAttempted && !isAmountValid,
+                isError = isSubmitAttempted && validation.amountError != null,
                 supportingText = validation.amountError
             )
 
@@ -145,14 +146,6 @@ fun AddTransactionScreen(
                         )
                     }
                 }
-
-                if (isSubmitAttempted && !isTypeValid) {
-                    Text(
-                        text = validation.typeError,
-                        style = MaterialTheme.typography.bodySmall,
-                        color = MaterialTheme.colorScheme.error
-                    )
-                }
             }
 
             Column(verticalArrangement = Arrangement.spacedBy(AppDimens.spaceSm)) {
@@ -162,29 +155,34 @@ fun AddTransactionScreen(
                     color = MaterialTheme.colorScheme.onSurfaceVariant
                 )
 
-                categoryOptions.chunked(4).forEach { rowItems ->
-                    Row(
-                        modifier = Modifier.fillMaxWidth(),
-                        horizontalArrangement = Arrangement.spacedBy(AppDimens.spaceSm)
-                    ) {
-                        rowItems.forEach { item ->
-                            CategoryTileButton(
-                                modifier = Modifier.weight(1f),
-                                tile = item,
-                                selected = selectedCategoryId == item.id,
-                                onClick = {
-                                    selectedCategoryId = item.id
-                                }
-                            )
-                        }
-
-                        repeat(4 - rowItems.size) {
-                            Spacer(modifier = Modifier.weight(1f))
+                if (categoryOptions.isEmpty()) {
+                    Text(
+                        text = "No categories found for this type.\nPlease add one in Management.",
+                        style = MaterialTheme.typography.bodyMedium,
+                        color = MaterialTheme.colorScheme.outline,
+                        modifier = Modifier.fillMaxWidth().padding(vertical = AppDimens.spaceMd),
+                        textAlign = TextAlign.Center
+                    )
+                } else {
+                    categoryOptions.chunked(4).forEach { rowItems ->
+                        Row(
+                            modifier = Modifier.fillMaxWidth(),
+                            horizontalArrangement = Arrangement.spacedBy(AppDimens.spaceSm)
+                        ) {
+                            rowItems.forEach { item ->
+                                CategoryTileButton(
+                                    modifier = Modifier.weight(1f),
+                                    tile = item,
+                                    selected = selectedCategoryId == item.id,
+                                    onClick = { selectedCategoryId = item.id }
+                                )
+                            }
+                            repeat(4 - rowItems.size) { Spacer(modifier = Modifier.weight(1f)) }
                         }
                     }
                 }
 
-                if (isSubmitAttempted && !isCategoryValid) {
+                if (isSubmitAttempted && validation.categoryError != null) {
                     Text(
                         text = validation.categoryError,
                         style = MaterialTheme.typography.bodySmall,
@@ -200,6 +198,14 @@ fun AddTransactionScreen(
                 readOnly = true,
                 label = { Text("Date") }
             )
+
+            if (currentUserId.isBlank()) {
+                Text(
+                    text = "Please sign in again to save this entry.",
+                    style = MaterialTheme.typography.bodySmall,
+                    color = MaterialTheme.colorScheme.error
+                )
+            }
 
             OutlinedTextField(
                 modifier = Modifier.fillMaxWidth(),
@@ -217,18 +223,18 @@ fun AddTransactionScreen(
                 text = "Save Entry",
                 onClick = {
                     isSubmitAttempted = true
-                    if (!isFormValid) return@PrimaryButton
+                    if (!canSubmit) return@PrimaryButton
                     val validInput = validation.validInput ?: return@PrimaryButton
 
                     onSave(
                         validInput.toTransaction(
                             id = UUID.randomUUID().toString(),
-                            userId = "user_1"
+                            userId = currentUserId
                         )
                     )
                     onBack()
                 },
-                enabled = isFormValid
+                enabled = canSubmit
             )
 
             SecondaryButton(
@@ -245,34 +251,6 @@ private data class CategoryTile(
     val iconCode: String
 )
 
-private fun categoryTilesForType(
-    type: TransactionType?,
-    availableCategories: List<StoredCategory>
-): List<CategoryTile> {
-    val categories = if (availableCategories.isNotEmpty()) {
-        availableCategories
-    } else {
-        when (type) {
-            TransactionType.INCOME -> listOf(
-                StoredCategory("c_salary", "Salary", "SL", TransactionType.INCOME, false, "", "$0.00", 0f, false),
-                StoredCategory("c_bonus", "Bonus", "BN", TransactionType.INCOME, false, "", "$0.00", 0f, false),
-                StoredCategory("c_gift", "Gift", "GF", TransactionType.INCOME, false, "", "$0.00", 0f, false),
-                StoredCategory("c_other_income", "Other", "OT", TransactionType.INCOME, false, "", "$0.00", 0f, false)
-            )
-            TransactionType.EXPENSE, null -> listOf(
-                StoredCategory("c_food", "Dining Out", "FD", TransactionType.EXPENSE, false, "", "$0.00", 0f, false),
-                StoredCategory("c_grocery", "Groceries", "GR", TransactionType.EXPENSE, false, "", "$0.00", 0f, false),
-                StoredCategory("c_transit", "Transit", "TR", TransactionType.EXPENSE, false, "", "$0.00", 0f, false),
-                StoredCategory("c_fun", "Entertainment", "EN", TransactionType.EXPENSE, false, "", "$0.00", 0f, false)
-            )
-        }
-    }
-
-    return categories.map { category ->
-        CategoryTile(id = category.id, name = category.name, iconCode = category.icon)
-    }
-}
-
 @Composable
 private fun AmountInputBlock(
     value: String,
@@ -282,7 +260,6 @@ private fun AmountInputBlock(
 ) {
     Column(verticalArrangement = Arrangement.spacedBy(AppDimens.spaceXs)) {
         Row(
-            modifier = Modifier.fillMaxWidth(),
             verticalAlignment = Alignment.Bottom,
             horizontalArrangement = Arrangement.spacedBy(AppDimens.spaceSm)
         ) {
@@ -401,9 +378,9 @@ private fun CategoryTileButton(
     }
 }
 
-private fun currentDateLabel(currentDateMillis: Long): String {
-    val formatter = SimpleDateFormat("EEE, dd MMM", Locale.getDefault())
-    return formatter.format(Date(currentDateMillis))
+
+private fun currentDateLabel(millis: Long): String {
+    return SimpleDateFormat("dd MMM yyyy", Locale.getDefault()).format(Date(millis))
 }
 
 @Preview(showBackground = true, showSystemUi = true)

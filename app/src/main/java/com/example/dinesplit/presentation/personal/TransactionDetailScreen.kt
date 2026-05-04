@@ -47,40 +47,18 @@ fun TransactionDetailScreen(
             } else {
                 AppCard {
                     Column(verticalArrangement = Arrangement.spacedBy(AppDimens.spaceSm)) {
-                        Text(
-                            text = transaction.category,
-                            style = MaterialTheme.typography.headlineSmall
-                        )
+                        Text(text = transaction.category, style = MaterialTheme.typography.headlineSmall)
                         Text(
                             text = formatDetailAmount(transaction),
                             style = MaterialTheme.typography.displaySmall,
-                            color = if (transaction.type == TransactionType.INCOME) {
-                                MaterialTheme.colorScheme.primary
-                            } else {
-                                MaterialTheme.colorScheme.onSurface
-                            }
+                            color = if (transaction.type == TransactionType.INCOME) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.onSurface
                         )
-                        Text(
-                            text = "Type: ${transaction.type.name.lowercase().replaceFirstChar { it.uppercase() }}",
-                            style = MaterialTheme.typography.bodyMedium,
-                            color = MaterialTheme.colorScheme.onSurfaceVariant
-                        )
-                        Text(
-                            text = "Date: ${formatDateTime(transaction.date)}",
-                            style = MaterialTheme.typography.bodyMedium,
-                            color = MaterialTheme.colorScheme.onSurfaceVariant
-                        )
+                        Text(text = "Type: ${transaction.type.displayLabel()}", style = MaterialTheme.typography.bodyMedium, color = MaterialTheme.colorScheme.onSurfaceVariant)
+                        Text(text = "Date: ${formatDateTime(transaction.date)}", style = MaterialTheme.typography.bodyMedium, color = MaterialTheme.colorScheme.onSurfaceVariant)
                         if (!transaction.note.isNullOrBlank()) {
-                            Text(
-                                text = "Note: ${transaction.note}",
-                                style = MaterialTheme.typography.bodyMedium
-                            )
+                            Text(text = "Note: ${transaction.note}", style = MaterialTheme.typography.bodyMedium)
                         }
-                        Text(
-                            text = "Id: ${transaction.id}",
-                            style = MaterialTheme.typography.bodySmall,
-                            color = MaterialTheme.colorScheme.outline
-                        )
+                        Text(text = "Id: ${transaction.id}", style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.outline)
                     }
                 }
             }
@@ -106,7 +84,7 @@ private fun TransactionDetailScreenPreview() {
             transactionId = "tx_1",
             transaction = Transaction(
                 id = "tx_1",
-                userId = "user_1",
+                userId = "preview_user",
                 amount = 525000.0,
                 type = TransactionType.EXPENSE,
                 categoryId = "c_food",

@@ -1,6 +1,7 @@
 package com.example.dinesplit.data.repository
 
 import android.content.Context
+import com.example.dinesplit.data.local.PersonalDatabaseHelper
 import com.example.dinesplit.domain.model.UserProfile
 import com.example.dinesplit.domain.repository.ProfileRepository
 
@@ -8,53 +9,75 @@ class LocalProfileRepository private constructor(
     context: Context
 ) : ProfileRepository {
 
-    private val prefs = context.applicationContext.getSharedPreferences(PREF_NAME, Context.MODE_PRIVATE)
+    private val dbHelper = PersonalDatabaseHelper.getInstance(context)
 
     override suspend fun getProfile(uid: String): UserProfile? {
-        val displayName = prefs.getString(key(uid, KEY_DISPLAY_NAME), null) ?: return null
-        val username = prefs.getString(key(uid, KEY_USERNAME), null) ?: return null
-        val email = prefs.getString(key(uid, KEY_EMAIL), null) ?: return null
-        val avatarUrl = prefs.getString(key(uid, KEY_AVATAR_URL), "").orEmpty()
-        val bio = prefs.getString(key(uid, KEY_BIO), "").orEmpty()
-        val createdAt = prefs.getLong(key(uid, KEY_CREATED_AT), 0L)
-        val updatedAt = prefs.getLong(key(uid, KEY_UPDATED_AT), createdAt)
+        val db = dbHelper.readableDatabase
 
-        return UserProfile(
-            uid = uid,
-            displayName = displayName,
-            username = username,
-            email = email,
-            avatarUrl = avatarUrl,
-            bio = bio,
-            createdAt = createdAt,
-            updatedAt = updatedAt
+        val cursor = db.query(
+            "users",
+            arrayOf("uid", "email", "display_name", "username", "avatar_url", "bio", "created_at", "updated_at"),
+            "uid = ?",
+            arrayOf(uid),
+            null,
+            null,
+            null
         )
+
+        val profile = if (cursor.moveToFirst()) {
+            UserProfile(
+                uid = cursor.getString(0),
+                email = cursor.getString(1),
+                displayName = cursor.getString(2),
+                username = cursor.getString(3),
+                avatarUrl = cursor.getString(4),
+                bio = cursor.getString(5),
+                createdAt = cursor.getLong(6),
+                updatedAt = cursor.getLong(7)
+            )
+        } else {
+            null
+        }
+        cursor.close()
+
+        return profile
     }
 
     override suspend fun upsertProfile(profile: UserProfile): Result<Unit> {
-        prefs.edit()
-            .putString(key(profile.uid, KEY_DISPLAY_NAME), profile.displayName)
-            .putString(key(profile.uid, KEY_USERNAME), profile.username)
-            .putString(key(profile.uid, KEY_EMAIL), profile.email)
-            .putString(key(profile.uid, KEY_AVATAR_URL), profile.avatarUrl)
-            .putString(key(profile.uid, KEY_BIO), profile.bio)
-            .putLong(key(profile.uid, KEY_CREATED_AT), profile.createdAt)
-            .putLong(key(profile.uid, KEY_UPDATED_AT), profile.updatedAt)
-            .apply()
-        return Result.success(Unit)
+        val db = dbHelper.writableDatabase
+
+        return try {
+            val values = android.content.ContentValues().apply {
+                put("uid", profile.uid)
+                put("email", profile.email)
+                put("display_name", profile.displayName)
+                put("username", profile.username)
+                put("avatar_url", profile.avatarUrl)
+                put("bio", profile.bio)
+                put("created_at", profile.createdAt)
+                put("updated_at", profile.updatedAt)
+            }
+
+            // Try update first
+            val rowsUpdated = db.update(
+                "users",
+                values,
+                "uid = ?",
+                arrayOf(profile.uid)
+            )
+
+            // If no rows updated, insert
+            if (rowsUpdated == 0) {
+                db.insert("users", null, values)
+            }
+
+            Result.success(Unit)
+        } catch (e: Exception) {
+            Result.failure(e)
+        }
     }
 
-    private fun key(uid: String, field: String): String = "profile_${uid}_$field"
-
     companion object {
-        private const val PREF_NAME = "dinesplit_profile"
-        private const val KEY_DISPLAY_NAME = "display_name"
-        private const val KEY_USERNAME = "username"
-        private const val KEY_EMAIL = "email"
-        private const val KEY_AVATAR_URL = "avatar_url"
-        private const val KEY_BIO = "bio"
-        private const val KEY_CREATED_AT = "created_at"
-        private const val KEY_UPDATED_AT = "updated_at"
 
         @Volatile
         private var INSTANCE: LocalProfileRepository? = null

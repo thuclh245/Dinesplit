@@ -181,6 +181,7 @@ fun CategoryManagementScreen(
         if (isCreateDialogOpen) {
             CategoryEditorDialog(
                 title = "Create Category",
+                isEditMode = false,
                 initialValue = CategoryEditorInput(
                     name = "",
                     description = "",
@@ -199,6 +200,7 @@ fun CategoryManagementScreen(
         editingCategory?.let { category ->
             CategoryEditorDialog(
                 title = "Edit Category",
+                isEditMode = true,
                 initialValue = CategoryEditorInput(
                     name = category.name,
                     description = category.description,
@@ -445,6 +447,7 @@ private fun CategoryTileCard(
 @Composable
 private fun CategoryEditorDialog(
     title: String,
+    isEditMode: Boolean = false,
     initialValue: CategoryEditorInput,
     onDismiss: () -> Unit,
     onConfirm: (CategoryEditorInput) -> Unit
@@ -470,13 +473,17 @@ private fun CategoryEditorDialog(
                     onValueChange = { description = it },
                     label = { Text("Description") }
                 )
-                Row(horizontalArrangement = Arrangement.spacedBy(AppDimens.spaceSm)) {
-                    CategoryTypeFilter.entries.forEach { type ->
-                        FilterChip(
-                            selected = selectedType == type,
-                            onClick = { selectedType = type },
-                            label = { Text(type.label) }
-                        )
+                
+                // ✅ Type selection disabled in edit mode to prevent transaction mismatch
+                if (!isEditMode) {
+                    Row(horizontalArrangement = Arrangement.spacedBy(AppDimens.spaceSm)) {
+                        CategoryTypeFilter.entries.forEach { type ->
+                            FilterChip(
+                                selected = selectedType == type,
+                                onClick = { selectedType = type },
+                                label = { Text(type.label) }
+                            )
+                        }
                     }
                 }
                 FilterChip(
@@ -516,7 +523,7 @@ private fun previewManagedCategories(): List<ManagedCategory> {
             type = CategoryTypeFilter.EXPENSE,
             isCustom = false,
             description = "Restaurants, cafes, and delivery.",
-            amountLabel = "$1,450.00",
+            amountLabel = "1.450.000đ",
             progress = 0.65f,
             isActive = true
         ),
@@ -527,7 +534,7 @@ private fun previewManagedCategories(): List<ManagedCategory> {
             type = CategoryTypeFilter.EXPENSE,
             isCustom = false,
             description = "Supermarkets and local markets.",
-            amountLabel = "$820.45",
+            amountLabel = "820.000đ",
             progress = 0.40f,
             isActive = false
         ),
@@ -538,7 +545,7 @@ private fun previewManagedCategories(): List<ManagedCategory> {
             type = CategoryTypeFilter.EXPENSE,
             isCustom = false,
             description = "Rideshares and public transport.",
-            amountLabel = "$340.00",
+            amountLabel = "340.000đ",
             progress = 0.0f,
             isActive = false
         ),
@@ -549,7 +556,7 @@ private fun previewManagedCategories(): List<ManagedCategory> {
             type = CategoryTypeFilter.INCOME,
             isCustom = false,
             description = "Monthly fixed salary income.",
-            amountLabel = "$3,500.00",
+            amountLabel = "3.500.000đ",
             progress = 0.72f,
             isActive = true
         )
