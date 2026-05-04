@@ -32,7 +32,7 @@ fun AppNavHost(
                         AppStartDestination.COMPLETE_PROFILE -> navController.navigate(AppRoute.CompleteProfile.route) {
                             popUpTo(AppRoute.Splash.route) { inclusive = true }
                         }
-                        AppStartDestination.MAIN -> navController.navigate(AppRoute.MainContainer.route) {
+                        AppStartDestination.MAIN -> navController.navigate(NavGraph.MAIN) {
                             popUpTo(AppRoute.Splash.route) { inclusive = true }
                         }
                     }
@@ -50,8 +50,9 @@ fun AppNavHost(
                         navController.navigate(AppRoute.Register.route)
                     },
                     onLoginSuccess = {
-                        navController.navigate(AppRoute.MainContainer.route) {
+                        navController.navigate(NavGraph.MAIN) {
                             popUpTo(NavGraph.AUTH) { inclusive = true }
+                            launchSingleTop = true
                         }
                     }
                 )
@@ -71,29 +72,35 @@ fun AppNavHost(
             composable(AppRoute.CompleteProfile.route) {
                 CompleteProfileScreen(
                     onCompleteProfileSuccess = {
-                        navController.navigate(AppRoute.MainContainer.route) {
+                        navController.navigate(NavGraph.MAIN) {
                             popUpTo(NavGraph.AUTH) { inclusive = true }
+                            launchSingleTop = true
                         }
                     }
                 )
             }
         }
 
-        composable(AppRoute.MainContainer.route) {
-            MainContainerScreen(
-                onOpenNotifications = {
-                    navController.navigate(AppRoute.Notifications.route)
-                },
-                onOpenAssistant = {
-                    navController.navigate(AppRoute.Assistant.route)
-                },
-                onLogout = {
-                    navController.navigate(NavGraph.AUTH) {
-                        popUpTo(AppRoute.MainContainer.route) { inclusive = true }
-                        launchSingleTop = true
+        navigation(
+            route = NavGraph.MAIN,
+            startDestination = AppRoute.MainContainer.route
+        ) {
+            composable(AppRoute.MainContainer.route) {
+                MainContainerScreen(
+                    onOpenNotifications = {
+                        navController.navigate(AppRoute.Notifications.route)
+                    },
+                    onOpenAssistant = {
+                        navController.navigate(AppRoute.Assistant.route)
+                    },
+                    onLogout = {
+                        navController.navigate(NavGraph.AUTH) {
+                            popUpTo(NavGraph.MAIN) { inclusive = true }
+                            launchSingleTop = true
+                        }
                     }
-                }
-            )
+                )
+            }
         }
 
         composable(AppRoute.Notifications.route) {

@@ -1,12 +1,14 @@
 package com.example.dinesplit.presentation.main
 
 import androidx.compose.foundation.layout.padding
+import androidx.compose.material3.Icon
 import androidx.compose.material3.NavigationBar
 import androidx.compose.material3.NavigationBarItem
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.collectAsState
+import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.ui.Modifier
 import androidx.lifecycle.viewmodel.compose.viewModel
@@ -25,8 +27,10 @@ import com.example.dinesplit.presentation.personal.PersonalScreen
 import com.example.dinesplit.presentation.profile.EditProfileScreen
 import com.example.dinesplit.presentation.profile.OtherUserProfileScreen
 import com.example.dinesplit.presentation.profile.ProfileScreen
+import com.example.dinesplit.presentation.profile.ProfileUiEffect
 import com.example.dinesplit.presentation.profile.ProfileViewModel
 import com.example.dinesplit.presentation.split.SplitScreen
+import kotlinx.coroutines.flow.collectLatest
 
 @Composable
 fun MainContainerScreen(
@@ -40,34 +44,52 @@ fun MainContainerScreen(
     val editProfileUiState by profileViewModel.editUiState.collectAsState()
     val navBackStackEntry by mainNavController.currentBackStackEntryAsState()
     val currentDestination = navBackStackEntry?.destination
+    val showBottomBar = BottomTab.items.any { tab ->
+        currentDestination
+            ?.hierarchy
+            ?.any { it.route == tab.route } == true
+    }
+
+    LaunchedEffect(profileViewModel) {
+        profileViewModel.effect.collectLatest { effect ->
+            when (effect) {
+                ProfileUiEffect.LogoutSuccess -> onLogout()
+                ProfileUiEffect.SaveSuccess -> Unit
+            }
+        }
+    }
 
     Scaffold(
         bottomBar = {
-            NavigationBar {
-                BottomTab.items.forEach { tab ->
-                    val selected = currentDestination
-                        ?.hierarchy
-                        ?.any { it.route == tab.route } == true
+            if (showBottomBar) {
+                NavigationBar {
+                    BottomTab.items.forEach { tab ->
+                        val selected = currentDestination
+                            ?.hierarchy
+                            ?.any { it.route == tab.route } == true
 
-                    NavigationBarItem(
-                        selected = selected,
-                        onClick = {
-                            mainNavController.navigate(tab.route) {
-                                popUpTo(mainNavController.graph.startDestinationId) {
-                                    saveState = true
+                        NavigationBarItem(
+                            selected = selected,
+                            onClick = {
+                                mainNavController.navigate(tab.route) {
+                                    popUpTo(mainNavController.graph.startDestinationId) {
+                                        saveState = true
+                                    }
+                                    launchSingleTop = true
+                                    restoreState = true
                                 }
-                                launchSingleTop = true
-                                restoreState = true
+                            },
+                            icon = {
+                                Icon(
+                                    imageVector = tab.icon,
+                                    contentDescription = tab.label
+                                )
+                            },
+                            label = {
+                                Text(tab.label)
                             }
-                        },
-                        icon = {
-                            // Tạm thời lấy chữ cái đầu của label làm icon
-                            Text(tab.label.take(1))
-                        },
-                        label = {
-                            Text(tab.label)
-                        }
-                    )
+                        )
+                    }
                 }
             }
         }
@@ -128,7 +150,7 @@ fun MainContainerScreen(
                 ProfileScreen(
                     uiState = profileUiState,
                     onEditProfile = { mainNavController.navigate(AppRoute.EditProfile.route) },
-                    onLogout = onLogout,
+                    onLogout = profileViewModel::logout,
                     onOpenNotifications = onOpenNotifications
                 )
             }
