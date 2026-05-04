@@ -1,8 +1,8 @@
 package com.example.dinesplit.core.common
 
 import android.content.Context
-import com.example.dinesplit.data.repository.LocalAuthRepository
-import com.example.dinesplit.data.repository.LocalProfileRepository
+import com.example.dinesplit.data.repository.FirebaseAuthRepository
+import com.example.dinesplit.data.repository.FirebaseProfileRepository
 import com.example.dinesplit.domain.repository.AuthRepository
 import com.example.dinesplit.domain.repository.ProfileRepository
 import com.example.dinesplit.domain.usecase.GetCurrentUserProfileUseCase
@@ -15,11 +15,11 @@ import com.example.dinesplit.domain.usecase.UpdateProfileUseCase
 
 object AppContainer {
     fun authRepository(context: Context): AuthRepository {
-        return LocalAuthRepository.getInstance(context)
+        return FirebaseAuthRepository.getInstance(context)
     }
 
     fun profileRepository(context: Context): ProfileRepository {
-        return LocalProfileRepository.getInstance(context)
+        return FirebaseProfileRepository.getInstance(context)
     }
 
     fun loginUseCase(context: Context): LoginUseCase {

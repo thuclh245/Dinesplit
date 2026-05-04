@@ -4,6 +4,7 @@ import android.app.Application
 import androidx.lifecycle.AndroidViewModel
 import androidx.lifecycle.viewModelScope
 import com.example.dinesplit.core.common.AppContainer
+import com.example.dinesplit.core.firebase.FirebaseErrorMapper
 import com.example.dinesplit.domain.validation.AuthInputValidator
 import kotlinx.coroutines.flow.MutableSharedFlow
 import kotlinx.coroutines.flow.MutableStateFlow
@@ -82,7 +83,7 @@ class RegisterViewModel(application: Application) : AndroidViewModel(application
                 .onFailure { throwable ->
                     _uiState.value = _uiState.value.copy(
                         isSubmitting = false,
-                        submitError = throwable.message ?: "Register failed"
+                        submitError = FirebaseErrorMapper.toUserMessage(throwable)
                     )
                 }
         }

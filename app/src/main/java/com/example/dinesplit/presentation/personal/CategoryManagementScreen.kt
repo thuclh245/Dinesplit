@@ -31,8 +31,7 @@ import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.platform.LocalDensity
-import androidx.compose.ui.platform.LocalWindowInfo
+import androidx.compose.ui.platform.LocalConfiguration
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import com.example.dinesplit.core.ui.AppCard
@@ -74,9 +73,9 @@ fun CategoryManagementScreen(
     onDeleteCategory: (ManagedCategory) -> Unit = {},
     onBack: () -> Unit
 ) {
-    val isCompact = with(LocalDensity.current) {
-        LocalWindowInfo.current.containerSize.width < 600.dp.roundToPx()
-    }
+    val configuration = LocalConfiguration.current
+    val isCompact = configuration.screenWidthDp < 600
+
     var selectedType by remember { mutableStateOf(CategoryTypeFilter.EXPENSE) }
     var creatingType by rememberSaveable { mutableStateOf(CategoryTypeFilter.EXPENSE.name) }
     var editingCategory by remember { mutableStateOf<ManagedCategory?>(null) }

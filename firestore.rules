@@ -1,0 +1,68 @@
+rules_version = '2';
+service cloud.firestore {
+  match /databases/{database}/documents {
+    function signedIn() {
+      return request.auth != null;
+    }
+
+    function isOwner(uid) {
+      return signedIn() && request.auth.uid == uid;
+    }
+
+    function validUserProfile(data) {
+      return data.keys().hasOnly([
+          'uid',
+          'displayName',
+          'username',
+          'usernameLower',
+          'email',
+          'avatarUrl',
+          'bio',
+          'createdAt',
+          'updatedAt'
+        ])
+        && data.uid is string
+        && data.displayName is string
+        && data.username is string
+        && data.usernameLower is string
+        && data.email is string
+        && data.avatarUrl is string
+        && data.bio is string
+        && data.createdAt is int
+        && data.updatedAt is int
+        && data.uid == request.auth.uid
+        && data.usernameLower == lower(data.username)
+        && data.displayName.size() > 0
+        && data.username.size() >= 3;
+    }
+
+    function validUsernameClaim(data, usernameLower) {
+      return data.keys().hasOnly(['uid', 'usernameLower', 'username'])
+        && data.uid is string
+        && data.usernameLower is string
+        && data.username is string
+        && data.uid == request.auth.uid
+        && data.usernameLower == usernameLower
+        && data.usernameLower == lower(data.username)
+        && data.username.size() >= 3;
+    }
+
+    match /user_profiles/{uid} {
+      allow get, list: if signedIn();
+      allow create: if isOwner(uid) && validUserProfile(request.resource.data);
+      allow update: if isOwner(uid) && validUserProfile(request.resource.data);
+      allow delete: if isOwner(uid);
+    }
+
+    match /username_claims/{usernameLower} {
+      allow get: if signedIn();
+      allow list: if false;
+      allow create: if signedIn() && validUsernameClaim(request.resource.data, usernameLower);
+      allow update: if signedIn()
+        && resource.data.uid == request.auth.uid
+        && validUsernameClaim(request.resource.data, usernameLower);
+      allow delete: if signedIn() && resource.data.uid == request.auth.uid;
+    }
+  }
+}
+

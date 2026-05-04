@@ -8,14 +8,14 @@ import com.google.android.gms.tasks.Task
 import com.google.firebase.auth.AuthResult
 import com.google.firebase.auth.FirebaseAuth
 import com.google.firebase.auth.FirebaseUser
-import kotlinx.coroutines.suspendCancellableCoroutine
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
+import kotlinx.coroutines.suspendCancellableCoroutine
 import kotlin.coroutines.resume
 import kotlin.coroutines.resumeWithException
 
-class LocalAuthRepository private constructor(
+class FirebaseAuthRepository private constructor(
     @Suppress("UNUSED_PARAMETER") context: Context
 ) : AuthRepository {
 
@@ -83,13 +83,14 @@ class LocalAuthRepository private constructor(
     companion object {
 
         @Volatile
-        private var INSTANCE: LocalAuthRepository? = null
+        private var INSTANCE: FirebaseAuthRepository? = null
 
-        fun getInstance(context: Context): LocalAuthRepository {
+        fun getInstance(context: Context): FirebaseAuthRepository {
             return INSTANCE ?: synchronized(this) {
-                INSTANCE ?: LocalAuthRepository(context = context).also { INSTANCE = it }
+                INSTANCE ?: FirebaseAuthRepository(context = context).also { INSTANCE = it }
             }
         }
     }
 }
+
 

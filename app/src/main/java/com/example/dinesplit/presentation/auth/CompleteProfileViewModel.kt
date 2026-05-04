@@ -4,6 +4,8 @@ import android.app.Application
 import androidx.lifecycle.AndroidViewModel
 import androidx.lifecycle.viewModelScope
 import com.example.dinesplit.core.common.AppContainer
+import com.example.dinesplit.core.firebase.FirebaseErrorMapper
+import com.example.dinesplit.data.repository.UsernameAlreadyExistsException
 import com.example.dinesplit.domain.model.UserProfile
 import com.example.dinesplit.domain.validation.ProfileInputValidator
 import kotlinx.coroutines.flow.MutableSharedFlow
@@ -86,10 +88,18 @@ class CompleteProfileViewModel(application: Application) : AndroidViewModel(appl
                     _effect.emit(CompleteProfileUiEffect.NavigateToMain)
                 }
                 .onFailure { throwable ->
-                    _uiState.value = _uiState.value.copy(
-                        isSubmitting = false,
-                        submitError = throwable.message ?: "Unable to save profile"
-                    )
+                    _uiState.value = if (throwable is UsernameAlreadyExistsException) {
+                        _uiState.value.copy(
+                            isSubmitting = false,
+                            usernameError = FirebaseErrorMapper.toUserMessage(throwable),
+                            submitError = null
+                        )
+                    } else {
+                        _uiState.value.copy(
+                            isSubmitting = false,
+                            submitError = FirebaseErrorMapper.toUserMessage(throwable)
+                        )
+                    }
                 }
         }
     }
