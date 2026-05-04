@@ -1,102 +1,86 @@
 package com.example.dinesplit.data.repository
 
 import android.content.Context
+import com.example.dinesplit.core.firebase.FirebaseProviders
 import com.example.dinesplit.domain.model.UserSession
 import com.example.dinesplit.domain.repository.AuthRepository
+import com.google.android.gms.tasks.Task
+import com.google.firebase.auth.AuthResult
+import com.google.firebase.auth.FirebaseAuth
+import com.google.firebase.auth.FirebaseUser
+import kotlinx.coroutines.suspendCancellableCoroutine
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
-import java.util.Locale
-import java.util.UUID
+import kotlin.coroutines.resume
+import kotlin.coroutines.resumeWithException
 
 class LocalAuthRepository private constructor(
-    context: Context
+    @Suppress("UNUSED_PARAMETER") context: Context
 ) : AuthRepository {
 
-    private val prefs = context.applicationContext.getSharedPreferences(PREF_NAME, Context.MODE_PRIVATE)
+    private val auth: FirebaseAuth = FirebaseProviders.auth
 
-    private val _sessionFlow = MutableStateFlow(loadCurrentSession())
+    private val _sessionFlow = MutableStateFlow(auth.currentUser?.toUserSession())
     override val sessionFlow: StateFlow<UserSession?> = _sessionFlow.asStateFlow()
 
+    private val authStateListener = FirebaseAuth.AuthStateListener { firebaseAuth: FirebaseAuth ->
+        _sessionFlow.value = firebaseAuth.currentUser?.toUserSession()
+    }
+
+    init {
+        auth.addAuthStateListener(authStateListener)
+    }
+
     override suspend fun login(email: String, password: String): Result<UserSession> {
-        val normalizedEmail = normalizeEmail(email)
-        val account = readAccount(normalizedEmail)
-            ?: return Result.failure(IllegalArgumentException("Account not found"))
-
-        if (account.password != password) {
-            return Result.failure(IllegalArgumentException("Incorrect password"))
+        return runCatching {
+            val result = auth.signInWithEmailAndPassword(email.trim(), password).awaitFirebase()
+            val session = result.toSession()
+                ?: error("Unable to resolve Firebase session")
+            _sessionFlow.value = session
+            session
         }
-
-        val session = UserSession(uid = account.uid, email = normalizedEmail)
-        persistSession(session)
-        _sessionFlow.value = session
-        return Result.success(session)
     }
 
     override suspend fun register(email: String, password: String): Result<UserSession> {
-        val normalizedEmail = normalizeEmail(email)
-        if (readAccount(normalizedEmail) != null) {
-            return Result.failure(IllegalArgumentException("Email is already registered"))
+        return runCatching {
+            val result = auth.createUserWithEmailAndPassword(email.trim(), password).awaitFirebase()
+            val session = result.toSession()
+                ?: error("Unable to resolve Firebase session")
+            _sessionFlow.value = session
+            session
         }
-
-        val uid = UUID.randomUUID().toString()
-        saveAccount(Account(uid = uid, email = normalizedEmail, password = password))
-
-        val session = UserSession(uid = uid, email = normalizedEmail)
-        persistSession(session)
-        _sessionFlow.value = session
-        return Result.success(session)
     }
 
     override suspend fun logout() {
-        prefs.edit()
-            .remove(KEY_CURRENT_UID)
-            .remove(KEY_CURRENT_EMAIL)
-            .apply()
+        auth.signOut()
         _sessionFlow.value = null
     }
 
-    private fun loadCurrentSession(): UserSession? {
-        val uid = prefs.getString(KEY_CURRENT_UID, null)
-        val email = prefs.getString(KEY_CURRENT_EMAIL, null)
-        if (uid.isNullOrBlank() || email.isNullOrBlank()) return null
-        return UserSession(uid = uid, email = email)
+    private fun AuthResult.toSession(): UserSession? {
+        val user = user ?: auth.currentUser ?: return null
+        return UserSession(uid = user.uid, email = user.email.orEmpty())
     }
 
-    private fun persistSession(session: UserSession) {
-        prefs.edit()
-            .putString(KEY_CURRENT_UID, session.uid)
-            .putString(KEY_CURRENT_EMAIL, session.email)
-            .apply()
+    private fun FirebaseUser.toUserSession(): UserSession {
+        return UserSession(uid = uid, email = email.orEmpty())
     }
 
-    private fun saveAccount(account: Account) {
-        prefs.edit().putString(accountKey(account.email), "${account.uid}|${account.password}").apply()
+    private suspend fun <T> Task<T>.awaitFirebase(): T {
+        return suspendCancellableCoroutine { continuation ->
+            addOnCompleteListener { task ->
+                if (task.isSuccessful) {
+                    continuation.resume(task.result)
+                } else {
+                    continuation.resumeWithException(
+                        task.exception ?: IllegalStateException("Firebase task failed")
+                    )
+                }
+            }
+        }
     }
-
-    private fun readAccount(email: String): Account? {
-        val rawValue = prefs.getString(accountKey(email), null) ?: return null
-        val parts = rawValue.split("|", limit = 2)
-        if (parts.size != 2) return null
-        return Account(uid = parts[0], email = email, password = parts[1])
-    }
-
-    private fun accountKey(email: String): String = "account_$email"
-
-    private fun normalizeEmail(email: String): String {
-        return email.trim().lowercase(Locale.ROOT)
-    }
-
-    private data class Account(
-        val uid: String,
-        val email: String,
-        val password: String
-    )
 
     companion object {
-        private const val PREF_NAME = "dinesplit_auth"
-        private const val KEY_CURRENT_UID = "current_uid"
-        private const val KEY_CURRENT_EMAIL = "current_email"
 
         @Volatile
         private var INSTANCE: LocalAuthRepository? = null

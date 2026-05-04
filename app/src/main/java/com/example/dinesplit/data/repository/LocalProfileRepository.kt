@@ -1,23 +1,65 @@
 package com.example.dinesplit.data.repository
 
 import android.content.Context
+import com.example.dinesplit.core.firebase.FirebaseProviders
 import com.example.dinesplit.domain.model.UserProfile
 import com.example.dinesplit.domain.repository.ProfileRepository
+import com.google.android.gms.tasks.Task
+import com.google.firebase.firestore.SetOptions
+import com.google.firebase.firestore.DocumentSnapshot
+import kotlinx.coroutines.suspendCancellableCoroutine
+import kotlin.coroutines.resume
+import kotlin.coroutines.resumeWithException
 
 class LocalProfileRepository private constructor(
-    context: Context
+    @Suppress("UNUSED_PARAMETER") context: Context
 ) : ProfileRepository {
 
-    private val prefs = context.applicationContext.getSharedPreferences(PREF_NAME, Context.MODE_PRIVATE)
+    private val firestore = FirebaseProviders.firestore
 
     override suspend fun getProfile(uid: String): UserProfile? {
-        val displayName = prefs.getString(key(uid, KEY_DISPLAY_NAME), null) ?: return null
-        val username = prefs.getString(key(uid, KEY_USERNAME), null) ?: return null
-        val email = prefs.getString(key(uid, KEY_EMAIL), null) ?: return null
-        val avatarUrl = prefs.getString(key(uid, KEY_AVATAR_URL), "").orEmpty()
-        val bio = prefs.getString(key(uid, KEY_BIO), "").orEmpty()
-        val createdAt = prefs.getLong(key(uid, KEY_CREATED_AT), 0L)
-        val updatedAt = prefs.getLong(key(uid, KEY_UPDATED_AT), createdAt)
+        val snapshot = firestore
+            .collection(COLLECTION_USERS)
+            .document(uid)
+            .get()
+            .awaitFirebase()
+
+        return snapshot.toUserProfile(uid)
+    }
+
+    override suspend fun upsertProfile(profile: UserProfile): Result<Unit> {
+        return runCatching {
+            firestore
+                .collection(COLLECTION_USERS)
+                .document(profile.uid)
+                .set(profile.toFirestoreMap(), SetOptions.merge())
+                .awaitFirebase()
+        }.map { Unit }
+    }
+
+    private fun UserProfile.toFirestoreMap(): Map<String, Any> {
+        return mapOf(
+            FIELD_UID to uid,
+            FIELD_DISPLAY_NAME to displayName,
+            FIELD_USERNAME to username,
+            FIELD_EMAIL to email,
+            FIELD_AVATAR_URL to avatarUrl,
+            FIELD_BIO to bio,
+            FIELD_CREATED_AT to createdAt,
+            FIELD_UPDATED_AT to updatedAt
+        )
+    }
+
+    private fun DocumentSnapshot.toUserProfile(uid: String): UserProfile? {
+        if (!exists()) return null
+
+        val displayName = getString(FIELD_DISPLAY_NAME) ?: return null
+        val username = getString(FIELD_USERNAME) ?: return null
+        val email = getString(FIELD_EMAIL) ?: return null
+        val avatarUrl = getString(FIELD_AVATAR_URL).orEmpty()
+        val bio = getString(FIELD_BIO).orEmpty()
+        val createdAt = getLong(FIELD_CREATED_AT) ?: 0L
+        val updatedAt = getLong(FIELD_UPDATED_AT) ?: createdAt
 
         return UserProfile(
             uid = uid,
@@ -31,30 +73,30 @@ class LocalProfileRepository private constructor(
         )
     }
 
-    override suspend fun upsertProfile(profile: UserProfile): Result<Unit> {
-        prefs.edit()
-            .putString(key(profile.uid, KEY_DISPLAY_NAME), profile.displayName)
-            .putString(key(profile.uid, KEY_USERNAME), profile.username)
-            .putString(key(profile.uid, KEY_EMAIL), profile.email)
-            .putString(key(profile.uid, KEY_AVATAR_URL), profile.avatarUrl)
-            .putString(key(profile.uid, KEY_BIO), profile.bio)
-            .putLong(key(profile.uid, KEY_CREATED_AT), profile.createdAt)
-            .putLong(key(profile.uid, KEY_UPDATED_AT), profile.updatedAt)
-            .apply()
-        return Result.success(Unit)
+    private suspend fun <T> Task<T>.awaitFirebase(): T {
+        return suspendCancellableCoroutine { continuation ->
+            addOnCompleteListener { task ->
+                if (task.isSuccessful) {
+                    continuation.resume(task.result)
+                } else {
+                    continuation.resumeWithException(
+                        task.exception ?: IllegalStateException("Firebase task failed")
+                    )
+                }
+            }
+        }
     }
 
-    private fun key(uid: String, field: String): String = "profile_${uid}_$field"
-
     companion object {
-        private const val PREF_NAME = "dinesplit_profile"
-        private const val KEY_DISPLAY_NAME = "display_name"
-        private const val KEY_USERNAME = "username"
-        private const val KEY_EMAIL = "email"
-        private const val KEY_AVATAR_URL = "avatar_url"
-        private const val KEY_BIO = "bio"
-        private const val KEY_CREATED_AT = "created_at"
-        private const val KEY_UPDATED_AT = "updated_at"
+        private const val COLLECTION_USERS = "user_profiles"
+        private const val FIELD_UID = "uid"
+        private const val FIELD_DISPLAY_NAME = "displayName"
+        private const val FIELD_USERNAME = "username"
+        private const val FIELD_EMAIL = "email"
+        private const val FIELD_AVATAR_URL = "avatarUrl"
+        private const val FIELD_BIO = "bio"
+        private const val FIELD_CREATED_AT = "createdAt"
+        private const val FIELD_UPDATED_AT = "updatedAt"
 
         @Volatile
         private var INSTANCE: LocalProfileRepository? = null
