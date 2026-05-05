@@ -24,7 +24,7 @@ data class LoginUiState(
 )
 
 sealed interface LoginUiEffect {
-    data object NavigateToMain : LoginUiEffect
+    data object NavigateToResolver : LoginUiEffect
 }
 
 class LoginViewModel(application: Application) : AndroidViewModel(application) {
@@ -61,7 +61,7 @@ class LoginViewModel(application: Application) : AndroidViewModel(application) {
             loginUseCase(current.email.trim(), current.password)
                 .onSuccess {
                     _uiState.value = _uiState.value.copy(isSubmitting = false)
-                    _effect.emit(LoginUiEffect.NavigateToMain)
+                    _effect.emit(LoginUiEffect.NavigateToResolver)
                 }
                 .onFailure { throwable ->
                     _uiState.value = _uiState.value.copy(

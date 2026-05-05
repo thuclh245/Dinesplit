@@ -49,8 +49,8 @@ fun AppNavHost(
                     onGoToRegister = {
                         navController.navigate(AppRoute.Register.route)
                     },
-                    onLoginSuccess = {
-                        navController.navigate(NavGraph.MAIN) {
+                    onLoginResolved = {
+                        navController.navigate(AppRoute.Splash.route) {
                             popUpTo(NavGraph.AUTH) { inclusive = true }
                             launchSingleTop = true
                         }

@@ -36,6 +36,17 @@ service cloud.firestore {
         && data.username.size() >= 3;
     }
 
+    function usernameClaimPath(usernameLower) {
+      return /databases/$(database)/documents/username_claims/$(usernameLower);
+    }
+
+    function claimMatchesProfileAfterWrite(data) {
+      return existsAfter(usernameClaimPath(data.usernameLower))
+        && getAfter(usernameClaimPath(data.usernameLower)).data.uid == request.auth.uid
+        && getAfter(usernameClaimPath(data.usernameLower)).data.usernameLower == data.usernameLower
+        && getAfter(usernameClaimPath(data.usernameLower)).data.username == data.username;
+    }
+
     function validUsernameClaim(data, usernameLower) {
       return data.keys().hasOnly(['uid', 'usernameLower', 'username'])
         && data.uid is string
@@ -49,8 +60,8 @@ service cloud.firestore {
 
     match /user_profiles/{uid} {
       allow get, list: if signedIn();
-      allow create: if isOwner(uid) && validUserProfile(request.resource.data);
-      allow update: if isOwner(uid) && validUserProfile(request.resource.data);
+      allow create: if isOwner(uid) && validUserProfile(request.resource.data) && claimMatchesProfileAfterWrite(request.resource.data);
+      allow update: if isOwner(uid) && validUserProfile(request.resource.data) && claimMatchesProfileAfterWrite(request.resource.data);
       allow delete: if isOwner(uid);
     }
 
