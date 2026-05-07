@@ -20,6 +20,7 @@ import androidx.compose.ui.text.font.FontFamily
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import androidx.compose.runtime.*
 
 // --- KHO KHAI BÁO MÀU SẮC (Cách ly 100% bằng tiền tố Bd_) ---
 private val BdBg = Color(0xFFF9F9F9)
@@ -51,16 +52,50 @@ private data class BdSplitMember(
 fun BillDetailScreen(
     onBack: () -> Unit
 ) {
-    val members = listOf(
-        BdSplitMember("Minh", "CHỦ CHI", "M", "400.000 đ", "ĐÃ TRẢ", isPaid = true, isMe = false),
-        BdSplitMember("Thanh Hằng", "", "T", "400.000 đ", "ĐÃ TRẢ", isPaid = true, isMe = false),
-        BdSplitMember("Bạn", "", "B", "400.000 đ", "CHƯA TRẢ", isPaid = false, isMe = true)
+    val splitMembers = listOf(
+        SplitMember("1", "Bạn", "B", true),
+        SplitMember("2", "Minh", "M"),
+        SplitMember("3", "Thanh Hằng", "T")
     )
+
+    val payerId = "2"
+
+    var paidMemberIds by remember {
+        mutableStateOf(setOf(payerId))
+    }
+
+    val shares = SmartSplitEngine.calculateEqualSplit(
+        totalAmount = 1_200_000L,
+        memberIds = splitMembers.map { it.id }
+    )
+
+    val members = splitMembers.map { member ->
+        val amount = shares[member.id] ?: 0L
+        val isPaid = paidMemberIds.contains(member.id)
+        val isPayer = member.id == payerId
+
+        BdSplitMember(
+            name = member.name,
+            role = if (isPayer) "CHỦ CHI" else "",
+            initial = member.initial,
+            amount = formatCurrency(amount),
+            status = if (isPaid) "ĐÃ TRẢ" else "CHƯA TRẢ",
+            isPaid = isPaid,
+            isMe = member.isMe
+        )
+    }
 
     Scaffold(
         containerColor = BdBg,
         topBar = { BdTopBar(onBack = onBack) },
-        bottomBar = { BdBottomAction() }
+        bottomBar = {
+            BdBottomAction(
+                isMePaid = paidMemberIds.contains("1"),
+                onMarkAsPaid = {
+                    paidMemberIds = paidMemberIds + "1"
+                }
+            )
+        }
     ) { paddingValues ->
         LazyColumn(
             modifier = Modifier
@@ -285,22 +320,37 @@ private fun BdFooterInfo() {
 }
 
 @Composable
-private fun BdBottomAction() {
-    Box(
-        modifier = Modifier
-            .fillMaxWidth()
-            .background(Color.White.copy(alpha = 0.9f))
-            .padding(horizontal = 24.dp, vertical = 16.dp)
-            .navigationBarsPadding()
+private fun BdBottomAction(
+    isMePaid: Boolean,
+    onMarkAsPaid: () -> Unit
+) {
+    Surface(
+        modifier = Modifier.fillMaxWidth(),
+        color = BdSurfaceWhite,
+        shadowElevation = 8.dp
     ) {
         Button(
-            onClick = { /* Xử lý trả tiền */ },
-            modifier = Modifier.fillMaxWidth().height(56.dp),
-            colors = ButtonDefaults.buttonColors(containerColor = BdOrangeStart),
+            onClick = onMarkAsPaid,
+            enabled = !isMePaid,
+            modifier = Modifier
+                .fillMaxWidth()
+                .padding(24.dp)
+                .height(56.dp),
             shape = RoundedCornerShape(50),
-            elevation = ButtonDefaults.buttonElevation(defaultElevation = 4.dp)
+            colors = ButtonDefaults.buttonColors(
+                containerColor = BdOrangeEnd,
+                disabledContainerColor = Color.LightGray
+            )
         ) {
-            Text("Đánh dấu đã trả cho Minh", fontSize = 15.sp, fontWeight = FontWeight.Bold, color = Color.White)
+            Text(
+                text = if (isMePaid) "Bạn đã thanh toán" else "Đánh dấu đã trả",
+                fontSize = 16.sp,
+                fontWeight = FontWeight.Bold
+            )
         }
     }
+}
+
+private fun formatCurrency(amount: Long): String {
+    return "%,d đ".format(amount).replace(",", ".")
 }

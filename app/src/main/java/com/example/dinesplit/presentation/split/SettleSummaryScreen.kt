@@ -54,10 +54,39 @@ private data class Ss_DebtMapping(
 fun SettleSummaryScreen(
     onBack: () -> Unit
 ) {
-    val debts = listOf(
-        Ss_DebtMapping("Bạn", "B", Ss_OrangeEnd, "Thanh Hằng", "T", Color.DarkGray, "200.000 đ", true),
-        Ss_DebtMapping("Minh", "M", Color.Gray, "Bạn", "B", Ss_OrangeEnd, "50.000 đ", false)
+    val members = listOf(
+        SplitMember("1", "Bạn", "B", true),
+        SplitMember("2", "Minh", "M"),
+        SplitMember("3", "Thanh Hằng", "T")
     )
+
+    val memberMap = members.associateBy { it.id }
+
+    val shares = SmartSplitEngine.calculateEqualSplit(
+        totalAmount = 600_000L,
+        memberIds = members.map { it.id }
+    )
+
+    val settlements = SmartSplitEngine.calculateSettlement(
+        payerId = "1",
+        shares = shares
+    )
+
+    val debts = settlements.map { settlement ->
+        val fromMember = memberMap[settlement.fromUserId]
+        val toMember = memberMap[settlement.toUserId]
+
+        Ss_DebtMapping(
+            fromName = fromMember?.name ?: "Unknown",
+            fromInitial = fromMember?.initial ?: "?",
+            fromColor = Color.Gray,
+            toName = toMember?.name ?: "Unknown",
+            toInitial = toMember?.initial ?: "?",
+            toColor = Ss_OrangeEnd,
+            amount = formatCurrency(settlement.amount),
+            isPayAction = settlement.fromUserId == "1"
+        )
+    }
 
     Scaffold(
         containerColor = Ss_Bg,
@@ -327,4 +356,8 @@ private fun Ss_BottomAction() {
             Text("Chia sẻ bảng kê nợ", fontSize = 16.sp, fontWeight = FontWeight.Bold, color = Ss_OrangeEnd)
         }
     }
+}
+
+private fun formatCurrency(amount: Long): String {
+    return "%,d đ".format(amount).replace(",", ".")
 }

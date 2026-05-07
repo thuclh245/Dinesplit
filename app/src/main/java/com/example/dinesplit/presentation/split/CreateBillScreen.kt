@@ -83,73 +83,126 @@ fun CreateBillScreen(
     val billItems = remember { mutableStateListOf(Cb_BillItem(name = "Món 1")) }
     val customAmounts = remember { mutableStateMapOf<String, String>() }
 
-    // --- LOGIC TÍNH TOÁN SMART SPLIT ENGINE (Person D Baseline) ---
-    val totalAmount: Long
-    val memberShares = mutableMapOf<String, Long>()
+    val totalAmount: Long = when (selectedMethod) {
+        Cb_SplitMethod.EQUAL,
+        Cb_SplitMethod.CUSTOM -> totalAmountStr.toLongOrNull() ?: 0L
 
-    // Reset member shares
-    members.forEach { memberShares[it.id] = 0L }
+        Cb_SplitMethod.ITEMIZED -> billItems.sumOf {
+            it.price.toLongOrNull() ?: 0L
+        }
+    }
 
-    when (selectedMethod) {
+    val memberIds = members.map { it.id }
+
+    val memberShares: Map<String, Long> = when (selectedMethod) {
         Cb_SplitMethod.EQUAL -> {
-            totalAmount = totalAmountStr.toLongOrNull() ?: 0L
-            val share = if (members.isNotEmpty()) totalAmount / members.size else 0L
-            members.forEach { memberShares[it.id] = share }
+            SmartSplitEngine.calculateEqualSplit(
+                totalAmount = totalAmount,
+                memberIds = memberIds
+            )
         }
+
         Cb_SplitMethod.CUSTOM -> {
-            totalAmount = totalAmountStr.toLongOrNull() ?: 0L
-            members.forEach { memberShares[it.id] = customAmounts[it.id]?.toLongOrNull() ?: 0L }
-        }
-        Cb_SplitMethod.ITEMIZED -> {
-            // Tổng tiền = Tổng các món
-            totalAmount = billItems.sumOf { it.price.toLongOrNull() ?: 0L }
-            // Chia từng món
-            billItems.forEach { item ->
-                val price = item.price.toLongOrNull() ?: 0L
-                if (item.sharedByMemberIds.isNotEmpty()) {
-                    val perPerson = price / item.sharedByMemberIds.size
-                    item.sharedByMemberIds.forEach { mid ->
-                        memberShares[mid] = (memberShares[mid] ?: 0L) + perPerson
-                    }
-                }
+            members.associate { member ->
+                member.id to (customAmounts[member.id]?.toLongOrNull() ?: 0L)
             }
+        }
+
+        Cb_SplitMethod.ITEMIZED -> {
+            val items = billItems.map { item ->
+                BillItemInput(
+                    id = item.id,
+                    name = item.name,
+                    price = item.price.toLongOrNull() ?: 0L,
+                    sharedByMemberIds = item.sharedByMemberIds.toList()
+                )
+            }
+
+            SmartSplitEngine.calculateItemizedSplit(
+                items = items,
+                memberIds = memberIds
+            )
         }
     }
 
     val currentTotalCalculated = memberShares.values.sum()
     val remainingAmount = totalAmount - currentTotalCalculated
 
+    val isCustomSplitValid = selectedMethod != Cb_SplitMethod.CUSTOM ||
+            SmartSplitEngine.validateCustomSplit(
+                totalAmount = totalAmount,
+                customAmounts = memberShares
+            )
+
     Scaffold(
         containerColor = Cb_Bg,
-        topBar = { Cb_TopBar(onBack = onBack) }
+        topBar = { Cb_TopBar(onBack = onBack) },
+        bottomBar = {
+            Surface(
+                modifier = Modifier.fillMaxWidth(),
+                color = Cb_Bg,
+                shadowElevation = 8.dp
+            ) {
+                Box(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .padding(start = 24.dp, end = 24.dp, top = 12.dp, bottom = 24.dp)
+                ) {
+                    val isReady = billName.isNotBlank() &&
+                            totalAmount > 0 &&
+                            isCustomSplitValid &&
+                            (
+                                    selectedMethod != Cb_SplitMethod.ITEMIZED ||
+                                            billItems.all { item ->
+                                                item.price.isNotBlank() &&
+                                                        item.sharedByMemberIds.isNotEmpty()
+                                            }
+                                    )
+
+                    Cb_BottomAction(
+                        enabled = isReady,
+                        onConfirm = {
+                            // sau này điều hướng sang BillDetailScreen
+                        }
+                    )
+                }
+            }
+        }
     ) { paddingValues ->
-        Box(modifier = Modifier.fillMaxSize().padding(paddingValues)) {
+
             LazyColumn(
-                modifier = Modifier.fillMaxSize(),
-                contentPadding = PaddingValues(start = 24.dp, end = 24.dp, top = 16.dp, bottom = 120.dp),
+                modifier = Modifier
+                    .fillMaxSize()
+                    .padding(paddingValues),
+                contentPadding = PaddingValues(
+                    start = 24.dp,
+                    end = 24.dp,
+                    top = 16.dp,
+                    bottom = 32.dp
+                ),
                 verticalArrangement = Arrangement.spacedBy(24.dp)
             ) {
                 // 1. Card thông tin chính
-                item { 
+                item {
                     Cb_MainInfoCard(
-                        billName = billName, 
+                        billName = billName,
                         onNameChange = { billName = it },
                         totalAmountDisplay = formatCurrency(totalAmount),
                         isEditable = selectedMethod != Cb_SplitMethod.ITEMIZED,
                         totalAmountInput = totalAmountStr,
                         onAmountChange = { if (it.all { c -> c.isDigit() }) totalAmountStr = it }
-                    ) 
+                    )
                 }
-                
+
                 // 2. Người thanh toán (Mặc định là Bạn)
                 item { Cb_PayerSection() }
-                
+
                 // 3. Các tab phương thức chia
-                item { 
+                item {
                     Cb_SplitMethodTabs(
                         selectedMethod = selectedMethod,
                         onMethodSelect = { selectedMethod = it }
-                    ) 
+                    )
                 }
 
                 // 4. UI cho từng phương thức
@@ -179,7 +232,7 @@ fun CreateBillScreen(
                 } else if (selectedMethod == Cb_SplitMethod.CUSTOM && totalAmount > 0) {
                     item { Cb_StatusBanner(remainingAmount = remainingAmount) }
                 }
-                
+
                 // 5. Kết quả phân chia chi tiết
                 item {
                     Text("PHÂN CHIA CHI TIẾT", fontSize = 11.sp, fontWeight = FontWeight.Bold, color = Cb_TextSub.copy(alpha = 0.7f), letterSpacing = 1.5.sp)
@@ -189,23 +242,14 @@ fun CreateBillScreen(
                         method = selectedMethod,
                         memberShares = memberShares,
                         customAmounts = customAmounts,
-                        onCustomAmountChange = { id, amt -> 
+                        onCustomAmountChange = { id, amt ->
                             if (amt.all { c -> c.isDigit() }) customAmounts[id] = amt
                         }
-                    ) 
+                    )
                 }
             }
-
-            // Nút Xác nhận (Lơ lửng)
-            Box(modifier = Modifier.align(Alignment.BottomCenter).padding(bottom = 32.dp, start = 24.dp, end = 24.dp)) {
-                val isReady = billName.isNotBlank() && totalAmount > 0 && 
-                        (selectedMethod != Cb_SplitMethod.CUSTOM || remainingAmount == 0L) &&
-                        (selectedMethod != Cb_SplitMethod.ITEMIZED || billItems.all { it.price.isNotBlank() })
-                
-                Cb_BottomAction(enabled = isReady, onConfirm = { /* Person D task: Logic lưu Repository sẽ làm sau */ })
-            }
-        }
     }
+
 }
 
 @Composable
