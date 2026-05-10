@@ -1,0 +1,199 @@
+<!DOCTYPE html>
+
+<html class="light" lang="en"><head>
+<meta charset="utf-8"/>
+<meta content="width=device-width, initial-scale=1.0" name="viewport"/>
+<title>DineSplit - Social Dining</title>
+<script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
+<link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&amp;family=Inter:wght@400;500;600;700&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<script id="tailwind-config">
+        tailwind.config = {
+            darkMode: "class",
+            theme: {
+                extend: {
+                    colors: {
+                        "inverse-primary": "#ff5722",
+                        "secondary-fixed-dim": "#72e4d7",
+                        "surface": "#f6f6f6",
+                        "surface-bright": "#f6f6f6",
+                        "tertiary-dim": "#6f4700",
+                        "secondary-dim": "#005a53",
+                        "primary": "#ab2d00",
+                        "on-primary": "#ffefeb",
+                        "on-tertiary-container": "#583700",
+                        "error-dim": "#9f0519",
+                        "on-tertiary": "#fff0e2",
+                        "secondary-container": "#81f3e5",
+                        "surface-tint": "#ab2d00",
+                        "surface-container-lowest": "#ffffff",
+                        "on-error": "#ffefee",
+                        "error-container": "#fb5151",
+                        "on-error-container": "#570008",
+                        "on-secondary-container": "#005a53",
+                        "on-primary-fixed": "#000000",
+                        "on-secondary-fixed": "#004640",
+                        "on-tertiary-fixed-variant": "#644000",
+                        "outline-variant": "#acadad",
+                        "primary-fixed-dim": "#ff5d2b",
+                        "error": "#b31b25",
+                        "primary-dim": "#962700",
+                        "on-surface-variant": "#5a5c5c",
+                        "surface-container-highest": "#dbdddd",
+                        "secondary": "#00675f",
+                        "on-primary-container": "#470e00",
+                        "on-secondary-fixed-variant": "#00655d",
+                        "tertiary-container": "#feb64c",
+                        "inverse-surface": "#0c0f0f",
+                        "on-secondary": "#bffff5",
+                        "on-background": "#2d2f2f",
+                        "tertiary": "#7f5200",
+                        "surface-container-high": "#e1e3e3",
+                        "surface-dim": "#d3d5d5",
+                        "secondary-fixed": "#81f3e5",
+                        "tertiary-fixed-dim": "#eea840",
+                        "inverse-on-surface": "#9c9d9d",
+                        "surface-container-low": "#f0f1f1",
+                        "on-primary-fixed-variant": "#581300",
+                        "background": "#f6f6f6",
+                        "tertiary-fixed": "#feb64c",
+                        "surface-variant": "#dbdddd",
+                        "on-surface": "#2d2f2f",
+                        "surface-container": "#e7e8e8",
+                        "on-tertiary-fixed": "#3d2500",
+                        "outline": "#767777",
+                        "primary-fixed": "#ff7851",
+                        "primary-container": "#ff7851"
+                    },
+                    fontFamily: {
+                        "headline": ["Plus Jakarta Sans"],
+                        "body": ["Inter"],
+                        "label": ["Inter"]
+                    },
+                    borderRadius: {"DEFAULT": "0.25rem", "lg": "0.5rem", "xl": "0.75rem", "full": "9999px"},
+                },
+            },
+        }
+    </script>
+<style>
+        .material-symbols-outlined {
+            font-variation-settings: 'FILL' 0, 'wght' 400, 'GRAD' 0, 'opsz' 24;
+        }
+        .loading-shimmer {
+            background: linear-gradient(90deg, transparent, rgba(255, 255, 255, 0.4), transparent);
+            background-size: 200% 100%;
+            animation: shimmer 1.5s infinite linear;
+        }
+        @keyframes shimmer {
+            0% { background-position: -200% 0; }
+            100% { background-position: 200% 0; }
+        }
+    </style>
+<style>
+    body {
+      min-height: max(884px, 100dvh);
+    }
+  </style>
+  </head>
+<body class="bg-surface font-body text-on-surface overflow-hidden">
+<!-- Splash Screen Container -->
+<div class="relative min-h-screen flex flex-col items-center justify-between py-24 px-8 overflow-hidden">
+<!-- Background Editorial Texture -->
+<div class="absolute inset-0 -z-10 bg-surface">
+<div class="absolute top-0 right-0 w-96 h-96 bg-primary-container/20 blur-[100px] rounded-full -translate-y-1/2 translate-x-1/3"></div>
+<div class="absolute bottom-0 left-0 w-80 h-80 bg-secondary-container/20 blur-[80px] rounded-full translate-y-1/2 -translate-x-1/4"></div>
+</div>
+<!-- Top Section: Editorial Image/Texture Overlay -->
+<div class="w-full flex justify-center pt-10">
+<div class="relative group">
+<!-- Decorative Circle -->
+<div class="w-24 h-24 rounded-full bg-gradient-to-tr from-primary to-primary-container flex items-center justify-center shadow-lg shadow-primary/20">
+<span class="material-symbols-outlined text-white text-5xl" data-icon="restaurant_menu">restaurant_menu</span>
+</div>
+<!-- Ambient Glow -->
+<div class="absolute inset-0 bg-primary blur-2xl opacity-20 -z-10 scale-125"></div>
+</div>
+</div>
+<!-- Middle Section: Brand Identity -->
+<div class="flex flex-col items-center text-center space-y-6">
+<div class="space-y-2">
+<h1 class="font-headline font-extrabold text-6xl tracking-tighter text-on-surface">
+                    Dine<span class="text-primary">Split</span>
+</h1>
+<div class="h-[2px] w-12 bg-primary mx-auto rounded-full"></div>
+</div>
+<div class="max-w-xs">
+<p class="font-headline font-semibold text-xl text-on-surface-variant leading-tight">
+                    Eat together, split <span class="text-secondary italic">effortlessly</span>.
+                </p>
+<p class="mt-4 font-body text-sm text-outline tracking-wide uppercase font-medium">
+                    The Social Ledger for Foodies
+                </p>
+</div>
+</div>
+<!-- Bottom Section: Loading & Social Hint -->
+<div class="w-full flex flex-col items-center space-y-12">
+<!-- Subtle Loading Indicator -->
+<div class="w-48 h-[6px] bg-surface-container-highest rounded-full overflow-hidden relative">
+<div class="absolute inset-0 bg-primary rounded-full w-1/3 loading-shimmer"></div>
+</div>
+<!-- Trust / Editorial Badge -->
+<div class="flex flex-col items-center gap-4">
+<div class="flex -space-x-3">
+<div class="w-10 h-10 rounded-full ring-4 ring-surface overflow-hidden bg-surface-container">
+<img alt="User" data-alt="Close-up portrait of a young woman with a friendly smile, soft natural outdoor lighting, professional bokeh background" src="https://lh3.googleusercontent.com/aida-public/AB6AXuBVrs2wx5anloIhdMmQnabHmpo0H_8ln0beyIY9S0ro1i1jJHKS56WqaxeXOL7euxP3gZKUxfRDX7HXISYMpYFDXNTuC6qB7GM3H89l03EasLEIrsQvTU3jqQl5WpSG9KzlOjNx9XKsx8cgq-Ji-ORq_PwZewyVk2S-CVe4mkptTFUctRA8kjxbpe8QP19-Pgxe8vP9NHU1c3-n1LQFME8a6bXb0RYnWF0PYWZGUn1f-fRHhOwOdiHvAD-6a2SVLEG1bYHvEJOzMUo"/>
+</div>
+<div class="w-10 h-10 rounded-full ring-4 ring-surface overflow-hidden bg-surface-container">
+<img alt="User" data-alt="Candid portrait of a stylish young man laughing, warm sunset light, urban street background in soft focus" src="https://lh3.googleusercontent.com/aida-public/AB6AXuBWMGCgdIuILTkYdpwu6NFuMAYl3jQ6J5w6zSGMLMCAX4jObRTGxmtX--hl_Em-gXXyBEjoqEM8nhIlRkjHUsaoe1QS3BNmK4C3CNRKcZptBpMbhgyTVLKDsm2BpxXtoHqDuqVW9OF6-4_oS8TL72GRR0t_r9V_uSwGOJbsVD83wxb0ktNI2D3dT2W39BjjjbO9tePkLxU8ZmAu3RChYz-0bXxRnlcN9_PrbFD3mvLF66gtH0BKRzBxDRM39q7sZ-PnRgv37Dsdek4"/>
+</div>
+<div class="w-10 h-10 rounded-full ring-4 ring-surface overflow-hidden bg-surface-container">
+<img alt="User" data-alt="Clean studio portrait of a man with a confident expression, neutral grey background, high-end commercial photography style" src="https://lh3.googleusercontent.com/aida-public/AB6AXuB-dgw3J2EUB-AGRgIB2YgfLLReweeQaL6U5HIkTr7eoW8E4fdbnGMj5Fq2apIEfkz5fQN2te9Gpr3eusWb5XYaD8L4OK6ZNDx_6sMLbgKT18oex2iAOMU5aD3ZwMZlZqX41TaaB9e4fR1p40vpFfTUbEM_xqfOQ45WaQ-78s94spulAMV-HEz7PAJpMoDLheZwBoxECEB-wH-WumRqROqcnDDLc-idXRZQWdcOqGrOo4W9nCZ6Ox32uq66NMjQeBEnTWbWU7ihDhM"/>
+</div>
+</div>
+<p class="font-label text-[10px] font-bold uppercase tracking-[0.2em] text-outline-variant">
+                    Joining 24k+ food lovers
+                </p>
+</div>
+</div>
+<!-- Decorative Floating Elements (Social Ledger Aesthetic) -->
+<div class="absolute top-1/4 left-10 opacity-40">
+<div class="p-3 bg-surface-container-lowest rounded-xl shadow-sm rotate-[-12deg] border border-outline-variant/10">
+<span class="material-symbols-outlined text-secondary" data-icon="payments">payments</span>
+</div>
+</div>
+<div class="absolute bottom-1/3 right-8 opacity-40">
+<div class="p-3 bg-surface-container-lowest rounded-xl shadow-sm rotate-[15deg] border border-outline-variant/10">
+<span class="material-symbols-outlined text-primary" data-icon="celebration">celebration</span>
+</div>
+</div>
+</div>
+<!-- Hidden UI Pre-loading (to ensure system feels instant after splash) -->
+<nav aria-hidden="true" class="hidden">
+<!-- TopAppBar Placeholder as described in JSON -->
+<div class="fixed top-0 w-full z-50 bg-white/80 dark:bg-zinc-900/80 backdrop-blur-xl flex justify-between items-center px-6 py-4 max-w-md mx-auto">
+<span class="text-orange-600 dark:text-orange-400 material-symbols-outlined" data-icon="arrow_back">arrow_back</span>
+<span class="font-['Plus_Jakarta_Sans'] font-extrabold tracking-tighter text-zinc-900 dark:text-zinc-50 text-xl">DineSplit</span>
+<span class="text-zinc-400 dark:text-zinc-500 font-['Plus_Jakarta_Sans'] font-bold">Help</span>
+</div>
+<!-- BottomNavBar Placeholder as described in JSON -->
+<div class="fixed bottom-0 left-0 w-full z-50 flex justify-around items-center px-4 pb-8 pt-4 max-w-md mx-auto bg-white/90 dark:bg-zinc-900/90 backdrop-blur-2xl">
+<div class="flex flex-col items-center justify-center text-zinc-400">
+<span class="material-symbols-outlined" data-icon="style">style</span>
+<span class="text-[11px] font-semibold uppercase tracking-widest">Feed</span>
+</div>
+<div class="flex flex-col items-center justify-center text-orange-600 bg-orange-50 rounded-2xl px-4 py-2">
+<span class="material-symbols-outlined" data-icon="restaurant_menu">restaurant_menu</span>
+<span class="text-[11px] font-semibold uppercase tracking-widest">Split</span>
+</div>
+<div class="flex flex-col items-center justify-center text-zinc-400">
+<span class="material-symbols-outlined" data-icon="receipt_long">receipt_long</span>
+<span class="text-[11px] font-semibold uppercase tracking-widest">Activity</span>
+</div>
+<div class="flex flex-col items-center justify-center text-zinc-400">
+<span class="material-symbols-outlined" data-icon="person_outline">person_outline</span>
+<span class="text-[11px] font-semibold uppercase tracking-widest">Profile</span>
+</div>
+</div>
+</nav>
+</body></html>

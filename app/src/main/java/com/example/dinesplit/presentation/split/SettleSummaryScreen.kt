@@ -23,29 +23,14 @@ import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 
-// --- KHO KHAI BÁO MÀU SẮC (Cách ly 100% bằng tiền tố Ss_) ---
-private val Ss_Bg = Color(0xFFF9F9F9)
-private val Ss_SurfaceWhite = Color(0xFFFFFFFF)
-
-private val Ss_OrangeStart = Color(0xFFE2725B)
-private val Ss_OrangeEnd = Color(0xFF9F402D)
-private val Ss_OrangeLightBtn = Color(0xFFFFDAD3) // Nền nút chia sẻ
-
-private val Ss_TealText = Color(0xFF006B5B)
-private val Ss_TealBg = Color(0xFFE0F2F1)
-
-private val Ss_TextMain = Color(0xFF1A1C1C)
-private val Ss_TextSub = Color(0xFF56423E)
-private val Ss_BorderLight = Color(0xFFE2E2E2)
-
 // --- MÔ HÌNH DỮ LIỆU TẠM ---
 private data class Ss_DebtMapping(
     val fromName: String,
     val fromInitial: String,
-    val fromColor: Color,
+    val fromColor: @Composable () -> Color,
     val toName: String,
     val toInitial: String,
-    val toColor: Color,
+    val toColor: @Composable () -> Color,
     val amount: String,
     val isPayAction: Boolean // true: Thanh toán (Cam), false: Nhắc nợ (Xám)
 )
@@ -54,13 +39,15 @@ private data class Ss_DebtMapping(
 fun SettleSummaryScreen(
     onBack: () -> Unit
 ) {
+    val colorScheme = MaterialTheme.colorScheme
+
     val debts = listOf(
-        Ss_DebtMapping("Bạn", "B", Ss_OrangeEnd, "Thanh Hằng", "T", Color.DarkGray, "200.000 đ", true),
-        Ss_DebtMapping("Minh", "M", Color.Gray, "Bạn", "B", Ss_OrangeEnd, "50.000 đ", false)
+        Ss_DebtMapping("Bạn", "B", { colorScheme.primary }, "Thanh Hằng", "T", { colorScheme.onSurfaceVariant }, "200.000 đ", true),
+        Ss_DebtMapping("Minh", "M", { colorScheme.outline }, "Bạn", "B", { colorScheme.primary }, "50.000 đ", false)
     )
 
     Scaffold(
-        containerColor = Ss_Bg,
+        containerColor = colorScheme.surface,
         topBar = { Ss_TopBar(onBack = onBack) },
         bottomBar = { Ss_BottomAction() }
     ) { paddingValues ->
@@ -89,43 +76,45 @@ fun SettleSummaryScreen(
 
 @Composable
 private fun Ss_TopBar(onBack: () -> Unit) {
+    val colorScheme = MaterialTheme.colorScheme
     Row(
         modifier = Modifier
             .fillMaxWidth()
-            .background(Color.White.copy(alpha = 0.9f))
+            .background(colorScheme.surfaceContainerLowest.copy(alpha = 0.9f))
             .padding(horizontal = 20.dp, vertical = 16.dp),
         verticalAlignment = Alignment.CenterVertically,
         horizontalArrangement = Arrangement.SpaceBetween
     ) {
         IconButton(onClick = onBack, modifier = Modifier.size(32.dp)) {
-            Icon(Icons.AutoMirrored.Filled.ArrowBack, contentDescription = "Quay lại", tint = Ss_OrangeEnd)
+            Icon(Icons.AutoMirrored.Filled.ArrowBack, contentDescription = "Quay lại", tint = colorScheme.primary)
         }
 
         Text(
             text = "Chốt sổ",
             fontSize = 18.sp,
             fontWeight = FontWeight.Bold,
-            color = Ss_TextMain
+            color = colorScheme.onSurface
         )
 
         IconButton(onClick = { /* Mở menu share */ }, modifier = Modifier.size(32.dp)) {
-            Icon(Icons.Default.Share, contentDescription = "Chia sẻ", tint = Ss_OrangeEnd)
+            Icon(Icons.Default.Share, contentDescription = "Chia sẻ", tint = colorScheme.primary)
         }
     }
 }
 
 @Composable
 private fun Ss_HeroSection() {
+    val colorScheme = MaterialTheme.colorScheme
     Column(horizontalAlignment = Alignment.CenterHorizontally) {
         // Icon thần kỳ
         Box(
             modifier = Modifier
                 .size(64.dp)
                 .clip(CircleShape)
-                .background(Ss_OrangeStart.copy(alpha = 0.1f)),
+                .background(colorScheme.primaryContainer.copy(alpha = 0.1f)),
             contentAlignment = Alignment.Center
         ) {
-            Icon(Icons.Default.Star, contentDescription = null, tint = Ss_OrangeEnd, modifier = Modifier.size(32.dp))
+            Icon(Icons.Default.Star, contentDescription = null, tint = colorScheme.primary, modifier = Modifier.size(32.dp))
         }
 
         Spacer(modifier = Modifier.height(16.dp))
@@ -134,7 +123,7 @@ private fun Ss_HeroSection() {
             text = "Đã tối ưu hóa nợ nần!",
             fontSize = 28.sp,
             fontWeight = FontWeight.ExtraBold,
-            color = Ss_TextMain,
+            color = colorScheme.onSurface,
             textAlign = TextAlign.Center,
             lineHeight = 34.sp
         )
@@ -145,7 +134,7 @@ private fun Ss_HeroSection() {
             text = "Thuật toán đã giúp giảm bớt 3 giao dịch thừa.",
             fontSize = 14.sp,
             fontWeight = FontWeight.Medium,
-            color = Ss_TextSub,
+            color = colorScheme.onSurfaceVariant,
             textAlign = TextAlign.Center
         )
     }
@@ -153,19 +142,20 @@ private fun Ss_HeroSection() {
 
 @Composable
 private fun Ss_DebtMappingList(debts: List<Ss_DebtMapping>) {
+    val colorScheme = MaterialTheme.colorScheme
     Column(modifier = Modifier.fillMaxWidth()) {
         Text(
             text = "CHI TIẾT ĐỐI SOÁT",
             fontSize = 11.sp,
             fontWeight = FontWeight.Bold,
-            color = Ss_TextSub.copy(alpha = 0.7f),
+            color = colorScheme.onSurfaceVariant.copy(alpha = 0.7f),
             letterSpacing = 1.5.sp,
             modifier = Modifier.padding(start = 8.dp, bottom = 12.dp)
         )
 
         Card(
             modifier = Modifier.fillMaxWidth(),
-            colors = CardDefaults.cardColors(containerColor = Ss_SurfaceWhite),
+            colors = CardDefaults.cardColors(containerColor = colorScheme.surfaceContainerLowest),
             elevation = CardDefaults.cardElevation(defaultElevation = 2.dp),
             shape = RoundedCornerShape(20.dp)
         ) {
@@ -185,13 +175,13 @@ private fun Ss_DebtMappingList(debts: List<Ss_DebtMapping>) {
                             // Người gửi
                             Column(horizontalAlignment = Alignment.CenterHorizontally) {
                                 Box(
-                                    modifier = Modifier.size(48.dp).clip(CircleShape).background(debt.fromColor),
+                                    modifier = Modifier.size(48.dp).clip(CircleShape).background(debt.fromColor()),
                                     contentAlignment = Alignment.Center
                                 ) {
-                                    Text(debt.fromInitial, color = Color.White, fontWeight = FontWeight.Bold, fontSize = 18.sp)
+                                    Text(debt.fromInitial, color = colorScheme.surfaceContainerLowest, fontWeight = FontWeight.Bold, fontSize = 18.sp)
                                 }
                                 Spacer(modifier = Modifier.height(8.dp))
-                                Text(debt.fromName, fontSize = 12.sp, fontWeight = FontWeight.Bold, color = Ss_TextMain)
+                                Text(debt.fromName, fontSize = 12.sp, fontWeight = FontWeight.Bold, color = colorScheme.onSurface)
                             }
 
                             // Mũi tên và Số tiền ở giữa
@@ -200,28 +190,28 @@ private fun Ss_DebtMappingList(debts: List<Ss_DebtMapping>) {
                                     text = debt.amount,
                                     fontSize = 16.sp,
                                     fontWeight = FontWeight.ExtraBold,
-                                    color = if (debt.isPayAction) Ss_OrangeEnd else Ss_TealText
+                                    color = if (debt.isPayAction) colorScheme.primary else colorScheme.secondary
                                 )
                                 Spacer(modifier = Modifier.height(4.dp))
-                                HorizontalDivider(modifier = Modifier.width(60.dp), color = Ss_BorderLight, thickness = 2.dp)
+                                HorizontalDivider(modifier = Modifier.width(60.dp), color = colorScheme.surfaceContainerHigh, thickness = 2.dp)
                                 Icon(
                                     Icons.AutoMirrored.Filled.ArrowForward,
                                     contentDescription = null,
-                                    tint = if (debt.isPayAction) Ss_OrangeEnd else Ss_TealText,
-                                    modifier = Modifier.offset(y = (-12).dp).size(20.dp).background(Ss_SurfaceWhite)
+                                    tint = if (debt.isPayAction) colorScheme.primary else colorScheme.secondary,
+                                    modifier = Modifier.offset(y = (-12).dp).size(20.dp).background(colorScheme.surfaceContainerLowest)
                                 )
                             }
 
                             // Người nhận
                             Column(horizontalAlignment = Alignment.CenterHorizontally) {
                                 Box(
-                                    modifier = Modifier.size(48.dp).clip(CircleShape).background(debt.toColor),
+                                    modifier = Modifier.size(48.dp).clip(CircleShape).background(debt.toColor()),
                                     contentAlignment = Alignment.Center
                                 ) {
-                                    Text(debt.toInitial, color = Color.White, fontWeight = FontWeight.Bold, fontSize = 18.sp)
+                                    Text(debt.toInitial, color = colorScheme.surfaceContainerLowest, fontWeight = FontWeight.Bold, fontSize = 18.sp)
                                 }
                                 Spacer(modifier = Modifier.height(8.dp))
-                                Text(debt.toName, fontSize = 12.sp, fontWeight = FontWeight.Bold, color = Ss_TextMain)
+                                Text(debt.toName, fontSize = 12.sp, fontWeight = FontWeight.Bold, color = colorScheme.onSurface)
                             }
                         }
 
@@ -237,18 +227,18 @@ private fun Ss_DebtMappingList(debts: List<Ss_DebtMapping>) {
                                 shape = RoundedCornerShape(50)
                             ) {
                                 Box(
-                                    modifier = Modifier.fillMaxSize().background(brush = Brush.verticalGradient(listOf(Ss_OrangeStart, Ss_OrangeEnd))),
+                                    modifier = Modifier.fillMaxSize().background(brush = Brush.verticalGradient(listOf(colorScheme.primaryContainer, colorScheme.primary))),
                                     contentAlignment = Alignment.Center
                                 ) {
-                                    Text("Thanh toán ngay", color = Color.White, fontWeight = FontWeight.Bold, fontSize = 14.sp)
+                                    Text("Thanh toán ngay", color = colorScheme.surfaceContainerLowest, fontWeight = FontWeight.Bold, fontSize = 14.sp)
                                 }
                             }
                         } else {
                             OutlinedButton(
                                 onClick = { /* Mở nhắc nợ */ },
                                 modifier = Modifier.fillMaxWidth().height(44.dp),
-                                colors = ButtonDefaults.outlinedButtonColors(contentColor = Ss_TextSub),
-                                border = androidx.compose.foundation.BorderStroke(1.dp, Ss_BorderLight),
+                                colors = ButtonDefaults.outlinedButtonColors(contentColor = colorScheme.onSurfaceVariant),
+                                border = androidx.compose.foundation.BorderStroke(1.dp, colorScheme.surfaceContainerHigh),
                                 shape = RoundedCornerShape(50)
                             ) {
                                 Text("Nhắc nợ", fontWeight = FontWeight.Bold, fontSize = 14.sp)
@@ -257,7 +247,7 @@ private fun Ss_DebtMappingList(debts: List<Ss_DebtMapping>) {
                     }
 
                     if (index < debts.size - 1) {
-                        HorizontalDivider(color = Ss_BorderLight, thickness = 1.dp)
+                        HorizontalDivider(color = colorScheme.surfaceContainerHigh, thickness = 1.dp)
                     }
                 }
             }
@@ -267,6 +257,7 @@ private fun Ss_DebtMappingList(debts: List<Ss_DebtMapping>) {
 
 @Composable
 private fun Ss_StatsCard() {
+    val colorScheme = MaterialTheme.colorScheme
     Row(
         modifier = Modifier.fillMaxWidth(),
         horizontalArrangement = Arrangement.spacedBy(16.dp)
@@ -274,28 +265,28 @@ private fun Ss_StatsCard() {
         // Tổng trả
         Card(
             modifier = Modifier.weight(1f),
-            colors = CardDefaults.cardColors(containerColor = Ss_OrangeLightBtn.copy(alpha = 0.3f)),
+            colors = CardDefaults.cardColors(containerColor = colorScheme.errorContainer.copy(alpha = 0.3f)),
             elevation = CardDefaults.cardElevation(defaultElevation = 0.dp),
             shape = RoundedCornerShape(16.dp)
         ) {
             Column(modifier = Modifier.padding(20.dp)) {
-                Text("TỔNG BẠN TRẢ", fontSize = 10.sp, fontWeight = FontWeight.Bold, color = Ss_OrangeEnd)
+                Text("TỔNG BẠN TRẢ", fontSize = 10.sp, fontWeight = FontWeight.Bold, color = colorScheme.primary)
                 Spacer(modifier = Modifier.height(8.dp))
-                Text("200k", fontSize = 24.sp, fontWeight = FontWeight.Black, color = Ss_OrangeEnd)
+                Text("200k", fontSize = 24.sp, fontWeight = FontWeight.Black, color = colorScheme.primary)
             }
         }
 
         // Tổng nhận
         Card(
             modifier = Modifier.weight(1f),
-            colors = CardDefaults.cardColors(containerColor = Ss_TealBg),
+            colors = CardDefaults.cardColors(containerColor = colorScheme.secondaryContainer),
             elevation = CardDefaults.cardElevation(defaultElevation = 0.dp),
             shape = RoundedCornerShape(16.dp)
         ) {
             Column(modifier = Modifier.padding(20.dp)) {
-                Text("TỔNG NHẬN VỀ", fontSize = 10.sp, fontWeight = FontWeight.Bold, color = Ss_TealText)
+                Text("TỔNG NHẬN VỀ", fontSize = 10.sp, fontWeight = FontWeight.Bold, color = colorScheme.secondary)
                 Spacer(modifier = Modifier.height(8.dp))
-                Text("50k", fontSize = 24.sp, fontWeight = FontWeight.Black, color = Ss_TealText)
+                Text("50k", fontSize = 24.sp, fontWeight = FontWeight.Black, color = colorScheme.secondary)
             }
         }
     }
@@ -303,12 +294,13 @@ private fun Ss_StatsCard() {
 
 @Composable
 private fun Ss_BottomAction() {
+    val colorScheme = MaterialTheme.colorScheme
     Box(
         modifier = Modifier
             .fillMaxWidth()
             .background(
                 brush = Brush.verticalGradient(
-                    colors = listOf(Color.Transparent, Ss_Bg, Ss_Bg),
+                    colors = listOf(Color.Transparent, colorScheme.surface, colorScheme.surface),
                     startY = 0f, endY = 100f
                 )
             )
@@ -318,13 +310,13 @@ private fun Ss_BottomAction() {
         Button(
             onClick = { /* Xử lý chia sẻ */ },
             modifier = Modifier.fillMaxWidth().height(56.dp),
-            colors = ButtonDefaults.buttonColors(containerColor = Ss_OrangeLightBtn),
+            colors = ButtonDefaults.buttonColors(containerColor = colorScheme.errorContainer),
             shape = RoundedCornerShape(16.dp),
             elevation = ButtonDefaults.buttonElevation(defaultElevation = 4.dp)
         ) {
-            Icon(Icons.Default.Share, contentDescription = null, tint = Ss_OrangeEnd, modifier = Modifier.size(20.dp))
+            Icon(Icons.Default.Share, contentDescription = null, tint = colorScheme.primary, modifier = Modifier.size(20.dp))
             Spacer(modifier = Modifier.width(12.dp))
-            Text("Chia sẻ bảng kê nợ", fontSize = 16.sp, fontWeight = FontWeight.Bold, color = Ss_OrangeEnd)
+            Text("Chia sẻ bảng kê nợ", fontSize = 16.sp, fontWeight = FontWeight.Bold, color = colorScheme.primary)
         }
     }
 }

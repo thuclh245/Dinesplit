@@ -1,0 +1,187 @@
+<!DOCTYPE html>
+
+<html lang="en"><head>
+<meta charset="utf-8"/>
+<meta content="width=device-width, initial-scale=1.0" name="viewport"/>
+<title>Complete Profile | DineSplit</title>
+<script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
+<link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&amp;family=Inter:wght@400;500;600&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<script id="tailwind-config">
+      tailwind.config = {
+        darkMode: "class",
+        theme: {
+          extend: {
+            colors: {
+              "inverse-primary": "#ff5722",
+              "secondary-fixed-dim": "#72e4d7",
+              "surface": "#f6f6f6",
+              "surface-bright": "#f6f6f6",
+              "tertiary-dim": "#6f4700",
+              "secondary-dim": "#005a53",
+              "primary": "#ab2d00",
+              "on-primary": "#ffefeb",
+              "on-tertiary-container": "#583700",
+              "error-dim": "#9f0519",
+              "on-tertiary": "#fff0e2",
+              "secondary-container": "#81f3e5",
+              "surface-tint": "#ab2d00",
+              "surface-container-lowest": "#ffffff",
+              "on-error": "#ffefee",
+              "error-container": "#fb5151",
+              "on-error-container": "#570008",
+              "on-secondary-container": "#005a53",
+              "on-primary-fixed": "#000000",
+              "on-secondary-fixed": "#004640",
+              "on-tertiary-fixed-variant": "#644000",
+              "outline-variant": "#acadad",
+              "primary-fixed-dim": "#ff5d2b",
+              "error": "#b31b25",
+              "primary-dim": "#962700",
+              "on-surface-variant": "#5a5c5c",
+              "surface-container-highest": "#dbdddd",
+              "secondary": "#00675f",
+              "on-primary-container": "#470e00",
+              "on-secondary-fixed-variant": "#00655d",
+              "tertiary-container": "#feb64c",
+              "inverse-surface": "#0c0f0f",
+              "on-secondary": "#bffff5",
+              "on-background": "#2d2f2f",
+              "tertiary": "#7f5200",
+              "surface-container-high": "#e1e3e3",
+              "surface-dim": "#d3d5d5",
+              "secondary-fixed": "#81f3e5",
+              "tertiary-fixed-dim": "#eea840",
+              "inverse-on-surface": "#9c9d9d",
+              "surface-container-low": "#f0f1f1",
+              "on-primary-fixed-variant": "#581300",
+              "background": "#f6f6f6",
+              "tertiary-fixed": "#feb64c",
+              "surface-variant": "#dbdddd",
+              "on-surface": "#2d2f2f",
+              "surface-container": "#e7e8e8",
+              "on-tertiary-fixed": "#3d2500",
+              "outline": "#767777",
+              "primary-fixed": "#ff7851",
+              "primary-container": "#ff7851"
+            },
+            fontFamily: {
+              "headline": ["Plus Jakarta Sans"],
+              "body": ["Inter"],
+              "label": ["Inter"]
+            },
+            borderRadius: {"DEFAULT": "0.25rem", "lg": "0.5rem", "xl": "0.75rem", "full": "9999px"},
+          },
+        },
+      }
+    </script>
+<style>
+      .material-symbols-outlined {
+        font-variation-settings: 'FILL' 0, 'wght' 400, 'GRAD' 0, 'opsz' 24;
+      }
+      .glass-nav {
+        background: rgba(255, 255, 255, 0.8);
+        backdrop-filter: blur(20px);
+      }
+    </style>
+<style>
+    body {
+      min-height: max(884px, 100dvh);
+    }
+  </style>
+  </head>
+<body class="bg-surface font-body text-on-surface antialiased">
+<!-- Top App Bar -->
+<header class="fixed top-0 w-full z-50 bg-white/80 dark:bg-zinc-900/80 backdrop-blur-xl shadow-[0_4px_30px_rgba(0,0,0,0.03)]">
+<div class="flex justify-between items-center px-6 py-4 w-full max-w-md mx-auto">
+<div class="flex items-center gap-4">
+<button class="text-orange-600 dark:text-orange-400 active:scale-95 duration-200 transition-opacity hover:opacity-80">
+<span class="material-symbols-outlined" data-icon="arrow_back">arrow_back</span>
+</button>
+<h1 class="text-xl font-extrabold tracking-tighter text-zinc-900 dark:text-zinc-50 font-['Plus_Jakarta_Sans']">DineSplit</h1>
+</div>
+<button class="text-orange-600 dark:text-orange-400 font-bold hover:opacity-80 transition-opacity active:scale-95 duration-200">Help</button>
+</div>
+<div class="bg-zinc-100 dark:bg-zinc-800 h-[1px] opacity-0"></div>
+</header>
+<main class="pt-24 pb-12 px-6 max-w-md mx-auto min-h-screen flex flex-col">
+<!-- Header Section -->
+<section class="mb-10 text-center">
+<h2 class="font-headline text-4xl font-extrabold tracking-tight text-on-surface mb-2">Create Profile</h2>
+<p class="text-on-surface-variant font-medium">Set the table for your next social meal.</p>
+</section>
+<!-- Profile Picture Upload -->
+<section class="mb-10 flex justify-center">
+<div class="relative group">
+<div class="w-32 h-32 rounded-full bg-surface-container-high flex items-center justify-center overflow-hidden ring-4 ring-white shadow-xl transition-transform active:scale-95">
+<img class="w-full h-full object-cover opacity-80 group-hover:opacity-60 transition-opacity" data-alt="Modern close-up portrait of a friendly smiling person with soft warm studio lighting and a clean minimalist background" src="https://lh3.googleusercontent.com/aida-public/AB6AXuDkuNXrcHfy46qqNVzH5WCEMMztgKNUW2-ZOvk2egw6QipHOKcqkdsMrYhwVldG3RyNp2J_ynP-LohRwu6ULWERiYrbC2g7RmLkGuWLso2o_e-Ih5dkbAdQkYMU1NCL0f3GyqwqtWC4UKRnw1-eIBLnXiHjNNKv69qf9izVTIhsz1aIAcNZavl4boZLKJ8IYMeulPgr8YSnqrrnXm0sss_MaGHOfbqT1WwmwPOWvwDP_byDQUeg20yimOvxiMksj47rY7JckyClSnY"/>
+<div class="absolute inset-0 flex items-center justify-center pointer-events-none">
+<span class="material-symbols-outlined text-on-surface-variant text-4xl" data-icon="add_a_photo">add_a_photo</span>
+</div>
+</div>
+<div class="absolute bottom-0 right-0 bg-primary-container p-2 rounded-full shadow-lg border-4 border-white">
+<span class="material-symbols-outlined text-on-primary-container text-xl" data-icon="edit">edit</span>
+</div>
+</div>
+</section>
+<!-- Form Section -->
+<section class="space-y-6 flex-grow">
+<!-- Display Name -->
+<div class="space-y-2">
+<label class="block label-md uppercase tracking-widest font-semibold text-on-surface-variant px-1" style="font-size: 0.75rem;">Display Name</label>
+<div class="relative">
+<input class="w-full bg-surface-container-highest border-none rounded-xl px-5 py-4 text-on-surface placeholder:text-outline focus:ring-2 focus:ring-primary-container transition-all" placeholder="e.g. Alex Thompson" type="text"/>
+</div>
+</div>
+<!-- Username -->
+<div class="space-y-2">
+<label class="block label-md uppercase tracking-widest font-semibold text-on-surface-variant px-1" style="font-size: 0.75rem;">Username</label>
+<div class="relative flex items-center">
+<span class="absolute left-5 text-on-surface-variant font-bold">@</span>
+<input class="w-full bg-surface-container-highest border-none rounded-xl pl-10 pr-5 py-4 text-on-surface placeholder:text-outline focus:ring-2 focus:ring-primary-container transition-all" placeholder="alexsplit" type="text"/>
+</div>
+<p class="text-label-sm text-on-surface-variant px-1 flex items-center gap-1" style="font-size: 0.75rem;">
+<span class="material-symbols-outlined text-sm" data-icon="info">info</span>
+                    Unique handle for splitting bills
+                </p>
+</div>
+<!-- Bio -->
+<div class="space-y-2">
+<label class="block label-md uppercase tracking-widest font-semibold text-on-surface-variant px-1" style="font-size: 0.75rem;">Short Bio</label>
+<div class="relative">
+<textarea class="w-full bg-surface-container-highest border-none rounded-xl px-5 py-4 text-on-surface placeholder:text-outline focus:ring-2 focus:ring-primary-container transition-all resize-none" placeholder="Foodie, coffee lover, and weekend brunch enthusiast..." rows="3"></textarea>
+</div>
+</div>
+<!-- Interests/Chips - Editorial Touch -->
+<div class="space-y-3">
+<label class="block label-md uppercase tracking-widest font-semibold text-on-surface-variant px-1" style="font-size: 0.75rem;">Dining Style</label>
+<div class="flex flex-wrap gap-2">
+<div class="bg-secondary-fixed-dim text-on-secondary-fixed px-4 py-2 rounded-full text-xs font-bold uppercase tracking-wider flex items-center gap-2 cursor-pointer active:scale-95 transition-transform">
+<span class="material-symbols-outlined text-sm" data-icon="restaurant">restaurant</span> Fine Dining
+                    </div>
+<div class="bg-surface-container-highest text-on-surface-variant px-4 py-2 rounded-full text-xs font-bold uppercase tracking-wider flex items-center gap-2 cursor-pointer active:scale-95 transition-transform">
+<span class="material-symbols-outlined text-sm" data-icon="coffee">coffee</span> Cafe Hopper
+                    </div>
+<div class="bg-surface-container-highest text-on-surface-variant px-4 py-2 rounded-full text-xs font-bold uppercase tracking-wider flex items-center gap-2 cursor-pointer active:scale-95 transition-transform">
+<span class="material-symbols-outlined text-sm" data-icon="local_bar">local_bar</span> Nightlife
+                    </div>
+</div>
+</div>
+</section>
+<!-- Actions -->
+<section class="mt-12">
+<button class="w-full py-5 bg-gradient-to-br from-primary to-primary-container text-on-primary font-headline font-bold text-lg rounded-full shadow-[0_12px_30px_rgba(171,45,0,0.2)] active:scale-95 transition-all flex items-center justify-center gap-3 group">
+                Complete Profile
+                <span class="material-symbols-outlined group-hover:translate-x-1 transition-transform" data-icon="chevron_right">chevron_right</span>
+</button>
+<p class="text-center mt-6 text-on-surface-variant text-sm px-4">
+                By continuing, you agree to our 
+                <a class="text-primary font-semibold underline decoration-2 underline-offset-4" href="#">Terms of Service</a>
+</p>
+</section>
+</main>
+<!-- Suppressed BottomNavBar for Transactional Flow as per rules -->
+<!-- But if needed for identity context, here is a ghost shell for visual balance -->
+<div class="h-8"></div>
+</body></html>

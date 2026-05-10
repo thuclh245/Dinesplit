@@ -31,18 +31,6 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 
-// --- KHO KHAI BÁO MÀU SẮC (Cách ly 100% bằng tiền tố Cb_) ---
-private val Cb_Bg = Color(0xFFF9F9F9)
-private val Cb_SurfaceWhite = Color(0xFFFFFFFF)
-
-private val Cb_OrangeStart = Color(0xFFE2725B)
-private val Cb_OrangeEnd = Color(0xFF9F402D)
-private val Cb_OrangeLightBg = Color(0xFFFFF0ED)
-private val Cb_OrangeIconBg = Color(0xFFFFDAD3)
-
-private val Cb_TextMain = Color(0xFF1A1C1C)
-private val Cb_TextSub = Color(0xFF56423E)
-
 // --- MÔ HÌNH DỮ LIỆU TẠM ---
 private data class Cb_SplitMember(
     val name: String,
@@ -55,6 +43,7 @@ private data class Cb_SplitMember(
 fun CreateBillScreen(
     onBack: () -> Unit
 ) {
+    val colorScheme = MaterialTheme.colorScheme
     var billName by remember { mutableStateOf("") }
 
     val members = listOf(
@@ -64,7 +53,7 @@ fun CreateBillScreen(
     )
 
     Scaffold(
-        containerColor = Cb_Bg,
+        containerColor = colorScheme.surface,
         topBar = { Cb_TopBar(onBack = onBack) }
         // KHÔNG DÙNG bottomBar NỮA ĐỂ KHÔNG BỊ LỖI CUỘN
     ) { paddingValues ->
@@ -99,30 +88,31 @@ fun CreateBillScreen(
 
 @Composable
 private fun Cb_TopBar(onBack: () -> Unit) {
+    val colorScheme = MaterialTheme.colorScheme
     Row(
         modifier = Modifier
             .fillMaxWidth()
-            .background(Color.White.copy(alpha = 0.9f))
+            .background(colorScheme.surfaceContainerLowest.copy(alpha = 0.9f))
             .padding(horizontal = 24.dp, vertical = 16.dp),
         verticalAlignment = Alignment.CenterVertically,
         horizontalArrangement = Arrangement.SpaceBetween
     ) {
         IconButton(onClick = onBack, modifier = Modifier.size(24.dp)) {
-            Icon(Icons.AutoMirrored.Filled.ArrowBack, contentDescription = "Quay lại", tint = Cb_OrangeEnd)
+            Icon(Icons.AutoMirrored.Filled.ArrowBack, contentDescription = "Quay lại", tint = colorScheme.primary)
         }
 
         Text(
             text = "Tạo hóa đơn",
             fontSize = 18.sp,
             fontWeight = FontWeight.ExtraBold,
-            color = Cb_OrangeEnd
+            color = colorScheme.primary
         )
 
         Text(
             text = "Lưu",
             fontSize = 16.sp,
             fontWeight = FontWeight.Bold,
-            color = Cb_OrangeEnd,
+            color = colorScheme.primary,
             modifier = Modifier.clickable { /* Xử lý lưu nháp */ }
         )
     }
@@ -130,9 +120,10 @@ private fun Cb_TopBar(onBack: () -> Unit) {
 
 @Composable
 private fun Cb_MainInfoCard(billName: String, onNameChange: (String) -> Unit) {
+    val colorScheme = MaterialTheme.colorScheme
     Card(
         modifier = Modifier.fillMaxWidth(),
-        colors = CardDefaults.cardColors(containerColor = Cb_SurfaceWhite),
+        colors = CardDefaults.cardColors(containerColor = colorScheme.surfaceContainerLowest),
         elevation = CardDefaults.cardElevation(defaultElevation = 2.dp),
         shape = RoundedCornerShape(16.dp)
     ) {
@@ -142,21 +133,21 @@ private fun Cb_MainInfoCard(billName: String, onNameChange: (String) -> Unit) {
                     modifier = Modifier
                         .size(40.dp)
                         .clip(CircleShape)
-                        .background(Cb_OrangeIconBg),
+                        .background(colorScheme.errorContainer),
                     contentAlignment = Alignment.Center
                 ) {
-                    Icon(Icons.Default.Edit, contentDescription = null, tint = Cb_OrangeEnd, modifier = Modifier.size(20.dp))
+                    Icon(Icons.Default.Edit, contentDescription = null, tint = colorScheme.primary, modifier = Modifier.size(20.dp))
                 }
                 Spacer(modifier = Modifier.width(12.dp))
 
                 Box(modifier = Modifier.weight(1f)) {
                     if (billName.isEmpty()) {
-                        Text("Tên hóa đơn (VD: Lẩu Haidilao)", color = Color.Gray, fontSize = 16.sp, fontWeight = FontWeight.Medium)
+                        Text("Tên hóa đơn (VD: Lẩu Haidilao)", color = colorScheme.outline, fontSize = 16.sp, fontWeight = FontWeight.Medium)
                     }
                     BasicTextField(
                         value = billName,
                         onValueChange = onNameChange,
-                        textStyle = TextStyle(fontSize = 16.sp, fontWeight = FontWeight.Medium, color = Cb_TextMain),
+                        textStyle = TextStyle(fontSize = 16.sp, fontWeight = FontWeight.Medium, color = colorScheme.onSurface),
                         modifier = Modifier.fillMaxWidth()
                     )
                 }
@@ -164,21 +155,21 @@ private fun Cb_MainInfoCard(billName: String, onNameChange: (String) -> Unit) {
 
             Spacer(modifier = Modifier.height(24.dp))
 
-            Text(text = "TỔNG CỘNG", fontSize = 12.sp, fontWeight = FontWeight.Bold, color = Cb_TextSub.copy(alpha = 0.6f), letterSpacing = 1.sp)
+            Text(text = "TỔNG CỘNG", fontSize = 12.sp, fontWeight = FontWeight.Bold, color = colorScheme.onSurfaceVariant.copy(alpha = 0.6f), letterSpacing = 1.sp)
             Spacer(modifier = Modifier.height(4.dp))
-            Text(text = "1.200.000 đ", fontSize = 32.sp, fontWeight = FontWeight.ExtraBold, color = Cb_OrangeEnd)
+            Text(text = "1.200.000 đ", fontSize = 32.sp, fontWeight = FontWeight.ExtraBold, color = colorScheme.primary)
 
             Spacer(modifier = Modifier.height(16.dp))
 
             Row(
                 verticalAlignment = Alignment.CenterVertically,
                 modifier = Modifier
-                    .background(Color(0xFFF3F3F3), RoundedCornerShape(12.dp))
+                    .background(colorScheme.surfaceContainerLow, RoundedCornerShape(12.dp))
                     .padding(horizontal = 16.dp, vertical = 8.dp)
             ) {
-                Icon(Icons.Default.DateRange, contentDescription = null, tint = Cb_TextSub, modifier = Modifier.size(16.dp))
+                Icon(Icons.Default.DateRange, contentDescription = null, tint = colorScheme.onSurfaceVariant, modifier = Modifier.size(16.dp))
                 Spacer(modifier = Modifier.width(8.dp))
-                Text(text = "Hôm nay, 10 Tháng 4", fontSize = 14.sp, fontWeight = FontWeight.SemiBold, color = Cb_TextSub)
+                Text(text = "Hôm nay, 10 Tháng 4", fontSize = 14.sp, fontWeight = FontWeight.SemiBold, color = colorScheme.onSurfaceVariant)
             }
         }
     }
@@ -186,21 +177,22 @@ private fun Cb_MainInfoCard(billName: String, onNameChange: (String) -> Unit) {
 
 @Composable
 private fun Cb_PayerSection() {
+    val colorScheme = MaterialTheme.colorScheme
     Column {
         Text(
             text = "NGƯỜI THANH TOÁN",
             fontSize = 11.sp,
             fontWeight = FontWeight.Bold,
-            color = Cb_TextSub.copy(alpha = 0.7f),
+            color = colorScheme.onSurfaceVariant.copy(alpha = 0.7f),
             letterSpacing = 1.5.sp,
             modifier = Modifier.padding(start = 4.dp, bottom = 8.dp)
         )
 
         Card(
             modifier = Modifier.fillMaxWidth(),
-            colors = CardDefaults.cardColors(containerColor = Cb_SurfaceWhite),
+            colors = CardDefaults.cardColors(containerColor = colorScheme.surfaceContainerLowest),
             shape = RoundedCornerShape(16.dp),
-            border = androidx.compose.foundation.BorderStroke(1.dp, Color.LightGray.copy(alpha = 0.3f))
+            border = androidx.compose.foundation.BorderStroke(1.dp, colorScheme.outlineVariant.copy(alpha = 0.3f))
         ) {
             Row(
                 modifier = Modifier.fillMaxWidth().padding(16.dp),
@@ -211,21 +203,21 @@ private fun Cb_PayerSection() {
                     Box(
                         modifier = Modifier
                             .size(40.dp)
-                            .border(2.dp, Cb_OrangeStart, CircleShape)
+                            .border(2.dp, colorScheme.primaryContainer, CircleShape)
                             .padding(2.dp)
                             .clip(CircleShape)
-                            .background(Color.DarkGray),
+                            .background(colorScheme.onSurfaceVariant),
                         contentAlignment = Alignment.Center
                     ) {
-                        Text("B", color = Color.White, fontWeight = FontWeight.Bold)
+                        Text("B", color = colorScheme.surfaceContainerLowest, fontWeight = FontWeight.Bold)
                     }
                     Spacer(modifier = Modifier.width(12.dp))
                     Column {
-                        Text("Bạn", fontWeight = FontWeight.Bold, color = Cb_TextMain)
-                        Text("Trả toàn bộ hóa đơn", fontSize = 12.sp, color = Cb_TextSub)
+                        Text("Bạn", fontWeight = FontWeight.Bold, color = colorScheme.onSurface)
+                        Text("Trả toàn bộ hóa đơn", fontSize = 12.sp, color = colorScheme.onSurfaceVariant)
                     }
                 }
-                Icon(Icons.Default.KeyboardArrowDown, contentDescription = "Đổi người", tint = Cb_TextSub)
+                Icon(Icons.Default.KeyboardArrowDown, contentDescription = "Đổi người", tint = colorScheme.onSurfaceVariant)
             }
         }
     }
@@ -233,8 +225,9 @@ private fun Cb_PayerSection() {
 
 @Composable
 private fun Cb_SplitMethodTabs() {
+    val colorScheme = MaterialTheme.colorScheme
     Surface(
-        color = Color(0xFFF3F3F3),
+        color = colorScheme.surfaceContainerLow,
         shape = RoundedCornerShape(50),
         modifier = Modifier.fillMaxWidth()
     ) {
@@ -243,21 +236,21 @@ private fun Cb_SplitMethodTabs() {
                 modifier = Modifier
                     .weight(1f)
                     .background(
-                        brush = Brush.verticalGradient(listOf(Cb_OrangeStart, Cb_OrangeEnd)),
+                        brush = Brush.verticalGradient(listOf(colorScheme.primaryContainer, colorScheme.primary)),
                         shape = RoundedCornerShape(50)
                     )
                     .padding(vertical = 10.dp),
                 contentAlignment = Alignment.Center
             ) {
-                Text("Chia đều", color = Color.White, fontWeight = FontWeight.Bold, fontSize = 13.sp)
+                Text("Chia đều", color = colorScheme.surfaceContainerLowest, fontWeight = FontWeight.Bold, fontSize = 13.sp)
             }
 
             Box(modifier = Modifier.weight(1f).padding(vertical = 10.dp), contentAlignment = Alignment.Center) {
-                Text("Tự nhập", color = Cb_TextSub.copy(alpha = 0.7f), fontWeight = FontWeight.Bold, fontSize = 13.sp)
+                Text("Tự nhập", color = colorScheme.onSurfaceVariant.copy(alpha = 0.7f), fontWeight = FontWeight.Bold, fontSize = 13.sp)
             }
 
             Box(modifier = Modifier.weight(1f).padding(vertical = 10.dp), contentAlignment = Alignment.Center) {
-                Text("Theo món", color = Cb_TextSub.copy(alpha = 0.7f), fontWeight = FontWeight.Bold, fontSize = 13.sp)
+                Text("Theo món", color = colorScheme.onSurfaceVariant.copy(alpha = 0.7f), fontWeight = FontWeight.Bold, fontSize = 13.sp)
             }
         }
     }
@@ -265,9 +258,10 @@ private fun Cb_SplitMethodTabs() {
 
 @Composable
 private fun Cb_SplitDetailsList(members: List<Cb_SplitMember>) {
+    val colorScheme = MaterialTheme.colorScheme
     Card(
         modifier = Modifier.fillMaxWidth(),
-        colors = CardDefaults.cardColors(containerColor = Cb_SurfaceWhite),
+        colors = CardDefaults.cardColors(containerColor = colorScheme.surfaceContainerLowest),
         elevation = CardDefaults.cardElevation(defaultElevation = 2.dp),
         shape = RoundedCornerShape(16.dp)
     ) {
@@ -276,7 +270,7 @@ private fun Cb_SplitDetailsList(members: List<Cb_SplitMember>) {
                 Row(
                     modifier = Modifier
                         .fillMaxWidth()
-                        .background(if (member.isMe) Cb_OrangeLightBg else Color.Transparent)
+                        .background(if (member.isMe) colorScheme.primaryContainer.copy(alpha = 0.15f) else Color.Transparent)
                         .padding(16.dp),
                     verticalAlignment = Alignment.CenterVertically,
                     horizontalArrangement = Arrangement.SpaceBetween
@@ -286,19 +280,19 @@ private fun Cb_SplitDetailsList(members: List<Cb_SplitMember>) {
                             modifier = Modifier
                                 .size(40.dp)
                                 .clip(CircleShape)
-                                .background(if (member.isMe) Cb_OrangeEnd else Color.LightGray),
+                                .background(if (member.isMe) colorScheme.primary else colorScheme.outlineVariant),
                             contentAlignment = Alignment.Center
                         ) {
-                            Text(member.initial, color = Color.White, fontWeight = FontWeight.Bold)
+                            Text(member.initial, color = colorScheme.surfaceContainerLowest, fontWeight = FontWeight.Bold)
                         }
                         Spacer(modifier = Modifier.width(12.dp))
                         Column {
-                            Text(member.name, fontWeight = FontWeight.Bold, color = Cb_TextMain)
+                            Text(member.name, fontWeight = FontWeight.Bold, color = colorScheme.onSurface)
                             Text(
                                 text = member.amount,
                                 fontSize = 12.sp,
                                 fontWeight = FontWeight.Medium,
-                                color = if (member.isMe) Cb_OrangeEnd else Cb_TextSub
+                                color = if (member.isMe) colorScheme.primary else colorScheme.onSurfaceVariant
                             )
                         }
                     }
@@ -307,27 +301,27 @@ private fun Cb_SplitDetailsList(members: List<Cb_SplitMember>) {
                         modifier = Modifier
                             .size(24.dp)
                             .clip(CircleShape)
-                            .background(Cb_OrangeEnd),
+                            .background(colorScheme.primary),
                         contentAlignment = Alignment.Center
                     ) {
-                        Icon(Icons.Default.Check, contentDescription = null, tint = Color.White, modifier = Modifier.size(16.dp))
+                        Icon(Icons.Default.Check, contentDescription = null, tint = colorScheme.surfaceContainerLowest, modifier = Modifier.size(16.dp))
                     }
                 }
-                HorizontalDivider(color = Color.LightGray.copy(alpha = 0.2f))
+                HorizontalDivider(color = colorScheme.outlineVariant.copy(alpha = 0.2f))
             }
 
             Row(
                 modifier = Modifier
                     .fillMaxWidth()
-                    .background(Color(0xFFF9F9F9))
+                    .background(colorScheme.surface)
                     .clickable { /* Mở modal thêm người */ }
                     .padding(16.dp),
                 horizontalArrangement = Arrangement.Center,
                 verticalAlignment = Alignment.CenterVertically
             ) {
-                Icon(Icons.Default.Add, contentDescription = null, tint = Cb_OrangeEnd, modifier = Modifier.size(20.dp))
+                Icon(Icons.Default.Add, contentDescription = null, tint = colorScheme.primary, modifier = Modifier.size(20.dp))
                 Spacer(modifier = Modifier.width(8.dp))
-                Text("Thêm người tham gia", color = Cb_OrangeEnd, fontWeight = FontWeight.Bold, fontSize = 14.sp)
+                Text("Thêm người tham gia", color = colorScheme.primary, fontWeight = FontWeight.Bold, fontSize = 14.sp)
             }
         }
     }
@@ -335,12 +329,13 @@ private fun Cb_SplitDetailsList(members: List<Cb_SplitMember>) {
 
 @Composable
 private fun Cb_BottomAction() {
+    val colorScheme = MaterialTheme.colorScheme
     Box(
         modifier = Modifier
             .fillMaxWidth()
             .background(
                 brush = Brush.verticalGradient(
-                    colors = listOf(Color.Transparent, Cb_Bg, Cb_Bg),
+                    colors = listOf(Color.Transparent, colorScheme.surface, colorScheme.surface),
                     startY = 0f,
                     endY = 100f
                 )
@@ -359,12 +354,12 @@ private fun Cb_BottomAction() {
             Box(
                 modifier = Modifier
                     .fillMaxSize()
-                    .background(brush = Brush.horizontalGradient(listOf(Cb_OrangeStart, Cb_OrangeEnd))),
+                    .background(brush = Brush.horizontalGradient(listOf(colorScheme.primaryContainer, colorScheme.primary))),
                 contentAlignment = Alignment.Center
             ) {
                 Text(
                     text = "Xác nhận hóa đơn",
-                    color = Color.White,
+                    color = colorScheme.surfaceContainerLowest,
                     fontSize = 16.sp,
                     fontWeight = FontWeight.ExtraBold
                 )

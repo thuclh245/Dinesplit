@@ -1,0 +1,210 @@
+<!DOCTYPE html>
+
+<html class="light" lang="en"><head>
+<meta charset="utf-8"/>
+<meta content="width=device-width, initial-scale=1.0" name="viewport"/>
+<title>Search - DineSplit Social</title>
+<script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
+<link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<script id="tailwind-config">
+        tailwind.config = {
+            darkMode: "class",
+            theme: {
+                extend: {
+                    "colors": {
+                        "secondary-fixed-dim": "#76e7d7",
+                        "surface-container-low": "#f2f0ef",
+                        "on-error-container": "#570008",
+                        "secondary-container": "#85f6e5",
+                        "on-secondary-fixed": "#004841",
+                        "on-primary-fixed-variant": "#581300",
+                        "surface-container-lowest": "#ffffff",
+                        "outline-variant": "#aeadac",
+                        "primary-container": "#ff7851",
+                        "tertiary-fixed": "#f4a237",
+                        "surface": "#f8f6f5",
+                        "tertiary": "#835000",
+                        "error-dim": "#9f0519",
+                        "secondary": "#00675d",
+                        "on-surface-variant": "#5b5b5b",
+                        "outline": "#777776",
+                        "tertiary-container": "#f4a237",
+                        "on-primary-container": "#470e00",
+                        "on-error": "#ffefee",
+                        "inverse-primary": "#ff5722",
+                        "surface-container-high": "#e3e2e1",
+                        "inverse-on-surface": "#9d9d9c",
+                        "primary-fixed": "#ff7851",
+                        "primary-fixed-dim": "#ff5d2b",
+                        "secondary-fixed": "#85f6e5",
+                        "primary-dim": "#962700",
+                        "on-tertiary-container": "#4b2b00",
+                        "on-secondary-fixed-variant": "#00675d",
+                        "background": "#f8f6f5",
+                        "on-background": "#2e2f2e",
+                        "primary": "#ab2d00",
+                        "surface-variant": "#dddddc",
+                        "error-container": "#fb5151",
+                        "surface-bright": "#f8f6f5",
+                        "on-tertiary-fixed-variant": "#573300",
+                        "on-tertiary": "#fff0e4",
+                        "error": "#b31b25",
+                        "on-surface": "#2e2f2e",
+                        "surface-container-highest": "#dddddc",
+                        "surface-container": "#e9e8e7",
+                        "tertiary-dim": "#734500",
+                        "tertiary-fixed-dim": "#e4942a",
+                        "secondary-dim": "#005a51",
+                        "on-secondary": "#c0fff4",
+                        "surface-tint": "#ab2d00",
+                        "on-tertiary-fixed": "#2a1600",
+                        "on-secondary-container": "#005c53",
+                        "inverse-surface": "#0d0e0e",
+                        "surface-dim": "#d5d4d3",
+                        "on-primary": "#ffefeb",
+                        "on-primary-fixed": "#000000"
+                    },
+                    "borderRadius": {
+                        "DEFAULT": "1rem",
+                        "lg": "2rem",
+                        "xl": "3rem",
+                        "full": "9999px"
+                    },
+                    "spacing": {},
+                    "fontFamily": {
+                        "headline": ["Plus Jakarta Sans"],
+                        "display": ["Plus Jakarta Sans"],
+                        "body": ["Plus Jakarta Sans"],
+                        "label": ["Plus Jakarta Sans"]
+                    },
+                    "fontSize": {}
+                },
+            },
+        }
+    </script>
+<style>
+        body { font-family: 'Plus Jakarta Sans', sans-serif; }
+    </style>
+<style>
+    body {
+      min-height: max(884px, 100dvh);
+    }
+  </style>
+</head>
+<body class="bg-surface text-on-background">
+<!-- TopAppBar -->
+<header class="fixed top-0 w-full z-50 bg-surface">
+<div class="flex items-center justify-between px-6 py-4 w-full mx-auto gap-4">
+<button class="active:scale-95 duration-200 text-on-surface-variant hover:opacity-80 transition-opacity">
+<span class="material-symbols-outlined text-2xl">arrow_back</span>
+</button>
+<div class="relative flex-1 group mx-2">
+<input autofocus="" class="w-full bg-surface-container-low text-on-surface py-2 pr-4 rounded-full border-none focus:ring-2 focus:ring-primary shadow-sm font-body text-sm placeholder:text-outline-variant transition-all outline-none pl-4" placeholder="Search..." type="text"/>
+</div>
+</div>
+</header>
+<main class="max-w-screen-xl mx-auto px-6 space-y-12 pt-20">
+<!-- Search Bar -->
+<!-- Recent Searches -->
+<section>
+<h2 class="font-headline text-lg font-bold text-on-surface mb-6 ml-4">Recent Searches</h2>
+<div class="flex flex-wrap gap-3">
+<button class="bg-surface-container-high text-on-surface px-5 py-2.5 rounded-full font-label text-sm font-medium hover:bg-surface-container-highest transition-colors active:scale-95 flex items-center gap-2">
+<span class="material-symbols-outlined text-[18px] text-outline-variant">history</span>
+                    Pizza
+                </button>
+<button class="bg-surface-container-high text-on-surface px-5 py-2.5 rounded-full font-label text-sm font-medium hover:bg-surface-container-highest transition-colors active:scale-95 flex items-center gap-2">
+<span class="material-symbols-outlined text-[18px] text-outline-variant">history</span>
+                    Sushi
+                </button>
+<button class="bg-surface-container-high text-on-surface px-5 py-2.5 rounded-full font-label text-sm font-medium hover:bg-surface-container-highest transition-colors active:scale-95 flex items-center gap-2">
+<span class="material-symbols-outlined text-[18px] text-outline-variant">history</span>
+                    Minh Tu
+                </button>
+<button class="bg-surface-container-high text-on-surface px-5 py-2.5 rounded-full font-label text-sm font-medium hover:bg-surface-container-highest transition-colors active:scale-95 flex items-center gap-2">
+<span class="material-symbols-outlined text-[18px] text-outline-variant">history</span>
+                    Tacos
+                </button>
+</div>
+</section>
+<!-- Discover People -->
+<section>
+<h2 class="font-headline text-lg font-bold text-on-surface mb-6 ml-4">Discover People</h2>
+<div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+<!-- Person Card 1 -->
+<div class="bg-surface-container-lowest p-4 rounded-xl flex items-center justify-between shadow-[0_4px_24px_rgba(46,47,46,0.04)]">
+<div class="flex items-center gap-4">
+<div class="w-12 h-12 rounded-full overflow-hidden bg-surface-container">
+<img alt="Alex Rivera" class="w-full h-full object-cover" data-alt="A well-lit, candid portrait of a smiling man with short dark hair in a casual urban setting. The lighting is natural and soft, highlighting a friendly expression. The background is slightly blurred, focusing on the subject. The color palette includes warm tones and subtle orange highlights, fitting a premium, friendly social app aesthetic." src="https://lh3.googleusercontent.com/aida-public/AB6AXuDwxJnHovEA4MZZn9_eD7i7DfH26b0g9SmrcAMRkO3PQvhUxRiuLYUSwSdrzF5tI15Tf5_QjCIsK3-zmmXq85-hjWR7JDv0nL46Gxzjtol8bTEDtcNtce1HTbUzG9Tl0B7IUz8v582Q8bnm3-QeQE8kR2c3b0sjBTj0qbAHIie7WPaU1c3Rak4lgJYQEkvUgX69rYbBO2cHdasU-aUybsRDmgAz4buZSO10y2Y_c5JiQdFD8386aat4eQnqfF9AZRBy3KNm4h31sQ"/>
+</div>
+<div>
+<h3 class="font-title text-base font-semibold text-on-surface">Alex Rivera</h3>
+<p class="font-label text-sm text-on-surface-variant">@arivera</p>
+</div>
+</div>
+<button class="bg-primary/10 text-primary font-label text-sm font-semibold px-4 py-2 rounded-full hover:bg-primary/20 transition-colors">
+                        Follow
+                    </button>
+</div>
+<!-- Person Card 2 -->
+<div class="bg-surface-container-lowest p-4 rounded-xl flex items-center justify-between shadow-[0_4px_24px_rgba(46,47,46,0.04)]">
+<div class="flex items-center gap-4">
+<div class="w-12 h-12 rounded-full overflow-hidden bg-surface-container">
+<img alt="Sarah Chen" class="w-full h-full object-cover" data-alt="A portrait of a young woman with a bright, welcoming smile, outdoors on a sunny day. The lighting creates soft highlights on her face and hair. The background is a soft, out-of-focus green and white, keeping the focus entirely on her friendly expression. The overall mood is vibrant, modern, and aligned with a high-end social lifestyle aesthetic." src="https://lh3.googleusercontent.com/aida-public/AB6AXuADofLptzzae-aLxMe7sdKsfW_WuKzC2SA61NgiVHocSdFixcvw3Z-zOXpYMATh-994KFD43AJIKO60mpimtqsxdh2rBKrwhpyvL62G9vfr4qV7c0nVCgSRa0CIFM-dY62ELfBq-5ssnWNecSo6fZF8_3Z-2izT1eoEhsdEym5ZRnJtQ1p5vFh4GF8d4ts0MHERtAd8Rv6XjOseuOUk5tE_hxI7E6evpiPfPE_11sJSh0AsQx6a6Ur9Llm8fXWNiflnQYzhJlZzJg"/>
+</div>
+<div>
+<h3 class="font-title text-base font-semibold text-on-surface">Sarah Chen</h3>
+<p class="font-label text-sm text-on-surface-variant">@schen_eats</p>
+</div>
+</div>
+<button class="bg-primary/10 text-primary font-label text-sm font-semibold px-4 py-2 rounded-full hover:bg-primary/20 transition-colors">
+                        Follow
+                    </button>
+</div>
+</div>
+</section>
+<!-- Trending Places (Bento Grid) -->
+<section>
+<h2 class="font-headline text-lg font-bold text-on-surface mb-6 ml-4">Trending Places</h2>
+<div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+<!-- Place Card 1 -->
+<div class="group relative rounded-2xl overflow-hidden bg-surface-container-lowest shadow-[0_4px_24px_rgba(46,47,46,0.06)] flex flex-col cursor-pointer">
+<div class="h-40 w-full relative">
+<img alt="Restaurant Interior" class="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500" data-alt="A warm, inviting interior of a trendy, modern restaurant. The scene features ambient, low-key lighting with glowing pendant lamps over rustic wooden tables. The overall color palette is rich with deep warm tones, subtle teal accents, and soft shadows. The mood is intimate, social, and perfectly captures the essence of a high-end dining experience." src="https://lh3.googleusercontent.com/aida-public/AB6AXuAnKvQKCCduaFahO55imH8Cl_EDOrKzD3axmpQl65HQdBlT-AvIAYxjxe-Iq2cLOXN_QBN51DrnEjhtaPAWPe2pT7QCSXolQ6eQIQfn0KozsJ7NprB-f8mJStrrAmYHt6Ifz9821HotOldGO8chnQ9MDmdEPqu4pFmpzKUh1zLllrrHhJIBDC0hTE8erOZBXMsqYcqXhnycvovS241S6TCDAym__w04HbAcz2mnktnxKVfuWgKkmgy2lSRvRh6lHSLGA17PyB6W-Q"/>
+<div class="absolute inset-0 bg-surface-tint/10"></div>
+<div class="absolute top-4 right-4 bg-surface-container-lowest/90 backdrop-blur-md px-3 py-1 rounded-full flex items-center gap-1 shadow-sm">
+<span class="material-symbols-outlined text-[16px] text-tertiary-fixed" style='font-variation-settings: "FILL" 1;'>star</span>
+<span class="font-label text-sm font-bold text-on-surface">4.8</span>
+</div>
+</div>
+<div class="p-5 flex-1 flex flex-col justify-between">
+<div>
+<h3 class="font-title text-lg font-semibold text-on-surface mb-1">The Rustic Spoons</h3>
+<p class="font-body text-sm text-on-surface-variant line-clamp-2">Artisanal Italian • $$$ • 1.2 mi</p>
+</div>
+</div>
+</div>
+<!-- Place Card 2 -->
+<div class="group relative rounded-2xl overflow-hidden bg-surface-container-lowest shadow-[0_4px_24px_rgba(46,47,46,0.06)] flex flex-col cursor-pointer">
+<div class="h-40 w-full relative">
+<img alt="Cafe Exterior" class="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500" data-alt="A bright, airy modern cafe or bistro setting during the day. The scene shows beautifully plated food on a light-colored table with natural sunlight streaming across it. The aesthetic is clean, minimalist, and very 'foodie', utilizing a color palette of crisp whites, natural wood textures, and vibrant orange/red accents from the food itself." src="https://lh3.googleusercontent.com/aida-public/AB6AXuCkxScXIbLdu6IiOy23I0nbl2-tb8Zhwv5q6IOHlBqhaI2piPVrmIp0iMOuGCPZfmQDg5OkvifWKNUMCEKZ0h0a09Qa-OdIzFKMjHGqjbOv_ri4hEO1W_ofZ6RZxhjH2ey-gZ8jBqTOc1ErG-cGKZPNsxALDyFAM6xHYP_SYCrz-7gdSTyMWUv50ARCoL_Bvlfg9uwEHrWaKpCgHqR7QGFApntACPfJMHNoW1Q1PGfbIZyxPiQs2p1ksTVn6_v_uIGlBbDuhvVBpQ"/>
+<div class="absolute inset-0 bg-surface-tint/10"></div>
+<div class="absolute top-4 right-4 bg-surface-container-lowest/90 backdrop-blur-md px-3 py-1 rounded-full flex items-center gap-1 shadow-sm">
+<span class="material-symbols-outlined text-[16px] text-tertiary-fixed" style='font-variation-settings: "FILL" 1;'>star</span>
+<span class="font-label text-sm font-bold text-on-surface">4.6</span>
+</div>
+</div>
+<div class="p-5 flex-1 flex flex-col justify-between">
+<div>
+<h3 class="font-title text-lg font-semibold text-on-surface mb-1">Urban Greens</h3>
+<p class="font-body text-sm text-on-surface-variant line-clamp-2">Healthy Bowls • $$ • 0.8 mi</p>
+</div>
+</div>
+</div>
+</div>
+</section>
+</main>
+<!-- BottomNavBar -->
+</body></html>

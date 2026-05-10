@@ -52,8 +52,8 @@ fun PersonalPieChart(
         MaterialTheme.colorScheme.tertiary,
         MaterialTheme.colorScheme.secondary,
         MaterialTheme.colorScheme.error,
-        Color(0xFF4CAF50),
-        Color(0xFFFF9800)
+        MaterialTheme.colorScheme.tertiary,
+        MaterialTheme.colorScheme.tertiaryContainer
     )
 
     val coloredSlices = validSlices.mapIndexed { index, item ->

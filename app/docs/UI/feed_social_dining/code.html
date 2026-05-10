@@ -1,0 +1,306 @@
+<!DOCTYPE html>
+
+<html class="light" lang="en"><head>
+<meta charset="utf-8"/>
+<meta content="width=device-width, initial-scale=1.0" name="viewport"/>
+<title>DineSplit - Social Food Feed</title>
+<script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
+<link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@300;400;500;600;700;800&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<script id="tailwind-config">
+      tailwind.config = {
+        darkMode: "class",
+        theme: {
+          extend: {
+            colors: {
+              "on-tertiary-fixed-variant": "#573300",
+              "secondary-fixed": "#85f6e5",
+              "secondary-dim": "#005a51",
+              "surface-container": "#e9e8e7",
+              "on-tertiary": "#fff0e4",
+              "tertiary-fixed": "#f4a237",
+              "surface-container-lowest": "#ffffff",
+              "surface-variant": "#dddddc",
+              "on-error": "#ffefee",
+              "primary-container": "#ff7851",
+              "on-tertiary-fixed": "#2a1600",
+              "secondary": "#00675d",
+              "inverse-primary": "#ff5722",
+              "surface-container-highest": "#dddddc",
+              "tertiary": "#835000",
+              "on-surface-variant": "#5b5b5b",
+              "outline": "#777776",
+              "inverse-on-surface": "#9d9d9c",
+              "on-primary-fixed": "#000000",
+              "primary-fixed-dim": "#ff5d2b",
+              "on-surface": "#2e2f2e",
+              "error": "#b31b25",
+              "surface-tint": "#ab2d00",
+              "background": "#f8f6f5",
+              "error-dim": "#9f0519",
+              "tertiary-fixed-dim": "#e4942a",
+              "primary-dim": "#962700",
+              "on-secondary-fixed-variant": "#00675d",
+              "on-error-container": "#570008",
+              "secondary-fixed-dim": "#76e7d7",
+              "outline-variant": "#aeadac",
+              "on-primary": "#ffefeb",
+              "on-tertiary-container": "#4b2b00",
+              "on-secondary-fixed": "#004841",
+              "surface-bright": "#f8f6f5",
+              "inverse-surface": "#0d0e0e",
+              "on-primary-container": "#470e00",
+              "surface": "#f8f6f5",
+              "secondary-container": "#85f6e5",
+              "primary-fixed": "#ff7851",
+              "on-primary-fixed-variant": "#581300",
+              "surface-container-high": "#e3e2e1",
+              "surface-container-low": "#f2f0ef",
+              "on-background": "#2e2f2e",
+              "surface-dim": "#d5d4d3",
+              "primary": "#ab2d00",
+              "on-secondary": "#c0fff4",
+              "tertiary-dim": "#734500",
+              "tertiary-container": "#f4a237",
+              "error-container": "#fb5151",
+              "on-secondary-container": "#005c53"
+            },
+            fontFamily: {
+              "headline": ["Plus Jakarta Sans"],
+              "body": ["Plus Jakarta Sans"],
+              "label": ["Plus Jakarta Sans"]
+            },
+            borderRadius: {"DEFAULT": "1rem", "lg": "2rem", "xl": "3rem", "full": "9999px"},
+          },
+        },
+      }
+    </script>
+<style>
+        body { font-family: 'Plus Jakarta Sans', sans-serif; }
+        .material-symbols-outlined {
+            font-variation-settings: 'FILL' 0, 'wght' 400, 'GRAD' 0, 'opsz' 24;
+        }
+        .hide-scrollbar::-webkit-scrollbar { display: none; }
+        .hide-scrollbar { -ms-overflow-style: none; scrollbar-width: none; }
+    </style>
+<style>
+    body {
+      min-height: max(884px, 100dvh);
+    }
+  </style>
+  </head>
+<body class="bg-background text-on-surface min-h-screen pb-32">
+<!-- Top App Bar -->
+<header class="bg-[#f8f6f5] flex justify-between items-center px-6 py-4 w-full sticky top-0 z-50">
+<div class="flex items-center gap-3">
+<div class="w-10 h-10 rounded-full overflow-hidden border-2 border-primary">
+<img alt="Profile" data-alt="Portrait of a young Vietnamese man with a friendly smile, natural soft lighting, urban cafe background" src="https://lh3.googleusercontent.com/aida-public/AB6AXuCpnvw7NZghOMJRnH_WaC3eHutJm9XoZmybu_TS_uk9WGcWsJ_ROjtI90_bvBZh8RdgNB0TqYRJz9rZwQs8ccGh0XZdffsyr3NPpk2NVubfaS48U6sqwA-G3_MDzJUaOs2ZwR38m4yLqhn5qc9roHjyOG9DRe0snpGmqEaalIMhGPfnnWqyYIKfjwhLix41mqjPZc3XGCjrn-j-XR7ybsOoJqCMtxUDerTeRQZEdpJI07YwJUZ1l4qlO-YwxfFb6oJMhnd9dTple0c"/>
+</div>
+<h1 class="font-['Plus_Jakarta_Sans'] font-black text-2xl tracking-tighter text-[#ab2d00]">DineSplit</h1>
+</div>
+<div class="flex items-center gap-4">
+<button class="text-[#ab2d00] hover:opacity-80 transition-opacity active:scale-95 duration-200">
+<span class="material-symbols-outlined text-2xl" data-icon="search">search</span>
+</button>
+<button class="text-[#ab2d00] hover:opacity-80 transition-opacity active:scale-95 duration-200">
+<span class="material-symbols-outlined text-2xl" data-icon="notifications">notifications</span>
+</button>
+</div>
+</header>
+<main class="max-w-xl mx-auto px-4">
+<!-- Story/Status Bar: Your Meal & Activity -->
+<section class="mt-4 mb-8">
+<h2 class="text-sm font-bold uppercase tracking-widest text-outline-variant mb-4 px-2">Recent Group Vibes</h2>
+<div class="flex gap-4 overflow-x-auto hide-scrollbar pb-2">
+<!-- Current Meal Status (Asymmetric) -->
+<div class="flex-shrink-0 w-32 h-44 rounded-xl relative overflow-hidden bg-primary-container group">
+<img class="absolute inset-0 w-full h-full object-cover opacity-60 mix-blend-multiply" data-alt="Close up of vibrant Vietnamese Bun Bo Hue with herbs and lime, steam rising, warm restaurant lighting" src="https://lh3.googleusercontent.com/aida-public/AB6AXuDK-tvPMo867EAwEwleBgzX8R9QReUBHS9zRKDNRQeVBoRqUOW5HiZEk7lP__cGXdsQk54h1RXzZsyYX6PNbnXnIUEq8qInVBjCxseD_Xni_-dzFLT3Lnb2LuZQNOYPNU8PPqmlmeN2wvNi3UF4CfefCWdXID6R0lRwkQtzJai3znOl7lStckvTq7Z1ZELG1yjE0zCZ7AKAIS0v1uedtPu-pkZtUho7J-6NTfgh_WIkjME8KvLwICokqGXbq48s2prybOjR-ASSHRM"/>
+<div class="absolute inset-0 bg-gradient-to-t from-black/80 via-transparent to-transparent"></div>
+<div class="absolute bottom-3 left-3 text-white">
+<p class="text-[10px] font-bold uppercase tracking-tighter opacity-80">You're Eating</p>
+<p class="font-bold text-sm leading-tight">Phở Gia Truyền</p>
+</div>
+<div class="absolute top-2 right-2">
+<span class="flex h-3 w-3 bg-secondary rounded-full border-2 border-white"></span>
+</div>
+</div>
+<!-- Story 1: Nguyen -->
+<div class="flex-shrink-0 flex flex-col items-center gap-2">
+<div class="w-20 h-20 rounded-full p-1 bg-gradient-to-tr from-primary to-secondary">
+<div class="w-full h-full rounded-full border-4 border-background overflow-hidden">
+<img alt="User" data-alt="Portrait of a Vietnamese woman with long dark hair, smiling in a brightly lit park setting" src="https://lh3.googleusercontent.com/aida-public/AB6AXuB-lcBKRoAYwQw73nIuBdULF7SZEeFfg2TOaffudPtrcOnyx_8_a249_LJcMx5TBluLjiWE8fbEcy4eV7gK7RbihQblIjmgOP5B7c55rKXy9JsKjJjQmetVj5yL0q9GvyYQPiR0_ZnmJv_VjBFl-eNXvTyxNV_wGEHIOerHgr7-Bhr0JQ52rl2IHVEA925v4ju8vhX_A3TbdL37vEXq2FZ6hzChgpASZ9lmR1dkpJprauIMSfg-jAAb0dHPuAtCHgI4cY8VOV-Agd4"/>
+</div>
+</div>
+<span class="text-xs font-semibold">Minh Tú</span>
+</div>
+<!-- Story 2: Linh -->
+<div class="flex-shrink-0 flex flex-col items-center gap-2">
+<div class="w-20 h-20 rounded-full p-1 bg-surface-container-high">
+<div class="w-full h-full rounded-full border-4 border-background overflow-hidden">
+<img alt="User" data-alt="Young Vietnamese man wearing glasses in a modern office interior, soft natural light" src="https://lh3.googleusercontent.com/aida-public/AB6AXuBz8Jc-E35SQpfts5F-5Eczw6dWoYmC-HCNwwt8GI_w0EWLE-2FnqQ8mgZvohpGRKnOAVGodaj82NSuuH_X44mCJJF7svdrXs69vjYwM96R4FUn5f4TKPG3hUkyjfKZH4SiY7gfmVzYcX-w6uDBdpBiMt_ZPYvDEIlUp5JJt-Wworohv65EZUi3d15JqXw6myxzpL87IYhIB4EmDZooMn6Y3D8DcEbET8nOa6KpvmgNiVWOgGg3Cd0oMcbuAHlEdpFlt0R-injRfPo"/>
+</div>
+</div>
+<span class="text-xs font-semibold">Khánh Linh</span>
+</div>
+<!-- Story 3: Huy -->
+<div class="flex-shrink-0 flex flex-col items-center gap-2">
+<div class="w-20 h-20 rounded-full p-1 bg-surface-container-high">
+<div class="w-full h-full rounded-full border-4 border-background overflow-hidden">
+<img alt="User" data-alt="Vietnamese woman with a stylish bob haircut in a minimalist cafe setting" src="https://lh3.googleusercontent.com/aida-public/AB6AXuDgF0M5FazB2IT4juh4tcOt4K1Ebn3YjSLLXXnEO_orZuRvR7754qsoNDOrLZZRk9MBdEyyJm92iSBTTnUo254hKU062XQiAI0pDu2ZzQ6qUeeRLIRs31LkLGwZlpQVMko9-vOn8jdvYQxhY1IXcHNASxdE5qHGU8nV6uM1v89Ykoyi-NsBff_wlPgG-H-Xsclt1CrCt3PDOJlWGuMnbGFCAkt3p8c5XbDj3XqELFVIf12Tnm9BMHwVXvqOCJPx3F_X1-e8Nyuo7RU"/>
+</div>
+</div>
+<span class="text-xs font-semibold">Thế Huy</span>
+</div>
+</div>
+</section>
+<!-- Main Feed -->
+<div class="space-y-8">
+<!-- Feed Card 1: Social Split -->
+<article class="bg-surface-container-lowest rounded-xl overflow-hidden shadow-[0_-4px_40px_rgba(46,47,46,0.04)] border border-surface-container-low">
+<!-- Header -->
+<div class="px-5 py-4 flex items-center justify-between">
+<div class="flex items-center gap-3">
+<img class="w-10 h-10 rounded-full object-cover" data-alt="Profile of a cheerful Vietnamese woman in her late 20s" src="https://lh3.googleusercontent.com/aida-public/AB6AXuBtQH5RavTPzxY97sjOC1_C-5WWFTL32DxKbz_Z-tv9KUx1yxfISftiAJMjQ8QrgswscZTP1C0VYI1aNuaN0P-Rz1hQL6RWl88SNERhUBockH6Dkv1TaAvgSoGtZ4SITU_hD9RZboENDjETcmI8SkeF6dLxP9Q_GtBCWyAiVOFvflYFAM_IfEUl0es2g-2GCb-4s6GTwPyJ0HkmfqTsKmibwmCfdA1oOmrsmJQqAxGnkob4-ADWYTgEN_2y1BPjCqTiiCWEX6H2GWo"/>
+<div>
+<h3 class="text-sm font-bold text-on-surface">Thanh Hằng</h3>
+<div class="flex items-center gap-1 text-outline text-[11px] font-medium">
+<span class="material-symbols-outlined text-xs" data-icon="location_on">location_on</span>
+<span>Bún Chả Hương Liên, Hà Nội</span>
+</div>
+</div>
+</div>
+<button class="text-outline hover:text-on-surface"><span class="material-symbols-outlined" data-icon="more_horiz">more_horiz</span></button>
+</div>
+<!-- Main Image -->
+<div class="relative aspect-[4/5] mx-2 rounded-lg overflow-hidden">
+<img class="w-full h-full object-cover" data-alt="Overhead shot of traditional Bun Cha Hanoi with grilled pork, rice noodles, and fresh herbs on a rustic wooden table" src="https://lh3.googleusercontent.com/aida-public/AB6AXuDHwYXQfykJqzR1lK0J5v5yyPuixb1f3F8YgsbEvojUnJWloP0p-C53mROG_VFOdHsMReMytjIl6hgaGyMXNBBrL_W0NY__48UgZ_3UZ7nYLu4YJCgfmlo9MBaXx-JKmkGxkLnT0tfV1WCqC_7gqevnYNaHuQIaP4-zyR39-QKrMPu_WkuvjMZYEIUB9-Q-gahPawmuJ4zh_gXlUVGc3366-tdv9lvlhYtrCLs-VrIBqaB_FXkJJ_KdNs1JW0iikIEdrsl5ZwosXF8"/>
+<div class="absolute top-4 left-4 bg-white/90 backdrop-blur px-3 py-1.5 rounded-full flex items-center gap-2 shadow-sm">
+<span class="material-symbols-outlined text-primary text-sm" data-icon="group" style="font-variation-settings: 'FILL' 1;">group</span>
+<span class="text-[11px] font-black text-on-surface">4 DINERS</span>
+</div>
+</div>
+<!-- Social Stats & Content -->
+<div class="px-5 pt-4 pb-2">
+<div class="flex items-center justify-between mb-3">
+<div class="flex items-center gap-5">
+<button class="flex items-center gap-1 text-on-surface hover:text-primary transition-colors">
+<span class="material-symbols-outlined" data-icon="favorite">favorite</span>
+<span class="text-xs font-bold">124</span>
+</button>
+<button class="flex items-center gap-1 text-on-surface hover:text-primary transition-colors">
+<span class="material-symbols-outlined" data-icon="chat_bubble">chat_bubble</span>
+<span class="text-xs font-bold">18</span>
+</button>
+<button class="flex items-center gap-1 text-on-surface hover:text-primary transition-colors">
+<span class="material-symbols-outlined" data-icon="share">share</span>
+</button>
+</div>
+<button class="text-on-surface">
+<span class="material-symbols-outlined" data-icon="bookmark">bookmark</span>
+</button>
+</div>
+<p class="text-sm leading-relaxed text-on-surface mb-4">
+<span class="font-bold">Thanh Hằng</span> Finally checked out Obama's favorite spot! The smoky pork is unmatched. 🍜✨
+                    </p>
+</div>
+<!-- Split Bill Section (Bento Style) -->
+<div class="mx-5 mb-5 p-4 bg-surface-container-low rounded-lg flex items-center justify-between">
+<div>
+<p class="text-[10px] font-bold uppercase tracking-wider text-outline mb-1">Your Share</p>
+<p class="text-lg font-black text-primary">85.000 ₫</p>
+</div>
+<button class="bg-gradient-to-br from-primary to-primary-container text-white px-6 py-2.5 rounded-full text-xs font-bold shadow-lg shadow-primary/20 active:scale-95 duration-200">
+                        SETTLE UP
+                    </button>
+</div>
+</article>
+<!-- Feed Card 2: Asymmetric Layout -->
+<article class="bg-surface-container-lowest rounded-xl overflow-hidden shadow-[0_-4px_40px_rgba(46,47,46,0.04)] border border-surface-container-low">
+<div class="flex flex-col md:flex-row">
+<!-- Image Half -->
+<div class="md:w-1/2 aspect-square relative">
+<img class="w-full h-full object-cover" data-alt="Plate of vibrant Vietnamese summer rolls (Goi Cuon) with transparent rice paper, shrimp, and herbs, served with peanut sauce" src="https://lh3.googleusercontent.com/aida-public/AB6AXuAj9XK9B0XwL6NiRTf3VdPHqESts0TT-GmGiMxMa4FTS_lFBTxyiYDh9BCJQhbFMU9ZtptxHJsp91d37oG9c_8ovmXnCyURNp1iwca1H-6pWLmxeoqNw3yE9v85y0SRnE-T-_1A9ekQ8oq1XO52ON8Mih6a8urFZppTZrtp88qHj95Ou0ymxg58hJBRwhsJk05PpFL2y14KcH64XJtBwHZPCi19rA6nAbVTXgpIi9nRRF3vhOz5-h0_auOA8yKy9Lyr2XA5LepGjzw"/>
+<div class="absolute inset-0 bg-gradient-to-t from-black/40 to-transparent"></div>
+<div class="absolute bottom-4 left-4">
+<div class="flex items-center gap-2">
+<img class="w-6 h-6 rounded-full border-2 border-white" data-alt="Vietnamese male avatar" src="https://lh3.googleusercontent.com/aida-public/AB6AXuBSbMAuuUDIimrLxCbv23Ulz0K4Mufh7SmxZWxCDgVKbMUUDv28qxOHAOcolcVL1383bKxSGj1k_hiU1gBAtun1oQB8q2dG5GVWoOGYkr9ugpwrUQq3v9VPJ6xLR3H6eiV38V5_DJto-1Mk43CmVZYmByzKYj6TNOk0xuva9tJDZ77z2WZ7hYSRLZh0Pcxc5YZ4XKpA793nqBoIEU_muAFKAiY6sJXz46IzIcbJOLHvIpWVdsBa9i37qtOyLihPyhbPDRGVwR4or8c"/>
+<span class="text-white text-xs font-bold">An Trần</span>
+</div>
+</div>
+</div>
+<!-- Info Half -->
+<div class="md:w-1/2 p-6 flex flex-col justify-between">
+<div>
+<div class="flex items-center gap-2 mb-2">
+<span class="px-2 py-0.5 bg-secondary-container text-on-secondary-container rounded-full text-[10px] font-black uppercase">Settled</span>
+<span class="text-outline text-[10px] font-bold">2H AGO</span>
+</div>
+<h3 class="text-lg font-bold leading-tight mb-2">Weekend Dim Sum at Chợ Lớn</h3>
+<p class="text-sm text-on-surface-variant mb-6 italic">"Best shrimp dumplings in District 5."</p>
+</div>
+<div class="space-y-4">
+<div class="flex -space-x-3">
+<div class="w-8 h-8 rounded-full border-2 border-white bg-surface-container overflow-hidden">
+<img data-alt="User avatar" src="https://lh3.googleusercontent.com/aida-public/AB6AXuD8PGjMT8_k2pIk0pNhPlZyn95_UaNPVme5g4RRyDL65owDT3X4RgLwFMiKsV0KpmDBp9prt9W5NuZgIshHFxcWeW4gZ2a6XaVAIRLAzq7lEWa_-W83ypVHDuMW0-w04F9Xp8cN7TfJRnQwQahRW7y-Y9OBTcln61z943LhnZtdMGD3DU7PvHuFr25oAQsssO6eYD43H8C-Zp2-ikrk23HM7Kbe95CNPfFWjOzQ-7Fw4rRgFLl-CMI_v_DcrfjIR9X5gxtpogvJlRw"/>
+</div>
+<div class="w-8 h-8 rounded-full border-2 border-white bg-surface-container overflow-hidden">
+<img data-alt="User avatar" src="https://lh3.googleusercontent.com/aida-public/AB6AXuDAMaMSVkZY1n0pCd-1dM7QExKadcAMxlbrJZ9vvzaUqPAWEb6X164HPG2k_yi-9xSoC0MGIiZnvgU0YTWriXF8fNKo7zTdu8Z8-S6p3aRxMAWGLoZiWPNJos31SEqLHSPeZtru5FjaLN9thAnty8_o6FPR1Aj645XdNpuv4TArYOPbRMTVzQPBzJkdQf0VgKY1QE1C9cl4u1ED2zSm0H0oFqpX1pt62tkjY8Pl4U7Ydd7l1PyQdfuO91HqJnd57-Bcorp-9r6urvg"/>
+</div>
+<div class="w-8 h-8 rounded-full border-2 border-white bg-surface-container overflow-hidden">
+<img data-alt="User avatar" src="https://lh3.googleusercontent.com/aida-public/AB6AXuDE1N5a32jARp5WKVmPlLPtF3vYXXet7x0PcDxLt6tzVv4otuztefwepxQu76Rnli9zGjI52x7Co017qFdxuDEjnHUsC5i9h6j_1cIwEDLWSx8ErOabo4N2RZctC0HJphqa2axTJeCaaRFyd_IdQItFwGNWRH2Xu6f313gMboETg6EkpgLFiIBCg_WB0_IugteaqCTq9Fp9RGMH6CfwszDf7zsV2M4wHCI8hr_7lJqD7ou3htpy9C7Mybby-uV6yNZC7hmB9YfQygQ"/>
+</div>
+<div class="w-8 h-8 rounded-full border-2 border-white bg-primary flex items-center justify-center text-[10px] font-bold text-white">
+                                    +2
+                                </div>
+</div>
+<div class="flex items-end justify-between">
+<div class="text-outline text-xs">Total Bill</div>
+<div class="text-xl font-black text-on-surface">1.240.000 ₫</div>
+</div>
+</div>
+</div>
+</div>
+</article>
+<!-- Feed Card 3: Large Editorial Image -->
+<article class="relative rounded-xl overflow-hidden group">
+<img class="w-full aspect-video object-cover" data-alt="Dramatic high-angle shot of a busy Vietnamese street food market at night with neon signs and steam" src="https://lh3.googleusercontent.com/aida-public/AB6AXuCGV9c01v4w81VRtAWFcQUHRBEziHthGF_vOyP3Tv6qCvE9pKkUTjCG8tza6TIwRalxo4Q39RK5w3NUB8FFeyQ0cE-qcBVWYPjcwjOiO3yBgr4OW2NY5kMmgoW8T2X1vDeQdosHnfv6IgzLCb2I4lyxbc878QsQ3be9HDCH2sjsob3-Y_rUncWD0RV4HlzFyyEYIHv3JBIVHsdJfhaag7LVOzDq7XcMwSJtwdidm4J5d7E6_TGbUw2u6nW1nt8YNYql_YJLCLvAFv4"/>
+<div class="absolute inset-0 bg-gradient-to-t from-black/90 via-black/20 to-transparent"></div>
+<div class="absolute bottom-0 left-0 p-6 w-full">
+<div class="flex items-center justify-between w-full">
+<div>
+<p class="text-white/60 text-[10px] font-bold uppercase tracking-widest mb-1">Happening Now</p>
+<h3 class="text-white text-xl font-bold">Midnight Snacking in Sài Gòn</h3>
+</div>
+<button class="bg-white/10 backdrop-blur-md border border-white/20 text-white p-3 rounded-full hover:bg-white/20 transition-all">
+<span class="material-symbols-outlined" data-icon="add">add</span>
+</button>
+</div>
+</div>
+</article>
+</div>
+</main>
+<!-- Floating Action Button -->
+<button class="fixed right-6 bottom-32 z-50 bg-gradient-to-br from-primary to-primary-container text-white w-14 h-14 rounded-full flex items-center justify-center shadow-xl shadow-primary/40 active:scale-90 transition-transform duration-300">
+<span class="material-symbols-outlined text-3xl" data-icon="receipt_long">receipt_long</span>
+</button>
+<!-- Bottom Navigation Bar -->
+<nav class="fixed bottom-0 left-0 w-full z-50 flex justify-around items-end px-4 pb-6 bg-[#ffffff]/80 dark:bg-[#2e2f2e]/80 backdrop-blur-xl rounded-t-[3rem] shadow-[0_-4px_40px_rgba(46,47,46,0.06)]">
+<a class="flex flex-col items-center justify-center bg-gradient-to-br from-[#ab2d00] to-[#ff7851] text-white rounded-full p-3 mb-1 active:scale-90 duration-300 ease-out" href="#">
+<span class="material-symbols-outlined" data-icon="restaurant_menu" style="font-variation-settings: 'FILL' 1;">restaurant_menu</span>
+<span class="font-['Plus_Jakarta_Sans'] text-[11px] font-semibold uppercase tracking-wider hidden">Feed</span>
+</a>
+<a class="flex flex-col items-center justify-center text-[#aeadac] p-2 hover:text-[#ab2d00] transition-colors" href="#">
+<span class="material-symbols-outlined" data-icon="receipt_long">receipt_long</span>
+<span class="font-['Plus_Jakarta_Sans'] text-[11px] font-semibold uppercase tracking-wider mt-1">Split</span>
+</a>
+<a class="flex flex-col items-center justify-center text-[#aeadac] p-2 hover:text-[#ab2d00] transition-colors" href="#">
+<span class="material-symbols-outlined" data-icon="account_balance_wallet">account_balance_wallet</span>
+<span class="font-['Plus_Jakarta_Sans'] text-[11px] font-semibold uppercase tracking-wider mt-1">Personal</span>
+</a>
+<a class="flex flex-col items-center justify-center text-[#aeadac] p-2 hover:text-[#ab2d00] transition-colors" href="#">
+<span class="material-symbols-outlined" data-icon="person">person</span>
+<span class="font-['Plus_Jakarta_Sans'] text-[11px] font-semibold uppercase tracking-wider mt-1">Profile</span>
+</a>
+</nav>
+</body></html>

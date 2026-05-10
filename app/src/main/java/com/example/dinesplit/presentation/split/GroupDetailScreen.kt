@@ -8,8 +8,8 @@ import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.automirrored.filled.ArrowBack
 import androidx.compose.material.icons.filled.Add
-import androidx.compose.material.icons.filled.ArrowBack
 import androidx.compose.material.icons.filled.Info
 import androidx.compose.material.icons.filled.Settings
 import androidx.compose.material3.*
@@ -27,27 +27,10 @@ import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.text.withStyle
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import com.example.dinesplit.ui.theme.BrandPrimary
+import com.example.dinesplit.ui.theme.BrandPrimaryContainer
 
-// 1. ĐỔI TÊN BIẾN MÀU ĐỂ TRÁNH ĐỤNG HÀNG VỚI GROUPLISTSCREEN
-private val DetailBgLightGray = Color(0xFFF8F8F8)
-private val DetailSurfaceWhite = Color(0xFFFFFFFF)
-
-private val DetailGradientOrangeStart = Color(0xFFE2725B)
-private val DetailGradientOrangeEnd = Color(0xFF9F402D)
-private val DetailTextOrangeDark = Color(0xFF9F402D)
-private val DetailTextOrangeLight = Color(0xFFC2410C)
-
-private val DetailErrorRed = Color(0xFFBA1A1A)
-private val DetailErrorRedBg = Color(0xFFFFDAD6)
-private val DetailMintTeal = Color(0xFF006B5B)
-
-private val DetailIconBgOrange = Color(0xFFFFF7ED)
-private val DetailIconBgTeal = Color(0xFFF0FDFA)
-
-private val DetailTextMain = Color(0xFF1A1C1C)
-private val DetailTextSub = Color(0xFF56423E)
-
-// 2. DATA CLASS ĐỂ PUBLIC TRÁNH LỖI EXPOSE
+// DATA CLASS
 data class DetailBillItem(
     val emoji: String,
     val title: String,
@@ -66,13 +49,15 @@ fun GroupDetailScreen(
     onNavigateToBillDetail: () -> Unit,
     onNavigateToSettleSummary: () -> Unit
 ) {
+    val colorScheme = MaterialTheme.colorScheme
+
     val mockBills = listOf(
         DetailBillItem("🍜", "Lẩu Thái", "Minh", "Hôm nay", "600.000 đ", "Nợ:", "150.000 đ", true),
         DetailBillItem("🧋", "Trà sữa Koi", "Bạn", "Hôm qua", "200.000 đ", "Cho mượn:", "150.000 đ", false)
     )
 
     Scaffold(
-        containerColor = DetailBgLightGray,
+        containerColor = colorScheme.surface,
         topBar = { DetailTopBar(onBack = onBack) },
         floatingActionButton = {
             Box(
@@ -80,7 +65,7 @@ fun GroupDetailScreen(
                     .size(64.dp)
                     .clip(CircleShape)
                     .background(
-                        brush = Brush.linearGradient(listOf(DetailGradientOrangeStart, DetailGradientOrangeEnd))
+                        brush = Brush.linearGradient(listOf(BrandPrimaryContainer, BrandPrimary))
                     )
                     .clickable { onNavigateToCreateBill() },
                 contentAlignment = Alignment.Center
@@ -98,71 +83,68 @@ fun GroupDetailScreen(
             verticalArrangement = Arrangement.spacedBy(24.dp)
         ) {
             item { DetailSummaryCard() }
-
             item { DetailTabNavigation(onNavigateToSettleSummary = onNavigateToSettleSummary) }
-
             items(mockBills) { bill ->
                 DetailBillItemCard(bill = bill, onClick = onNavigateToBillDetail)
             }
-
             item {
                 Column(
                     modifier = Modifier.fillMaxWidth().padding(top = 16.dp),
                     horizontalAlignment = Alignment.CenterHorizontally
                 ) {
-                    // Dùng Box làm đường kẻ ngang thay vì Divider để an toàn với mọi phiên bản Compose
-                    Box(modifier = Modifier.fillMaxWidth(0.6f).height(1.dp).background(Color.LightGray.copy(alpha = 0.5f)))
+                    Box(modifier = Modifier.fillMaxWidth(0.6f).height(1.dp).background(colorScheme.outlineVariant.copy(alpha = 0.3f)))
                     Spacer(modifier = Modifier.height(24.dp))
-                    Box(modifier = Modifier.size(64.dp).clip(CircleShape).background(Color(0xFFE8E8E8).copy(alpha = 0.5f)))
+                    Box(modifier = Modifier.size(64.dp).clip(CircleShape).background(colorScheme.surfaceContainer.copy(alpha = 0.5f)))
                     Spacer(modifier = Modifier.height(16.dp))
-                    Text("Kéo để xem lịch sử cũ hơn", fontSize = 12.sp, color = DetailTextSub.copy(alpha = 0.6f), fontStyle = FontStyle.Italic)
+                    Text("Kéo để xem lịch sử cũ hơn", fontSize = 12.sp, color = colorScheme.onSurfaceVariant.copy(alpha = 0.6f), fontStyle = FontStyle.Italic)
                 }
             }
         }
     }
 }
 
-// 3. ĐÁNH DẤU PRIVATE CHO CÁC HÀM COMPOSABLE PHỤ
 @Composable
 private fun DetailTopBar(onBack: () -> Unit) {
+    val colorScheme = MaterialTheme.colorScheme
     Row(
         modifier = Modifier
             .fillMaxWidth()
-            .background(Color.White.copy(alpha = 0.9f))
+            .background(colorScheme.surfaceContainerLowest.copy(alpha = 0.9f))
             .padding(horizontal = 16.dp, vertical = 16.dp),
         verticalAlignment = Alignment.CenterVertically,
         horizontalArrangement = Arrangement.SpaceBetween
     ) {
         Row(verticalAlignment = Alignment.CenterVertically) {
             IconButton(onClick = onBack) {
-                Icon(Icons.Default.ArrowBack, contentDescription = "Quay lại", tint = Color.Gray)
+                Icon(Icons.AutoMirrored.Filled.ArrowBack, contentDescription = "Quay lại", tint = colorScheme.outline)
             }
             Spacer(modifier = Modifier.width(4.dp))
             Text(
                 text = "Cuối tuần ăn vặt",
                 fontSize = 18.sp,
                 fontWeight = FontWeight.ExtraBold,
-                color = DetailTextOrangeDark
+                color = colorScheme.primary
             )
         }
 
         Row(verticalAlignment = Alignment.CenterVertically) {
             Row(horizontalArrangement = Arrangement.spacedBy((-12).dp)) {
-                for (color in listOf(Color.LightGray, Color.Gray, Color.DarkGray)) {
-                    Box(modifier = Modifier.size(32.dp).clip(CircleShape).background(color))
+                for (i in 0..2) {
+                    Box(modifier = Modifier.size(32.dp).clip(CircleShape).background(colorScheme.surfaceContainerHigh))
                 }
             }
             Spacer(modifier = Modifier.width(8.dp))
-            Icon(Icons.Default.Settings, contentDescription = "Cài đặt", tint = Color.Gray, modifier = Modifier.size(24.dp))
+            Icon(Icons.Default.Settings, contentDescription = "Cài đặt", tint = colorScheme.outline, modifier = Modifier.size(24.dp))
         }
     }
 }
 
 @Composable
 private fun DetailSummaryCard() {
+    val colorScheme = MaterialTheme.colorScheme
     Card(
         modifier = Modifier.fillMaxWidth(),
-        colors = CardDefaults.cardColors(containerColor = DetailSurfaceWhite),
+        colors = CardDefaults.cardColors(containerColor = colorScheme.surfaceContainerLowest),
         elevation = CardDefaults.cardElevation(defaultElevation = 2.dp),
         shape = RoundedCornerShape(32.dp)
     ) {
@@ -171,7 +153,7 @@ private fun DetailSummaryCard() {
                 text = "TỔNG CHI TIÊU NHÓM",
                 fontSize = 12.sp,
                 fontWeight = FontWeight.SemiBold,
-                color = DetailTextSub,
+                color = colorScheme.onSurfaceVariant,
                 letterSpacing = 1.sp
             )
 
@@ -179,22 +161,22 @@ private fun DetailSummaryCard() {
                 modifier = Modifier.padding(top = 8.dp, bottom = 16.dp),
                 verticalAlignment = Alignment.Bottom
             ) {
-                Text(text = "1.500.000", fontSize = 36.sp, fontWeight = FontWeight.ExtraBold, color = DetailTextMain)
+                Text(text = "1.500.000", fontSize = 36.sp, fontWeight = FontWeight.ExtraBold, color = colorScheme.onSurface)
                 Spacer(modifier = Modifier.width(8.dp))
-                Text(text = "đ", fontSize = 20.sp, fontWeight = FontWeight.Bold, color = DetailTextOrangeLight)
+                Text(text = "đ", fontSize = 20.sp, fontWeight = FontWeight.Bold, color = colorScheme.primary)
             }
 
             Surface(
-                color = DetailErrorRedBg.copy(alpha = 0.5f),
+                color = colorScheme.errorContainer.copy(alpha = 0.2f),
                 shape = RoundedCornerShape(50)
             ) {
                 Row(
                     modifier = Modifier.padding(horizontal = 16.dp, vertical = 8.dp),
                     verticalAlignment = Alignment.CenterVertically
                 ) {
-                    Icon(Icons.Default.Info, contentDescription = null, tint = DetailErrorRed, modifier = Modifier.size(18.dp))
+                    Icon(Icons.Default.Info, contentDescription = null, tint = colorScheme.error, modifier = Modifier.size(18.dp))
                     Spacer(modifier = Modifier.width(8.dp))
-                    Text(text = "Bạn đang nợ: 150.000 đ", color = DetailErrorRed, fontWeight = FontWeight.Bold, fontSize = 14.sp)
+                    Text(text = "Bạn đang nợ: 150.000 đ", color = colorScheme.error, fontWeight = FontWeight.Bold, fontSize = 14.sp)
                 }
             }
         }
@@ -203,8 +185,9 @@ private fun DetailSummaryCard() {
 
 @Composable
 private fun DetailTabNavigation(onNavigateToSettleSummary: () -> Unit) {
+    val colorScheme = MaterialTheme.colorScheme
     Surface(
-        color = Color(0xFFF3F3F3),
+        color = colorScheme.surfaceContainerLow,
         shape = RoundedCornerShape(50),
         modifier = Modifier.fillMaxWidth()
     ) {
@@ -216,7 +199,7 @@ private fun DetailTabNavigation(onNavigateToSettleSummary: () -> Unit) {
                 modifier = Modifier
                     .weight(1f)
                     .background(
-                        brush = Brush.verticalGradient(listOf(DetailGradientOrangeStart, DetailGradientOrangeEnd)),
+                        brush = Brush.linearGradient(listOf(BrandPrimaryContainer, BrandPrimary)),
                         shape = RoundedCornerShape(50)
                     )
                     .padding(vertical = 12.dp),
@@ -232,7 +215,7 @@ private fun DetailTabNavigation(onNavigateToSettleSummary: () -> Unit) {
                     .padding(vertical = 12.dp),
                 contentAlignment = Alignment.Center
             ) {
-                Text(text = "Số dư", color = DetailTextSub, fontWeight = FontWeight.SemiBold, fontSize = 14.sp)
+                Text(text = "Số dư", color = colorScheme.onSurfaceVariant, fontWeight = FontWeight.SemiBold, fontSize = 14.sp)
             }
         }
     }
@@ -240,9 +223,10 @@ private fun DetailTabNavigation(onNavigateToSettleSummary: () -> Unit) {
 
 @Composable
 private fun DetailBillItemCard(bill: DetailBillItem, onClick: () -> Unit) {
+    val colorScheme = MaterialTheme.colorScheme
     Card(
         modifier = Modifier.fillMaxWidth().clickable { onClick() },
-        colors = CardDefaults.cardColors(containerColor = DetailSurfaceWhite),
+        colors = CardDefaults.cardColors(containerColor = colorScheme.surfaceContainerLowest),
         elevation = CardDefaults.cardElevation(defaultElevation = 1.dp),
         shape = RoundedCornerShape(24.dp)
     ) {
@@ -254,7 +238,7 @@ private fun DetailBillItemCard(bill: DetailBillItem, onClick: () -> Unit) {
                 modifier = Modifier
                     .size(56.dp)
                     .clip(RoundedCornerShape(16.dp))
-                    .background(if (bill.isOwe) DetailIconBgOrange else DetailIconBgTeal),
+                    .background(if (bill.isOwe) colorScheme.primaryContainer.copy(alpha = 0.15f) else colorScheme.secondaryContainer.copy(alpha = 0.3f)),
                 contentAlignment = Alignment.Center
             ) {
                 Text(text = bill.emoji, fontSize = 28.sp)
@@ -263,31 +247,29 @@ private fun DetailBillItemCard(bill: DetailBillItem, onClick: () -> Unit) {
             Spacer(modifier = Modifier.width(16.dp))
 
             Column(modifier = Modifier.weight(1f)) {
-                Text(text = bill.title, fontSize = 18.sp, fontWeight = FontWeight.Bold, color = DetailTextMain, maxLines = 1, overflow = TextOverflow.Ellipsis)
-
+                Text(text = bill.title, fontSize = 18.sp, fontWeight = FontWeight.Bold, color = colorScheme.onSurface, maxLines = 1, overflow = TextOverflow.Ellipsis)
                 Spacer(modifier = Modifier.height(4.dp))
-
                 Text(
                     text = buildAnnotatedString {
                         append("Thanh toán bởi ")
-                        withStyle(style = SpanStyle(fontWeight = FontWeight.SemiBold, color = DetailTextOrangeDark)) {
+                        withStyle(style = SpanStyle(fontWeight = FontWeight.SemiBold, color = colorScheme.primary)) {
                             append(bill.payerName)
                         }
                         append(" • ${bill.time}")
                     },
                     fontSize = 12.sp,
-                    color = DetailTextSub
+                    color = colorScheme.onSurfaceVariant
                 )
             }
 
             Column(horizontalAlignment = Alignment.End) {
-                Text(text = "Tổng: ${bill.totalAmount}", fontSize = 12.sp, fontWeight = FontWeight.Medium, color = Color.Gray)
+                Text(text = "Tổng: ${bill.totalAmount}", fontSize = 12.sp, fontWeight = FontWeight.Medium, color = colorScheme.outline)
                 Spacer(modifier = Modifier.height(4.dp))
-
                 Row(verticalAlignment = Alignment.CenterVertically) {
-                    Text(text = bill.myAmountLabel, fontSize = 14.sp, fontWeight = FontWeight.ExtraBold, color = if(bill.isOwe) DetailErrorRed else DetailMintTeal)
+                    val amountColor = if (bill.isOwe) colorScheme.error else colorScheme.secondary
+                    Text(text = bill.myAmountLabel, fontSize = 14.sp, fontWeight = FontWeight.ExtraBold, color = amountColor)
                     Spacer(modifier = Modifier.width(4.dp))
-                    Text(text = bill.myAmount, fontSize = 14.sp, fontWeight = FontWeight.ExtraBold, color = if(bill.isOwe) DetailErrorRed else DetailMintTeal)
+                    Text(text = bill.myAmount, fontSize = 14.sp, fontWeight = FontWeight.ExtraBold, color = amountColor)
                 }
             }
         }

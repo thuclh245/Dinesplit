@@ -1,0 +1,201 @@
+<!DOCTYPE html>
+
+<html class="light" lang="en"><head>
+<meta charset="utf-8"/>
+<meta content="width=device-width, initial-scale=1.0" name="viewport"/>
+<title>Register - DineSplit Social</title>
+<script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
+<link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;600;700;800&amp;family=Inter:wght@400;500;600&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<script id="tailwind-config">
+      tailwind.config = {
+        darkMode: "class",
+        theme: {
+          extend: {
+            colors: {
+              "inverse-primary": "#ff5722",
+              "secondary-fixed-dim": "#72e4d7",
+              "surface": "#f6f6f6",
+              "surface-bright": "#f6f6f6",
+              "tertiary-dim": "#6f4700",
+              "secondary-dim": "#005a53",
+              "primary": "#ab2d00",
+              "on-primary": "#ffefeb",
+              "on-tertiary-container": "#583700",
+              "error-dim": "#9f0519",
+              "on-tertiary": "#fff0e2",
+              "secondary-container": "#81f3e5",
+              "surface-tint": "#ab2d00",
+              "surface-container-lowest": "#ffffff",
+              "on-error": "#ffefee",
+              "error-container": "#fb5151",
+              "on-error-container": "#570008",
+              "on-secondary-container": "#005a53",
+              "on-primary-fixed": "#000000",
+              "on-secondary-fixed": "#004640",
+              "on-tertiary-fixed-variant": "#644000",
+              "outline-variant": "#acadad",
+              "primary-fixed-dim": "#ff5d2b",
+              "error": "#b31b25",
+              "primary-dim": "#962700",
+              "on-surface-variant": "#5a5c5c",
+              "surface-container-highest": "#dbdddd",
+              "secondary": "#00675f",
+              "on-primary-container": "#470e00",
+              "on-secondary-fixed-variant": "#00655d",
+              "tertiary-container": "#feb64c",
+              "inverse-surface": "#0c0f0f",
+              "on-secondary": "#bffff5",
+              "on-background": "#2d2f2f",
+              "tertiary": "#7f5200",
+              "surface-container-high": "#e1e3e3",
+              "surface-dim": "#d3d5d5",
+              "secondary-fixed": "#81f3e5",
+              "tertiary-fixed-dim": "#eea840",
+              "inverse-on-surface": "#9c9d9d",
+              "surface-container-low": "#f0f1f1",
+              "on-primary-fixed-variant": "#581300",
+              "background": "#f6f6f6",
+              "tertiary-fixed": "#feb64c",
+              "surface-variant": "#dbdddd",
+              "on-surface": "#2d2f2f",
+              "surface-container": "#e7e8e8",
+              "on-tertiary-fixed": "#3d2500",
+              "outline": "#767777",
+              "primary-fixed": "#ff7851",
+              "primary-container": "#ff7851"
+            },
+            fontFamily: {
+              "headline": ["Plus Jakarta Sans"],
+              "body": ["Inter"],
+              "label": ["Inter"]
+            },
+            borderRadius: {"DEFAULT": "0.25rem", "lg": "0.5rem", "xl": "0.75rem", "full": "9999px"},
+          },
+        },
+      }
+    </script>
+<style>
+        .material-symbols-outlined {
+            font-variation-settings: 'FILL' 0, 'wght' 400, 'GRAD' 0, 'opsz' 24;
+        }
+        body {
+            font-family: 'Inter', sans-serif;
+            background-color: #f6f6f6;
+        }
+        .headline-font {
+            font-family: 'Plus Jakarta Sans', sans-serif;
+        }
+    </style>
+<style>
+    body {
+      min-height: max(884px, 100dvh);
+    }
+  </style>
+  </head>
+<body class="bg-surface text-on-surface flex items-center justify-center min-h-screen selection:bg-primary-container selection:text-on-primary-container">
+<!-- TopAppBar Shell (Transactional Variant: Centered & Simplified) -->
+<header class="fixed top-0 w-full z-50 bg-white/80 dark:bg-zinc-900/80 backdrop-blur-xl shadow-[0_4px_30px_rgba(0,0,0,0.03)]">
+<div class="flex justify-between items-center px-6 py-4 w-full max-w-md mx-auto">
+<button class="text-orange-600 dark:text-orange-400 active:scale-95 duration-200 hover:opacity-80 transition-opacity">
+<span class="material-symbols-outlined" data-icon="arrow_back">arrow_back</span>
+</button>
+<h1 class="text-xl font-extrabold tracking-tighter text-zinc-900 dark:text-zinc-50 headline-font">DineSplit</h1>
+<button class="text-orange-600 dark:text-orange-400 font-bold hover:opacity-80 transition-opacity headline-font text-sm">Help</button>
+</div>
+</header>
+<main class="w-full max-w-md px-8 pt-24 pb-12">
+<!-- Editorial Hero Section -->
+<div class="mb-12">
+<h2 class="text-5xl font-extrabold headline-font text-on-surface tracking-tighter leading-none mb-4">
+                Join the <span class="text-primary">Table.</span>
+</h2>
+<p class="text-on-surface-variant font-medium tracking-tight">Create your Social Ledger account to start splitting memories, not just bills.</p>
+</div>
+<!-- Registration Form -->
+<form class="space-y-6">
+<!-- Display Name -->
+<div class="space-y-1">
+<label class="label-md uppercase tracking-widest text-[10px] font-bold text-on-surface-variant ml-1">Display Name</label>
+<div class="relative group">
+<div class="absolute inset-y-0 left-4 flex items-center pointer-events-none text-on-surface-variant group-focus-within:text-primary transition-colors">
+<span class="material-symbols-outlined text-[20px]" data-icon="person">person</span>
+</div>
+<input class="w-full bg-surface-container-highest border-none rounded-xl py-4 pl-12 pr-4 focus:ring-2 focus:ring-primary/20 placeholder:text-outline text-on-surface font-medium transition-all" placeholder="Foodie Traveler" type="text"/>
+</div>
+</div>
+<!-- Email -->
+<div class="space-y-1">
+<label class="label-md uppercase tracking-widest text-[10px] font-bold text-on-surface-variant ml-1">Email Address</label>
+<div class="relative group">
+<div class="absolute inset-y-0 left-4 flex items-center pointer-events-none text-on-surface-variant group-focus-within:text-primary transition-colors">
+<span class="material-symbols-outlined text-[20px]" data-icon="mail">mail</span>
+</div>
+<input class="w-full bg-surface-container-highest border-none rounded-xl py-4 pl-12 pr-4 focus:ring-2 focus:ring-primary/20 placeholder:text-outline text-on-surface font-medium transition-all" placeholder="hello@dinesplit.com" type="email"/>
+</div>
+</div>
+<!-- Password Grid (Asymmetric Layout for inputs) -->
+<div class="grid grid-cols-1 gap-6">
+<!-- Password -->
+<div class="space-y-1">
+<label class="label-md uppercase tracking-widest text-[10px] font-bold text-on-surface-variant ml-1">Password</label>
+<div class="relative group">
+<div class="absolute inset-y-0 left-4 flex items-center pointer-events-none text-on-surface-variant group-focus-within:text-primary transition-colors">
+<span class="material-symbols-outlined text-[20px]" data-icon="lock">lock</span>
+</div>
+<input class="w-full bg-surface-container-highest border-none rounded-xl py-4 pl-12 pr-12 focus:ring-2 focus:ring-primary/20 placeholder:text-outline text-on-surface font-medium transition-all" placeholder="••••••••" type="password"/>
+<button class="absolute inset-y-0 right-4 flex items-center text-on-surface-variant hover:text-primary" type="button">
+<span class="material-symbols-outlined text-[20px]" data-icon="visibility">visibility</span>
+</button>
+</div>
+</div>
+<!-- Confirm Password -->
+<div class="space-y-1">
+<label class="label-md uppercase tracking-widest text-[10px] font-bold text-on-surface-variant ml-1">Confirm Password</label>
+<div class="relative group">
+<div class="absolute inset-y-0 left-4 flex items-center pointer-events-none text-on-surface-variant group-focus-within:text-primary transition-colors">
+<span class="material-symbols-outlined text-[20px]" data-icon="lock_reset">lock_reset</span>
+</div>
+<input class="w-full bg-surface-container-highest border-none rounded-xl py-4 pl-12 pr-12 focus:ring-2 focus:ring-primary/20 placeholder:text-outline text-on-surface font-medium transition-all" placeholder="••••••••" type="password"/>
+</div>
+</div>
+</div>
+<!-- Terms Acceptance -->
+<div class="flex items-start gap-3 px-1 py-2">
+<input class="mt-1 rounded border-outline-variant text-primary focus:ring-primary/20 bg-surface-container-lowest" id="terms" type="checkbox"/>
+<label class="text-xs text-on-surface-variant leading-relaxed" for="terms">
+                    By registering, you agree to our <span class="text-primary font-bold">Terms of Service</span> and <span class="text-primary font-bold">Privacy Policy</span>. We handle your data with care.
+                </label>
+</div>
+<!-- Primary Action -->
+<button class="w-full bg-gradient-to-br from-primary to-primary-container text-on-primary font-bold py-5 rounded-full shadow-[0_12px_24px_-8px_rgba(171,45,0,0.3)] hover:opacity-90 active:scale-95 transition-all headline-font text-lg tracking-tight" type="submit">
+                Create Account
+            </button>
+</form>
+<!-- Social Register Options -->
+<div class="mt-12 text-center">
+<div class="relative mb-8">
+<div class="absolute inset-0 flex items-center"><div class="w-full border-t border-surface-container-highest"></div></div>
+<div class="relative flex justify-center text-xs uppercase tracking-widest font-bold bg-surface px-4 text-on-surface-variant">Or continue with</div>
+</div>
+<div class="flex gap-4 justify-center">
+<button class="flex-1 flex items-center justify-center gap-2 bg-surface-container-lowest py-3 rounded-xl border border-outline-variant/15 active:scale-95 transition-transform">
+<img alt="Google Logo" class="w-5 h-5" data-alt="clean multi-colored Google 'G' icon on a transparent background" src="https://lh3.googleusercontent.com/aida-public/AB6AXuDpWtz23je5m8QkrgSxY1hqrDjt1DKEZ76ut_Cm8QeQRLBPHsAi9iPqcxSguk7cBDFu4WZRrH3QWg9pIgu3LdiwV-Tx2a0SXTLMK09ccp1RjZIAeylTpK6eW4YJztV_7lSJ5QuCOobycH1z6FYrl6tmau9FeGqrWtMCVmKps7wLwKNj69piYwl40TEYqfXG1YZkNvX-dAtkvcvT1jhTmEDaKaU1XG0DOwoiPWhk8zBdb_eVZ9Vcjr95baVidGx4Qmd3h8jNcIRvYn0"/>
+<span class="text-sm font-bold headline-font">Google</span>
+</button>
+<button class="flex-1 flex items-center justify-center gap-2 bg-surface-container-lowest py-3 rounded-xl border border-outline-variant/15 active:scale-95 transition-transform">
+<span class="material-symbols-outlined text-[20px] text-zinc-900" data-icon="apple">ios</span>
+<span class="text-sm font-bold headline-font">Apple</span>
+</button>
+</div>
+</div>
+<!-- Footer Link -->
+<p class="mt-12 text-center text-on-surface-variant font-medium">
+            Already have an account? <a class="text-primary font-bold" href="#">Sign In</a>
+</p>
+</main>
+<!-- Visual Polish: Background Decorative Element -->
+<div class="fixed bottom-0 right-0 -z-10 w-64 h-64 bg-primary/5 rounded-full blur-3xl translate-x-1/2 translate-y-1/2"></div>
+<div class="fixed top-0 left-0 -z-10 w-96 h-96 bg-secondary-container/10 rounded-full blur-3xl -translate-x-1/2 -translate-y-1/2"></div>
+</body></html>

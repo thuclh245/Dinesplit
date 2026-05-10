@@ -1,0 +1,265 @@
+<!DOCTYPE html>
+
+<html lang="vi"><head>
+<meta charset="utf-8"/>
+<meta content="width=device-width, initial-scale=1.0" name="viewport"/>
+<script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
+<link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@200;300;400;500;600;700;800&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<script id="tailwind-config">
+      tailwind.config = {
+        darkMode: "class",
+        theme: {
+          extend: {
+            colors: {
+              "on-tertiary-fixed-variant": "#573300",
+              "secondary-fixed": "#85f6e5",
+              "secondary-dim": "#005a51",
+              "surface-container": "#e9e8e7",
+              "on-tertiary": "#fff0e4",
+              "tertiary-fixed": "#f4a237",
+              "surface-container-lowest": "#ffffff",
+              "surface-variant": "#dddddc",
+              "on-error": "#ffefee",
+              "primary-container": "#ff7851",
+              "on-tertiary-fixed": "#2a1600",
+              "secondary": "#00675d",
+              "inverse-primary": "#ff5722",
+              "surface-container-highest": "#dddddc",
+              "tertiary": "#835000",
+              "on-surface-variant": "#5b5b5b",
+              "outline": "#777776",
+              "inverse-on-surface": "#9d9d9c",
+              "on-primary-fixed": "#000000",
+              "primary-fixed-dim": "#ff5d2b",
+              "on-surface": "#2e2f2e",
+              "error": "#b31b25",
+              "surface-tint": "#ab2d00",
+              "background": "#f8f6f5",
+              "error-dim": "#9f0519",
+              "tertiary-fixed-dim": "#e4942a",
+              "primary-dim": "#962700",
+              "on-secondary-fixed-variant": "#00675d",
+              "on-error-container": "#570008",
+              "secondary-fixed-dim": "#76e7d7",
+              "outline-variant": "#aeadac",
+              "on-primary": "#ffefeb",
+              "on-tertiary-container": "#4b2b00",
+              "on-secondary-fixed": "#004841",
+              "surface-bright": "#f8f6f5",
+              "inverse-surface": "#0d0e0e",
+              "on-primary-container": "#470e00",
+              "surface": "#f8f6f5",
+              "secondary-container": "#85f6e5",
+              "primary-fixed": "#ff7851",
+              "on-primary-fixed-variant": "#581300",
+              "surface-container-high": "#e3e2e1",
+              "surface-container-low": "#f2f0ef",
+              "on-background": "#2e2f2e",
+              "surface-dim": "#d5d4d3",
+              "primary": "#ab2d00",
+              "on-secondary": "#c0fff4",
+              "tertiary-dim": "#734500",
+              "tertiary-container": "#f4a237",
+              "error-container": "#fb5151",
+              "on-secondary-container": "#005c53"
+            },
+            fontFamily: {
+              "headline": ["Plus Jakarta Sans"],
+              "body": ["Plus Jakarta Sans"],
+              "label": ["Plus Jakarta Sans"]
+            },
+            borderRadius: {"DEFAULT": "1rem", "lg": "2rem", "xl": "3rem", "full": "9999px"},
+          },
+        },
+      }
+    </script>
+<style>
+        .material-symbols-outlined {
+            font-variation-settings: 'FILL' 0, 'wght' 400, 'GRAD' 0, 'opsz' 24;
+        }
+        .hide-scrollbar::-webkit-scrollbar {
+            display: none;
+        }
+        .hide-scrollbar {
+            -ms-overflow-style: none;
+            scrollbar-width: none;
+        }
+    </style>
+<style>
+    body {
+      min-height: max(884px, 100dvh);
+    }
+  </style>
+  </head>
+<body class="bg-background text-on-surface font-body min-h-screen pb-32">
+<header class="bg-[#f8f6f5] dark:bg-[#2e2f2e] flex justify-between items-center px-6 py-4 w-full sticky top-0 z-40">
+<div class="flex items-center gap-3">
+<div class="w-10 h-10 rounded-full bg-surface-container overflow-hidden">
+<img alt="User Profile Avatar" class="w-full h-full object-cover" data-alt="Close-up portrait of a friendly young man with short dark hair in a bright studio setting with soft lighting" src="https://lh3.googleusercontent.com/aida-public/AB6AXuAvHpdPJ_xrw3f97BUDBkXsRq8JdPBIo8tfT9dECnGA2GxkJarxS3Hxy6k8rO2Vww-7kEZE2czETymVxOzLApPCE_kuFdUrlETJoqNNbpQF3LeSqisl-kNE_wUOxZT279Z4qxSXVEmobVCVh363e0R9Rz_s44RlyYmcWjPU8UfbYgBaNkll-8Sic5u_aUpDaNNt7JcwzpsV84HqUmC7FaBXUVSqI_R7051r7eS0rpZ9nididgvsBwIpShEAnnNBSSZ-kFcLT8jlUMM"/>
+</div>
+<h1 class="font-['Plus_Jakarta_Sans'] font-bold text-lg tracking-tight text-[#ab2d00] dark:text-[#ff7851]">DineSplit</h1>
+</div>
+<div class="flex items-center gap-4">
+<button class="hover:opacity-80 transition-opacity active:scale-95 duration-200">
+<span class="material-symbols-outlined text-[#ab2d00] dark:text-[#ff7851]">search</span>
+</button>
+<button class="hover:opacity-80 transition-opacity active:scale-95 duration-200">
+<span class="material-symbols-outlined text-[#ab2d00] dark:text-[#ff7851]">notifications</span>
+</button>
+</div>
+</header>
+<main class="px-6 space-y-8 mt-4">
+<section class="grid grid-cols-2 gap-4">
+<div class="bg-surface-container-lowest rounded-lg p-6 flex flex-col justify-between h-40 shadow-[0_-4px_40px_rgba(46,47,46,0.04)]">
+<div>
+<span class="text-[10px] font-bold uppercase tracking-widest text-outline-variant">Bạn đang nợ</span>
+<div class="mt-2 text-2xl font-extrabold text-primary tracking-tight">450.000<span class="text-xs ml-1 font-semibold">đ</span></div>
+</div>
+<button class="w-fit px-4 py-2 bg-gradient-to-br from-primary to-primary-container text-white rounded-full text-xs font-bold active:scale-95 transition-transform">
+                    Settle Up
+                </button>
+</div>
+<div class="bg-surface-container-lowest rounded-lg p-6 flex flex-col justify-between h-40 shadow-[0_-4px_40px_rgba(46,47,46,0.04)] border-l-4 border-secondary">
+<div>
+<span class="text-[10px] font-bold uppercase tracking-widest text-outline-variant">Bạn được trả</span>
+<div class="mt-2 text-2xl font-extrabold text-secondary tracking-tight">1.280.000<span class="text-xs ml-1 font-semibold">đ</span></div>
+</div>
+<button class="w-fit px-4 py-2 bg-secondary-container text-on-secondary-container rounded-full text-xs font-bold active:scale-95 transition-transform">
+                    Remind
+                </button>
+</div>
+</section>
+<section>
+<div class="flex justify-between items-end mb-4">
+<h2 class="text-xl font-extrabold tracking-tight">Nhóm của bạn</h2>
+<button class="text-xs font-bold text-primary">Xem tất cả</button>
+</div>
+<div class="flex overflow-x-auto gap-4 pb-4 hide-scrollbar -mx-6 px-6">
+<div class="min-w-[240px] bg-surface-container rounded-xl p-5 relative overflow-hidden flex flex-col justify-between h-48">
+<div class="absolute top-0 right-0 w-32 h-32 bg-primary/5 rounded-full -mr-16 -mt-16"></div>
+<div>
+<div class="flex -space-x-2 mb-3">
+<img alt="Member 1" class="w-8 h-8 rounded-full border-2 border-surface" data-alt="Portrait of a woman with curly hair smiling" src="https://lh3.googleusercontent.com/aida-public/AB6AXuDY_IMS_eMe1WwjdfdlS1m9N0Vy7mmSj6IievjyBueIY4HCA6WMaT__vvYkQ3ICvjABqTPwQh9iuqvmyl2vf9v8TQ8wyYxkV4BwU_uWvJo79ZpRUhSIHX0B2FPxtKrxE-vAB-K7jr63Di6wV7OrsykGZasoAxJTwltKvEeNifFBvAyxS5sJhwzncrv42nDw2BtqgR7F2lO0BXlYNHF4HGhdyrnvZPAXrqPI3H6BHndN5CSvMKRuvMrSPSrncucKvO0CcxXB38aLWco"/>
+<img alt="Member 2" class="w-8 h-8 rounded-full border-2 border-surface" data-alt="Portrait of a young man with glasses" src="https://lh3.googleusercontent.com/aida-public/AB6AXuAfYcO9jIaHFAy40rvG3ZeumiPaCSHqM8JklUt4-f3AFz1YuReCTFOxdRhc7tl18jk-P44QArUL3DsJ7EFTb0HJxVz2R3HQsHBZsk8-7BJLmaG8IClGKpMvMXT1Ul2gsWcPSP0zt5tLR7PofI8l0LRt20-UYnJ0SQg2y__LUNgCzG49LyqddGaTl_s3TYn-tew8fOGe6Nbhbg6QHOLpA9us25y_3J1HJ46YPlqDSsqjXq6maFBn6W67EhvDKbSrvDkHeGQhFlGDnF0"/>
+<div class="w-8 h-8 rounded-full bg-surface-container-highest border-2 border-surface flex items-center justify-center text-[10px] font-bold">+3</div>
+</div>
+<h3 class="font-bold text-lg leading-tight">Biệt đội lẩu nướng</h3>
+<p class="text-xs text-on-surface-variant">5 thành viên</p>
+</div>
+<div class="flex justify-between items-center">
+<span class="text-xs font-semibold px-2 py-1 bg-surface-container-highest rounded-md">8 hóa đơn mới</span>
+<span class="material-symbols-outlined text-primary">arrow_forward_ios</span>
+</div>
+</div>
+<div class="min-w-[240px] bg-secondary-container/30 rounded-xl p-5 relative overflow-hidden flex flex-col justify-between h-48">
+<div>
+<div class="flex -space-x-2 mb-3">
+<img alt="Member 1" class="w-8 h-8 rounded-full border-2 border-surface" data-alt="Portrait of a man with a beard smiling" src="https://lh3.googleusercontent.com/aida-public/AB6AXuA7gL19DfBLY4ZF-lgXkphKLVIYRaxB7Lz0QS4bc3VO47YvnBKTjpY--NH2LyOm-Jx6fJRyyQpIwSxHYKNFEhSlm0Zg07v7RXXB8rnYpeNeaSoQmI8MQHE3XaTbbkNfPDJwUWAQBGU7pjM9invkWYs9RiYG47luy0M5hvggOXwIJm-46KGeUUG7gZBk5EIWzM49lSD3rY9lnGz2iVw2__XEVHRniOcfB1Ch_x7B1xfv71Ytwjz9P25RN16WDti0-KOINCvtltNeh-c"/>
+<img alt="Member 2" class="w-8 h-8 rounded-full border-2 border-surface" data-alt="Portrait of a woman with long hair" src="https://lh3.googleusercontent.com/aida-public/AB6AXuDn6mQNJRxPZ_JecfKdipvnL6MZMH2Eo4oNZnVD8QI5QcvFGv7MdFH1DpAnTSABYh1bA6Di5-qsPK4SRvonyYUGHYz0YIf7jZE2k2LHQm4i97ffUv4NMGlGoSZQ-BjgmvEYg43CV68P9-IQrsggCqcmahCqpt80GS8VegSmkgqVwWAhGUPZyMsBEoG6-_o1vrq5LQMOabSV6OBwfetSC2oRew69dYSP7cidixg7E2nH2QHJMVE1n-9wUFL5zotw2sXPY3FsJf7vzHQ"/>
+</div>
+<h3 class="font-bold text-lg leading-tight">Gia đình vui vẻ</h3>
+<p class="text-xs text-on-surface-variant">2 thành viên</p>
+</div>
+<div class="flex justify-between items-center">
+<span class="text-xs font-semibold px-2 py-1 bg-secondary-container text-on-secondary-container rounded-md">Đã tất toán</span>
+<span class="material-symbols-outlined text-secondary">check_circle</span>
+</div>
+</div>
+<div class="min-w-[240px] border-2 border-dashed border-outline-variant/30 rounded-xl p-5 flex flex-col items-center justify-center h-48 text-outline-variant">
+<span class="material-symbols-outlined text-4xl mb-2">group_add</span>
+<span class="text-sm font-bold">Tạo nhóm mới</span>
+</div>
+</div>
+</section>
+<section class="space-y-4">
+<h2 class="text-xl font-extrabold tracking-tight">Hóa đơn gần đây</h2>
+<div class="space-y-3">
+<div class="bg-surface-container-lowest p-4 rounded-lg flex items-center justify-between shadow-[0_-4px_40px_rgba(46,47,46,0.02)]">
+<div class="flex items-center gap-4">
+<div class="w-12 h-12 rounded-2xl bg-primary/10 flex items-center justify-center text-primary">
+<span class="material-symbols-outlined">restaurant</span>
+</div>
+<div>
+<h4 class="font-bold text-sm">Haidilao Vincom</h4>
+<p class="text-[10px] text-outline-variant font-medium">Hôm qua • Biệt đội lẩu nướng</p>
+</div>
+</div>
+<div class="text-right">
+<div class="text-sm font-bold text-error">Bạn nợ 250k</div>
+<span class="text-[9px] font-bold uppercase tracking-tighter bg-error/10 text-error px-2 py-0.5 rounded">OPEN</span>
+</div>
+</div>
+<div class="bg-surface-container-lowest p-4 rounded-lg flex items-center justify-between shadow-[0_-4px_40px_rgba(46,47,46,0.02)]">
+<div class="flex items-center gap-4">
+<div class="w-12 h-12 rounded-2xl bg-tertiary-container/20 flex items-center justify-center text-tertiary">
+<span class="material-symbols-outlined">local_cafe</span>
+</div>
+<div>
+<h4 class="font-bold text-sm">Starbucks Reserve</h4>
+<p class="text-[10px] text-outline-variant font-medium">15 thg 10 • Cá nhân</p>
+</div>
+</div>
+<div class="text-right">
+<div class="text-sm font-bold text-secondary">Đã trả 120k</div>
+<span class="text-[9px] font-bold uppercase tracking-tighter bg-secondary/10 text-secondary px-2 py-0.5 rounded">SETTLED</span>
+</div>
+</div>
+<div class="bg-surface-container-lowest p-4 rounded-lg flex items-center justify-between shadow-[0_-4px_40px_rgba(46,47,46,0.02)]">
+<div class="flex items-center gap-4">
+<div class="w-12 h-12 rounded-2xl bg-secondary-fixed/30 flex items-center justify-center text-secondary">
+<span class="material-symbols-outlined">payments</span>
+</div>
+<div>
+<h4 class="font-bold text-sm">Đi chợ cuối tuần</h4>
+<p class="text-[10px] text-outline-variant font-medium">12 thg 10 • Gia đình vui vẻ</p>
+</div>
+</div>
+<div class="text-right">
+<div class="text-sm font-bold text-secondary">Nhận 540k</div>
+<span class="text-[9px] font-bold uppercase tracking-tighter bg-secondary/10 text-secondary px-2 py-0.5 rounded">SETTLED</span>
+</div>
+</div>
+<div class="bg-surface-container-lowest p-4 rounded-lg flex items-center justify-between shadow-[0_-4px_40px_rgba(46,47,46,0.02)]">
+<div class="flex items-center gap-4">
+<div class="w-12 h-12 rounded-2xl bg-primary/10 flex items-center justify-center text-primary">
+<span class="material-symbols-outlined">celebration</span>
+</div>
+<div>
+<h4 class="font-bold text-sm">Sinh nhật Tùng</h4>
+<p class="text-[10px] text-outline-variant font-medium">10 thg 10 • Nhóm bạn Đại học</p>
+</div>
+</div>
+<div class="text-right">
+<div class="text-sm font-bold text-error">Bạn nợ 200k</div>
+<span class="text-[9px] font-bold uppercase tracking-tighter bg-error/10 text-error px-2 py-0.5 rounded">OPEN</span>
+</div>
+</div>
+</div>
+</section>
+</main>
+<div class="fixed bottom-28 right-6 z-50">
+<button class="w-16 h-16 bg-gradient-to-br from-[#ab2d00] to-[#ff7851] text-white rounded-full shadow-2xl flex items-center justify-center active:scale-90 transition-transform">
+<span class="material-symbols-outlined text-3xl">add</span>
+</button>
+</div>
+<nav class="fixed bottom-0 left-0 w-full z-50 flex justify-around items-end px-4 pb-6 bg-[#ffffff]/80 dark:bg-[#2e2f2e]/80 backdrop-blur-xl shadow-[0_-4px_40px_rgba(46,47,46,0.06)] rounded-t-[3rem]">
+<a class="flex flex-col items-center justify-center text-[#aeadac] p-2 hover:text-[#ab2d00] transition-colors" href="#">
+<span class="material-symbols-outlined mb-1">restaurant_menu</span>
+<span class="font-['Plus_Jakarta_Sans'] text-[11px] font-semibold uppercase tracking-wider">Feed</span>
+</a>
+<a class="flex flex-col items-center justify-center bg-gradient-to-br from-[#ab2d00] to-[#ff7851] text-white rounded-full p-3 mb-1 active:scale-90 duration-300 ease-out" href="#">
+<span class="material-symbols-outlined" style="font-variation-settings: 'FILL' 1;">receipt_long</span>
+<span class="font-['Plus_Jakarta_Sans'] text-[11px] font-semibold uppercase tracking-wider">Split</span>
+</a>
+<a class="flex flex-col items-center justify-center text-[#aeadac] p-2 hover:text-[#ab2d00] transition-colors" href="#">
+<span class="material-symbols-outlined mb-1">account_balance_wallet</span>
+<span class="font-['Plus_Jakarta_Sans'] text-[11px] font-semibold uppercase tracking-wider">Personal</span>
+</a>
+<a class="flex flex-col items-center justify-center text-[#aeadac] p-2 hover:text-[#ab2d00] transition-colors" href="#">
+<span class="material-symbols-outlined mb-1">person</span>
+<span class="font-['Plus_Jakarta_Sans'] text-[11px] font-semibold uppercase tracking-wider">Profile</span>
+</a>
+</nav>
+</body></html>

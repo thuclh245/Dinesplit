@@ -21,21 +21,6 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 
-// --- KHO KHAI BÁO MÀU SẮC (Cách ly 100% bằng tiền tố Bd_) ---
-private val BdBg = Color(0xFFF9F9F9)
-private val BdSurfaceWhite = Color(0xFFFFFFFF)
-
-private val BdOrangeStart = Color(0xFFE2725B)
-private val BdOrangeEnd = Color(0xFF9F402D)
-private val BdOrangeLightBg = Color(0xFFFFF0ED) // Nền cam nhạt cho Bạn
-private val BdOrangeIconBg = Color(0xFFFFDAD3)
-
-private val BdTealText = Color(0xFF006B5B)
-private val BdTealBg = Color(0xFFE0F2F1)
-
-private val BdTextMain = Color(0xFF1A1C1C)
-private val BdTextSub = Color(0xFF56423E)
-
 // --- MÔ HÌNH DỮ LIỆU TẠM ---
 private data class BdSplitMember(
     val name: String,
@@ -51,6 +36,8 @@ private data class BdSplitMember(
 fun BillDetailScreen(
     onBack: () -> Unit
 ) {
+    val colorScheme = MaterialTheme.colorScheme
+
     val members = listOf(
         BdSplitMember("Minh", "CHỦ CHI", "M", "400.000 đ", "ĐÃ TRẢ", isPaid = true, isMe = false),
         BdSplitMember("Thanh Hằng", "", "T", "400.000 đ", "ĐÃ TRẢ", isPaid = true, isMe = false),
@@ -58,7 +45,7 @@ fun BillDetailScreen(
     )
 
     Scaffold(
-        containerColor = BdBg,
+        containerColor = colorScheme.surface,
         topBar = { BdTopBar(onBack = onBack) },
         bottomBar = { BdBottomAction() }
     ) { paddingValues ->
@@ -81,36 +68,38 @@ fun BillDetailScreen(
 
 @Composable
 private fun BdTopBar(onBack: () -> Unit) {
+    val colorScheme = MaterialTheme.colorScheme
     Row(
         modifier = Modifier
             .fillMaxWidth()
-            .background(Color.White.copy(alpha = 0.9f))
+            .background(colorScheme.surfaceContainerLowest.copy(alpha = 0.9f))
             .padding(horizontal = 20.dp, vertical = 16.dp),
         verticalAlignment = Alignment.CenterVertically,
         horizontalArrangement = Arrangement.SpaceBetween
     ) {
         IconButton(onClick = onBack, modifier = Modifier.size(32.dp)) {
-            Icon(Icons.AutoMirrored.Filled.ArrowBack, contentDescription = "Quay lại", tint = BdOrangeEnd)
+            Icon(Icons.AutoMirrored.Filled.ArrowBack, contentDescription = "Quay lại", tint = colorScheme.primary)
         }
 
         Text(
             text = "Bill Details",
             fontSize = 18.sp,
             fontWeight = FontWeight.Bold,
-            color = BdTextMain
+            color = colorScheme.onSurface
         )
 
         IconButton(onClick = { /* Mở menu tùy chọn */ }, modifier = Modifier.size(32.dp)) {
-            Icon(Icons.Default.MoreVert, contentDescription = "Thêm", tint = BdOrangeEnd)
+            Icon(Icons.Default.MoreVert, contentDescription = "Thêm", tint = colorScheme.primary)
         }
     }
 }
 
 @Composable
 private fun BdReceiptHeaderCard() {
+    val colorScheme = MaterialTheme.colorScheme
     Card(
         modifier = Modifier.fillMaxWidth(),
-        colors = CardDefaults.cardColors(containerColor = BdSurfaceWhite),
+        colors = CardDefaults.cardColors(containerColor = colorScheme.surfaceContainerLowest),
         elevation = CardDefaults.cardElevation(defaultElevation = 2.dp),
         shape = RoundedCornerShape(16.dp)
     ) {
@@ -125,7 +114,7 @@ private fun BdReceiptHeaderCard() {
                 modifier = Modifier
                     .size(64.dp)
                     .clip(CircleShape)
-                    .background(BdOrangeStart),
+                    .background(colorScheme.primaryContainer),
                 contentAlignment = Alignment.Center
             ) {
                 Text(text = "🍲", fontSize = 32.sp)
@@ -133,13 +122,13 @@ private fun BdReceiptHeaderCard() {
 
             Spacer(modifier = Modifier.height(16.dp))
 
-            Text(text = "Lẩu Haidilao", fontSize = 24.sp, fontWeight = FontWeight.ExtraBold, color = BdTextMain)
+            Text(text = "Lẩu Haidilao", fontSize = 24.sp, fontWeight = FontWeight.ExtraBold, color = colorScheme.onSurface)
             Spacer(modifier = Modifier.height(4.dp))
-            Text(text = "Hôm nay, 10 Tháng 4", fontSize = 14.sp, fontWeight = FontWeight.Medium, color = BdTextSub)
+            Text(text = "Hôm nay, 10 Tháng 4", fontSize = 14.sp, fontWeight = FontWeight.Medium, color = colorScheme.onSurfaceVariant)
 
             Spacer(modifier = Modifier.height(24.dp))
 
-            Text(text = "1.200.000 đ", fontSize = 36.sp, fontWeight = FontWeight.ExtraBold, color = BdTextMain, letterSpacing = (-1).sp)
+            Text(text = "1.200.000 đ", fontSize = 36.sp, fontWeight = FontWeight.ExtraBold, color = colorScheme.onSurface, letterSpacing = (-1).sp)
 
             Spacer(modifier = Modifier.height(24.dp))
 
@@ -147,43 +136,44 @@ private fun BdReceiptHeaderCard() {
             Row(
                 verticalAlignment = Alignment.CenterVertically,
                 modifier = Modifier
-                    .background(Color(0xFFF3F3F3), RoundedCornerShape(50))
+                    .background(colorScheme.surfaceContainerLow, RoundedCornerShape(50))
                     .padding(horizontal = 16.dp, vertical = 8.dp)
             ) {
                 Box(
-                    modifier = Modifier.size(24.dp).clip(CircleShape).background(Color.DarkGray),
+                    modifier = Modifier.size(24.dp).clip(CircleShape).background(colorScheme.onSurfaceVariant),
                     contentAlignment = Alignment.Center
                 ) {
-                    Text("M", color = Color.White, fontSize = 12.sp, fontWeight = FontWeight.Bold)
+                    Text("M", color = colorScheme.surfaceContainerLowest, fontSize = 12.sp, fontWeight = FontWeight.Bold)
                 }
                 Spacer(modifier = Modifier.width(8.dp))
-                Text(text = "Thanh toán bởi ", fontSize = 12.sp, fontWeight = FontWeight.SemiBold, color = BdTextSub)
-                Text(text = "Minh", fontSize = 12.sp, fontWeight = FontWeight.Bold, color = BdTextMain)
+                Text(text = "Thanh toán bởi ", fontSize = 12.sp, fontWeight = FontWeight.SemiBold, color = colorScheme.onSurfaceVariant)
+                Text(text = "Minh", fontSize = 12.sp, fontWeight = FontWeight.Bold, color = colorScheme.onSurface)
             }
 
             Spacer(modifier = Modifier.height(32.dp))
 
             // Đường kẻ ngang đứt nét (Mô phỏng bằng đường nét liền mờ)
-            HorizontalDivider(color = Color.LightGray.copy(alpha = 0.5f), thickness = 1.dp, modifier = Modifier.fillMaxWidth())
+            HorizontalDivider(color = colorScheme.outlineVariant.copy(alpha = 0.5f), thickness = 1.dp, modifier = Modifier.fillMaxWidth())
         }
     }
 }
 
 @Composable
 private fun BdSplitBreakdown(members: List<BdSplitMember>) {
+    val colorScheme = MaterialTheme.colorScheme
     Column {
         Text(
             text = "CHI TIẾT CHIA TIỀN",
             fontSize = 11.sp,
             fontWeight = FontWeight.Bold,
-            color = BdTextSub.copy(alpha = 0.7f),
+            color = colorScheme.onSurfaceVariant.copy(alpha = 0.7f),
             letterSpacing = 1.5.sp,
             modifier = Modifier.padding(start = 8.dp, bottom = 12.dp)
         )
 
         Card(
             modifier = Modifier.fillMaxWidth(),
-            colors = CardDefaults.cardColors(containerColor = BdSurfaceWhite),
+            colors = CardDefaults.cardColors(containerColor = colorScheme.surfaceContainerLowest),
             shape = RoundedCornerShape(16.dp),
             elevation = CardDefaults.cardElevation(defaultElevation = 1.dp)
         ) {
@@ -192,13 +182,13 @@ private fun BdSplitBreakdown(members: List<BdSplitMember>) {
                     Row(
                         modifier = Modifier
                             .fillMaxWidth()
-                            .background(if (member.isMe) BdOrangeLightBg else Color.Transparent)
+                            .background(if (member.isMe) colorScheme.primaryContainer.copy(alpha = 0.15f) else Color.Transparent)
                             .height(IntrinsicSize.Min), // Để cái vạch màu cam bằng đúng chiều cao Row
                         verticalAlignment = Alignment.CenterVertically
                     ) {
                         // Vạch màu cam bên trái nếu là "Bạn"
                         if (member.isMe) {
-                            Box(modifier = Modifier.width(4.dp).fillMaxHeight().background(BdOrangeEnd))
+                            Box(modifier = Modifier.width(4.dp).fillMaxHeight().background(colorScheme.primary))
                         } else {
                             Box(modifier = Modifier.width(4.dp).fillMaxHeight().background(Color.Transparent))
                         }
@@ -215,47 +205,47 @@ private fun BdSplitBreakdown(members: List<BdSplitMember>) {
                                     modifier = Modifier
                                         .size(40.dp)
                                         .clip(CircleShape)
-                                        .background(if (member.isMe) BdOrangeEnd else Color.LightGray),
+                                        .background(if (member.isMe) colorScheme.primary else colorScheme.outlineVariant),
                                     contentAlignment = Alignment.Center
                                 ) {
-                                    Text(member.initial, color = Color.White, fontWeight = FontWeight.Bold)
+                                    Text(member.initial, color = colorScheme.surfaceContainerLowest, fontWeight = FontWeight.Bold)
                                 }
                                 Spacer(modifier = Modifier.width(12.dp))
                                 Column {
-                                    Text(member.name, fontWeight = FontWeight.Bold, color = if (member.isMe) BdOrangeEnd else BdTextMain)
+                                    Text(member.name, fontWeight = FontWeight.Bold, color = if (member.isMe) colorScheme.primary else colorScheme.onSurface)
                                     if (member.role.isNotEmpty()) {
-                                        Text(member.role, fontSize = 10.sp, fontWeight = FontWeight.Bold, color = BdOrangeEnd)
+                                        Text(member.role, fontSize = 10.sp, fontWeight = FontWeight.Bold, color = colorScheme.primary)
                                     }
                                 }
                             }
 
                             Column(horizontalAlignment = Alignment.End) {
-                                Text(member.amount, fontWeight = FontWeight.Bold, color = if (member.isMe) BdOrangeEnd else BdTextMain)
+                                Text(member.amount, fontWeight = FontWeight.Bold, color = if (member.isMe) colorScheme.primary else colorScheme.onSurface)
                                 Spacer(modifier = Modifier.height(4.dp))
 
                                 if (member.isPaid) {
                                     if (member.role == "CHỦ CHI") {
-                                        Text(member.status, fontSize = 10.sp, fontWeight = FontWeight.Bold, color = BdTextSub.copy(alpha = 0.6f))
+                                        Text(member.status, fontSize = 10.sp, fontWeight = FontWeight.Bold, color = colorScheme.onSurfaceVariant.copy(alpha = 0.6f))
                                     } else {
                                         Row(
-                                            modifier = Modifier.background(BdTealBg, RoundedCornerShape(50)).padding(horizontal = 6.dp, vertical = 2.dp),
+                                            modifier = Modifier.background(colorScheme.secondaryContainer, RoundedCornerShape(50)).padding(horizontal = 6.dp, vertical = 2.dp),
                                             verticalAlignment = Alignment.CenterVertically
                                         ) {
-                                            Icon(Icons.Default.Check, contentDescription = null, tint = BdTealText, modifier = Modifier.size(12.dp))
+                                            Icon(Icons.Default.Check, contentDescription = null, tint = colorScheme.secondary, modifier = Modifier.size(12.dp))
                                             Spacer(modifier = Modifier.width(2.dp))
-                                            Text(member.status, fontSize = 9.sp, fontWeight = FontWeight.Bold, color = BdTealText)
+                                            Text(member.status, fontSize = 9.sp, fontWeight = FontWeight.Bold, color = colorScheme.secondary)
                                         }
                                     }
                                 } else {
-                                    Box(modifier = Modifier.background(Color(0xFFE2E2E2), RoundedCornerShape(50)).padding(horizontal = 6.dp, vertical = 2.dp)) {
-                                        Text(member.status, fontSize = 9.sp, fontWeight = FontWeight.Bold, color = BdTextSub)
+                                    Box(modifier = Modifier.background(colorScheme.surfaceContainerHigh, RoundedCornerShape(50)).padding(horizontal = 6.dp, vertical = 2.dp)) {
+                                        Text(member.status, fontSize = 9.sp, fontWeight = FontWeight.Bold, color = colorScheme.onSurfaceVariant)
                                     }
                                 }
                             }
                         }
                     }
                     if (index < members.size - 1) {
-                        HorizontalDivider(color = Color.LightGray.copy(alpha = 0.2f))
+                        HorizontalDivider(color = colorScheme.outlineVariant.copy(alpha = 0.2f))
                     }
                 }
             }
@@ -265,19 +255,20 @@ private fun BdSplitBreakdown(members: List<BdSplitMember>) {
 
 @Composable
 private fun BdFooterInfo() {
+    val colorScheme = MaterialTheme.colorScheme
     Card(
         modifier = Modifier.fillMaxWidth(),
-        colors = CardDefaults.cardColors(containerColor = Color(0xFFF3F3F3)),
+        colors = CardDefaults.cardColors(containerColor = colorScheme.surfaceContainerLow),
         shape = RoundedCornerShape(12.dp),
         elevation = CardDefaults.cardElevation(defaultElevation = 0.dp)
     ) {
         Column(modifier = Modifier.padding(16.dp), verticalArrangement = Arrangement.spacedBy(12.dp)) {
             Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.SpaceBetween) {
-                Text("Mã giao dịch", fontSize = 12.sp, fontWeight = FontWeight.Medium, color = BdTextSub)
+                Text("Mã giao dịch", fontSize = 12.sp, fontWeight = FontWeight.Medium, color = colorScheme.onSurfaceVariant)
                 Text("#HD-82931", fontSize = 12.sp, fontWeight = FontWeight.Bold, fontFamily = FontFamily.Monospace)
             }
             Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.SpaceBetween) {
-                Text("Phương thức", fontSize = 12.sp, fontWeight = FontWeight.Medium, color = BdTextSub)
+                Text("Phương thức", fontSize = 12.sp, fontWeight = FontWeight.Medium, color = colorScheme.onSurfaceVariant)
                 Text("Ví DineSplit", fontSize = 12.sp, fontWeight = FontWeight.Bold)
             }
         }
@@ -286,21 +277,22 @@ private fun BdFooterInfo() {
 
 @Composable
 private fun BdBottomAction() {
+    val colorScheme = MaterialTheme.colorScheme
     Box(
         modifier = Modifier
             .fillMaxWidth()
-            .background(Color.White.copy(alpha = 0.9f))
+            .background(colorScheme.surfaceContainerLowest.copy(alpha = 0.9f))
             .padding(horizontal = 24.dp, vertical = 16.dp)
             .navigationBarsPadding()
     ) {
         Button(
             onClick = { /* Xử lý trả tiền */ },
             modifier = Modifier.fillMaxWidth().height(56.dp),
-            colors = ButtonDefaults.buttonColors(containerColor = BdOrangeStart),
+            colors = ButtonDefaults.buttonColors(containerColor = colorScheme.primaryContainer),
             shape = RoundedCornerShape(50),
             elevation = ButtonDefaults.buttonElevation(defaultElevation = 4.dp)
         ) {
-            Text("Đánh dấu đã trả cho Minh", fontSize = 15.sp, fontWeight = FontWeight.Bold, color = Color.White)
+            Text("Đánh dấu đã trả cho Minh", fontSize = 15.sp, fontWeight = FontWeight.Bold, color = colorScheme.surfaceContainerLowest)
         }
     }
 }

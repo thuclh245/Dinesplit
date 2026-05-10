@@ -26,24 +26,17 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 
-// --- KHO KHAI BÁO MÀU SẮC (THEME) ---
-val PrimaryOrange = Color(0xFFE85D34)
-val MintGreen = Color(0xFF00A58E)
-val SoftRed = Color(0xFFBA1A1A)
-val BackgroundGray = Color(0xFFF9F9F9)
-val SurfaceWhite = Color(0xFFFFFFFF)
-val TextMain = Color(0xFF1A1C1C)
-val TextSub = Color(0xFF56423E)
-
 // --- MÔ HÌNH DỮ LIỆU TẠM (MOCK DATA) ---
 data class GroupItem(
     val title: String,
     val time: String,
     val statusText: String,
     val isSettled: Boolean,
-    val statusColor: Color,
+    val statusType: GroupStatusType,
     val avatarCount: Int
 )
+
+enum class GroupStatusType { OWE, RECEIVE, SETTLED }
 
 @Composable
 fun GroupListScreen(
@@ -51,25 +44,26 @@ fun GroupListScreen(
     onNavigateToCreateGroup: () -> Unit,
     onNavigateToAllGroups: () -> Unit
 ) {
+    val colorScheme = MaterialTheme.colorScheme
+
     val mockGroups = listOf(
-        GroupItem("Chuyến đi Đà Lạt", "Hôm qua", "Bạn nợ 50.000 đ", false, SoftRed, 4),
-        GroupItem("Team ăn uống", "2 giờ trước", "Nhận 120.000 đ", false, MintGreen, 2),
-        GroupItem("Cà phê cuối tuần", "Thứ 7", "Đã thanh toán", true, TextSub, 3)
+        GroupItem("Chuyến đi Đà Lạt", "Hôm qua", "Bạn nợ 50.000 đ", false, GroupStatusType.OWE, 4),
+        GroupItem("Team ăn uống", "2 giờ trước", "Nhận 120.000 đ", false, GroupStatusType.RECEIVE, 2),
+        GroupItem("Cà phê cuối tuần", "Thứ 7", "Đã thanh toán", true, GroupStatusType.SETTLED, 3)
     )
 
     Scaffold(
-        containerColor = BackgroundGray,
+        containerColor = colorScheme.surface,
         topBar = { GroupTopBar() },
         floatingActionButton = {
             FloatingActionButton(
                 onClick = onNavigateToCreateGroup,
-                containerColor = PrimaryOrange,
+                containerColor = colorScheme.primaryContainer,
                 shape = CircleShape
             ) {
-                Icon(Icons.Default.Add, contentDescription = "Tạo nhóm", tint = Color.White)
+                Icon(Icons.Default.Add, contentDescription = "Tạo nhóm", tint = colorScheme.onPrimaryContainer)
             }
         },
-
     ) { paddingValues ->
         LazyColumn(
             modifier = Modifier
@@ -79,12 +73,10 @@ fun GroupListScreen(
             contentPadding = PaddingValues(top = 16.dp, bottom = 100.dp),
             verticalArrangement = Arrangement.spacedBy(16.dp)
         ) {
-            // 1. Thẻ tổng quan tài chính
             item {
                 FinancialSummaryCard()
             }
 
-            // 2. Tiêu đề danh sách
             item {
                 Spacer(modifier = Modifier.height(8.dp))
                 Row(
@@ -96,19 +88,18 @@ fun GroupListScreen(
                         text = "Hoạt động gần đây",
                         fontSize = 18.sp,
                         fontWeight = FontWeight.Bold,
-                        color = TextMain
+                        color = colorScheme.onSurface
                     )
                     Text(
                         text = "Xem tất cả",
                         fontSize = 14.sp,
                         fontWeight = FontWeight.Bold,
-                        color = PrimaryOrange,
+                        color = colorScheme.primary,
                         modifier = Modifier.clickable { onNavigateToAllGroups() }
                     )
                 }
             }
 
-            // 3. Danh sách các nhóm
             items(mockGroups) { group ->
                 GroupCardItem(group = group, onClick = onNavigateToGroupDetail)
             }
@@ -116,11 +107,10 @@ fun GroupListScreen(
     }
 }
 
-// --- CÁC COMPONENT DÙNG CHUNG (REUSABLE COMPOSABLES) ---
-
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun GroupTopBar() {
+    val colorScheme = MaterialTheme.colorScheme
     TopAppBar(
         title = { Text("Nhóm của bạn", fontWeight = FontWeight.Bold) },
         actions = {
@@ -132,31 +122,31 @@ fun GroupTopBar() {
             }
         },
         colors = TopAppBarDefaults.topAppBarColors(
-            containerColor = BackgroundGray.copy(alpha = 0.9f)
+            containerColor = colorScheme.surface.copy(alpha = 0.9f)
         )
     )
 }
 
 @Composable
 fun FinancialSummaryCard() {
+    val colorScheme = MaterialTheme.colorScheme
+
     Row(
         modifier = Modifier.fillMaxWidth(),
-        horizontalArrangement = Arrangement.spacedBy(16.dp) // Khoảng cách giữa 2 thẻ
+        horizontalArrangement = Arrangement.spacedBy(16.dp)
     ) {
-        // --- THẺ 1: BẠN ĐANG NỢ (Màu Trắng) ---
+        // --- THẺ 1: BẠN ĐANG NỢ ---
         Card(
             modifier = Modifier.weight(1f),
-            colors = CardDefaults.cardColors(containerColor = Color.White),
+            colors = CardDefaults.cardColors(containerColor = colorScheme.surfaceContainerLowest),
             shape = RoundedCornerShape(24.dp),
             elevation = CardDefaults.cardElevation(defaultElevation = 2.dp)
         ) {
-            Column(
-                modifier = Modifier.padding(16.dp)
-            ) {
+            Column(modifier = Modifier.padding(16.dp)) {
                 Text(
                     text = "BẠN ĐANG NỢ",
                     fontSize = 11.sp,
-                    color = Color.Gray,
+                    color = colorScheme.outline,
                     fontWeight = FontWeight.Bold,
                     letterSpacing = 0.5.sp
                 )
@@ -164,40 +154,34 @@ fun FinancialSummaryCard() {
                 Text(
                     text = "450.000 đ",
                     fontSize = 22.sp,
-                    color = PrimaryOrange,
+                    color = colorScheme.primary,
                     fontWeight = FontWeight.ExtraBold
                 )
                 Spacer(modifier = Modifier.height(16.dp))
                 Button(
-                    onClick = { /* Chuyển đến trang trả nợ */ },
-                    colors = ButtonDefaults.buttonColors(containerColor = PrimaryOrange),
+                    onClick = { },
+                    colors = ButtonDefaults.buttonColors(containerColor = colorScheme.primary),
                     shape = RoundedCornerShape(50),
                     contentPadding = PaddingValues(horizontal = 16.dp, vertical = 8.dp),
                     modifier = Modifier.height(36.dp)
                 ) {
-                    Text("Settle Up", fontSize = 13.sp, fontWeight = FontWeight.Bold)
+                    Text("Settle Up", fontSize = 13.sp, fontWeight = FontWeight.Bold, color = colorScheme.onPrimary)
                 }
             }
         }
 
-        // --- THẺ 2: BẠN ĐƯỢC TRẢ (Màu Xanh Mint) ---
-        // Lấy mã màu xanh mint nhạt làm nền, xanh đậm làm chữ
-        val LightMintBg = Color(0xFFD0F4EB)
-        val DarkMintText = Color(0xFF00897B)
-
+        // --- THẺ 2: BẠN ĐƯỢC TRẢ ---
         Card(
             modifier = Modifier.weight(1f),
-            colors = CardDefaults.cardColors(containerColor = LightMintBg),
+            colors = CardDefaults.cardColors(containerColor = colorScheme.secondaryContainer),
             shape = RoundedCornerShape(24.dp),
             elevation = CardDefaults.cardElevation(defaultElevation = 0.dp)
         ) {
-            Column(
-                modifier = Modifier.padding(16.dp)
-            ) {
+            Column(modifier = Modifier.padding(16.dp)) {
                 Text(
                     text = "BẠN ĐƯỢC TRẢ",
                     fontSize = 11.sp,
-                    color = Color.Gray,
+                    color = colorScheme.outline,
                     fontWeight = FontWeight.Bold,
                     letterSpacing = 0.5.sp
                 )
@@ -205,18 +189,18 @@ fun FinancialSummaryCard() {
                 Text(
                     text = "1.280.000 đ",
                     fontSize = 22.sp,
-                    color = DarkMintText,
+                    color = colorScheme.onSecondaryContainer,
                     fontWeight = FontWeight.ExtraBold
                 )
                 Spacer(modifier = Modifier.height(16.dp))
                 Button(
-                    onClick = { /* Mở modal nhắc nợ */ },
-                    colors = ButtonDefaults.buttonColors(containerColor = MintGreen),
+                    onClick = { },
+                    colors = ButtonDefaults.buttonColors(containerColor = colorScheme.secondary),
                     shape = RoundedCornerShape(50),
                     contentPadding = PaddingValues(horizontal = 16.dp, vertical = 8.dp),
                     modifier = Modifier.height(36.dp)
                 ) {
-                    Text("Remind", fontSize = 13.sp, fontWeight = FontWeight.Bold)
+                    Text("Remind", fontSize = 13.sp, fontWeight = FontWeight.Bold, color = colorScheme.onSecondary)
                 }
             }
         }
@@ -225,11 +209,19 @@ fun FinancialSummaryCard() {
 
 @Composable
 fun GroupCardItem(group: GroupItem, onClick: () -> Unit) {
+    val colorScheme = MaterialTheme.colorScheme
+
+    val statusColor = when (group.statusType) {
+        GroupStatusType.OWE -> colorScheme.error
+        GroupStatusType.RECEIVE -> colorScheme.secondary
+        GroupStatusType.SETTLED -> colorScheme.onSurfaceVariant
+    }
+
     Card(
         modifier = Modifier
             .fillMaxWidth()
             .clickable { onClick() },
-        colors = CardDefaults.cardColors(containerColor = SurfaceWhite),
+        colors = CardDefaults.cardColors(containerColor = colorScheme.surfaceContainerLowest),
         elevation = CardDefaults.cardElevation(defaultElevation = 1.dp),
         shape = RoundedCornerShape(20.dp)
     ) {
@@ -243,10 +235,10 @@ fun GroupCardItem(group: GroupItem, onClick: () -> Unit) {
                 modifier = Modifier
                     .size(56.dp)
                     .clip(RoundedCornerShape(16.dp))
-                    .background(Color(0xFFEEEEEE)),
+                    .background(colorScheme.surfaceContainerHigh),
                 contentAlignment = Alignment.Center
             ) {
-                Icon(Icons.Default.Star, contentDescription = null, tint = Color.Gray)
+                Icon(Icons.Default.Star, contentDescription = null, tint = colorScheme.outline)
             }
 
             Spacer(modifier = Modifier.width(16.dp))
@@ -256,7 +248,7 @@ fun GroupCardItem(group: GroupItem, onClick: () -> Unit) {
                     text = group.title,
                     fontSize = 16.sp,
                     fontWeight = FontWeight.Bold,
-                    color = TextMain
+                    color = colorScheme.onSurface
                 )
                 Spacer(modifier = Modifier.height(4.dp))
 
@@ -267,12 +259,12 @@ fun GroupCardItem(group: GroupItem, onClick: () -> Unit) {
                                 modifier = Modifier
                                     .size(24.dp)
                                     .clip(CircleShape)
-                                    .background(Color.LightGray)
+                                    .background(colorScheme.surfaceContainerHigh)
                             )
                         }
                     }
                     Spacer(modifier = Modifier.width(8.dp))
-                    Text(text = group.time, fontSize = 12.sp, color = TextSub)
+                    Text(text = group.time, fontSize = 12.sp, color = colorScheme.onSurfaceVariant)
                 }
             }
 
@@ -280,14 +272,14 @@ fun GroupCardItem(group: GroupItem, onClick: () -> Unit) {
                 Box(
                     modifier = Modifier
                         .clip(RoundedCornerShape(50))
-                        .background(Color(0xFFEEEEEE))
+                        .background(colorScheme.surfaceContainerHigh)
                         .padding(horizontal = 10.dp, vertical = 4.dp)
                 ) {
                     Text(
                         text = group.statusText.uppercase(),
                         fontSize = 10.sp,
                         fontWeight = FontWeight.Bold,
-                        color = TextSub
+                        color = colorScheme.onSurfaceVariant
                     )
                 }
             } else {
@@ -295,10 +287,9 @@ fun GroupCardItem(group: GroupItem, onClick: () -> Unit) {
                     text = group.statusText,
                     fontSize = 14.sp,
                     fontWeight = FontWeight.Bold,
-                    color = group.statusColor
+                    color = statusColor
                 )
             }
         }
     }
 }
-

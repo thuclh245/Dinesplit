@@ -1,0 +1,198 @@
+<!DOCTYPE html>
+
+<html lang="en"><head>
+<meta charset="utf-8"/>
+<meta content="width=device-width, initial-scale=1.0" name="viewport"/>
+<script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
+<link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&amp;family=Public+Sans:wght@400;500;600;700&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<script id="tailwind-config">
+    tailwind.config = {
+      darkMode: "class",
+      theme: {
+        extend: {
+          colors: {},
+          fontFamily: {
+            "headline": ["Plus Jakarta Sans", "Public Sans", "sans-serif"],
+            "body": ["Public Sans", "sans-serif"],
+            "label": ["Plus Jakarta Sans", "sans-serif"]
+          },
+          borderRadius: {"DEFAULT": "0.25rem", "lg": "0.5rem", "xl": "0.75rem", "full": "9999px"},
+        },
+      },
+    }
+  </script>
+<style>
+    .material-symbols-outlined {
+      font-variation-settings: 'FILL' 0, 'wght' 400, 'GRAD' 0, 'opsz' 24;
+    }
+    body {
+      font-family: 'Public Sans', sans-serif;
+      -webkit-font-smoothing: antialiased;
+    }
+  </style>
+<style>
+    body {
+      min-height: max(884px, 100dvh);
+    }
+  </style>
+  </head>
+<body class="bg-[#f8f6f5] text-[#2e2f2e] min-h-screen pb-32">
+<!-- TopAppBar (Shared Component) -->
+<header class="bg-[#f8f6f5] dark:bg-[#2e2f2e] flex justify-between items-center px-6 py-4 w-full docked full-width top-0 sticky z-50">
+<div class="flex items-center gap-3">
+<div class="w-10 h-10 rounded-full overflow-hidden border-2 border-[#ab2d00]">
+<img alt="User Profile Avatar" class="w-full h-full object-cover" data-alt="Close-up portrait of a stylish woman with a warm smile, outdoor urban setting with soft morning sunlight" src="https://lh3.googleusercontent.com/aida-public/AB6AXuAl4p5h_h5ljcVfoW054Dwb67nrtGLfzS4MG6T7JiC6tThrZxmPYLdmkTS0bsLy10DR7XhIfTlSJxfJmhIkLO5NWBcOH3MgY1PLdiLvDZwHTRp5srVNy3dUcjkmWFw72qDzxmA8SZsbg7FjxoR8fia13mJ0Aghmzhjz5-QtxJX0EZbBSoyxcGmjTKLGklYb0GA7jQRQasevQHL84z6OxsdftShugm9OXp_E_m4kgPxgbnyy33rafAQBooVBJZ-HUGYJ8XeXFAvkvNo"/>
+</div>
+<h1 class="font-['Plus_Jakarta_Sans'] font-bold text-lg tracking-tight text-[#ab2d00] dark:text-[#ff7851]">Linh Trần</h1>
+</div>
+<div class="text-[#ab2d00] dark:text-[#ff7851] hover:opacity-80 transition-opacity cursor-pointer">
+<span class="material-symbols-outlined text-2xl">search</span>
+</div>
+</header>
+<div class="bg-[#f2f0ef] dark:bg-[#3a3b3a] h-[1px] w-full"></div>
+<!-- Profile Content Area -->
+<main class="max-w-4xl mx-auto px-6 pt-8">
+<!-- Profile Header/Stats -->
+<section class="flex flex-col md:flex-row gap-8 items-center md:items-start mb-10">
+<div class="relative">
+<div class="w-28 h-28 md:w-36 md:h-36 rounded-full p-1 bg-gradient-to-tr from-[#ab2d00] to-[#ff7851]">
+<div class="w-full h-full rounded-full border-4 border-[#f8f6f5] overflow-hidden bg-white">
+<img alt="Main Profile Avatar" class="w-full h-full object-cover" data-alt="Professional headshot of a young Vietnamese woman, modern minimalist background, warm cinematic lighting" src="https://lh3.googleusercontent.com/aida-public/AB6AXuA-suY-k2Nl-qCL-4wnA1hg-m6zuH1YcCMkIHMSe5mSzui6H4g6m2PhsF-EquINcQ40evSvEhwOFKKVD-f-AvP6yrvuLjY9ZOh2-13J-qRHgqN9S3NzBeLgm2Podb878O6hsHapq8VpaIvfgYsZ9cSNhk2GBQYJbLCYlpijNeSOu8fjq_ayNvVXxeTRJWQiHqVXcSClUiWQN24CcQZ6mEsc-3RuatfZuA8RIi3yVazdggBJbeS8GfpL9f0ai0sgfe-XYv59XOoYBzQ"/>
+</div>
+</div>
+</div>
+<div class="flex-1 text-center md:text-left">
+<div class="flex flex-col md:flex-row md:items-center gap-4 mb-6">
+<h2 class="text-2xl font-['Plus_Jakarta_Sans'] font-extrabold tracking-tight">linh_eats_saigon</h2>
+<div class="flex gap-2 justify-center">
+<button class="px-6 py-2 bg-[#ab2d00] text-white font-bold rounded-xl text-sm hover:opacity-90 transition-all active:scale-95 duration-200">
+              Edit Profile
+            </button>
+<button class="p-2 bg-[#e9e8e7] text-[#2e2f2e] rounded-xl hover:bg-[#dcdbd9] transition-all active:scale-95 duration-200">
+<span class="material-symbols-outlined block">settings</span>
+</button>
+</div>
+</div>
+<div class="flex justify-center md:justify-start gap-8 mb-6">
+<div class="flex flex-col items-center md:items-start">
+<span class="font-extrabold text-lg text-[#2e2f2e]">128</span>
+<span class="text-xs font-semibold text-[#aeadac] uppercase tracking-wider">Posts</span>
+</div>
+<div class="flex flex-col items-center md:items-start">
+<span class="font-extrabold text-lg text-[#2e2f2e]">4.2k</span>
+<span class="text-xs font-semibold text-[#aeadac] uppercase tracking-wider">Followers</span>
+</div>
+<div class="flex flex-col items-center md:items-start">
+<span class="font-extrabold text-lg text-[#2e2f2e]">842</span>
+<span class="text-xs font-semibold text-[#aeadac] uppercase tracking-wider">Following</span>
+</div>
+</div>
+<div class="space-y-1">
+<p class="font-bold text-[#2e2f2e]">Linh Trần</p>
+<p class="text-[#5a5b5a] leading-relaxed">Chasing flavors across the city 🍜<br/>Saigon | Food Explorer | Split Enthusiast</p>
+<a class="text-[#ab2d00] font-semibold text-sm hover:underline block pt-1" href="#">linktr.ee/linh_eats</a>
+</div>
+</div>
+</section>
+<!-- Content Tabs -->
+<nav class="flex border-t border-[#e9e8e7] mb-6">
+<button class="flex-1 py-4 border-t-2 border-[#ab2d00] text-[#ab2d00] flex items-center justify-center gap-2">
+<span class="material-symbols-outlined text-xl" style="font-variation-settings: 'FILL' 1;">grid_view</span>
+<span class="text-xs font-bold uppercase tracking-widest hidden md:inline">Grid</span>
+</button>
+<button class="flex-1 py-4 border-t-2 border-transparent text-[#aeadac] flex items-center justify-center gap-2 hover:text-[#2e2f2e] transition-colors">
+<span class="material-symbols-outlined text-xl">bookmark</span>
+<span class="text-xs font-bold uppercase tracking-widest hidden md:inline">Saved</span>
+</button>
+<button class="flex-1 py-4 border-t-2 border-transparent text-[#aeadac] flex items-center justify-center gap-2 hover:text-[#2e2f2e] transition-colors">
+<span class="material-symbols-outlined text-xl">account_box</span>
+<span class="text-xs font-bold uppercase tracking-widest hidden md:inline">Tagged</span>
+</button>
+</nav>
+<!-- Bento/Grid Food Feed -->
+<div class="grid grid-cols-3 gap-1 md:gap-4">
+<!-- Image 1 -->
+<div class="relative aspect-square group overflow-hidden rounded-sm md:rounded-xl">
+<img alt="Pho Bowl" class="w-full h-full object-cover transition-transform duration-500 group-hover:scale-110" data-alt="A steaming bowl of authentic Vietnamese Pho Bo with fresh herbs, lime, and chili on a rustic wooden table" src="https://lh3.googleusercontent.com/aida-public/AB6AXuDPo68lKRJUgLSRbIMyP8cKangAwx0j7hXe8PGwHVAeN_TDWusH8I8piDCWfw0boUfkdYsVUlUlUV1YD0w-MrFAyUSQZOSjFcFJ3NbqdUSOKrAk0ubOLr-Rb7iQTBtNH2gNKYkNca8ETj4zX1WjUd40GlfZOPbOWsxFuGpuAdi-99aZ5hRzAZisrBwQcfUUsqOZP-3qNcUYWf_t1vgCRaRczPZhkyd8-snCNxnXflJ5wz15MmXNLuTvCeyYY2MBT3AHVoVEv-t-s9s"/>
+<div class="absolute inset-0 bg-black/40 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center gap-4 text-white">
+<div class="flex items-center gap-1 font-bold">
+<span class="material-symbols-outlined text-lg" style="font-variation-settings: 'FILL' 1;">favorite</span> 428
+          </div>
+<div class="flex items-center gap-1 font-bold">
+<span class="material-symbols-outlined text-lg" style="font-variation-settings: 'FILL' 1;">chat_bubble</span> 24
+          </div>
+</div>
+</div>
+<!-- Image 2 -->
+<div class="relative aspect-square group overflow-hidden rounded-sm md:rounded-xl">
+<img alt="Ramen" class="w-full h-full object-cover transition-transform duration-500 group-hover:scale-110" data-alt="Rich tonkotsu ramen with perfectly soft-boiled egg and nori, dark moody restaurant lighting" src="https://lh3.googleusercontent.com/aida-public/AB6AXuAFcJh_WZqVCMMZv3NBDAbKn8TO2X9FTtTgdKQrSY01kiKSI0JS0mmvY-Fe4EL6Ku_O4yvkEXB2mXSAM7wcQbmJAcUYvX1382IgqqR9Sq9f-51QR9wlqbC-YeyL69KaKzKccU1OaWX881J_GofRqtcPQME54kWADXnILsPIK75U4kP07KJs8nLTmrED_azhBJdiCUAeamAiG3NyDKOIhuxuQ57cI9zzYj2xFFX2nG8A0bsHw61VTKaQLdAz_lkHX5HqB5piLy7y02U"/>
+<div class="absolute inset-0 bg-black/40 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center gap-4 text-white">
+<div class="flex items-center gap-1 font-bold">
+<span class="material-symbols-outlined text-lg" style="font-variation-settings: 'FILL' 1;">favorite</span> 312
+          </div>
+</div>
+</div>
+<!-- Image 3 -->
+<div class="relative aspect-square group overflow-hidden rounded-sm md:rounded-xl">
+<img alt="Banh Mi" class="w-full h-full object-cover transition-transform duration-500 group-hover:scale-110" data-alt="Traditional Vietnamese Banh Mi sandwich sliced in half, showing rich fillings and crispy baguette crust, outdoor market background" src="https://lh3.googleusercontent.com/aida-public/AB6AXuBfGVqZEjq3TzaADMZ2buEd9tcHuiLkAoFK4FbRhL6Y9VkMGlV6y1zIRrYCn-olI46CLic4shUSoA5v49slK5WqMT6yMbuI-0_BmNRtEq3rJNb27iTHhck0QjS9faAp-Y14z_oJX4xAIAZ5NYCaYr8fO0gOgD3R0OXTMTEGuGB92iTGChFBAaMkmTpEsg_xoiZ0DRo-XPvIcOrSndlelqCjlo3RxgBFaT-BjHSpRZgHWrZA3pWRbPUd5qnxazk9I3bzJX4jBfI83JU"/>
+<div class="absolute inset-0 bg-black/40 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center gap-4 text-white">
+<div class="flex items-center gap-1 font-bold">
+<span class="material-symbols-outlined text-lg" style="font-variation-settings: 'FILL' 1;">favorite</span> 519
+          </div>
+</div>
+</div>
+<!-- Image 4 -->
+<div class="relative aspect-square group overflow-hidden rounded-sm md:rounded-xl">
+<img alt="Street BBQ" class="w-full h-full object-cover transition-transform duration-500 group-hover:scale-110" data-alt="Grilled Vietnamese skewers sizzling on a charcoal barbecue with vibrant smoke and glowing embers" src="https://lh3.googleusercontent.com/aida-public/AB6AXuC32dimkr7Rmci-xva5bmegZsbng43iQe9X5By2wvKya393xmrteEaed26ylxNdfRDepdEL34vta7dPuvfZTCMFQF_kpvrRFV8ZowU6rmReLh3whaosUh0wGou5w0XIsDyiNATIMCHUMr5-icroJ9GN-ebRm083ZBZLIzxm8nIjgVenrYOO05IhtnzH9CG27mL127oQAbOKOb6vzde0yXhO4ZE4bSL-qsdbeLdmme2kRc1a7v8-lLD_L7ME3DqCIwtz4BaA3WjVFHs"/>
+<div class="absolute inset-0 bg-black/40 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center gap-4 text-white">
+<div class="flex items-center gap-1 font-bold">
+<span class="material-symbols-outlined text-lg" style="font-variation-settings: 'FILL' 1;">favorite</span> 287
+          </div>
+</div>
+</div>
+<!-- Image 5 -->
+<div class="relative aspect-square group overflow-hidden rounded-sm md:rounded-xl">
+<img alt="Vietnamese Coffee" class="w-full h-full object-cover transition-transform duration-500 group-hover:scale-110" data-alt="Drip Vietnamese coffee with condensed milk in a glass, dramatic light filtering through window shutters" src="https://lh3.googleusercontent.com/aida-public/AB6AXuCz15-drOE04YNhXjKak_xexU7l7z5yKLDOq2-rnnNIo-GY-Jn--zxEi9VmocpjT4cbiJ2W4ONCPbrnGQ15A7yhQkPpUiCKjHbDiEe-DJoHxAelIkVsh078_KRSnkSJKNdw5vDuKOtri72kPncg8pYkGE74MRIzjyHxbI255p7Y9oP6ogKpoJHhcwd_ZZAoc9SgtfaDvtY2e6-hTKygHmaToOL8LVHHLuzQyMMFqju90iv0rD9-926Dq-5DMAAzHncrfLvhnxKxpxs"/>
+<div class="absolute inset-0 bg-black/40 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center gap-4 text-white">
+<div class="flex items-center gap-1 font-bold">
+<span class="material-symbols-outlined text-lg" style="font-variation-settings: 'FILL' 1;">favorite</span> 641
+          </div>
+</div>
+</div>
+<!-- Image 6 -->
+<div class="relative aspect-square group overflow-hidden rounded-sm md:rounded-xl">
+<img alt="Salad Bowl" class="w-full h-full object-cover transition-transform duration-500 group-hover:scale-110" data-alt="Vibrant tropical salad with mango, shrimp, and crushed peanuts, bright summer vibe with hard shadows" src="https://lh3.googleusercontent.com/aida-public/AB6AXuDqhcDBDtkEkv9k095DhXUETbPEu2BmjWo0sOxInwgyuJ39Ctwm_V5bOa4Mc3_h0VxBNQYiFWMOOxMkJpGs2fiMOBjatAjj6NwFVyKXT2XM_WJikSgcUQLuShbh8jUgobtbfNkwVMUTRtPc1IxHED07NKI1wvZatqbjoBgMPYzHbRDff8KBFqKW4AQsdCpv5mmdCmMtV6C6-DZR2tIrs6eKMHv7sWF1JO-G8IQ0Eu68Hnc2tjAIuDd8Mq02nZPSHsIpd1dt6qW-r1k"/>
+<div class="absolute inset-0 bg-black/40 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center gap-4 text-white">
+<div class="flex items-center gap-1 font-bold">
+<span class="material-symbols-outlined text-lg" style="font-variation-settings: 'FILL' 1;">favorite</span> 194
+          </div>
+</div>
+</div>
+</div>
+</main>
+<!-- BottomNavBar (Shared Component) -->
+<nav class="fixed bottom-0 left-0 w-full z-50 flex justify-around items-end px-4 pb-6 bg-[#ffffff]/80 dark:bg-[#2e2f2e]/80 backdrop-blur-xl rounded-t-[3rem] shadow-[0_-4px_40px_rgba(46,47,46,0.06)]">
+<!-- Feed -->
+<a class="flex flex-col items-center justify-center text-[#aeadac] p-2 hover:text-[#ab2d00] transition-colors" href="#">
+<span class="material-symbols-outlined text-2xl">restaurant_menu</span>
+<span class="font-['Plus_Jakarta_Sans'] text-[11px] font-semibold uppercase tracking-wider mt-1">Feed</span>
+</a>
+<!-- Split -->
+<a class="flex flex-col items-center justify-center text-[#aeadac] p-2 hover:text-[#ab2d00] transition-colors" href="#">
+<span class="material-symbols-outlined text-2xl">receipt_long</span>
+<span class="font-['Plus_Jakarta_Sans'] text-[11px] font-semibold uppercase tracking-wider mt-1">Split</span>
+</a>
+<!-- Personal -->
+<a class="flex flex-col items-center justify-center text-[#aeadac] p-2 hover:text-[#ab2d00] transition-colors" href="#">
+<span class="material-symbols-outlined text-2xl">account_balance_wallet</span>
+<span class="font-['Plus_Jakarta_Sans'] text-[11px] font-semibold uppercase tracking-wider mt-1">Personal</span>
+</a>
+<!-- Profile (ACTIVE) -->
+<a class="flex flex-col items-center justify-center bg-gradient-to-br from-[#ab2d00] to-[#ff7851] text-white rounded-full p-3 mb-1 Active: scale-90 duration-300 ease-out" href="#">
+<span class="material-symbols-outlined text-2xl" style="font-variation-settings: 'FILL' 1;">person</span>
+<span class="font-['Plus_Jakarta_Sans'] text-[11px] font-semibold uppercase tracking-wider mt-1">Profile</span>
+</a>
+</nav>
+</body></html>

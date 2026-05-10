@@ -32,32 +32,21 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 
-// --- KHO KHAI BÁO MÀU SẮC (Cách ly 100% bằng tiền tố Cg_) ---
-private val Cg_Bg = Color(0xFFF9F9F9)
-private val Cg_SurfaceWhite = Color(0xFFFFFFFF)
-private val Cg_SurfaceLow = Color(0xFFF3F3F3)
-private val Cg_SurfaceHigh = Color(0xFFE8E8E8)
-
-private val Cg_OrangeStart = Color(0xFFE2725B)
-private val Cg_OrangeEnd = Color(0xFF9F402D)
-
-private val Cg_TextMain = Color(0xFF1A1C1C)
-private val Cg_TextSub = Color(0xFF56423E)
-private val Cg_BorderLight = Color(0xFFE2E2E2)
-
 // --- MÔ HÌNH DỮ LIỆU TẠM ---
 private data class Cg_Member(
     val name: String,
     val initial: String,
     val phone: String,
     val isSelected: Boolean,
-    val avatarColor: Color
+    val avatarColor: @Composable () -> Color
 )
 
 @Composable
 fun CreateGroupScreen(
     onBack: () -> Unit
 ) {
+    val colorScheme = MaterialTheme.colorScheme
+
     var groupName by remember { mutableStateOf("") }
     var searchQuery by remember { mutableStateOf("") }
 
@@ -65,13 +54,13 @@ fun CreateGroupScreen(
     val selectedCategory = "Du lịch"
 
     val friends = listOf(
-        Cg_Member("Minh", "M", "090 123 4567", true, Color.DarkGray),
-        Cg_Member("Thanh Hằng", "T", "091 987 6543", true, Color.Gray),
-        Cg_Member("Tuấn Anh", "A", "098 555 1234", false, Color.LightGray)
+        Cg_Member("Minh", "M", "090 123 4567", true, { colorScheme.onSurfaceVariant }),
+        Cg_Member("Thanh Hằng", "T", "091 987 6543", true, { colorScheme.outline }),
+        Cg_Member("Tuấn Anh", "A", "098 555 1234", false, { colorScheme.outlineVariant })
     )
 
     Scaffold(
-        containerColor = Cg_Bg,
+        containerColor = colorScheme.surface,
         topBar = { Cg_TopBar(onBack = onBack) },
         bottomBar = { Cg_BottomAction(selectedCount = 3) }
     ) { paddingValues ->
@@ -107,30 +96,31 @@ fun CreateGroupScreen(
 
 @Composable
 private fun Cg_TopBar(onBack: () -> Unit) {
+    val colorScheme = MaterialTheme.colorScheme
     Row(
         modifier = Modifier
             .fillMaxWidth()
-            .background(Color.White.copy(alpha = 0.9f))
+            .background(colorScheme.surfaceContainerLowest.copy(alpha = 0.9f))
             .padding(horizontal = 20.dp, vertical = 16.dp),
         verticalAlignment = Alignment.CenterVertically,
         horizontalArrangement = Arrangement.SpaceBetween
     ) {
         IconButton(onClick = onBack, modifier = Modifier.size(32.dp)) {
-            Icon(Icons.AutoMirrored.Filled.ArrowBack, contentDescription = "Quay lại", tint = Cg_TextSub)
+            Icon(Icons.AutoMirrored.Filled.ArrowBack, contentDescription = "Quay lại", tint = colorScheme.onSurfaceVariant)
         }
 
         Text(
             text = "Tạo nhóm mới",
             fontSize = 18.sp,
             fontWeight = FontWeight.Bold,
-            color = Cg_TextMain
+            color = colorScheme.onSurface
         )
 
         Text(
             text = "Lưu",
             fontSize = 16.sp,
             fontWeight = FontWeight.Bold,
-            color = Cg_OrangeEnd,
+            color = colorScheme.primary,
             modifier = Modifier.clickable { /* Xử lý lưu nháp */ }
         )
     }
@@ -143,9 +133,10 @@ private fun Cg_GroupInfoCard(
     categories: List<String>,
     selectedCategory: String
 ) {
+    val colorScheme = MaterialTheme.colorScheme
     Card(
         modifier = Modifier.fillMaxWidth(),
-        colors = CardDefaults.cardColors(containerColor = Cg_SurfaceWhite), // Đã fix tên biến
+        colors = CardDefaults.cardColors(containerColor = colorScheme.surfaceContainerLowest),
         elevation = CardDefaults.cardElevation(defaultElevation = 1.dp),
         shape = RoundedCornerShape(16.dp)
     ) {
@@ -155,23 +146,21 @@ private fun Cg_GroupInfoCard(
         ) {
             Box(contentAlignment = Alignment.BottomEnd) {
                 Box(
-                    modifier = Modifier.size(96.dp).clip(CircleShape).background(Cg_SurfaceHigh),
+                    modifier = Modifier.size(96.dp).clip(CircleShape).background(colorScheme.surfaceContainer),
                     contentAlignment = Alignment.Center
                 ) {
-                    // Đã thay Icon Group bằng Person
-                    Icon(Icons.Default.Person, contentDescription = null, tint = Color.Gray, modifier = Modifier.size(40.dp))
+                    Icon(Icons.Default.Person, contentDescription = null, tint = colorScheme.outline, modifier = Modifier.size(40.dp))
                 }
                 Box(
                     modifier = Modifier
                         .size(32.dp)
                         .clip(CircleShape)
-                        .background(Cg_OrangeStart)
-                        .border(2.dp, Color.White, CircleShape)
+                        .background(colorScheme.primaryContainer)
+                        .border(2.dp, colorScheme.surfaceContainerLowest, CircleShape)
                         .clickable { /* Chọn ảnh */ },
                     contentAlignment = Alignment.Center
                 ) {
-                    // Đã thay Icon CameraAlt bằng Add
-                    Icon(Icons.Default.Add, contentDescription = null, tint = Color.White, modifier = Modifier.size(16.dp))
+                    Icon(Icons.Default.Add, contentDescription = null, tint = colorScheme.surfaceContainerLowest, modifier = Modifier.size(16.dp))
                 }
             }
 
@@ -180,16 +169,16 @@ private fun Cg_GroupInfoCard(
             Box(
                 modifier = Modifier
                     .fillMaxWidth()
-                    .background(Cg_SurfaceLow, RoundedCornerShape(12.dp))
+                    .background(colorScheme.surfaceContainerLow, RoundedCornerShape(12.dp))
                     .padding(horizontal = 16.dp, vertical = 16.dp)
             ) {
                 if (groupName.isEmpty()) {
-                    Text("Tên nhóm (VD: Chuyến đi Vũng Tàu)", color = Color.Gray, fontSize = 14.sp)
+                    Text("Tên nhóm (VD: Chuyến đi Vũng Tàu)", color = colorScheme.outline, fontSize = 14.sp)
                 }
                 BasicTextField(
                     value = groupName,
                     onValueChange = onNameChange,
-                    textStyle = TextStyle(fontSize = 14.sp, fontWeight = FontWeight.Medium, color = Cg_TextMain),
+                    textStyle = TextStyle(fontSize = 14.sp, fontWeight = FontWeight.Medium, color = colorScheme.onSurface),
                     modifier = Modifier.fillMaxWidth()
                 )
             }
@@ -205,13 +194,13 @@ private fun Cg_GroupInfoCard(
                     Box(
                         modifier = Modifier
                             .clip(RoundedCornerShape(50))
-                            .background(if (isSelected) Cg_OrangeStart else Cg_SurfaceHigh)
+                            .background(if (isSelected) colorScheme.primaryContainer else colorScheme.surfaceContainer)
                             .clickable { /* Chọn category */ }
                             .padding(horizontal = 20.dp, vertical = 8.dp)
                     ) {
                         Text(
                             text = category,
-                            color = if (isSelected) Color.White else Cg_TextSub,
+                            color = if (isSelected) colorScheme.surfaceContainerLowest else colorScheme.onSurfaceVariant,
                             fontSize = 14.sp,
                             fontWeight = FontWeight.Medium
                         )
@@ -228,12 +217,13 @@ private fun Cg_AddMembersSection(
     onSearchChange: (String) -> Unit,
     friends: List<Cg_Member>
 ) {
+    val colorScheme = MaterialTheme.colorScheme
     Column {
         Text(
             text = "THÊM THÀNH VIÊN",
             fontSize = 10.sp,
             fontWeight = FontWeight.Bold,
-            color = Cg_TextSub.copy(alpha = 0.7f),
+            color = colorScheme.onSurfaceVariant.copy(alpha = 0.7f),
             letterSpacing = 1.5.sp,
             modifier = Modifier.padding(start = 8.dp, bottom = 16.dp)
         )
@@ -241,21 +231,21 @@ private fun Cg_AddMembersSection(
         Row(
             modifier = Modifier
                 .fillMaxWidth()
-                .background(Cg_SurfaceWhite, RoundedCornerShape(50))
-                .border(1.dp, Cg_BorderLight, RoundedCornerShape(50))
+                .background(colorScheme.surfaceContainerLowest, RoundedCornerShape(50))
+                .border(1.dp, colorScheme.surfaceContainerHigh, RoundedCornerShape(50))
                 .padding(horizontal = 16.dp, vertical = 12.dp),
             verticalAlignment = Alignment.CenterVertically
         ) {
-            Icon(Icons.Default.Search, contentDescription = null, tint = Color.Gray, modifier = Modifier.size(20.dp))
+            Icon(Icons.Default.Search, contentDescription = null, tint = colorScheme.outline, modifier = Modifier.size(20.dp))
             Spacer(modifier = Modifier.width(12.dp))
             Box(modifier = Modifier.weight(1f)) {
                 if (searchQuery.isEmpty()) {
-                    Text("Tìm kiếm bạn bè...", color = Color.Gray, fontSize = 14.sp)
+                    Text("Tìm kiếm bạn bè...", color = colorScheme.outline, fontSize = 14.sp)
                 }
                 BasicTextField(
                     value = searchQuery,
                     onValueChange = onSearchChange,
-                    textStyle = TextStyle(fontSize = 14.sp, color = Cg_TextMain),
+                    textStyle = TextStyle(fontSize = 14.sp, color = colorScheme.onSurface),
                     modifier = Modifier.fillMaxWidth()
                 )
             }
@@ -263,11 +253,11 @@ private fun Cg_AddMembersSection(
 
         Spacer(modifier = Modifier.height(16.dp))
 
-        Text("Gợi ý", fontSize = 12.sp, fontWeight = FontWeight.SemiBold, color = Cg_TextSub.copy(alpha = 0.7f), modifier = Modifier.padding(start = 8.dp, bottom = 8.dp))
+        Text("Gợi ý", fontSize = 12.sp, fontWeight = FontWeight.SemiBold, color = colorScheme.onSurfaceVariant.copy(alpha = 0.7f), modifier = Modifier.padding(start = 8.dp, bottom = 8.dp))
 
         Card(
             modifier = Modifier.fillMaxWidth(),
-            colors = CardDefaults.cardColors(containerColor = Cg_SurfaceWhite),
+            colors = CardDefaults.cardColors(containerColor = colorScheme.surfaceContainerLowest),
             elevation = CardDefaults.cardElevation(defaultElevation = 1.dp),
             shape = RoundedCornerShape(16.dp)
         ) {
@@ -283,32 +273,32 @@ private fun Cg_AddMembersSection(
                     ) {
                         Row(verticalAlignment = Alignment.CenterVertically) {
                             Box(
-                                modifier = Modifier.size(48.dp).clip(CircleShape).background(friend.avatarColor),
+                                modifier = Modifier.size(48.dp).clip(CircleShape).background(friend.avatarColor()),
                                 contentAlignment = Alignment.Center
                             ) {
-                                Text(friend.initial, color = Color.White, fontWeight = FontWeight.Bold, fontSize = 18.sp)
+                                Text(friend.initial, color = colorScheme.surfaceContainerLowest, fontWeight = FontWeight.Bold, fontSize = 18.sp)
                             }
                             Spacer(modifier = Modifier.width(16.dp))
                             Column {
-                                Text(friend.name, fontWeight = FontWeight.Bold, fontSize = 14.sp, color = Cg_TextMain)
-                                Text(friend.phone, fontSize = 12.sp, color = Cg_TextSub.copy(alpha = 0.7f))
+                                Text(friend.name, fontWeight = FontWeight.Bold, fontSize = 14.sp, color = colorScheme.onSurface)
+                                Text(friend.phone, fontSize = 12.sp, color = colorScheme.onSurfaceVariant.copy(alpha = 0.7f))
                             }
                         }
 
                         if (friend.isSelected) {
-                            Icon(Icons.Default.CheckCircle, contentDescription = "Đã chọn", tint = Cg_OrangeStart)
+                            Icon(Icons.Default.CheckCircle, contentDescription = "Đã chọn", tint = colorScheme.primaryContainer)
                         } else {
                             // Đã thay RadioButtonUnchecked bằng một nút Add hình tròn tự vẽ
                             Box(
-                                modifier = Modifier.size(24.dp).border(2.dp, Color.LightGray, CircleShape),
+                                modifier = Modifier.size(24.dp).border(2.dp, colorScheme.outlineVariant, CircleShape),
                                 contentAlignment = Alignment.Center
                             ) {
-                                Icon(Icons.Default.Add, contentDescription = "Thêm", tint = Color.LightGray, modifier = Modifier.size(16.dp))
+                                Icon(Icons.Default.Add, contentDescription = "Thêm", tint = colorScheme.outlineVariant, modifier = Modifier.size(16.dp))
                             }
                         }
                     }
                     if (index < friends.size - 1) {
-                        HorizontalDivider(color = Cg_BorderLight)
+                        HorizontalDivider(color = colorScheme.surfaceContainerHigh)
                     }
                 }
             }
@@ -318,10 +308,11 @@ private fun Cg_AddMembersSection(
 
 @Composable
 private fun Cg_BottomAction(selectedCount: Int) {
+    val colorScheme = MaterialTheme.colorScheme
     Box(
         modifier = Modifier
             .fillMaxWidth()
-            .background(Color.White.copy(alpha = 0.95f))
+            .background(colorScheme.surfaceContainerLowest.copy(alpha = 0.95f))
             .padding(horizontal = 24.dp, vertical = 16.dp)
             .navigationBarsPadding()
     ) {
@@ -331,28 +322,28 @@ private fun Cg_BottomAction(selectedCount: Int) {
                 verticalAlignment = Alignment.CenterVertically
             ) {
                 Row(horizontalArrangement = Arrangement.spacedBy((-12).dp)) {
-                    for (color in listOf(Color.DarkGray, Color.Gray, Color.LightGray)) {
+                    for (color in listOf(colorScheme.onSurfaceVariant, colorScheme.outline, colorScheme.outlineVariant)) {
                         Box(
                             modifier = Modifier
                                 .size(40.dp)
                                 .clip(CircleShape)
                                 .background(color)
-                                .border(2.dp, Color.White, CircleShape)
+                                .border(2.dp, colorScheme.surfaceContainerLowest, CircleShape)
                         )
                     }
                     Box(
                         modifier = Modifier
                             .size(40.dp)
                             .clip(CircleShape)
-                            .background(Cg_SurfaceHigh)
-                            .border(2.dp, Color.White, CircleShape),
+                            .background(colorScheme.surfaceContainer)
+                            .border(2.dp, colorScheme.surfaceContainerLowest, CircleShape),
                         contentAlignment = Alignment.Center
                     ) {
-                        Text("+0", fontSize = 10.sp, fontWeight = FontWeight.Bold, color = Cg_TextSub)
+                        Text("+0", fontSize = 10.sp, fontWeight = FontWeight.Bold, color = colorScheme.onSurfaceVariant)
                     }
                 }
                 Spacer(modifier = Modifier.width(12.dp))
-                Text("Đã chọn $selectedCount thành viên", fontSize = 12.sp, fontWeight = FontWeight.Medium, color = Cg_TextSub)
+                Text("Đã chọn $selectedCount thành viên", fontSize = 12.sp, fontWeight = FontWeight.Medium, color = colorScheme.onSurfaceVariant)
             }
 
             Button(
@@ -363,10 +354,10 @@ private fun Cg_BottomAction(selectedCount: Int) {
                 shape = RoundedCornerShape(50)
             ) {
                 Box(
-                    modifier = Modifier.fillMaxSize().background(brush = Brush.verticalGradient(listOf(Cg_OrangeStart, Cg_OrangeEnd))),
+                    modifier = Modifier.fillMaxSize().background(brush = Brush.verticalGradient(listOf(colorScheme.primaryContainer, colorScheme.primary))),
                     contentAlignment = Alignment.Center
                 ) {
-                    Text("TẠO NHÓM", color = Color.White, fontSize = 14.sp, fontWeight = FontWeight.Bold, letterSpacing = 1.sp)
+                    Text("TẠO NHÓM", color = colorScheme.surfaceContainerLowest, fontSize = 14.sp, fontWeight = FontWeight.Bold, letterSpacing = 1.sp)
                 }
             }
         }

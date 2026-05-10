@@ -33,32 +33,15 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 
-// --- KHO KHAI BÁO MÀU SẮC (Cách ly 100% bằng tiền tố Ag_) ---
-private val Ag_Bg = Color(0xFFF9F9F9)
-private val Ag_SurfaceWhite = Color(0xFFFFFFFF)
-private val Ag_SurfaceLow = Color(0xFFF3F3F3)
-private val Ag_SurfaceHigh = Color(0xFFE8E8E8)
-
-private val Ag_OrangePrimary = Color(0xFFE2725B)
-private val Ag_OrangeDark = Color(0xFF9F402D)
-private val Ag_OrangeLightBg = Color(0xFFFFE0D9)
-
-private val Ag_ErrorRed = Color(0xFFBA1A1A)
-private val Ag_TealText = Color(0xFF006B5B)
-private val Ag_TealLightBg = Color(0xFFD0F4EB)
-
-private val Ag_TextMain = Color(0xFF1A1C1C)
-private val Ag_TextSub = Color(0xFF56423E)
-
 // --- MÔ HÌNH DỮ LIỆU TẠM ---
 private data class Ag_GroupInfo(
     val title: String,
     val date: String,
     val icon: ImageVector,
-    val iconColor: Color,
-    val iconBg: Color,
+    val iconColor: @Composable () -> Color,
+    val iconBg: @Composable () -> Color,
     val statusText: String,
-    val statusColor: Color,
+    val statusColor: @Composable () -> Color,
     val isSettled: Boolean,
     val avatarCount: Int,
     val extraCount: Int = 0,
@@ -69,20 +52,22 @@ private data class Ag_GroupInfo(
 fun AllGroupsScreen(
     onBack: () -> Unit
 ) {
+    val colorScheme = MaterialTheme.colorScheme
+
     val filters = listOf("Tất cả", "Đang nợ", "Được trả", "Đã xong")
     var selectedFilter by remember { mutableStateOf("Tất cả") }
 
     // Đã thay thế bằng các Core Icons an toàn 100%
     val mockGroups = listOf(
-        Ag_GroupInfo("Chuyến đi Đà Lạt", "Hôm qua", Icons.Default.Place, Ag_OrangeDark, Ag_OrangeLightBg, "Bạn nợ 50.000 đ", Ag_ErrorRed, false, 3),
-        Ag_GroupInfo("Ăn trưa công ty", "2 ngày trước", Icons.Default.Person, Ag_TealText, Ag_TealLightBg, "Nhận 120.000 đ", Ag_TealText, false, 3, 1),
-        Ag_GroupInfo("Nhà chung", "Tuần trước", Icons.Default.Home, Ag_TextSub, Ag_SurfaceHigh, "Đã thanh toán", Ag_TextSub, true, 2, 0, true),
-        Ag_GroupInfo("Tiệc sinh nhật", "Tháng trước", Icons.Default.Favorite, Ag_OrangeDark, Ag_OrangeLightBg, "Bạn nợ 250.000 đ", Ag_ErrorRed, false, 3, 2),
-        Ag_GroupInfo("Cà phê sáng", "Hôm nay", Icons.Default.Star, Ag_OrangeDark, Ag_OrangeLightBg, "Đã thanh toán", Ag_TextSub, true, 3)
+        Ag_GroupInfo("Chuyến đi Đà Lạt", "Hôm qua", Icons.Default.Place, { colorScheme.primary }, { colorScheme.primaryContainer.copy(alpha = 0.2f) }, "Bạn nợ 50.000 đ", { colorScheme.error }, false, 3),
+        Ag_GroupInfo("Ăn trưa công ty", "2 ngày trước", Icons.Default.Person, { colorScheme.secondary }, { colorScheme.secondaryContainer }, "Nhận 120.000 đ", { colorScheme.secondary }, false, 3, 1),
+        Ag_GroupInfo("Nhà chung", "Tuần trước", Icons.Default.Home, { colorScheme.onSurfaceVariant }, { colorScheme.surfaceContainer }, "Đã thanh toán", { colorScheme.onSurfaceVariant }, true, 2, 0, true),
+        Ag_GroupInfo("Tiệc sinh nhật", "Tháng trước", Icons.Default.Favorite, { colorScheme.primary }, { colorScheme.primaryContainer.copy(alpha = 0.2f) }, "Bạn nợ 250.000 đ", { colorScheme.error }, false, 3, 2),
+        Ag_GroupInfo("Cà phê sáng", "Hôm nay", Icons.Default.Star, { colorScheme.primary }, { colorScheme.primaryContainer.copy(alpha = 0.2f) }, "Đã thanh toán", { colorScheme.onSurfaceVariant }, true, 3)
     )
 
     Scaffold(
-        containerColor = Ag_Bg,
+        containerColor = colorScheme.surface,
         topBar = { Ag_TopBar(onBack = onBack) }
     ) { paddingValues ->
         Column(
@@ -115,29 +100,30 @@ fun AllGroupsScreen(
 
 @Composable
 private fun Ag_TopBar(onBack: () -> Unit) {
+    val colorScheme = MaterialTheme.colorScheme
     Row(
         modifier = Modifier
             .fillMaxWidth()
-            .background(Color.White.copy(alpha = 0.9f))
+            .background(colorScheme.surfaceContainerLowest.copy(alpha = 0.9f))
             .padding(horizontal = 16.dp, vertical = 12.dp),
         verticalAlignment = Alignment.CenterVertically,
         horizontalArrangement = Arrangement.SpaceBetween
     ) {
         Row(verticalAlignment = Alignment.CenterVertically) {
             IconButton(onClick = onBack) {
-                Icon(Icons.AutoMirrored.Filled.ArrowBack, contentDescription = "Quay lại", tint = Ag_OrangeDark)
+                Icon(Icons.AutoMirrored.Filled.ArrowBack, contentDescription = "Quay lại", tint = colorScheme.primary)
             }
             Spacer(modifier = Modifier.width(4.dp))
             Text(
                 text = "Tất cả nhóm",
                 fontSize = 18.sp,
                 fontWeight = FontWeight.Bold,
-                color = Ag_TextMain
+                color = colorScheme.onSurface
             )
         }
 
         IconButton(onClick = { /* Mở tìm kiếm */ }) {
-            Icon(Icons.Default.Search, contentDescription = "Tìm kiếm", tint = Ag_OrangeDark)
+            Icon(Icons.Default.Search, contentDescription = "Tìm kiếm", tint = colorScheme.primary)
         }
     }
 }
@@ -148,6 +134,7 @@ private fun Ag_FilterChips(
     selectedFilter: String,
     onFilterSelected: (String) -> Unit
 ) {
+    val colorScheme = MaterialTheme.colorScheme
     LazyRow(
         modifier = Modifier
             .fillMaxWidth()
@@ -160,13 +147,13 @@ private fun Ag_FilterChips(
             Box(
                 modifier = Modifier
                     .clip(RoundedCornerShape(50))
-                    .background(if (isSelected) Ag_OrangePrimary else Ag_SurfaceLow)
+                    .background(if (isSelected) colorScheme.primaryContainer else colorScheme.surfaceContainerLow)
                     .clickable { onFilterSelected(filter) }
                     .padding(horizontal = 20.dp, vertical = 10.dp)
             ) {
                 Text(
                     text = filter,
-                    color = if (isSelected) Color.White else Ag_TextSub,
+                    color = if (isSelected) colorScheme.surfaceContainerLowest else colorScheme.onSurfaceVariant,
                     fontSize = 14.sp,
                     fontWeight = if (isSelected) FontWeight.Bold else FontWeight.Medium
                 )
@@ -177,12 +164,13 @@ private fun Ag_FilterChips(
 
 @Composable
 private fun Ag_GroupCard(group: Ag_GroupInfo) {
+    val colorScheme = MaterialTheme.colorScheme
     Card(
         modifier = Modifier
             .fillMaxWidth()
             .alpha(if (group.isDimmed) 0.7f else 1f)
             .clickable { /* Điều hướng tới chi tiết nhóm */ },
-        colors = CardDefaults.cardColors(containerColor = Ag_SurfaceWhite),
+        colors = CardDefaults.cardColors(containerColor = colorScheme.surfaceContainerLowest),
         elevation = CardDefaults.cardElevation(defaultElevation = 1.dp),
         shape = RoundedCornerShape(20.dp)
     ) {
@@ -199,10 +187,10 @@ private fun Ag_GroupCard(group: Ag_GroupInfo) {
                     modifier = Modifier
                         .size(48.dp)
                         .clip(RoundedCornerShape(12.dp))
-                        .background(group.iconBg),
+                        .background(group.iconBg()),
                     contentAlignment = Alignment.Center
                 ) {
-                    Icon(group.icon, contentDescription = null, tint = group.iconColor, modifier = Modifier.size(24.dp))
+                    Icon(group.icon, contentDescription = null, tint = group.iconColor(), modifier = Modifier.size(24.dp))
                 }
 
                 Spacer(modifier = Modifier.width(16.dp))
@@ -212,14 +200,14 @@ private fun Ag_GroupCard(group: Ag_GroupInfo) {
                         text = group.title,
                         fontSize = 16.sp,
                         fontWeight = FontWeight.Bold,
-                        color = Ag_TextMain
+                        color = colorScheme.onSurface
                     )
                     Spacer(modifier = Modifier.height(2.dp))
                     Text(
                         text = group.date,
                         fontSize = 12.sp,
                         fontWeight = FontWeight.Medium,
-                        color = Ag_TextSub.copy(alpha = 0.7f)
+                        color = colorScheme.onSurfaceVariant.copy(alpha = 0.7f)
                     )
                 }
             }
@@ -232,14 +220,14 @@ private fun Ag_GroupCard(group: Ag_GroupInfo) {
                 horizontalArrangement = Arrangement.SpaceBetween
             ) {
                 Row(horizontalArrangement = Arrangement.spacedBy((-12).dp)) {
-                    val avatarColors = listOf(Color.DarkGray, Color.Gray, Color.LightGray)
+                    val avatarColors = listOf(colorScheme.onSurfaceVariant, colorScheme.outline, colorScheme.outlineVariant)
                     for (i in 0 until group.avatarCount) {
                         Box(
                             modifier = Modifier
                                 .size(32.dp)
                                 .clip(CircleShape)
                                 .background(avatarColors[i % avatarColors.size])
-                                .border(2.dp, Color.White, CircleShape)
+                                .border(2.dp, colorScheme.surfaceContainerLowest, CircleShape)
                         )
                     }
                     if (group.extraCount > 0) {
@@ -247,11 +235,11 @@ private fun Ag_GroupCard(group: Ag_GroupInfo) {
                             modifier = Modifier
                                 .size(32.dp)
                                 .clip(CircleShape)
-                                .background(Ag_SurfaceHigh)
-                                .border(2.dp, Color.White, CircleShape),
+                                .background(colorScheme.surfaceContainer)
+                                .border(2.dp, colorScheme.surfaceContainerLowest, CircleShape),
                             contentAlignment = Alignment.Center
                         ) {
-                            Text("+${group.extraCount}", fontSize = 10.sp, fontWeight = FontWeight.Bold, color = Ag_TextSub)
+                            Text("+${group.extraCount}", fontSize = 10.sp, fontWeight = FontWeight.Bold, color = colorScheme.onSurfaceVariant)
                         }
                     }
                 }
@@ -260,14 +248,14 @@ private fun Ag_GroupCard(group: Ag_GroupInfo) {
                     Box(
                         modifier = Modifier
                             .clip(RoundedCornerShape(50))
-                            .background(Ag_SurfaceHigh)
+                            .background(colorScheme.surfaceContainer)
                             .padding(horizontal = 12.dp, vertical = 4.dp)
                     ) {
                         Text(
                             text = group.statusText.uppercase(),
                             fontSize = 10.sp,
                             fontWeight = FontWeight.Bold,
-                            color = Ag_TextSub,
+                            color = colorScheme.onSurfaceVariant,
                             letterSpacing = 0.5.sp
                         )
                     }
@@ -276,7 +264,7 @@ private fun Ag_GroupCard(group: Ag_GroupInfo) {
                         text = group.statusText,
                         fontSize = 14.sp,
                         fontWeight = FontWeight.Bold,
-                        color = group.statusColor,
+                        color = group.statusColor(),
                         letterSpacing = (-0.5).sp
                     )
                 }
