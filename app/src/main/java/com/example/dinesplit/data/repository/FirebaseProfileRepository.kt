@@ -1,6 +1,7 @@
 package com.example.dinesplit.data.repository
 
 import android.content.Context
+import android.net.Uri
 import com.example.dinesplit.core.firebase.FirebaseProviders
 import com.example.dinesplit.domain.model.UserProfile
 import com.example.dinesplit.domain.repository.ProfileRepository
@@ -16,6 +17,7 @@ class FirebaseProfileRepository private constructor(
 ) : ProfileRepository {
 
     private val firestore = FirebaseProviders.firestore
+    private val storage = FirebaseProviders.storage
 
     override suspend fun getProfile(uid: String): UserProfile? {
         val snapshot = firestore
@@ -41,7 +43,14 @@ class FirebaseProfileRepository private constructor(
                 upsertUsernameClaim(transaction, claimRef, profile, normalizedUsername)
                 upsertProfileDocument(transaction, profileRef, profile, normalizedUsername)
             }.awaitFirebase()
-            Unit
+        }
+    }
+
+    override suspend fun uploadAvatar(uid: String, avatarUri: Uri): Result<String> {
+        return runCatching {
+            val avatarReference = avatarDocument(uid)
+            avatarReference.putFile(avatarUri).awaitFirebase()
+            avatarReference.downloadUrl.awaitFirebase().toString()
         }
     }
 
@@ -49,6 +58,9 @@ class FirebaseProfileRepository private constructor(
 
     private fun usernameClaimDocument(usernameLower: String) =
         firestore.collection(COLLECTION_USERNAME_CLAIMS).document(usernameLower)
+
+    private fun avatarDocument(uid: String) =
+        storage.reference.child("avatars/$uid/profile_avatar.jpg")
 
     private fun ensureClaimAvailable(
         transaction: com.google.firebase.firestore.Transaction,

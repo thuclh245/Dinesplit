@@ -1,8 +1,11 @@
+@file:Suppress("unused")
+
 package com.example.dinesplit.core.ui
 
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.ui.unit.dp
 
+@Suppress("unused")
 object AppDimens {
     val spaceXs = 4.dp
     val spaceSm = 8.dp
@@ -14,17 +17,21 @@ object AppDimens {
     val screenHorizontal = 16.dp
     val screenVertical = 16.dp
 
-    val radiusSm = 8.dp
+    val radiusSm = 4.dp
     val radiusMd = 12.dp
     val radiusLg = 16.dp
+    val radiusXl = 24.dp
+    val radiusFull = 9999.dp
 
     val buttonHeight = 52.dp
     val textFieldMinHeight = 56.dp
     val cardElevation = 2.dp
 }
 
+@Suppress("unused")
 object AppShapes {
-    val small = RoundedCornerShape(AppDimens.radiusSm)
     val medium = RoundedCornerShape(AppDimens.radiusMd)
     val large = RoundedCornerShape(AppDimens.radiusLg)
+    val xLarge = RoundedCornerShape(AppDimens.radiusXl)
+    val full = RoundedCornerShape(AppDimens.radiusFull)
 }

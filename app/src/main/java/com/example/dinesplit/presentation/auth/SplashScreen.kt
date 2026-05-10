@@ -6,7 +6,7 @@ import androidx.lifecycle.viewmodel.compose.viewModel
 import androidx.compose.runtime.collectAsState
 import com.example.dinesplit.domain.model.AppStartDestination
 import androidx.compose.runtime.Composable
-import com.example.dinesplit.core.ui.AppPlaceholderScreen
+import com.example.dinesplit.core.ui.SplashContent
 
 @Composable
 fun SplashScreen(
@@ -19,5 +19,5 @@ fun SplashScreen(
         uiState.destination?.let(onDestinationResolved)
     }
 
-    AppPlaceholderScreen(title = "DineSplit Loading...")
+    SplashContent()
 }

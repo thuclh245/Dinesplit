@@ -11,6 +11,7 @@ import com.example.dinesplit.core.ui.AppDimens
 import com.example.dinesplit.core.ui.AppScaffold
 import com.example.dinesplit.core.ui.ErrorStateBlock
 import com.example.dinesplit.core.ui.LoadingBlock
+import com.example.dinesplit.core.ui.ProfileAvatarSection
 import com.example.dinesplit.core.ui.PrimaryButton
 import com.example.dinesplit.core.ui.SecondaryButton
 
@@ -28,12 +29,22 @@ fun ProfileScreen(
                 title = "Profile unavailable",
                 subtitle = uiState.errorMessage ?: "Please complete profile first.",
                 onRetryClick = onEditProfile,
-                retryText = "Complete profile"
+                retryText = if (uiState.errorMessage == "Profile not completed") {
+                    "Complete profile"
+                } else {
+                    "Retry"
+                }
             )
             else -> Column(
                 modifier = Modifier.fillMaxSize(),
                 verticalArrangement = Arrangement.spacedBy(AppDimens.spaceLg)
             ) {
+                ProfileAvatarSection(
+                    avatarModel = uiState.profile.avatarUrl,
+                    title = "Avatar",
+                    subtitle = "@${uiState.profile.username}"
+                )
+
                 AppCard {
                     Column(verticalArrangement = Arrangement.spacedBy(AppDimens.spaceSm)) {
                         Text(text = uiState.profile.displayName)

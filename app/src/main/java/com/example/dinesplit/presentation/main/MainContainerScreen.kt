@@ -54,7 +54,7 @@ fun MainContainerScreen(
         profileViewModel.effect.collectLatest { effect ->
             when (effect) {
                 ProfileUiEffect.LogoutSuccess -> onLogout()
-                ProfileUiEffect.SaveSuccess -> Unit
+                ProfileUiEffect.SaveSuccess -> mainNavController.navigateUp()
             }
         }
     }
@@ -148,10 +148,10 @@ fun MainContainerScreen(
 
             composable(AppRoute.Profile.route) {
                 ProfileScreen(
-                    uiState = profileUiState,
-                    onEditProfile = { mainNavController.navigate(AppRoute.EditProfile.route) },
-                    onLogout = profileViewModel::logout,
-                    onOpenNotifications = onOpenNotifications
+                    profileUiState,
+                    { mainNavController.navigate(AppRoute.EditProfile.route) },
+                    profileViewModel::logout,
+                    onOpenNotifications
                 )
             }
 
@@ -161,6 +161,8 @@ fun MainContainerScreen(
                     onDisplayNameChange = profileViewModel::onDisplayNameChange,
                     onUsernameChange = profileViewModel::onUsernameChange,
                     onBioChange = profileViewModel::onBioChange,
+                    onAvatarChange = profileViewModel::onAvatarSelected,
+                    onAvatarClear = profileViewModel::onAvatarCleared,
                     onSave = profileViewModel::saveProfile,
                     onBack = { mainNavController.navigateUp() }
                 )

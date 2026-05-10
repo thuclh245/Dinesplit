@@ -1,6 +1,7 @@
 package com.example.dinesplit.presentation.auth
 
 import android.app.Application
+import android.net.Uri
 import androidx.lifecycle.AndroidViewModel
 import androidx.lifecycle.viewModelScope
 import com.example.dinesplit.core.common.AppContainer
@@ -20,6 +21,10 @@ data class CompleteProfileUiState(
     val displayName: String = "",
     val username: String = "",
     val bio: String = "",
+    val avatarUrl: String = "",
+    val avatarLocalUri: String? = null,
+    val avatarError: String? = null,
+    val isAvatarUploading: Boolean = false,
     val displayNameError: String? = null,
     val usernameError: String? = null,
     val isSubmitting: Boolean = false,
@@ -34,6 +39,7 @@ class CompleteProfileViewModel(application: Application) : AndroidViewModel(appl
 
     private val observeSessionUseCase = AppContainer.observeSessionUseCase(application)
     private val updateProfileUseCase = AppContainer.updateProfileUseCase(application)
+    private val uploadAvatarUseCase = AppContainer.uploadAvatarUseCase(application)
 
     private val _uiState = MutableStateFlow(CompleteProfileUiState())
     val uiState: StateFlow<CompleteProfileUiState> = _uiState.asStateFlow()
@@ -51,6 +57,24 @@ class CompleteProfileViewModel(application: Application) : AndroidViewModel(appl
 
     fun onBioChange(value: String) {
         _uiState.value = _uiState.value.copy(bio = value, submitError = null)
+    }
+
+    fun onAvatarSelected(value: Uri) {
+        _uiState.value = _uiState.value.copy(
+            avatarUrl = value.toString(),
+            avatarLocalUri = value.toString(),
+            avatarError = null,
+            submitError = null
+        )
+    }
+
+    fun onAvatarCleared() {
+        _uiState.value = _uiState.value.copy(
+            avatarUrl = "",
+            avatarLocalUri = null,
+            avatarError = null,
+            submitError = null
+        )
     }
 
     fun submit() {
@@ -71,37 +95,79 @@ class CompleteProfileViewModel(application: Application) : AndroidViewModel(appl
         }
 
         viewModelScope.launch {
-            _uiState.value = _uiState.value.copy(isSubmitting = true, submitError = null)
+            _uiState.value = _uiState.value.copy(
+                isSubmitting = true,
+                isAvatarUploading = false,
+                submitError = null,
+                avatarError = null
+            )
+
             val now = System.currentTimeMillis()
+            val finalAvatarUrl = uploadAvatarIfNeeded(session.uid, current.avatarLocalUri)
+                ?: return@launch
+
             val profile = UserProfile(
                 uid = session.uid,
                 displayName = current.displayName.trim(),
                 username = current.username.trim(),
                 email = session.email,
+                avatarUrl = finalAvatarUrl,
                 bio = current.bio.trim(),
                 createdAt = now,
                 updatedAt = now
             )
+
             updateProfileUseCase(profile)
                 .onSuccess {
-                    _uiState.value = _uiState.value.copy(isSubmitting = false)
+                    _uiState.value = _uiState.value.copy(
+                        isSubmitting = false,
+                        isAvatarUploading = false,
+                        avatarUrl = finalAvatarUrl,
+                        avatarLocalUri = null
+                    )
                     _effect.emit(CompleteProfileUiEffect.NavigateToMain)
                 }
                 .onFailure { throwable ->
                     _uiState.value = if (throwable is UsernameAlreadyExistsException) {
                         _uiState.value.copy(
                             isSubmitting = false,
+                            isAvatarUploading = false,
                             usernameError = FirebaseErrorMapper.toUserMessage(throwable),
                             submitError = null
                         )
                     } else {
                         _uiState.value.copy(
                             isSubmitting = false,
+                            isAvatarUploading = false,
                             submitError = FirebaseErrorMapper.toUserMessage(throwable)
                         )
                     }
                 }
         }
+    }
+
+    private suspend fun uploadAvatarIfNeeded(uid: String, avatarLocalUri: String?): String? {
+        if (avatarLocalUri.isNullOrBlank()) {
+            return _uiState.value.avatarUrl.trim()
+        }
+
+        _uiState.value = _uiState.value.copy(isAvatarUploading = true)
+        return uploadAvatarUseCase(uid, Uri.parse(avatarLocalUri))
+            .onSuccess { uploadedAvatarUrl ->
+                _uiState.value = _uiState.value.copy(
+                    avatarUrl = uploadedAvatarUrl,
+                    avatarLocalUri = null,
+                    isAvatarUploading = false
+                )
+            }
+            .onFailure { throwable ->
+                _uiState.value = _uiState.value.copy(
+                    isSubmitting = false,
+                    isAvatarUploading = false,
+                    avatarError = FirebaseErrorMapper.toUserMessage(throwable)
+                )
+            }
+            .getOrNull()
     }
 }
 

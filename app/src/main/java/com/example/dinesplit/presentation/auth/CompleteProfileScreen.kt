@@ -2,7 +2,6 @@ package com.example.dinesplit.presentation.auth
 
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
-import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
@@ -62,7 +61,6 @@ fun CompleteProfileScreen(
                 supportingText = uiState.submitError
             )
 
-            Spacer(modifier = Modifier)
 
             PrimaryButton(
                 text = if (uiState.isSubmitting) "Saving..." else "Continue",

@@ -18,9 +18,9 @@ fun AppCard(
 ) {
     Card(
         modifier = modifier.fillMaxWidth(),
-        shape = AppShapes.large,
+        shape = AppShapes.xLarge,
         colors = CardDefaults.cardColors(
-            containerColor = MaterialTheme.colorScheme.surface
+            containerColor = MaterialTheme.colorScheme.surfaceContainerLowest
         ),
         elevation = CardDefaults.cardElevation(
             defaultElevation = AppDimens.cardElevation

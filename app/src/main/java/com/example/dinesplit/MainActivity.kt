@@ -17,7 +17,11 @@ class MainActivity : ComponentActivity() {
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         enableEdgeToEdge()
-        FirebaseBaselineCheck.verify()
+        runCatching {
+            FirebaseBaselineCheck.verify()
+        }.onFailure { throwable ->
+            android.util.Log.e("MainActivity", "Firebase baseline check failed", throwable)
+        }
         setContent {
             DineSplitTheme {
                 val navController = rememberNavController()

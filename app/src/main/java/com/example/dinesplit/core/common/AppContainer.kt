@@ -11,6 +11,7 @@ import com.example.dinesplit.domain.usecase.LogoutUseCase
 import com.example.dinesplit.domain.usecase.ObserveSessionUseCase
 import com.example.dinesplit.domain.usecase.RegisterUseCase
 import com.example.dinesplit.domain.usecase.ResolveStartDestinationUseCase
+import com.example.dinesplit.domain.usecase.UploadAvatarUseCase
 import com.example.dinesplit.domain.usecase.UpdateProfileUseCase
 
 object AppContainer {
@@ -44,6 +45,10 @@ object AppContainer {
 
     fun updateProfileUseCase(context: Context): UpdateProfileUseCase {
         return UpdateProfileUseCase(profileRepository(context))
+    }
+
+    fun uploadAvatarUseCase(context: Context): UploadAvatarUseCase {
+        return UploadAvatarUseCase(profileRepository(context))
     }
 
     fun resolveStartDestinationUseCase(context: Context): ResolveStartDestinationUseCase {

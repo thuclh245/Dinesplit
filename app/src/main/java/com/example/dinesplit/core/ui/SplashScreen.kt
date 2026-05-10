@@ -1,12 +1,9 @@
 package com.example.dinesplit.core.ui
 
-
-
 import androidx.compose.runtime.Composable
-import com.example.dinesplit.core.ui.AppPlaceholderScreen
-
+import androidx.compose.ui.Modifier
 
 @Composable
-fun SplashScreen() {
-    AppPlaceholderScreen(title = "Splash Screen")
+fun SplashScreen(modifier: Modifier = Modifier) {
+    SplashContent(modifier = modifier)
 }

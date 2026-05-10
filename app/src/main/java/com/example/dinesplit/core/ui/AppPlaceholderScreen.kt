@@ -1,16 +1,21 @@
 package com.example.dinesplit.core.ui
 
 import androidx.compose.foundation.layout.Arrangement
+import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.height
+import androidx.compose.foundation.background
+import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.verticalScroll
+import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.unit.dp
 import androidx.compose.ui.tooling.preview.Preview
 import com.example.dinesplit.ui.theme.DineSplitTheme
 
@@ -22,7 +27,7 @@ fun AppPlaceholderScreen(
     secondaryActionLabel: String? = null,
     onSecondaryAction: (() -> Unit)? = null
 ) {
-    AppScaffold(title = "DINESPLIT") {
+     AppScaffold(title = "DineSplit") {
         Column(
             modifier = Modifier
                 .fillMaxSize()
@@ -33,14 +38,29 @@ fun AppPlaceholderScreen(
 
             AppCard {
                 Column(verticalArrangement = Arrangement.spacedBy(AppDimens.spaceSm)) {
-                    Text(
-                        text = "Screen",
-                        style = MaterialTheme.typography.labelMedium,
-                        color = MaterialTheme.colorScheme.onSurfaceVariant
-                    )
+                    Box(
+                        modifier = Modifier
+                            .background(
+                                color = MaterialTheme.colorScheme.secondaryContainer,
+                                shape = RoundedCornerShape(AppDimens.radiusSm)
+                            )
+                            .padding(horizontal = AppDimens.spaceSm, vertical = 6.dp)
+                    ) {
+                        Text(
+                            text = "DineSplit module",
+                            style = MaterialTheme.typography.labelMedium,
+                            color = MaterialTheme.colorScheme.onSecondaryContainer
+                        )
+                    }
                     Text(
                         text = title,
-                        style = MaterialTheme.typography.displayMedium
+                        style = MaterialTheme.typography.displayMedium,
+                        color = MaterialTheme.colorScheme.onSurface
+                    )
+                    Text(
+                        text = "Temporary fallback shell for a module that still needs product copy or real data.",
+                        style = MaterialTheme.typography.bodyMedium,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant
                     )
                 }
             }
