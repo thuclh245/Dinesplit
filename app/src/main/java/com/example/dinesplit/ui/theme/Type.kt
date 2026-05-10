@@ -2,7 +2,6 @@ package com.example.dinesplit.ui.theme
 
 import androidx.compose.material3.Typography
 import androidx.compose.ui.text.TextStyle
-import androidx.compose.ui.text.font.Font
 import androidx.compose.ui.text.font.FontFamily
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.googlefonts.Font
@@ -10,35 +9,44 @@ import androidx.compose.ui.text.googlefonts.GoogleFont
 import androidx.compose.ui.unit.sp
 import com.example.dinesplit.R
 
-private val provider = GoogleFont.Provider(
-    providerAuthority = "com.google.android.gms.fonts",
-    providerPackage = "com.google.android.gms",
-    certificates = R.array.com_google_android_gms_fonts_certs
-)
-
-private val plusJakartaSansFont = GoogleFont("Plus Jakarta Sans")
-private val interFont = GoogleFont("Inter")
+// Use a safe initialization for the Google Font provider to avoid crashing the Compose Preview
+// if the library is not found in the renderer's classpath (NoClassDefFoundError).
+private val provider: GoogleFont.Provider? = try {
+    GoogleFont.Provider(
+        providerAuthority = "com.google.android.gms.fonts",
+        providerPackage = "com.google.android.gms",
+        certificates = R.array.com_google_android_gms_fonts_certs
+    )
+} catch (e: Throwable) {
+    null
+}
 
 /**
  * Plus Jakarta Sans — Display & Headlines (editorial, bold, high-contrast)
  */
-val PlusJakartaSans = FontFamily(
-    Font(googleFont = plusJakartaSansFont, fontProvider = provider, weight = FontWeight.Normal),
-    Font(googleFont = plusJakartaSansFont, fontProvider = provider, weight = FontWeight.Medium),
-    Font(googleFont = plusJakartaSansFont, fontProvider = provider, weight = FontWeight.SemiBold),
-    Font(googleFont = plusJakartaSansFont, fontProvider = provider, weight = FontWeight.Bold),
-    Font(googleFont = plusJakartaSansFont, fontProvider = provider, weight = FontWeight.ExtraBold),
-)
+val PlusJakartaSans = provider?.let { p ->
+    val fontName = GoogleFont("Plus Jakarta Sans")
+    FontFamily(
+        Font(googleFont = fontName, fontProvider = p, weight = FontWeight.Normal),
+        Font(googleFont = fontName, fontProvider = p, weight = FontWeight.Medium),
+        Font(googleFont = fontName, fontProvider = p, weight = FontWeight.SemiBold),
+        Font(googleFont = fontName, fontProvider = p, weight = FontWeight.Bold),
+        Font(googleFont = fontName, fontProvider = p, weight = FontWeight.ExtraBold),
+    )
+} ?: FontFamily.Default
 
 /**
  * Inter — Body & UI labels (high x-height, excellent readability)
  */
-val Inter = FontFamily(
-    Font(googleFont = interFont, fontProvider = provider, weight = FontWeight.Normal),
-    Font(googleFont = interFont, fontProvider = provider, weight = FontWeight.Medium),
-    Font(googleFont = interFont, fontProvider = provider, weight = FontWeight.SemiBold),
-    Font(googleFont = interFont, fontProvider = provider, weight = FontWeight.Bold),
-)
+val Inter = provider?.let { p ->
+    val fontName = GoogleFont("Inter")
+    FontFamily(
+        Font(googleFont = fontName, fontProvider = p, weight = FontWeight.Normal),
+        Font(googleFont = fontName, fontProvider = p, weight = FontWeight.Medium),
+        Font(googleFont = fontName, fontProvider = p, weight = FontWeight.SemiBold),
+        Font(googleFont = fontName, fontProvider = p, weight = FontWeight.Bold),
+    )
+} ?: FontFamily.Default
 
 val Typography = Typography(
     // ─── Display: Plus Jakarta Sans (editorial "Total Due" amounts) ───

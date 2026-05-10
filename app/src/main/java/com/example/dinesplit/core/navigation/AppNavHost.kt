@@ -49,10 +49,18 @@ fun AppNavHost(
                     onGoToRegister = {
                         navController.navigate(AppRoute.Register.route)
                     },
-                    onLoginResolved = {
-                        navController.navigate(AppRoute.Splash.route) {
-                            popUpTo(NavGraph.AUTH) { inclusive = true }
-                            launchSingleTop = true
+                    onLoginSuccess = { destination ->
+                        val target = when (destination) {
+                            AppStartDestination.MAIN -> NavGraph.MAIN
+                            AppStartDestination.COMPLETE_PROFILE -> AppRoute.CompleteProfile.route
+                            AppStartDestination.AUTH -> AppRoute.Login.route // Should not happen after login
+                        }
+                        
+                        if (target != AppRoute.Login.route) {
+                            navController.navigate(target) {
+                                popUpTo(NavGraph.AUTH) { inclusive = true }
+                                launchSingleTop = true
+                            }
                         }
                     }
                 )

@@ -28,6 +28,8 @@ class SplashViewModel(application: Application) : AndroidViewModel(application) 
 
     fun resolveDestination() {
         viewModelScope.launch {
+            // Give Firebase a small window to restore session if needed
+            kotlinx.coroutines.delay(500)
             runCatching {
                 resolveStartDestinationUseCase()
             }.onSuccess { destination ->

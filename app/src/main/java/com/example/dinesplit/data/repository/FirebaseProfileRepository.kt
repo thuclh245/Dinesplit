@@ -20,29 +20,52 @@ class FirebaseProfileRepository private constructor(
     private val storage = FirebaseProviders.storage
 
     override suspend fun getProfile(uid: String): UserProfile? {
-        val snapshot = firestore
-            .collection(COLLECTION_USERS)
-            .document(uid)
-            .get()
-            .awaitFirebase()
+        return try {
+            val snapshot = firestore
+                .collection(COLLECTION_USERS)
+                .document(uid)
+                .get()
+                .awaitFirebase()
 
-        return snapshot.toUserProfile(uid)
+            snapshot.toUserProfile(uid)
+        } catch (e: Exception) {
+            android.util.Log.e("FirebaseProfileRepo", "Error fetching profile", e)
+            null
+        }
     }
 
     override suspend fun upsertProfile(profile: UserProfile): Result<Unit> {
         return runCatching {
             val normalizedUsername = normalizeUsername(profile.username)
+            val profileRef = profileDocument(profile.uid)
+            val claimRef = usernameClaimDocument(normalizedUsername)
 
-            firestore.runTransaction { transaction ->
-                val profileRef = profileDocument(profile.uid)
-                val claimRef = usernameClaimDocument(normalizedUsername)
-                val currentUsernameLower = transaction.get(profileRef).profileUsernameLower()
+            // 1. Check if username is already taken by someone else
+            val claimSnapshot = claimRef.get().awaitFirebase()
+            if (claimSnapshot.exists() && claimSnapshot.getString(FIELD_UID) != profile.uid) {
+                throw UsernameAlreadyExistsException()
+            }
 
-                ensureClaimAvailable(transaction, claimRef, profile.uid)
-                releaseOldUsernameClaimIfChanged(transaction, profile.uid, currentUsernameLower, normalizedUsername)
-                upsertUsernameClaim(transaction, claimRef, profile, normalizedUsername)
-                upsertProfileDocument(transaction, profileRef, profile, normalizedUsername)
-            }.awaitFirebase()
+            // 2. Get current profile to check if we need to release an old username
+            val currentProfileSnapshot = profileRef.get().awaitFirebase()
+            val oldUsernameLower = currentProfileSnapshot.profileUsernameLower()
+
+            // 3. Update Profile Document
+            profileRef.set(
+                profile.toFirestoreMap(normalizedUsername),
+                SetOptions.merge()
+            ).awaitFirebase()
+
+            // 4. Update Username Claim
+            claimRef.set(
+                profile.toUsernameClaimMap(normalizedUsername),
+                SetOptions.merge()
+            ).awaitFirebase()
+
+            // 5. Release old username if it changed
+            if (oldUsernameLower != null && oldUsernameLower != normalizedUsername) {
+                usernameClaimDocument(oldUsernameLower).delete().awaitFirebase()
+            }
         }
     }
 
@@ -61,58 +84,6 @@ class FirebaseProfileRepository private constructor(
 
     private fun avatarDocument(uid: String) =
         storage.reference.child("avatars/$uid/profile_avatar.jpg")
-
-    private fun ensureClaimAvailable(
-        transaction: com.google.firebase.firestore.Transaction,
-        claimRef: com.google.firebase.firestore.DocumentReference,
-        currentUid: String
-    ) {
-        val claimSnapshot = transaction.get(claimRef)
-        if (claimSnapshot.exists() && claimSnapshot.getString(FIELD_UID) != currentUid) {
-            throw UsernameAlreadyExistsException()
-        }
-    }
-
-    private fun releaseOldUsernameClaimIfChanged(
-        transaction: com.google.firebase.firestore.Transaction,
-        currentUid: String,
-        currentUsernameLower: String?,
-        normalizedUsername: String
-    ) {
-        if (currentUsernameLower.isNullOrBlank() || currentUsernameLower == normalizedUsername) return
-
-        val oldClaimRef = usernameClaimDocument(currentUsernameLower)
-        val oldClaimSnapshot = transaction.get(oldClaimRef)
-        if (oldClaimSnapshot.exists() && oldClaimSnapshot.getString(FIELD_UID) == currentUid) {
-            transaction.delete(oldClaimRef)
-        }
-    }
-
-    private fun upsertUsernameClaim(
-        transaction: com.google.firebase.firestore.Transaction,
-        claimRef: com.google.firebase.firestore.DocumentReference,
-        profile: UserProfile,
-        normalizedUsername: String
-    ) {
-        transaction.set(
-            claimRef,
-            profile.toUsernameClaimMap(normalizedUsername),
-            SetOptions.merge()
-        )
-    }
-
-    private fun upsertProfileDocument(
-        transaction: com.google.firebase.firestore.Transaction,
-        profileRef: com.google.firebase.firestore.DocumentReference,
-        profile: UserProfile,
-        normalizedUsername: String
-    ) {
-        transaction.set(
-            profileRef,
-            profile.toFirestoreMap(normalizedUsername),
-            SetOptions.merge()
-        )
-    }
 
     private fun UserProfile.toFirestoreMap(normalizedUsername: String): Map<String, Any> {
         return mapOf(

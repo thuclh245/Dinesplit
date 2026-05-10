@@ -24,12 +24,13 @@ data class LoginUiState(
 )
 
 sealed interface LoginUiEffect {
-    data object NavigateToResolver : LoginUiEffect
+    data class NavigateToResolved(val destination: com.example.dinesplit.domain.model.AppStartDestination) : LoginUiEffect
 }
 
 class LoginViewModel(application: Application) : AndroidViewModel(application) {
 
     private val loginUseCase = AppContainer.loginUseCase(application)
+    private val resolveStartDestinationUseCase = AppContainer.resolveStartDestinationUseCase(application)
 
     private val _uiState = MutableStateFlow(LoginUiState())
     val uiState: StateFlow<LoginUiState> = _uiState.asStateFlow()
@@ -60,8 +61,17 @@ class LoginViewModel(application: Application) : AndroidViewModel(application) {
             _uiState.value = _uiState.value.copy(isSubmitting = true, submitError = null)
             loginUseCase(current.email.trim(), current.password)
                 .onSuccess {
-                    _uiState.value = _uiState.value.copy(isSubmitting = false)
-                    _effect.emit(LoginUiEffect.NavigateToResolver)
+                    try {
+                        val destination = resolveStartDestinationUseCase()
+                        _uiState.value = _uiState.value.copy(isSubmitting = false)
+                        _effect.emit(LoginUiEffect.NavigateToResolved(destination))
+                    } catch (e: Exception) {
+                        android.util.Log.e("LoginViewModel", "Error resolving destination", e)
+                        _uiState.value = _uiState.value.copy(
+                            isSubmitting = false,
+                            submitError = "Successfully logged in, but couldn't load profile. Please check your internet connection."
+                        )
+                    }
                 }
                 .onFailure { throwable ->
                     _uiState.value = _uiState.value.copy(
