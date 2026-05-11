@@ -6,6 +6,7 @@ import androidx.lifecycle.viewModelScope
 import com.example.dinesplit.core.common.AppContainer
 import com.example.dinesplit.core.firebase.FirebaseErrorMapper
 import com.example.dinesplit.domain.validation.AuthInputValidator
+import com.example.dinesplit.domain.validation.ProfileInputValidator
 import kotlinx.coroutines.flow.MutableSharedFlow
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.SharedFlow
@@ -15,9 +16,11 @@ import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.launch
 
 data class RegisterUiState(
+    val displayName: String = "",
     val email: String = "",
     val password: String = "",
     val confirmPassword: String = "",
+    val displayNameError: String? = null,
     val emailError: String? = null,
     val passwordError: String? = null,
     val confirmPasswordError: String? = null,
@@ -38,6 +41,10 @@ class RegisterViewModel(application: Application) : AndroidViewModel(application
 
     private val _effect = MutableSharedFlow<RegisterUiEffect>()
     val effect: SharedFlow<RegisterUiEffect> = _effect.asSharedFlow()
+
+    fun onDisplayNameChange(value: String) {
+        _uiState.value = _uiState.value.copy(displayName = value, displayNameError = null, submitError = null)
+    }
 
     fun onEmailChange(value: String) {
         _uiState.value = _uiState.value.copy(email = value, emailError = null, submitError = null)
@@ -60,12 +67,14 @@ class RegisterViewModel(application: Application) : AndroidViewModel(application
         val current = _uiState.value
         if (current.isSubmitting) return
 
+        val displayNameError = ProfileInputValidator.validateDisplayName(current.displayName)
         val emailError = AuthInputValidator.validateEmail(current.email)
         val passwordError = AuthInputValidator.validatePasswordForRegister(current.password)
         val confirmError = AuthInputValidator.validateConfirmPassword(current.password, current.confirmPassword)
 
-        if (emailError != null || passwordError != null || confirmError != null) {
+        if (displayNameError != null || emailError != null || passwordError != null || confirmError != null) {
             _uiState.value = current.copy(
+                displayNameError = displayNameError,
                 emailError = emailError,
                 passwordError = passwordError,
                 confirmPasswordError = confirmError
@@ -89,4 +98,3 @@ class RegisterViewModel(application: Application) : AndroidViewModel(application
         }
     }
 }
-
