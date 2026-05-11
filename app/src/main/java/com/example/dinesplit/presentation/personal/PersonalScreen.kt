@@ -26,16 +26,22 @@ import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import coil.compose.AsyncImage
+import com.example.dinesplit.core.ui.HomeTopBar
 import com.example.dinesplit.ui.theme.DineSplitTheme
 
 @Composable
 fun PersonalScreen(
+    userAvatarUrl: String?,
     onOpenSearch: () -> Unit,
     onAddTransaction: () -> Unit
 ) {
     Scaffold(
         topBar = {
-            PersonalTopBar(onOpenSearch)
+            HomeTopBar(
+                userAvatarUrl = userAvatarUrl,
+                title = "Personal",
+                onOpenSearch = onOpenSearch
+            )
         },
         floatingActionButton = {
             FloatingActionButton(
@@ -134,41 +140,6 @@ fun PersonalScreen(
             
             item {
                 Spacer(modifier = Modifier.height(100.dp))
-            }
-        }
-    }
-}
-
-@Composable
-private fun PersonalTopBar(onOpenSearch: () -> Unit) {
-    Surface(
-        color = MaterialTheme.colorScheme.background,
-        modifier = Modifier.fillMaxWidth()
-    ) {
-        Row(
-            modifier = Modifier
-                .statusBarsPadding()
-                .fillMaxWidth()
-                .height(64.dp)
-                .padding(horizontal = 24.dp),
-            verticalAlignment = Alignment.CenterVertically,
-            horizontalArrangement = Arrangement.SpaceBetween
-        ) {
-            Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(12.dp)) {
-                AsyncImage(
-                    model = "https://lh3.googleusercontent.com/aida-public/AB6AXuBrTcbnPTJYc3oKoNqwZbAOfRBTUlpopr6ox14uOMg0f7rolpi4uEXGYw4VWsu_CgW1483NmhrnC2eLueHugduotYCTpEAE5KYd-NljY5rPUPmFCMlbHOyNEcXnh8Ia_MIY_smhsagMqSJneA9mr79rwCg3Y73LavyW2g65gFys4_HTFkdZNjBoa3ZXXRkhLDnFO3usg68xb5ChZzV3WAu0Ta8TKuib4SElaoFDOIHKcQRKGFraVTmbk6PO-AMtzRvDDxFMzUjPTyg",
-                    contentDescription = "Profile",
-                    modifier = Modifier.size(40.dp).clip(CircleShape),
-                    contentScale = ContentScale.Crop
-                )
-                Text(
-                    text = "DineSplit",
-                    style = MaterialTheme.typography.titleLarge.copy(fontWeight = FontWeight.Bold, letterSpacing = (-0.5).sp),
-                    color = MaterialTheme.colorScheme.primary
-                )
-            }
-            IconButton(onClick = onOpenSearch) {
-                Icon(Icons.Default.Search, contentDescription = "Search", tint = MaterialTheme.colorScheme.onSurface)
             }
         }
     }
@@ -405,6 +376,6 @@ private fun TransactionItem(
 @Composable
 fun PersonalScreenPreview() {
     DineSplitTheme(darkTheme = false) {
-        PersonalScreen(onOpenSearch = {}, onAddTransaction = {})
+        PersonalScreen(userAvatarUrl = null, onOpenSearch = {}, onAddTransaction = {})
     }
 }
