@@ -6,13 +6,14 @@ import com.example.dinesplit.data.local.PersonalDatabaseHelper
 import com.example.dinesplit.data.model.StoredCategory
 import com.example.dinesplit.domain.model.Transaction
 import com.example.dinesplit.domain.model.TransactionType
+import com.example.dinesplit.domain.repository.PersonalRepository
 
-class PersonalRepository private constructor(
+class LocalPersonalRepository private constructor(
     context: Context
-) {
+) : PersonalRepository {
     private val dbHelper = PersonalDatabaseHelper.getInstance(context)
 
-    fun getAllTransactions(): List<Transaction> {
+    override fun getAllTransactions(): List<Transaction> {
         val db = dbHelper.readableDatabase
         val cursor = db.query(
             "transactions",
@@ -46,7 +47,7 @@ class PersonalRepository private constructor(
         }
     }
 
-    fun getCategories(): List<StoredCategory> {
+    override fun getCategories(): List<StoredCategory> {
         val db = dbHelper.readableDatabase
         val cursor = db.query(
             "categories",
@@ -90,7 +91,7 @@ class PersonalRepository private constructor(
         }
     }
 
-    fun insertTransaction(transaction: Transaction) {
+    override fun insertTransaction(transaction: Transaction) {
         val db = dbHelper.writableDatabase
         val values = ContentValues().apply {
             put("id", transaction.id)
@@ -106,12 +107,12 @@ class PersonalRepository private constructor(
         db.insert("transactions", null, values)
     }
 
-    fun insertCategory(category: StoredCategory) {
+    override fun insertCategory(category: StoredCategory) {
         val db = dbHelper.writableDatabase
         db.insert("categories", null, category.toContentValues())
     }
 
-    fun updateCategory(category: StoredCategory) {
+    override fun updateCategory(category: StoredCategory) {
         val db = dbHelper.writableDatabase
         db.update(
             "categories",
@@ -121,7 +122,7 @@ class PersonalRepository private constructor(
         )
     }
 
-    fun deleteCategory(categoryId: String) {
+    override fun deleteCategory(categoryId: String) {
         val db = dbHelper.writableDatabase
         db.delete(
             "categories",
@@ -146,13 +147,12 @@ class PersonalRepository private constructor(
 
     companion object {
         @Volatile
-        private var INSTANCE: PersonalRepository? = null
+        private var INSTANCE: LocalPersonalRepository? = null
 
-        fun getInstance(context: Context): PersonalRepository {
+        fun getInstance(context: Context): LocalPersonalRepository {
             return INSTANCE ?: synchronized(this) {
-                INSTANCE ?: PersonalRepository(context.applicationContext).also { INSTANCE = it }
+                INSTANCE ?: LocalPersonalRepository(context.applicationContext).also { INSTANCE = it }
             }
         }
     }
 }
-
