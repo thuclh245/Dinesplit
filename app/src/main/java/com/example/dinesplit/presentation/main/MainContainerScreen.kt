@@ -102,15 +102,8 @@ fun MainContainerScreen(
             composable(AppRoute.Feed.route) {
                 FeedScreen(
                     onOpenNotifications = onOpenNotifications,
-                    onOpenAssistant = onOpenAssistant,
-                    onCreatePost = { mainNavController.navigate(AppRoute.CreatePost.route) },
-                    onOpenPostDetail = { postId ->
-                        mainNavController.navigate(AppRoute.PostDetail.createRoute(postId))
-                    },
                     onOpenSearch = { mainNavController.navigate(AppRoute.Search.route) },
-                    onOpenOtherUserProfile = { userName ->
-                        mainNavController.navigate(AppRoute.OtherUserProfile.createRoute(userName))
-                    }
+                    onSettleUp = { /* Handle settle up */ }
                 )
             }
 
@@ -137,21 +130,26 @@ fun MainContainerScreen(
             }
 
             composable(AppRoute.Split.route) {
-                SplitScreen()
+                SplitScreen(
+                    onOpenNotifications = onOpenNotifications,
+                    onOpenSearch = { mainNavController.navigate(AppRoute.Search.route) },
+                    onNewGroup = { /* New Group */ },
+                    onNewExpense = { /* New Expense */ }
+                )
             }
 
             composable(AppRoute.Personal.route) {
                 PersonalScreen(
-                    onOpenAssistant = onOpenAssistant
+                    onOpenSearch = { mainNavController.navigate(AppRoute.Search.route) },
+                    onAddTransaction = { /* Add Transaction */ }
                 )
             }
 
             composable(AppRoute.Profile.route) {
                 ProfileScreen(
-                    profileUiState,
-                    { mainNavController.navigate(AppRoute.EditProfile.route) },
-                    profileViewModel::logout,
-                    onOpenNotifications
+                    onEditProfile = { mainNavController.navigate(AppRoute.EditProfile.route) },
+                    onOpenSettings = { /* Open Settings */ },
+                    onOpenSearch = { mainNavController.navigate(AppRoute.Search.route) }
                 )
             }
 
