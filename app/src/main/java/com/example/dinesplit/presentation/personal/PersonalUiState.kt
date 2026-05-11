@@ -1,6 +1,6 @@
 package com.example.dinesplit.presentation.personal
 
-import com.example.dinesplit.data.repository.StoredCategory
+import com.example.dinesplit.data.model.StoredCategory
 import com.example.dinesplit.domain.model.Transaction
 
 data class PersonalUiState(
