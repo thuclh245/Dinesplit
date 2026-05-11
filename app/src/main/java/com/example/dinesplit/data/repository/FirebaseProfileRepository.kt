@@ -3,6 +3,7 @@ package com.example.dinesplit.data.repository
 import android.content.Context
 import android.net.Uri
 import com.example.dinesplit.core.firebase.FirebaseProviders
+import com.example.dinesplit.domain.exception.UsernameAlreadyExistsException
 import com.example.dinesplit.domain.model.UserProfile
 import com.example.dinesplit.domain.repository.ProfileRepository
 import com.google.android.gms.tasks.Task
