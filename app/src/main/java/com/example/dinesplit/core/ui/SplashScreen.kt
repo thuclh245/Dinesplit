@@ -36,7 +36,7 @@ import androidx.compose.ui.unit.sp
 import coil.compose.AsyncImage
 
 @Composable
-fun SplashContent() {
+fun SplashContent(progress: Float = 0f) {
     Box(
         modifier = Modifier
             .fillMaxSize()
@@ -214,46 +214,42 @@ fun SplashContent() {
                 horizontalAlignment = Alignment.CenterHorizontally,
                 verticalArrangement = Arrangement.spacedBy(48.dp)
             ) {
-                // Shimmering Loading Indicator
-                Box(
-                    modifier = Modifier
-                        .width(192.dp)
-                        .height(6.dp)
-                        .clip(CircleShape)
-                        .background(MaterialTheme.colorScheme.surfaceContainerHighest)
+                // Progress Loading Indicator
+                Column(
+                    horizontalAlignment = Alignment.CenterHorizontally,
+                    verticalArrangement = Arrangement.spacedBy(8.dp)
                 ) {
-                    val infiniteTransition = rememberInfiniteTransition(label = "shimmer")
-                    val xOffset by infiniteTransition.animateFloat(
-                        initialValue = -1f,
-                        targetValue = 2f,
-                        animationSpec = infiniteRepeatable(
-                            animation = tween(1500, easing = LinearEasing),
-                            repeatMode = RepeatMode.Restart
-                        ),
-                        label = "shimmer_offset"
-                    )
-
                     Box(
                         modifier = Modifier
-                            .fillMaxWidth(0.33f)
-                            .fillMaxHeight()
-                            .offset(x = 192.dp * xOffset)
-                            .background(
-                                Brush.horizontalGradient(
-                                    listOf(
-                                        Color.Transparent,
-                                        Color.White.copy(alpha = 0.4f),
-                                        Color.Transparent
+                            .width(192.dp)
+                            .height(6.dp)
+                            .clip(CircleShape)
+                            .background(MaterialTheme.colorScheme.surfaceContainerHighest)
+                    ) {
+                        val animatedProgress by animateFloatAsState(
+                            targetValue = progress,
+                            animationSpec = tween(durationMillis = 300, easing = LinearOutSlowInEasing),
+                            label = "progress_animation"
+                        )
+
+                        Box(
+                            modifier = Modifier
+                                .fillMaxWidth(animatedProgress)
+                                .fillMaxHeight()
+                                .background(
+                                    Brush.horizontalGradient(
+                                        listOf(
+                                            MaterialTheme.colorScheme.primary,
+                                            MaterialTheme.colorScheme.primaryContainer
+                                        )
                                     )
                                 )
-                            )
-                    )
-                    
-                    Box(
-                        modifier = Modifier
-                            .fillMaxWidth(0.33f)
-                            .fillMaxHeight()
-                            .background(MaterialTheme.colorScheme.primary)
+                        )
+                    }
+                    Text(
+                        text = "${(progress * 100).toInt()}%",
+                        style = MaterialTheme.typography.labelSmall.copy(fontWeight = FontWeight.Bold),
+                        color = MaterialTheme.colorScheme.primary.copy(alpha = 0.8f)
                     )
                 }
 

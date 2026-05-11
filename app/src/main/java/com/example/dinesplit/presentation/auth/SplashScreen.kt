@@ -19,5 +19,5 @@ fun SplashScreen(
         uiState.destination?.let(onDestinationResolved)
     }
 
-    SplashContent()
+    SplashContent(progress = uiState.progress)
 }

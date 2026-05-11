@@ -12,6 +12,7 @@ import kotlinx.coroutines.launch
 
 data class SplashUiState(
     val isLoading: Boolean = true,
+    val progress: Float = 0f,
     val destination: AppStartDestination? = null,
     val errorMessage: String? = null
 )
@@ -28,8 +29,16 @@ class SplashViewModel(application: Application) : AndroidViewModel(application) 
 
     fun resolveDestination() {
         viewModelScope.launch {
-            // Give Firebase a small window to restore session if needed
-            kotlinx.coroutines.delay(500)
+            // Smoothly animate progress from 0 to 1.0 (100%)
+            val duration = 2000L // 2 seconds
+            val steps = 50
+            val delayPerStep = duration / steps
+            
+            for (i in 1..steps) {
+                kotlinx.coroutines.delay(delayPerStep)
+                _uiState.value = _uiState.value.copy(progress = i.toFloat() / steps)
+            }
+
             runCatching {
                 resolveStartDestinationUseCase()
             }.onSuccess { destination ->
