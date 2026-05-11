@@ -43,7 +43,7 @@ import com.example.dinesplit.core.ui.AppDimens
 import com.example.dinesplit.core.ui.AppScaffold
 import com.example.dinesplit.core.ui.PrimaryButton
 import com.example.dinesplit.core.ui.SecondaryButton
-import com.example.dinesplit.data.repository.StoredCategory
+import com.example.dinesplit.data.model.StoredCategory
 import com.example.dinesplit.domain.model.Transaction
 import com.example.dinesplit.domain.model.TransactionType
 import com.example.dinesplit.domain.validation.TransactionFormInput
