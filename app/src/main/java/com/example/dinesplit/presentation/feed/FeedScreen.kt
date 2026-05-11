@@ -37,13 +37,14 @@ import com.example.dinesplit.ui.theme.DineSplitTheme
 
 @Composable
 fun FeedScreen(
+    userAvatarUrl: String?,
     onOpenNotifications: () -> Unit,
     onOpenSearch: () -> Unit,
     onSettleUp: (String) -> Unit
 ) {
     Scaffold(
         topBar = {
-            FeedTopBar(onOpenNotifications, onOpenSearch)
+            FeedTopBar(userAvatarUrl, onOpenNotifications, onOpenSearch)
         },
         floatingActionButton = {
             FloatingActionButton(
@@ -119,7 +120,7 @@ fun FeedScreen(
 }
 
 @Composable
-private fun FeedTopBar(onOpenNotifications: () -> Unit, onOpenSearch: () -> Unit) {
+private fun FeedTopBar(userAvatarUrl: String?, onOpenNotifications: () -> Unit, onOpenSearch: () -> Unit) {
     Surface(
         color = MaterialTheme.colorScheme.background,
         modifier = Modifier.fillMaxWidth()
@@ -141,7 +142,7 @@ private fun FeedTopBar(onOpenNotifications: () -> Unit, onOpenSearch: () -> Unit
                         .clip(CircleShape)
                 ) {
                     AsyncImage(
-                        model = "https://lh3.googleusercontent.com/aida-public/AB6AXuCpnvw7NZghOMJRnH_WaC3eHutJm9XoZmybu_TS_uk9WGcWsJ_ROjtI90_bvBZh8RdgNB0TqYRJz9rZwQs8ccGh0XZdffsyr3NPpk2NVubfaS48U6sqwA-G3_MDzJUaOs2ZwR38m4yLqhn5qc9roHjyOG9DRe0snpGmqEaalIMhGPfnnWqyYIKfjwhLix41mqjPZc3XGCjrn-j-XR7ybsOoJqCMtxUDerTeRQZEdpJI07YwJUZ1l4qlO-YwxfFb6oJMhnd9dTple0c",
+                        model = userAvatarUrl.takeIf { !it.isNullOrBlank() } ?: "https://lh3.googleusercontent.com/aida-public/AB6AXuCpnvw7NZghOMJRnH_WaC3eHutJm9XoZmybu_TS_uk9WGcWsJ_ROjtI90_bvBZh8RdgNB0TqYRJz9rZwQs8ccGh0XZdffsyr3NPpk2NVubfaS48U6sqwA-G3_MDzJUaOs2ZwR38m4yLqhn5qc9roHjyOG9DRe0snpGmqEaalIMhGPfnnWqyYIKfjwhLix41mqjPZc3XGCjrn-j-XR7ybsOoJqCMtxUDerTeRQZEdpJI07YwJUZ1l4qlO-YwxfFb6oJMhnd9dTple0c",
                         contentDescription = "My Profile",
                         modifier = Modifier.fillMaxSize(),
                         contentScale = ContentScale.Crop
@@ -513,6 +514,7 @@ private val vibes = listOf(
 fun FeedScreenPreview() {
     DineSplitTheme(darkTheme = false) {
         FeedScreen(
+            userAvatarUrl = null,
             onOpenNotifications = {},
             onOpenSearch = {},
             onSettleUp = {}
