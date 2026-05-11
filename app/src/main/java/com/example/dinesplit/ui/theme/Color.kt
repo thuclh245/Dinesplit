@@ -57,6 +57,13 @@ val BrandError = Color(0xFFB31B25)
 val BrandOnError = Color(0xFFFFEFEE)
 val BrandErrorContainer = Color(0xFFFB5151)
 val BrandOnErrorContainer = Color(0xFF570008)
+val BrandErrorDim = Color(0xFF8B0E16)
+
+// Extended color variants for light theme
+val BrandPrimaryDim = Color(0xFF8B2300)
+val BrandSecondaryDim = Color(0xFF00504A)
+val BrandTertiaryDim = Color(0xFF694400)
+val BrandSurfaceTint = Color(0xFFAB2D00)
 
 // Dark palette tuned to keep the same orange/teal character.
 val BrandDarkPrimary = Color(0xFFFF7851)

@@ -1,7 +1,9 @@
 package com.example.dinesplit.core.ui
 
 import androidx.compose.foundation.background
+import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
+import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.heightIn
 import androidx.compose.foundation.layout.padding
@@ -16,17 +18,20 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.Alignment
+import androidx.compose.ui.unit.dp
 
 @Composable
 fun PrimaryButton(
     text: String,
     onClick: () -> Unit,
     modifier: Modifier = Modifier,
-    enabled: Boolean = true
+    enabled: Boolean = true,
+    isLoading: Boolean = false,
+    icon: @Composable (() -> Unit)?  = null
 ) {
     Surface(
         onClick = onClick,
-        enabled = enabled,
+        enabled = enabled && !isLoading,
         modifier = modifier
             .fillMaxWidth()
             .heightIn(min = AppDimens.buttonHeight)
@@ -48,11 +53,22 @@ fun PrimaryButton(
             modifier = Modifier.padding(horizontal = AppDimens.spaceLg),
             contentAlignment = Alignment.Center
         ) {
-            Text(
-                text = text,
-                style = MaterialTheme.typography.titleSmall,
-                color = MaterialTheme.colorScheme.onPrimary
-            )
+            if (icon != null) {
+                Row(horizontalArrangement = Arrangement.spacedBy(8.dp), verticalAlignment = Alignment.CenterVertically) {
+                    Text(
+                        text = text,
+                        style = MaterialTheme.typography.titleSmall,
+                        color = MaterialTheme.colorScheme.onPrimary
+                    )
+                    icon()
+                }
+            } else {
+                Text(
+                    text = text,
+                    style = MaterialTheme.typography.titleSmall,
+                    color = MaterialTheme.colorScheme.onPrimary
+                )
+            }
         }
     }
 }
@@ -77,7 +93,8 @@ fun SecondaryButton(
     text: String,
     onClick: () -> Unit,
     modifier: Modifier = Modifier,
-    enabled: Boolean = true
+    enabled: Boolean = true,
+    icon: @Composable (() -> Unit)? = null
 ) {
     Button(
         onClick = onClick,
@@ -93,10 +110,20 @@ fun SecondaryButton(
             disabledContentColor = MaterialTheme.colorScheme.onSecondary.copy(alpha = 0.6f)
         )
     ) {
-        Text(
-            text = text,
-            style = MaterialTheme.typography.titleSmall
-        )
+        if (icon != null) {
+            Row(horizontalArrangement = Arrangement.spacedBy(8.dp), verticalAlignment = Alignment.CenterVertically) {
+                icon()
+                Text(
+                    text = text,
+                    style = MaterialTheme.typography.titleSmall
+                )
+            }
+        } else {
+            Text(
+                text = text,
+                style = MaterialTheme.typography.titleSmall
+            )
+        }
     }
 }
 
@@ -126,3 +153,23 @@ fun TertiaryButton(
         )
     }
 }
+
+// Backward compatibility aliases
+@Composable
+fun DineSplitButton(
+    text: String,
+    onClick: () -> Unit,
+    modifier: Modifier = Modifier,
+    enabled: Boolean = true,
+    isLoading: Boolean = false,
+    icon: @Composable (() -> Unit)? = null
+) = PrimaryButton(text = text, onClick = onClick, modifier = modifier, enabled = enabled, isLoading = isLoading, icon = icon)
+
+@Composable
+fun DineSplitOutlinedButton(
+    text: String,
+    onClick: () -> Unit,
+    modifier: Modifier = Modifier,
+    enabled: Boolean = true,
+    icon: @Composable (() -> Unit)? = null
+) = SecondaryButton(text = text, onClick = onClick, modifier = modifier, enabled = enabled, icon = icon)

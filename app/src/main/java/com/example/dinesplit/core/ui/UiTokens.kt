@@ -13,6 +13,8 @@ object AppDimens {
     val spaceLg = 16.dp
     val spaceXl = 24.dp
     val space2Xl = 32.dp
+    val space3Xl = 40.dp
+    val space4Xl = 48.dp
 
     val screenHorizontal = 16.dp
     val screenVertical = 16.dp
@@ -22,10 +24,14 @@ object AppDimens {
     val radiusLg = 16.dp
     val radiusXl = 24.dp
     val radiusFull = 9999.dp
+    val cornerMedium = 12.dp  // Backward compat alias
 
     val buttonHeight = 52.dp
     val textFieldMinHeight = 56.dp
     val cardElevation = 2.dp
+    val elevEditorial = 4.dp  // Backward compat: editorial elevation
+
+    val iconLg = 32.dp  // Backward compat alias for large icon size
 }
 
 @Suppress("unused")
