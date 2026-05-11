@@ -6,7 +6,7 @@ import androidx.lifecycle.AndroidViewModel
 import androidx.lifecycle.viewModelScope
 import com.example.dinesplit.core.common.AppContainer
 import com.example.dinesplit.core.firebase.FirebaseErrorMapper
-import com.example.dinesplit.data.repository.UsernameAlreadyExistsException
+import com.example.dinesplit.domain.exception.UsernameAlreadyExistsException
 import com.example.dinesplit.domain.model.UserProfile
 import com.example.dinesplit.domain.usecase.GetCurrentUserProfileUseCase
 import com.example.dinesplit.domain.usecase.LogoutUseCase

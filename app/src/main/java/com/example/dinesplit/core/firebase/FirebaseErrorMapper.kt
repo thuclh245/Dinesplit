@@ -1,6 +1,6 @@
 package com.example.dinesplit.core.firebase
 
-import com.example.dinesplit.data.repository.UsernameAlreadyExistsException
+import com.example.dinesplit.domain.exception.UsernameAlreadyExistsException
 import com.google.firebase.auth.FirebaseAuthException
 import com.google.firebase.auth.FirebaseAuthInvalidCredentialsException
 import com.google.firebase.auth.FirebaseAuthInvalidUserException
