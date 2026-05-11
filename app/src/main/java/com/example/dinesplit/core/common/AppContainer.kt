@@ -1,18 +1,10 @@
 package com.example.dinesplit.core.common
 
+import com.example.dinesplit.data.repository.*
+import com.example.dinesplit.domain.repository.*
+import com.example.dinesplit.domain.usecase.*
+import com.google.firebase.firestore.FirebaseFirestore
 import android.content.Context
-import com.example.dinesplit.data.repository.FirebaseAuthRepository
-import com.example.dinesplit.data.repository.FirebaseProfileRepository
-import com.example.dinesplit.domain.repository.AuthRepository
-import com.example.dinesplit.domain.repository.ProfileRepository
-import com.example.dinesplit.domain.usecase.GetCurrentUserProfileUseCase
-import com.example.dinesplit.domain.usecase.LoginUseCase
-import com.example.dinesplit.domain.usecase.LogoutUseCase
-import com.example.dinesplit.domain.usecase.ObserveSessionUseCase
-import com.example.dinesplit.domain.usecase.RegisterUseCase
-import com.example.dinesplit.domain.usecase.ResolveStartDestinationUseCase
-import com.example.dinesplit.domain.usecase.UploadAvatarUseCase
-import com.example.dinesplit.domain.usecase.UpdateProfileUseCase
 
 object AppContainer {
     fun authRepository(context: Context): AuthRepository {
@@ -21,6 +13,18 @@ object AppContainer {
 
     fun profileRepository(context: Context): ProfileRepository {
         return FirebaseProfileRepository.getInstance(context)
+    }
+
+    fun personalRepository(context: Context): PersonalRepository {
+        return LocalPersonalRepository.getInstance(context)
+    }
+
+    fun feedRepository(): FeedRepository {
+        return FirebaseFeedRepository(FirebaseFirestore.getInstance())
+    }
+
+    fun splitRepository(): SplitRepository {
+        return FirebaseSplitRepository(FirebaseFirestore.getInstance())
     }
 
     fun loginUseCase(context: Context): LoginUseCase {
@@ -49,6 +53,14 @@ object AppContainer {
 
     fun uploadAvatarUseCase(context: Context): UploadAvatarUseCase {
         return UploadAvatarUseCase(profileRepository(context))
+    }
+
+    fun getFeedUseCase(): GetFeedUseCase {
+        return GetFeedUseCase(feedRepository())
+    }
+
+    fun getGroupsUseCase(): GetGroupsUseCase {
+        return GetGroupsUseCase(splitRepository())
     }
 
     fun resolveStartDestinationUseCase(context: Context): ResolveStartDestinationUseCase {
