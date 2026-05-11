@@ -17,21 +17,28 @@ class MainActivity : ComponentActivity() {
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         enableEdgeToEdge()
-        runCatching {
-            FirebaseBaselineCheck.verify()
-        }.onFailure { throwable ->
-            android.util.Log.e("MainActivity", "Firebase baseline check failed", throwable)
-        }
-        setContent {
-            DineSplitTheme {
-                val navController = rememberNavController()
-                Surface(
-                    modifier = Modifier.fillMaxSize(),
-                    color = MaterialTheme.colorScheme.background
-                ) {
-                    AppNavHost(navController = navController)
+        
+        try {
+            runCatching {
+                FirebaseBaselineCheck.verify()
+            }.onFailure { throwable ->
+                android.util.Log.e("MainActivity", "Firebase baseline check failed", throwable)
+            }
+            
+            setContent {
+                DineSplitTheme {
+                    val navController = rememberNavController()
+                    Surface(
+                        modifier = Modifier.fillMaxSize(),
+                        color = MaterialTheme.colorScheme.background
+                    ) {
+                        AppNavHost(navController = navController)
+                    }
                 }
             }
+        } catch (e: Exception) {
+            android.util.Log.e("MainActivity", "FATAL CRASH IN ONCREATE", e)
+            // Show a basic error message or at least prevent the silent crash loop
         }
     }
 }
