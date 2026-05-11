@@ -52,17 +52,38 @@ fun FeedScreen(
             )
         },
         floatingActionButton = {
-            FloatingActionButton(
-                onClick = { /* New Bill */ },
-                containerColor = MaterialTheme.colorScheme.primary,
-                contentColor = Color.White,
-                shape = CircleShape,
-                modifier = Modifier
-                    .padding(bottom = 80.dp)
-                    .size(56.dp)
-                    .shadow(12.dp, CircleShape, spotColor = MaterialTheme.colorScheme.primary.copy(alpha = 0.4f))
+            Column(
+                horizontalAlignment = Alignment.End,
+                verticalArrangement = Arrangement.spacedBy(12.dp),
+                modifier = Modifier.padding(bottom = 45.dp) // Tăng thêm 15dp từ mốc 30dp -> 45dp
             ) {
-                Icon(Icons.Default.ReceiptLong, contentDescription = "New Bill", modifier = Modifier.size(28.dp))
+                // DINERS Badge (Floating at the bottom right, above navbar)
+                Surface(
+                    color = Color.White.copy(alpha = 0.9f),
+                    shape = CircleShape,
+                    modifier = Modifier.shadow(8.dp, CircleShape)
+                ) {
+                    Row(
+                        modifier = Modifier.padding(horizontal = 12.dp, vertical = 6.dp),
+                        verticalAlignment = Alignment.CenterVertically,
+                        horizontalArrangement = Arrangement.spacedBy(8.dp)
+                    ) {
+                        Icon(Icons.Default.Group, contentDescription = null, modifier = Modifier.size(14.dp), tint = MaterialTheme.colorScheme.primary)
+                        Text("4 DINERS", style = MaterialTheme.typography.labelSmall.copy(fontSize = 10.sp, fontWeight = FontWeight.Black))
+                    }
+                }
+
+                FloatingActionButton(
+                    onClick = { /* New Bill */ },
+                    containerColor = MaterialTheme.colorScheme.primary,
+                    contentColor = Color.White,
+                    shape = CircleShape,
+                    modifier = Modifier
+                        .size(60.dp) // Đồng bộ kích thước 60dp
+                        .shadow(12.dp, CircleShape, spotColor = MaterialTheme.colorScheme.primary.copy(alpha = 0.4f))
+                ) {
+                    Icon(Icons.Default.ReceiptLong, contentDescription = "New Bill", modifier = Modifier.size(28.dp))
+                }
             }
         }
     ) { padding ->
@@ -71,7 +92,7 @@ fun FeedScreen(
                 .fillMaxSize()
                 .background(MaterialTheme.colorScheme.background)
                 .padding(padding),
-            contentPadding = PaddingValues(bottom = 120.dp)
+            contentPadding = PaddingValues(bottom = 120.dp) // Tăng lên để tránh Navbar 100dp
         ) {
             item {
                 RecentGroupVibes()
@@ -269,20 +290,6 @@ private fun SocialSplitCard(
                     modifier = Modifier.fillMaxSize(),
                     contentScale = ContentScale.Crop
                 )
-                Surface(
-                    color = Color.White.copy(alpha = 0.9f),
-                    shape = CircleShape,
-                    modifier = Modifier.padding(16.dp).align(Alignment.TopStart)
-                ) {
-                    Row(
-                        modifier = Modifier.padding(horizontal = 12.dp, vertical = 6.dp),
-                        verticalAlignment = Alignment.CenterVertically,
-                        horizontalArrangement = Arrangement.spacedBy(8.dp)
-                    ) {
-                        Icon(Icons.Default.Group, contentDescription = null, modifier = Modifier.size(14.dp), tint = MaterialTheme.colorScheme.primary)
-                        Text("$dinersCount DINERS", style = MaterialTheme.typography.labelSmall.copy(fontSize = 10.sp, fontWeight = FontWeight.Black))
-                    }
-                }
             }
 
             // Stats

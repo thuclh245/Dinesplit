@@ -53,11 +53,11 @@ fun SplitScreen(
                 contentColor = Color.White,
                 shape = CircleShape,
                 modifier = Modifier
-                    .padding(bottom = 80.dp)
-                    .size(64.dp)
+                    .padding(bottom = 45.dp) // Nâng lên 45dp
+                    .size(60.dp) // Đồng bộ 60dp
                     .shadow(24.dp, CircleShape, spotColor = MaterialTheme.colorScheme.primary.copy(alpha = 0.4f))
             ) {
-                Icon(Icons.Default.Add, contentDescription = "Add Expense", modifier = Modifier.size(32.dp))
+                Icon(Icons.Default.Add, contentDescription = "Add Expense", modifier = Modifier.size(30.dp))
             }
         }
     ) { padding ->
@@ -66,7 +66,7 @@ fun SplitScreen(
                 .fillMaxSize()
                 .background(MaterialTheme.colorScheme.background)
                 .padding(padding),
-            contentPadding = PaddingValues(vertical = 16.dp),
+            contentPadding = PaddingValues(top = 16.dp, bottom = 120.dp), // Tăng bottom
             verticalArrangement = Arrangement.spacedBy(32.dp)
         ) {
             // Balance Summary

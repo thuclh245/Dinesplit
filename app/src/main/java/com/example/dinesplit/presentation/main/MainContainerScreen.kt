@@ -1,16 +1,21 @@
 package com.example.dinesplit.presentation.main
 
-import androidx.compose.foundation.layout.padding
-import androidx.compose.material3.Icon
-import androidx.compose.material3.NavigationBar
-import androidx.compose.material3.NavigationBarItem
-import androidx.compose.material3.Scaffold
-import androidx.compose.material3.Text
-import androidx.compose.runtime.Composable
-import androidx.compose.runtime.collectAsState
-import androidx.compose.runtime.LaunchedEffect
-import androidx.compose.runtime.getValue
+import androidx.compose.foundation.background
+import androidx.compose.foundation.clickable
+import androidx.compose.foundation.layout.*
+import androidx.compose.foundation.shape.CircleShape
+import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.material3.*
+import androidx.compose.runtime.*
+import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.draw.clip
+import androidx.compose.ui.draw.shadow
+import androidx.compose.ui.graphics.Brush
+import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.unit.dp
+import androidx.compose.ui.unit.sp
 import androidx.lifecycle.viewmodel.compose.viewModel
 import androidx.navigation.NavDestination.Companion.hierarchy
 import androidx.navigation.compose.NavHost
@@ -62,33 +67,61 @@ fun MainContainerScreen(
     Scaffold(
         bottomBar = {
             if (showBottomBar) {
-                NavigationBar {
-                    BottomTab.items.forEach { tab ->
-                        val selected = currentDestination
-                            ?.hierarchy
-                            ?.any { it.route == tab.route } == true
+                Surface(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .height(100.dp), // Tăng chiều cao lên một chút
+                    color = Color.White,
+                    tonalElevation = 8.dp
+                ) {
+                    Column {
+                        HorizontalDivider(color = Color.LightGray.copy(alpha = 0.3f), thickness = 0.5.dp)
+                        Row(
+                            modifier = Modifier
+                                .fillMaxSize()
+                                .windowInsetsPadding(WindowInsets.navigationBars),
+                            verticalAlignment = Alignment.CenterVertically,
+                            horizontalArrangement = Arrangement.SpaceAround
+                        ) {
+                            BottomTab.items.forEach { tab ->
+                                val selected = currentDestination
+                                    ?.hierarchy
+                                    ?.any { it.route == tab.route } == true
 
-                        NavigationBarItem(
-                            selected = selected,
-                            onClick = {
-                                mainNavController.navigate(tab.route) {
-                                    popUpTo(mainNavController.graph.startDestinationId) {
-                                        saveState = true
-                                    }
-                                    launchSingleTop = true
-                                    restoreState = true
+                                Column(
+                                    modifier = Modifier
+                                        .weight(1f)
+                                        .fillMaxHeight()
+                                        .clickable {
+                                            mainNavController.navigate(tab.route) {
+                                                popUpTo(mainNavController.graph.startDestinationId) {
+                                                    saveState = true
+                                                }
+                                                launchSingleTop = true
+                                                restoreState = true
+                                            }
+                                        },
+                                    horizontalAlignment = Alignment.CenterHorizontally,
+                                    verticalArrangement = Arrangement.Center
+                                ) {
+                                    Icon(
+                                        imageVector = tab.icon,
+                                        contentDescription = tab.label,
+                                        tint = if (selected) Color(0xFFE65100) else Color.LightGray,
+                                        modifier = Modifier.size(26.dp)
+                                    )
+                                    Spacer(modifier = Modifier.height(4.dp))
+                                    Text(
+                                        text = tab.label,
+                                        style = MaterialTheme.typography.labelSmall.copy(
+                                            fontWeight = if (selected) FontWeight.Bold else FontWeight.Medium,
+                                            fontSize = 11.sp
+                                        ),
+                                        color = if (selected) Color(0xFFE65100) else Color.LightGray
+                                    )
                                 }
-                            },
-                            icon = {
-                                Icon(
-                                    imageVector = tab.icon,
-                                    contentDescription = tab.label
-                                )
-                            },
-                            label = {
-                                Text(tab.label)
                             }
-                        )
+                        }
                     }
                 }
             }
@@ -97,7 +130,7 @@ fun MainContainerScreen(
         NavHost(
             navController = mainNavController,
             startDestination = AppRoute.Feed.route,
-            modifier = Modifier.padding(innerPadding)
+            modifier = Modifier.fillMaxSize()
         ) {
             composable(AppRoute.Feed.route) {
                 FeedScreen(
@@ -107,57 +140,31 @@ fun MainContainerScreen(
                     onSettleUp = { /* Handle settle up */ }
                 )
             }
-
-            composable(AppRoute.CreatePost.route) {
-                CreatePostScreen(onBack = { mainNavController.navigateUp() })
-            }
-
-            composable(AppRoute.Search.route) {
-                SearchScreen(onBack = { mainNavController.navigateUp() })
-            }
-
-            composable(AppRoute.PostDetail.routeWithArg) { backStackEntry ->
-                PostDetailScreen(
-                    postId = backStackEntry.arguments?.getString(AppRoute.PostDetail.ARG_ID).orEmpty(),
-                    onBack = { mainNavController.navigateUp() }
-                )
-            }
-
-            composable(AppRoute.OtherUserProfile.routeWithArg) { backStackEntry ->
-                OtherUserProfileScreen(
-                    userName = backStackEntry.arguments?.getString(AppRoute.OtherUserProfile.ARG_USER).orEmpty(),
-                    onBack = { mainNavController.navigateUp() }
-                )
-            }
-
             composable(AppRoute.Split.route) {
                 SplitScreen(
                     userAvatarUrl = profileUiState.profile?.avatarUrl,
                     onOpenNotifications = onOpenNotifications,
                     onOpenSearch = { mainNavController.navigate(AppRoute.Search.route) },
-                    onNewGroup = { /* New Group */ },
-                    onNewExpense = { /* New Expense */ }
+                    onNewGroup = { /* TODO */ },
+                    onNewExpense = { /* TODO */ }
                 )
             }
-
             composable(AppRoute.Personal.route) {
                 PersonalScreen(
                     userAvatarUrl = profileUiState.profile?.avatarUrl,
                     onOpenSearch = { mainNavController.navigate(AppRoute.Search.route) },
-                    onAddTransaction = { /* Add Transaction */ }
+                    onAddTransaction = { mainNavController.navigate(AppRoute.AddTransaction.route) }
                 )
             }
-
             composable(AppRoute.Profile.route) {
                 ProfileScreen(
                     userAvatarUrl = profileUiState.profile?.avatarUrl,
-                    userName = profileUiState.profile?.displayName ?: "Profile",
+                    userName = profileUiState.profile?.displayName ?: "User",
                     onEditProfile = { mainNavController.navigate(AppRoute.EditProfile.route) },
-                    onOpenSettings = { /* Open Settings */ },
+                    onOpenSettings = { /* TODO: Implement settings */ },
                     onOpenSearch = { mainNavController.navigate(AppRoute.Search.route) }
                 )
             }
-
             composable(AppRoute.EditProfile.route) {
                 EditProfileScreen(
                     uiState = editProfileUiState,
@@ -170,6 +177,21 @@ fun MainContainerScreen(
                     onBack = { mainNavController.navigateUp() }
                 )
             }
+            composable(AppRoute.Search.route) {
+                SearchScreen(onBack = { mainNavController.navigateUp() })
+            }
+            composable(AppRoute.CreatePost.route) {
+                CreatePostScreen(onBack = { mainNavController.navigateUp() })
+            }
+            composable(AppRoute.PostDetail.routeWithArg) { backStackEntry ->
+                val postId = backStackEntry.arguments?.getString(AppRoute.PostDetail.ARG_ID) ?: ""
+                PostDetailScreen(postId = postId, onBack = { mainNavController.navigateUp() })
+            }
+            composable(AppRoute.OtherUserProfile.routeWithArg) { backStackEntry ->
+                val userName = backStackEntry.arguments?.getString(AppRoute.OtherUserProfile.ARG_USER) ?: ""
+                OtherUserProfileScreen(userName = userName, onBack = { mainNavController.navigateUp() })
+            }
         }
     }
 }
+
