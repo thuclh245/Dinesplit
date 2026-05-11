@@ -112,7 +112,7 @@ fun AppNavHost(
         }
 
         composable(AppRoute.Notifications.route) {
-            NotificationScreen(onBack = { navController.navigateUp() })
+            NotificationScreen()
         }
 
         composable(AppRoute.Assistant.route) {
