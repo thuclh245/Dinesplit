@@ -44,6 +44,7 @@ fun FeedScreen(
     onSettleUp: (String) -> Unit
 ) {
     Scaffold(
+        contentWindowInsets = WindowInsets(0, 0, 0, 0),
         topBar = {
             HomeTopBar(
                 userAvatarUrl = userAvatarUrl,
@@ -55,7 +56,7 @@ fun FeedScreen(
             Column(
                 horizontalAlignment = Alignment.End,
                 verticalArrangement = Arrangement.spacedBy(12.dp),
-                modifier = Modifier.padding(bottom = 45.dp) // Tăng thêm 15dp từ mốc 30dp -> 45dp
+                modifier = Modifier.padding(bottom = 6.dp)
             ) {
                 // DINERS Badge (Floating at the bottom right, above navbar)
                 Surface(
@@ -79,7 +80,7 @@ fun FeedScreen(
                     contentColor = Color.White,
                     shape = CircleShape,
                     modifier = Modifier
-                        .size(60.dp) // Đồng bộ kích thước 60dp
+                        .size(60.dp) // Đồng bộ 60dp
                         .shadow(12.dp, CircleShape, spotColor = MaterialTheme.colorScheme.primary.copy(alpha = 0.4f))
                 ) {
                     Icon(Icons.Default.ReceiptLong, contentDescription = "New Bill", modifier = Modifier.size(28.dp))
@@ -92,7 +93,7 @@ fun FeedScreen(
                 .fillMaxSize()
                 .background(MaterialTheme.colorScheme.background)
                 .padding(padding),
-            contentPadding = PaddingValues(bottom = 120.dp) // Tăng lên để tránh Navbar 100dp
+            contentPadding = PaddingValues(bottom = 16.dp)
         ) {
             item {
                 RecentGroupVibes()

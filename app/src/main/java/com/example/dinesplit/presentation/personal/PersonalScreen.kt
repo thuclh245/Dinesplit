@@ -50,7 +50,7 @@ fun PersonalScreen(
                 contentColor = Color.White,
                 shape = CircleShape,
                 modifier = Modifier
-                    .padding(bottom = 45.dp) // Nâng lên 45dp
+                    .padding(bottom = 115.dp) // Đẩy lên 115dp
                     .size(60.dp) // Đồng bộ 60dp
                     .shadow(12.dp, CircleShape, spotColor = MaterialTheme.colorScheme.primary.copy(alpha = 0.4f))
             ) {
@@ -63,7 +63,7 @@ fun PersonalScreen(
                 .fillMaxSize()
                 .background(MaterialTheme.colorScheme.background)
                 .padding(padding),
-            contentPadding = PaddingValues(start = 24.dp, end = 24.dp, top = 24.dp, bottom = 120.dp), // Tăng bottom
+            contentPadding = PaddingValues(start = 24.dp, end = 24.dp, top = 24.dp, bottom = 120.dp), // Đệm 120dp
             verticalArrangement = Arrangement.spacedBy(32.dp)
         ) {
             // Month Selector

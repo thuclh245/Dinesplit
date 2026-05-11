@@ -53,7 +53,7 @@ fun SplitScreen(
                 contentColor = Color.White,
                 shape = CircleShape,
                 modifier = Modifier
-                    .padding(bottom = 45.dp) // Nâng lên 45dp
+                    .padding(bottom = 115.dp) // Đẩy lên 115dp
                     .size(60.dp) // Đồng bộ 60dp
                     .shadow(24.dp, CircleShape, spotColor = MaterialTheme.colorScheme.primary.copy(alpha = 0.4f))
             ) {
@@ -66,7 +66,7 @@ fun SplitScreen(
                 .fillMaxSize()
                 .background(MaterialTheme.colorScheme.background)
                 .padding(padding),
-            contentPadding = PaddingValues(top = 16.dp, bottom = 120.dp), // Tăng bottom
+            contentPadding = PaddingValues(top = 16.dp, bottom = 120.dp), // Đệm 120dp
             verticalArrangement = Arrangement.spacedBy(32.dp)
         ) {
             // Balance Summary

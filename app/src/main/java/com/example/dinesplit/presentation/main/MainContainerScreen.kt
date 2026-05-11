@@ -16,6 +16,7 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import androidx.compose.ui.tooling.preview.Preview
 import androidx.lifecycle.viewmodel.compose.viewModel
 import androidx.navigation.NavDestination.Companion.hierarchy
 import androidx.navigation.compose.NavHost
@@ -35,6 +36,7 @@ import com.example.dinesplit.presentation.profile.ProfileScreen
 import com.example.dinesplit.presentation.profile.ProfileUiEffect
 import com.example.dinesplit.presentation.profile.ProfileViewModel
 import com.example.dinesplit.presentation.split.SplitScreen
+import com.example.dinesplit.ui.theme.DineSplitTheme
 import kotlinx.coroutines.flow.collectLatest
 
 @Composable
@@ -65,65 +67,25 @@ fun MainContainerScreen(
     }
 
     Scaffold(
+        contentWindowInsets = WindowInsets(0, 0, 0, 0),
         bottomBar = {
             if (showBottomBar) {
-                Surface(
-                    modifier = Modifier
-                        .fillMaxWidth()
-                        .height(100.dp), // Tăng chiều cao lên một chút
-                    color = Color.White,
-                    tonalElevation = 8.dp
-                ) {
-                    Column {
-                        HorizontalDivider(color = Color.LightGray.copy(alpha = 0.3f), thickness = 0.5.dp)
-                        Row(
-                            modifier = Modifier
-                                .fillMaxSize()
-                                .windowInsetsPadding(WindowInsets.navigationBars),
-                            verticalAlignment = Alignment.CenterVertically,
-                            horizontalArrangement = Arrangement.SpaceAround
-                        ) {
-                            BottomTab.items.forEach { tab ->
-                                val selected = currentDestination
-                                    ?.hierarchy
-                                    ?.any { it.route == tab.route } == true
-
-                                Column(
-                                    modifier = Modifier
-                                        .weight(1f)
-                                        .fillMaxHeight()
-                                        .clickable {
-                                            mainNavController.navigate(tab.route) {
-                                                popUpTo(mainNavController.graph.startDestinationId) {
-                                                    saveState = true
-                                                }
-                                                launchSingleTop = true
-                                                restoreState = true
-                                            }
-                                        },
-                                    horizontalAlignment = Alignment.CenterHorizontally,
-                                    verticalArrangement = Arrangement.Center
-                                ) {
-                                    Icon(
-                                        imageVector = tab.icon,
-                                        contentDescription = tab.label,
-                                        tint = if (selected) Color(0xFFE65100) else Color.LightGray,
-                                        modifier = Modifier.size(26.dp)
-                                    )
-                                    Spacer(modifier = Modifier.height(4.dp))
-                                    Text(
-                                        text = tab.label,
-                                        style = MaterialTheme.typography.labelSmall.copy(
-                                            fontWeight = if (selected) FontWeight.Bold else FontWeight.Medium,
-                                            fontSize = 11.sp
-                                        ),
-                                        color = if (selected) Color(0xFFE65100) else Color.LightGray
-                                    )
-                                }
+                MainBottomBar(
+                    isTabSelected = { tab ->
+                        currentDestination
+                            ?.hierarchy
+                            ?.any { it.route == tab.route } == true
+                    },
+                    onTabSelected = { tab ->
+                        mainNavController.navigate(tab.route) {
+                            popUpTo(mainNavController.graph.startDestinationId) {
+                                saveState = true
                             }
+                            launchSingleTop = true
+                            restoreState = true
                         }
                     }
-                }
+                )
             }
         }
     ) { innerPadding ->
@@ -132,7 +94,7 @@ fun MainContainerScreen(
             startDestination = AppRoute.Feed.route,
             modifier = Modifier
                 .fillMaxSize()
-                .padding(innerPadding) // Sử dụng innerPadding để tránh chồng lấn và fix lỗi lint
+                .padding(innerPadding) // Fix lỗi lint và đảm bảo đúng layout
         ) {
             composable(AppRoute.Feed.route) {
                 FeedScreen(
@@ -197,3 +159,67 @@ fun MainContainerScreen(
     }
 }
 
+@Composable
+private fun MainBottomBar(
+    isTabSelected: (BottomTab) -> Boolean,
+    onTabSelected: (BottomTab) -> Unit
+) {
+    Surface(
+        modifier = Modifier
+            .fillMaxWidth()
+            .windowInsetsPadding(WindowInsets.navigationBars),
+        color = Color.White,
+        tonalElevation = 8.dp
+    ) {
+        Column {
+            HorizontalDivider(color = Color.LightGray.copy(alpha = 0.3f), thickness = 0.5.dp)
+            Row(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .height(72.dp),
+                verticalAlignment = Alignment.CenterVertically,
+                horizontalArrangement = Arrangement.SpaceAround
+            ) {
+                BottomTab.items.forEach { tab ->
+                    val selected = isTabSelected(tab)
+
+                    Column(
+                        modifier = Modifier
+                            .weight(1f)
+                            .fillMaxHeight()
+                            .clickable { onTabSelected(tab) },
+                        horizontalAlignment = Alignment.CenterHorizontally,
+                        verticalArrangement = Arrangement.Center
+                    ) {
+                        Icon(
+                            imageVector = tab.icon,
+                            contentDescription = tab.label,
+                            tint = if (selected) Color(0xFFE65100) else Color.LightGray,
+                            modifier = Modifier.size(26.dp)
+                        )
+                        Spacer(modifier = Modifier.height(4.dp))
+                        Text(
+                            text = tab.label,
+                            style = MaterialTheme.typography.labelSmall.copy(
+                                fontWeight = if (selected) FontWeight.Bold else FontWeight.Medium,
+                                fontSize = 11.sp
+                            ),
+                            color = if (selected) Color(0xFFE65100) else Color.LightGray
+                        )
+                    }
+                }
+            }
+        }
+    }
+}
+
+@Preview(showBackground = true, showSystemUi = true, name = "Main Bottom Bar")
+@Composable
+private fun MainBottomBarPreview() {
+    DineSplitTheme {
+        MainBottomBar(
+            isTabSelected = { tab -> tab.route == AppRoute.Feed.route },
+            onTabSelected = {}
+        )
+    }
+}
