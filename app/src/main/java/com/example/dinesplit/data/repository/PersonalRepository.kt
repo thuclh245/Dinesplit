@@ -3,20 +3,9 @@ package com.example.dinesplit.data.repository
 import android.content.ContentValues
 import android.content.Context
 import com.example.dinesplit.data.local.PersonalDatabaseHelper
+import com.example.dinesplit.data.model.StoredCategory
 import com.example.dinesplit.domain.model.Transaction
 import com.example.dinesplit.domain.model.TransactionType
-
-data class StoredCategory(
-    val id: String,
-    val name: String,
-    val icon: String,
-    val type: TransactionType,
-    val isCustom: Boolean,
-    val description: String,
-    val amountLabel: String,
-    val progress: Float,
-    val isActive: Boolean
-)
 
 class PersonalRepository private constructor(
     context: Context
