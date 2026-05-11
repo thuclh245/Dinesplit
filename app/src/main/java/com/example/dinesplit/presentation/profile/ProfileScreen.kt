@@ -21,17 +21,24 @@ import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import coil.compose.AsyncImage
+import com.example.dinesplit.core.ui.HomeTopBar
 import com.example.dinesplit.ui.theme.DineSplitTheme
 
 @Composable
 fun ProfileScreen(
+    userAvatarUrl: String?,
+    userName: String,
     onEditProfile: () -> Unit,
     onOpenSettings: () -> Unit,
     onOpenSearch: () -> Unit
 ) {
     Scaffold(
         topBar = {
-            ProfileTopBar(userName = "Linh Trần", onOpenSearch = onOpenSearch)
+            HomeTopBar(
+                userAvatarUrl = userAvatarUrl,
+                title = userName,
+                onOpenSearch = onOpenSearch
+            )
         }
     ) { padding ->
         Column(
@@ -60,44 +67,6 @@ fun ProfileScreen(
             PhotoGrid(photos = samplePhotos)
             
             Spacer(modifier = Modifier.height(120.dp))
-        }
-    }
-}
-
-@Composable
-private fun ProfileTopBar(userName: String, onOpenSearch: () -> Unit) {
-    Surface(
-        color = MaterialTheme.colorScheme.background,
-        modifier = Modifier.fillMaxWidth()
-    ) {
-        Column {
-            Row(
-                modifier = Modifier
-                    .statusBarsPadding()
-                    .fillMaxWidth()
-                    .height(64.dp)
-                    .padding(horizontal = 24.dp),
-                verticalAlignment = Alignment.CenterVertically,
-                horizontalArrangement = Arrangement.SpaceBetween
-            ) {
-                Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(12.dp)) {
-                    AsyncImage(
-                        model = "https://lh3.googleusercontent.com/aida-public/AB6AXuAl4p5h_h5ljcVfoW054Dwb67nrtGLfzS4MG6T7JiC6tThrZxmPYLdmkTS0bsLy10DR7XhIfTlSJxfJmhIkLO5NWBcOH3MgY1PLdiLvDZwHTRp5srVNy3dUcjkmWFw72qDzxmA8SZsbg7FjxoR8fia13mJ0Aghmzhjz5-QtxJX0EZbBSoyxcGmjTKLGklYb0GA7jQRQasevQHL84z6OxsdftShugm9OXp_E_m4kgPxgbnyy33rafAQBooVBJZ-HUGYJ8XeXFAvkvNo",
-                        contentDescription = null,
-                        modifier = Modifier.size(40.dp).clip(CircleShape).border(2.dp, MaterialTheme.colorScheme.primary, CircleShape),
-                        contentScale = ContentScale.Crop
-                    )
-                    Text(
-                        text = userName,
-                        style = MaterialTheme.typography.titleLarge.copy(fontWeight = FontWeight.Bold, letterSpacing = (-0.5).sp),
-                        color = MaterialTheme.colorScheme.primary
-                    )
-                }
-                IconButton(onClick = onOpenSearch) {
-                    Icon(Icons.Default.Search, contentDescription = "Search", tint = MaterialTheme.colorScheme.primary, modifier = Modifier.size(28.dp))
-                }
-            }
-            Box(modifier = Modifier.fillMaxWidth().height(1.dp).background(MaterialTheme.colorScheme.surfaceContainerLow))
         }
     }
 }
@@ -274,6 +243,8 @@ private val samplePhotos = listOf(
 fun ProfileScreenPreview() {
     DineSplitTheme(darkTheme = false) {
         ProfileScreen(
+            userAvatarUrl = null,
+            userName = "Linh Trần",
             onEditProfile = {},
             onOpenSettings = {},
             onOpenSearch = {}

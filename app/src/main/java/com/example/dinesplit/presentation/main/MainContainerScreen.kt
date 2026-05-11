@@ -132,6 +132,7 @@ fun MainContainerScreen(
 
             composable(AppRoute.Split.route) {
                 SplitScreen(
+                    userAvatarUrl = profileUiState.profile?.avatarUrl,
                     onOpenNotifications = onOpenNotifications,
                     onOpenSearch = { mainNavController.navigate(AppRoute.Search.route) },
                     onNewGroup = { /* New Group */ },
@@ -141,6 +142,7 @@ fun MainContainerScreen(
 
             composable(AppRoute.Personal.route) {
                 PersonalScreen(
+                    userAvatarUrl = profileUiState.profile?.avatarUrl,
                     onOpenSearch = { mainNavController.navigate(AppRoute.Search.route) },
                     onAddTransaction = { /* Add Transaction */ }
                 )
@@ -148,6 +150,8 @@ fun MainContainerScreen(
 
             composable(AppRoute.Profile.route) {
                 ProfileScreen(
+                    userAvatarUrl = profileUiState.profile?.avatarUrl,
+                    userName = profileUiState.profile?.displayName ?: "Profile",
                     onEditProfile = { mainNavController.navigate(AppRoute.EditProfile.route) },
                     onOpenSettings = { /* Open Settings */ },
                     onOpenSearch = { mainNavController.navigate(AppRoute.Search.route) }

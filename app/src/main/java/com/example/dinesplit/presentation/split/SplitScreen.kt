@@ -27,9 +27,11 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import coil.compose.AsyncImage
 import com.example.dinesplit.ui.theme.DineSplitTheme
+import com.example.dinesplit.core.ui.HomeTopBar
 
 @Composable
 fun SplitScreen(
+    userAvatarUrl: String?,
     onOpenNotifications: () -> Unit,
     onOpenSearch: () -> Unit,
     onNewGroup: () -> Unit,
@@ -37,7 +39,12 @@ fun SplitScreen(
 ) {
     Scaffold(
         topBar = {
-            SplitTopBar(onOpenNotifications, onOpenSearch)
+            HomeTopBar(
+                userAvatarUrl = userAvatarUrl,
+                title = "Split Bill",
+                onOpenNotifications = onOpenNotifications,
+                onOpenSearch = onOpenSearch
+            )
         },
         floatingActionButton = {
             FloatingActionButton(
@@ -196,49 +203,6 @@ fun SplitScreen(
                             iconColor = MaterialTheme.colorScheme.secondary
                         )
                     }
-                }
-            }
-        }
-    }
-}
-
-@Composable
-private fun SplitTopBar(onOpenNotifications: () -> Unit, onOpenSearch: () -> Unit) {
-    Surface(
-        color = MaterialTheme.colorScheme.background,
-        modifier = Modifier.fillMaxWidth()
-    ) {
-        Row(
-            modifier = Modifier
-                .statusBarsPadding()
-                .fillMaxWidth()
-                .height(64.dp)
-                .padding(horizontal = 24.dp),
-            verticalAlignment = Alignment.CenterVertically,
-            horizontalArrangement = Arrangement.SpaceBetween
-        ) {
-            Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(12.dp)) {
-                AsyncImage(
-                    model = "https://lh3.googleusercontent.com/aida-public/AB6AXuAvHpdPJ_xrw3f97BUDBkXsRq8JdPBIo8tfT9dECnGA2GxkJarxS3Hxy6k8rO2Vww-7kEZE2czETymVxOzLApPCE_kuFdUrlETJoqNNbpQF3LeSqisl-kNE_wUOxZT279Z4qxSXVEmobVCVh363e0R9Rz_s44RlyYmcWjPU8UfbYgBaNkll-8Sic5u_aUpDaNNt7JcwzpsV84HqUmC7FaBXUVSqI_R7051r7eS0rpZ9nididgvsBwIpShEAnnNBSSZ-kFcLT8jlUMM",
-                    contentDescription = "Profile",
-                    modifier = Modifier.size(40.dp).clip(CircleShape),
-                    contentScale = ContentScale.Crop
-                )
-                Text(
-                    text = "DineSplit",
-                    style = MaterialTheme.typography.titleLarge.copy(
-                        fontWeight = FontWeight.Bold,
-                        letterSpacing = (-0.5).sp
-                    ),
-                    color = MaterialTheme.colorScheme.primary
-                )
-            }
-            Row(horizontalArrangement = Arrangement.spacedBy(16.dp)) {
-                IconButton(onClick = onOpenSearch) {
-                    Icon(Icons.Default.Search, contentDescription = "Search", tint = MaterialTheme.colorScheme.primary)
-                }
-                IconButton(onClick = onOpenNotifications) {
-                    Icon(Icons.Default.Notifications, contentDescription = "Notifications", tint = MaterialTheme.colorScheme.primary)
                 }
             }
         }
@@ -413,6 +377,7 @@ private fun BillItem(
 fun SplitScreenPreview() {
     DineSplitTheme(darkTheme = false) {
         SplitScreen(
+            userAvatarUrl = null,
             onOpenNotifications = {},
             onOpenSearch = {},
             onNewGroup = {},

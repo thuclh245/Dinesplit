@@ -1,13 +1,23 @@
 package com.example.dinesplit.core.ui
 
-import androidx.compose.foundation.layout.RowScope
-import androidx.compose.material3.CenterAlignedTopAppBar
-import androidx.compose.material3.ExperimentalMaterial3Api
-import androidx.compose.material3.MaterialTheme
-import androidx.compose.material3.TopAppBarDefaults
-import androidx.compose.material3.Text
+import androidx.compose.foundation.border
+import androidx.compose.foundation.clickable
+import androidx.compose.foundation.layout.*
+import androidx.compose.foundation.shape.CircleShape
+import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.filled.Notifications
+import androidx.compose.material.icons.filled.Search
+import androidx.compose.material3.*
 import androidx.compose.runtime.Composable
+import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.draw.clip
+import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.layout.ContentScale
+import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.unit.dp
+import androidx.compose.ui.unit.sp
+import coil.compose.AsyncImage
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -35,4 +45,81 @@ fun AppTopBar(
             actionIconContentColor = MaterialTheme.colorScheme.onSurface
         )
     )
+}
+
+/**
+ * Unified Home Top Bar for major sections (Feed, Split, Personal, Profile).
+ * Standardizes the "H1" header with profile avatar and consistent naming.
+ */
+@Composable
+fun HomeTopBar(
+    userAvatarUrl: String?,
+    title: String = "DineSplit",
+    onAvatarClick: () -> Unit = {},
+    onOpenSearch: (() -> Unit)? = null,
+    onOpenNotifications: (() -> Unit)? = null,
+) {
+    Surface(
+        color = MaterialTheme.colorScheme.background,
+        modifier = Modifier.fillMaxWidth()
+    ) {
+        Row(
+            modifier = Modifier
+                .statusBarsPadding()
+                .fillMaxWidth()
+                .height(64.dp)
+                .padding(horizontal = 24.dp),
+            verticalAlignment = Alignment.CenterVertically,
+            horizontalArrangement = Arrangement.SpaceBetween
+        ) {
+            Row(
+                verticalAlignment = Alignment.CenterVertically,
+                horizontalArrangement = Arrangement.spacedBy(12.dp)
+            ) {
+                // Profile Avatar in Header (H1)
+                Box(
+                    modifier = Modifier
+                        .size(40.dp)
+                        .border(2.dp, MaterialTheme.colorScheme.primary, CircleShape)
+                        .clip(CircleShape)
+                        .clickable { onAvatarClick() }
+                ) {
+                    AsyncImage(
+                        model = userAvatarUrl.takeIf { !it.isNullOrBlank() } ?: "https://lh3.googleusercontent.com/aida-public/AB6AXuCpnvw7NZghOMJRnH_WaC3eHutJm9XoZmybu_TS_uk9WGcWsJ_ROjtI90_bvBZh8RdgNB0TqYRJz9rZwQs8ccGh0XZdffsyr3NPpk2NVubfaS48U6sqwA-G3_MDzJUaOs2ZwR38m4yLqhn5qc9roHjyOG9DRe0snpGmqEaalIMhGPfnnWqyYIKfjwhLix41mqjPZc3XGCjrn-j-XR7ybsOoJqCMtxUDerTeRQZEdpJI07YwJUZ1l4qlO-YwxfFb6oJMhnd9dTple0c",
+                        contentDescription = "My Profile",
+                        modifier = Modifier.fillMaxSize(),
+                        contentScale = ContentScale.Crop
+                    )
+                }
+                Text(
+                    text = title,
+                    style = MaterialTheme.typography.titleLarge.copy(
+                        fontWeight = FontWeight.Bold,
+                        letterSpacing = if (title == "DineSplit") (-1).sp else (-0.5).sp
+                    ),
+                    color = MaterialTheme.colorScheme.primary
+                )
+            }
+            Row(horizontalArrangement = Arrangement.spacedBy(16.dp)) {
+                if (onOpenSearch != null) {
+                    IconButton(onClick = onOpenSearch) {
+                        Icon(
+                            imageVector = Icons.Default.Search,
+                            contentDescription = "Search",
+                            tint = MaterialTheme.colorScheme.primary
+                        )
+                    }
+                }
+                if (onOpenNotifications != null) {
+                    IconButton(onClick = onOpenNotifications) {
+                        Icon(
+                            imageVector = Icons.Default.Notifications,
+                            contentDescription = "Notifications",
+                            tint = MaterialTheme.colorScheme.primary
+                        )
+                    }
+                }
+            }
+        }
+    }
 }

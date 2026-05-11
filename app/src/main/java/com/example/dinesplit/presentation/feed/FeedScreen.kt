@@ -34,6 +34,7 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import coil.compose.AsyncImage
 import com.example.dinesplit.ui.theme.DineSplitTheme
+import com.example.dinesplit.core.ui.HomeTopBar
 
 @Composable
 fun FeedScreen(
@@ -44,7 +45,11 @@ fun FeedScreen(
 ) {
     Scaffold(
         topBar = {
-            FeedTopBar(userAvatarUrl, onOpenNotifications, onOpenSearch)
+            HomeTopBar(
+                userAvatarUrl = userAvatarUrl,
+                onOpenNotifications = onOpenNotifications,
+                onOpenSearch = onOpenSearch
+            )
         },
         floatingActionButton = {
             FloatingActionButton(
@@ -114,57 +119,6 @@ fun FeedScreen(
                     title = "Midnight Snacking in Sài Gòn",
                     status = "HAPPENING NOW"
                 )
-            }
-        }
-    }
-}
-
-@Composable
-private fun FeedTopBar(userAvatarUrl: String?, onOpenNotifications: () -> Unit, onOpenSearch: () -> Unit) {
-    Surface(
-        color = MaterialTheme.colorScheme.background,
-        modifier = Modifier.fillMaxWidth()
-    ) {
-        Row(
-            modifier = Modifier
-                .statusBarsPadding()
-                .fillMaxWidth()
-                .height(64.dp)
-                .padding(horizontal = 24.dp),
-            verticalAlignment = Alignment.CenterVertically,
-            horizontalArrangement = Arrangement.SpaceBetween
-        ) {
-            Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(12.dp)) {
-                Box(
-                    modifier = Modifier
-                        .size(40.dp)
-                        .border(2.dp, MaterialTheme.colorScheme.primary, CircleShape)
-                        .clip(CircleShape)
-                ) {
-                    AsyncImage(
-                        model = userAvatarUrl.takeIf { !it.isNullOrBlank() } ?: "https://lh3.googleusercontent.com/aida-public/AB6AXuCpnvw7NZghOMJRnH_WaC3eHutJm9XoZmybu_TS_uk9WGcWsJ_ROjtI90_bvBZh8RdgNB0TqYRJz9rZwQs8ccGh0XZdffsyr3NPpk2NVubfaS48U6sqwA-G3_MDzJUaOs2ZwR38m4yLqhn5qc9roHjyOG9DRe0snpGmqEaalIMhGPfnnWqyYIKfjwhLix41mqjPZc3XGCjrn-j-XR7ybsOoJqCMtxUDerTeRQZEdpJI07YwJUZ1l4qlO-YwxfFb6oJMhnd9dTple0c",
-                        contentDescription = "My Profile",
-                        modifier = Modifier.fillMaxSize(),
-                        contentScale = ContentScale.Crop
-                    )
-                }
-                Text(
-                    text = "DineSplit",
-                    style = MaterialTheme.typography.headlineSmall.copy(
-                        fontWeight = FontWeight.Black,
-                        letterSpacing = (-1).sp
-                    ),
-                    color = MaterialTheme.colorScheme.primary
-                )
-            }
-
-            Row(horizontalArrangement = Arrangement.spacedBy(16.dp)) {
-                IconButton(onClick = onOpenSearch) {
-                    Icon(Icons.Default.Search, contentDescription = "Search", tint = MaterialTheme.colorScheme.primary, modifier = Modifier.size(24.dp))
-                }
-                IconButton(onClick = onOpenNotifications) {
-                    Icon(Icons.Default.Notifications, contentDescription = "Notifications", tint = MaterialTheme.colorScheme.primary, modifier = Modifier.size(24.dp))
-                }
             }
         }
     }
