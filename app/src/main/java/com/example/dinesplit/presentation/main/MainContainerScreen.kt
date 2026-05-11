@@ -130,7 +130,9 @@ fun MainContainerScreen(
         NavHost(
             navController = mainNavController,
             startDestination = AppRoute.Feed.route,
-            modifier = Modifier.fillMaxSize()
+            modifier = Modifier
+                .fillMaxSize()
+                .padding(innerPadding) // Sử dụng innerPadding để tránh chồng lấn và fix lỗi lint
         ) {
             composable(AppRoute.Feed.route) {
                 FeedScreen(
