@@ -3,7 +3,7 @@ package com.example.dinesplit.presentation.personal
 import android.app.Application
 import androidx.lifecycle.AndroidViewModel
 import androidx.lifecycle.viewModelScope
-import com.example.dinesplit.data.repository.PersonalRepository
+import com.example.dinesplit.core.common.AppContainer
 import com.example.dinesplit.data.model.StoredCategory
 import com.example.dinesplit.domain.model.Transaction
 import com.example.dinesplit.domain.model.TransactionType
@@ -16,7 +16,7 @@ import java.util.Calendar
 import java.util.UUID
 
 class PersonalViewModel(application: Application) : AndroidViewModel(application) {
-    private val repository = PersonalRepository.getInstance(application.applicationContext)
+    private val repository = AppContainer.personalRepository(application)
     private val currentMonthFilter = MutableStateFlow<MonthYearFilter?>(null)
 
     private val _transactions = MutableStateFlow<List<Transaction>>(emptyList())
