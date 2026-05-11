@@ -13,7 +13,7 @@ import androidx.compose.ui.text.input.VisualTransformation
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
-fun DineSplitTextField(
+fun AppTextField(
     value: String,
     onValueChange: (String) -> Unit,
     label: String,
@@ -41,6 +41,7 @@ fun DineSplitTextField(
         shape = RoundedCornerShape(AppDimens.cornerMedium),
         visualTransformation = visualTransformation,
         keyboardOptions = keyboardOptions,
+        label = { Text(text = label) },
         placeholder = {
             if (placeholder.isNotBlank()) {
                 Text(
@@ -72,5 +73,40 @@ fun DineSplitTextField(
                 )
             }
         }
+    )
+}
+
+@Composable
+fun DineSplitTextField(
+    value: String,
+    onValueChange: (String) -> Unit,
+    label: String,
+    modifier: Modifier = Modifier,
+    placeholder: String = "",
+    leadingIcon: ImageVector? = null,
+    trailingIcon: @Composable (() -> Unit)? = null,
+    isPassword: Boolean = false,
+    visualTransformation: VisualTransformation = VisualTransformation.None,
+    keyboardOptions: KeyboardOptions = KeyboardOptions.Default,
+    enabled: Boolean = true,
+    singleLine: Boolean = true,
+    isError: Boolean = false,
+    supportingText: String? = null
+) {
+    AppTextField(
+        value = value,
+        onValueChange = onValueChange,
+        label = label,
+        modifier = modifier,
+        placeholder = placeholder,
+        leadingIcon = leadingIcon,
+        trailingIcon = trailingIcon,
+        isPassword = isPassword,
+        visualTransformation = visualTransformation,
+        keyboardOptions = keyboardOptions,
+        enabled = enabled,
+        singleLine = singleLine,
+        isError = isError,
+        supportingText = supportingText
     )
 }

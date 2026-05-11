@@ -14,7 +14,7 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 
 @Composable
-fun DineSplitButton(
+fun PrimaryButton(
     text: String,
     onClick: () -> Unit,
     modifier: Modifier = Modifier,
@@ -73,11 +73,38 @@ fun DineSplitButton(
     }
 }
 
+// Alias for PrimaryButton
 @Composable
-fun DineSplitOutlinedButton(
+fun AppButton(
     text: String,
     onClick: () -> Unit,
     modifier: Modifier = Modifier,
+    isLoading: Boolean = false,
+    enabled: Boolean = true,
+    icon: (@Composable () -> Unit)? = null
+) {
+    PrimaryButton(text, onClick, modifier, isLoading, enabled, icon)
+}
+
+@Composable
+fun DineSplitButton(
+    text: String,
+    onClick: () -> Unit,
+    modifier: Modifier = Modifier,
+    isLoading: Boolean = false,
+    enabled: Boolean = true,
+    icon: (@Composable () -> Unit)? = null
+) {
+    PrimaryButton(text, onClick, modifier, isLoading, enabled, icon)
+}
+
+@Composable
+fun SecondaryButton(
+    text: String,
+    onClick: () -> Unit,
+    modifier: Modifier = Modifier,
+    isLoading: Boolean = false,
+    enabled: Boolean = true,
     icon: (@Composable () -> Unit)? = null
 ) {
     OutlinedButton(
@@ -94,21 +121,42 @@ fun DineSplitOutlinedButton(
                     MaterialTheme.colorScheme.outlineVariant.copy(alpha = 0.2f)
                 )
             )
-        )
+        ),
+        enabled = enabled && !isLoading
     ) {
-        Row(
-            verticalAlignment = Alignment.CenterVertically,
-            horizontalArrangement = Arrangement.Center
-        ) {
-            if (icon != null) {
-                icon()
-                Spacer(modifier = Modifier.width(AppDimens.spaceMd))
-            }
-            Text(
-                text = text,
-                style = MaterialTheme.typography.titleSmall.copy(fontWeight = FontWeight.Bold),
-                color = MaterialTheme.colorScheme.onSurface
+        if (isLoading) {
+            CircularProgressIndicator(
+                modifier = Modifier.size(24.dp),
+                color = MaterialTheme.colorScheme.primary,
+                strokeWidth = 2.dp
             )
+        } else {
+            Row(
+                verticalAlignment = Alignment.CenterVertically,
+                horizontalArrangement = Arrangement.Center
+            ) {
+                if (icon != null) {
+                    icon()
+                    Spacer(modifier = Modifier.width(AppDimens.spaceMd))
+                }
+                Text(
+                    text = text,
+                    style = MaterialTheme.typography.titleSmall.copy(fontWeight = FontWeight.Bold),
+                    color = MaterialTheme.colorScheme.onSurface
+                )
+            }
         }
     }
+}
+
+@Composable
+fun DineSplitOutlinedButton(
+    text: String,
+    onClick: () -> Unit,
+    modifier: Modifier = Modifier,
+    isLoading: Boolean = false,
+    enabled: Boolean = true,
+    icon: (@Composable () -> Unit)? = null
+) {
+    SecondaryButton(text, onClick, modifier, isLoading, enabled, icon)
 }

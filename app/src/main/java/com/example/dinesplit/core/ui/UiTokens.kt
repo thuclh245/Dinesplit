@@ -1,5 +1,6 @@
 package com.example.dinesplit.core.ui
 
+import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 
@@ -23,12 +24,14 @@ object AppDimens {
     val cornerMedium = 12.dp
     val cornerLarge = 24.dp
     val cornerExtraLarge = 32.dp
+    val radiusSm = cornerSmall
     
     // Elevation
     val elevLow = 2.dp
     val elevMedium = 8.dp
     val elevHigh = 16.dp
     val elevEditorial = 24.dp
+    val cardElevation = elevLow
     
     // Icon Sizes
     val iconSm = 16.dp
@@ -42,6 +45,15 @@ object AppDimens {
     val avatarSm = 40.dp
     val avatarMd = 80.dp
     val avatarLg = 128.dp
+    val screenHorizontal = spaceLg
+    val screenVertical = spaceLg
+}
+
+object AppShapes {
+    val small = RoundedCornerShape(AppDimens.cornerSmall)
+    val medium = RoundedCornerShape(AppDimens.cornerMedium)
+    val large = RoundedCornerShape(AppDimens.cornerLarge)
+    val xLarge = RoundedCornerShape(AppDimens.cornerExtraLarge)
 }
 
 object AppAnimation {
