@@ -209,57 +209,56 @@ fun SplashContent(progress: Float = 0f) {
                 }
             }
 
-                // Progress Loading Indicator
+            // Progress Loading Indicator
+            Box(
+                modifier = Modifier
+                    .width(192.dp)
+                    .height(6.dp)
+                    .clip(CircleShape)
+                    .background(MaterialTheme.colorScheme.surfaceContainerHighest)
+            ) {
+                val animatedProgress by animateFloatAsState(
+                    targetValue = progress,
+                    animationSpec = tween(durationMillis = 300, easing = LinearOutSlowInEasing),
+                    label = "progress_animation"
+                )
+
                 Box(
                     modifier = Modifier
-                        .width(192.dp)
-                        .height(6.dp)
-                        .clip(CircleShape)
-                        .background(MaterialTheme.colorScheme.surfaceContainerHighest)
-                ) {
-                    val animatedProgress by animateFloatAsState(
-                        targetValue = progress,
-                        animationSpec = tween(durationMillis = 300, easing = LinearOutSlowInEasing),
-                        label = "progress_animation"
-                    )
-
-                    Box(
-                        modifier = Modifier
-                            .fillMaxWidth(animatedProgress)
-                            .fillMaxHeight()
-                            .background(
-                                Brush.horizontalGradient(
-                                    listOf(
-                                        MaterialTheme.colorScheme.primary,
-                                        MaterialTheme.colorScheme.primaryContainer
-                                    )
+                        .fillMaxWidth(animatedProgress)
+                        .fillMaxHeight()
+                        .background(
+                            Brush.horizontalGradient(
+                                listOf(
+                                    MaterialTheme.colorScheme.primary,
+                                    MaterialTheme.colorScheme.primaryContainer
                                 )
                             )
-                    )
-                }
+                        )
+                )
+            }
 
-                // Social Hint / Trust Badge
-                Column(
-                    horizontalAlignment = Alignment.CenterHorizontally,
-                    verticalArrangement = Arrangement.spacedBy(16.dp)
+            // Social Hint / Trust Badge
+            Column(
+                horizontalAlignment = Alignment.CenterHorizontally,
+                verticalArrangement = Arrangement.spacedBy(16.dp)
+            ) {
+                Row(
+                    modifier = Modifier.padding(horizontal = 12.dp),
+                    horizontalArrangement = Arrangement.spacedBy((-12).dp)
                 ) {
-                    Row(
-                        modifier = Modifier.padding(horizontal = 12.dp),
-                        horizontalArrangement = Arrangement.spacedBy((-12).dp)
-                    ) {
-                        UserAvatar("https://lh3.googleusercontent.com/aida-public/AB6AXuBVrs2wx5anloIhdMmQnabHmpo0H_8ln0beyIY9S0ro1i1jJHKS56WqaxeXOL7euxP3gZKUxfRDX7HXISYMpYFDXNTuC6qB7GM3H89l03EasLEIrsQvTU3jqQl5WpSG9KzlOjNx9XKsx8cgq-Ji-ORq_PwZewyVk2S-CVe4mkptTFUctRA8kjxbpe8QP19-Pgxe8vP9NHU1c3-n1LQFME8a6bXb0RYnWF0PYWZGUn1f-fRHhOwOdiHvAD-6a2SVLEG1bYHvEJOzMUo")
-                        UserAvatar("https://lh3.googleusercontent.com/aida-public/AB6AXuBWMGCgdIuILTkYdpwu6NFuMAYl3jQ6J5w6zSGMLMCAX4jObRTGxmtX--hl_Em-gXXyBEjoqEM8nhIlRkjHUsaoe1QS3BNmK4C3CNRKcZptBpMbhgyTVLKDsm2BpxXtoHqDuqVW9OF6-4_oS8TL72GRR0t_r9V_uSwGOJbsVD83wxb0ktNI2D3dT2W39BjjjbO9tePkLxU8ZmAu3RChYz-0bXxRnlcN9_PrbFD3mvLF66gtH0BKRzBxDRM39q7sZ-PnRgv37Dsdek4")
-                        UserAvatar("https://lh3.googleusercontent.com/aida-public/AB6AXuB-dgw3J2EUB-AGRgIB2YgfLLReweeQaL6U5HIkTr7eoW8E4fdbnGMj5Fq2apIEfkz5fQN2te9Gpr3eusWb5XYaD8L4OK6ZNDx_6sMLbgKT18oex2iAOMU5aD3ZwMZlZqX41TaaB9e4fR1p40vpFfTUbEM_xqfOQ45WaQ-78s94spulAMV-HEz7PAJpMoDLheZwBoxECEB-wH-WumRqROqcnDDLc-idXRZQWdcOqGrOo4W9nCZ6Ox32uq66NMjQeBEnTWbWU7ihDhM")
-                    }
-                    Text(
-                        text = "JOINING 24K+ FOOD LOVERS",
-                        style = MaterialTheme.typography.labelSmall.copy(
-                            fontWeight = FontWeight.Bold,
-                            letterSpacing = 2.sp
-                        ),
-                        color = MaterialTheme.colorScheme.outlineVariant
-                    )
+                    UserAvatar("https://lh3.googleusercontent.com/aida-public/AB6AXuBVrs2wx5anloIhdMmQnabHmpo0H_8ln0beyIY9S0ro1i1jJHKS56WqaxeXOL7euxP3gZKUxfRDX7HXISYMpYFDXNTuC6qB7GM3H89l03EasLEIrsQvTU3jqQl5WpSG9KzlOjNx9XKsx8cgq-Ji-ORq_PwZewyVk2S-CVe4mkptTFUctRA8kjxbpe8QP19-Pgxe8vP9NHU1c3-n1LQFME8a6bXb0RYnWF0PYWZGUn1f-fRHhOwOdiHvAD-6a2SVLEG1bYHvEJOzMUo")
+                    UserAvatar("https://lh3.googleusercontent.com/aida-public/AB6AXuBWMGCgdIuILTkYdpwu6NFuMAYl3jQ6J5w6zSGMLMCAX4jObRTGxmtX--hl_Em-gXXyBEjoqEM8nhIlRkjHUsaoe1QS3BNmK4C3CNRKcZptBpMbhgyTVLKDsm2BpxXtoHqDuqVW9OF6-4_oS8TL72GRR0t_r9V_uSwGOJbsVD83wxb0ktNI2D3dT2W39BjjjbO9tePkLxU8ZmAu3RChYz-0bXxRnlcN9_PrbFD3mvLF66gtH0BKRzBxDRM39q7sZ-PnRgv37Dsdek4")
+                    UserAvatar("https://lh3.googleusercontent.com/aida-public/AB6AXuB-dgw3J2EUB-AGRgIB2YgfLLReweeQaL6U5HIkTr7eoW8E4fdbnGMj5Fq2apIEfkz5fQN2te9Gpr3eusWb5XYaD8L4OK6ZNDx_6sMLbgKT18oex2iAOMU5aD3ZwMZlZqX41TaaB9e4fR1p40vpFfTUbEM_xqfOQ45WaQ-78s94spulAMV-HEz7PAJpMoDLheZwBoxECEB-wH-WumRqROqcnDDLc-idXRZQWdcOqGrOo4W9nCZ6Ox32uq66NMjQeBEnTWbWU7ihDhM")
                 }
+                Text(
+                    text = "JOINING 24K+ FOOD LOVERS",
+                    style = MaterialTheme.typography.labelSmall.copy(
+                        fontWeight = FontWeight.Bold,
+                        letterSpacing = 2.sp
+                    ),
+                    color = MaterialTheme.colorScheme.outlineVariant
+                )
             }
         }
     }
