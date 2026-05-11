@@ -42,9 +42,9 @@ class SplashViewModel(application: Application) : AndroidViewModel(application) 
             runCatching {
                 resolveStartDestinationUseCase()
             }.onSuccess { destination ->
-                _uiState.value = SplashUiState(isLoading = false, destination = destination)
+                _uiState.value = _uiState.value.copy(isLoading = false, destination = destination)
             }.onFailure { throwable ->
-                _uiState.value = SplashUiState(
+                _uiState.value = _uiState.value.copy(
                     isLoading = false,
                     destination = AppStartDestination.AUTH,
                     errorMessage = throwable.message ?: "Unable to restore session"
