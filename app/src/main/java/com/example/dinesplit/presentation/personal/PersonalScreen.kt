@@ -1,538 +1,410 @@
 package com.example.dinesplit.presentation.personal
 
-import androidx.compose.foundation.background
-import androidx.compose.foundation.rememberScrollState
-import androidx.compose.foundation.layout.Arrangement
-import androidx.compose.foundation.layout.Box
-import androidx.compose.foundation.layout.Column
-import androidx.compose.foundation.layout.Row
-import androidx.compose.foundation.layout.Spacer
-import androidx.compose.foundation.layout.fillMaxWidth
-import androidx.compose.foundation.layout.height
-import androidx.compose.foundation.layout.padding
-import androidx.compose.foundation.layout.size
-import androidx.compose.foundation.verticalScroll
-import androidx.compose.material3.HorizontalDivider
-import androidx.compose.material3.MaterialTheme
-import androidx.compose.material3.Text
-import androidx.compose.material3.TextButton
-import androidx.compose.runtime.Composable
+import androidx.compose.foundation.*
+import androidx.compose.foundation.layout.*
+import androidx.compose.foundation.lazy.LazyColumn
+import androidx.compose.foundation.lazy.items
+import androidx.compose.foundation.shape.CircleShape
+import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.filled.*
+import androidx.compose.material3.*
+import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.draw.blur
+import androidx.compose.ui.draw.clip
+import androidx.compose.ui.draw.shadow
+import androidx.compose.ui.graphics.Brush
+import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.graphics.StrokeCap
+import androidx.compose.ui.graphics.drawscope.Stroke
+import androidx.compose.ui.graphics.vector.ImageVector
+import androidx.compose.ui.layout.ContentScale
+import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
-import com.example.dinesplit.core.ui.AppCard
-import com.example.dinesplit.core.ui.AppDimens
-import com.example.dinesplit.core.ui.AppScaffold
-import com.example.dinesplit.core.ui.LoadingBlock
-import com.example.dinesplit.core.ui.PrimaryButton
-import com.example.dinesplit.core.ui.SecondaryButton
+import androidx.compose.ui.unit.sp
+import coil.compose.AsyncImage
 import com.example.dinesplit.ui.theme.DineSplitTheme
-import java.util.Locale
-
-sealed interface PersonalDashboardUiState {
-    data object Loading : PersonalDashboardUiState
-    data object Empty : PersonalDashboardUiState
-
-    data class HasData(
-        val summary: PersonalDashboardSummary,
-        val categoryBreakdowns: List<CategoryBreakdown>,
-        val pieChartData: List<PieCategorySlice>,
-        val dailyExpenseBars: List<DailyExpenseBar>,
-        val recentActivity: List<RecentActivityUi>,
-        val monthlySummary: MonthlySummary
-    ) : PersonalDashboardUiState
-
-    companion object {
-        fun default(): HasData {
-            val monthlySummary = MonthlySummary(
-                totalIncome = 3500000.0,
-                totalExpense = 1250000.0,
-                balance = 2250000.0
-            )
-
-            return HasData(
-                summary = monthlySummary.toDashboardSummary(
-                    balanceNote = "+18% compared with last month"
-                ),
-                categoryBreakdowns = listOf(
-                    CategoryBreakdown(name = "Food", percentage = "42%", amount = "525.000đ", progress = 0.42f),
-                    CategoryBreakdown(name = "Drink", percentage = "18%", amount = "225.000đ", progress = 0.18f),
-                    CategoryBreakdown(name = "Travel", percentage = "15%", amount = "187.500đ", progress = 0.15f)
-                ),
-                pieChartData = listOf(
-                    PieCategorySlice(category = "Food", amount = 525000.0, percentage = 0.42f),
-                    PieCategorySlice(category = "Drink", amount = 225000.0, percentage = 0.18f),
-                    PieCategorySlice(category = "Travel", amount = 187500.0, percentage = 0.15f)
-                ),
-                dailyExpenseBars = listOf(
-                    DailyExpenseBar(dayOfMonth = 1, amount = 120000.0),
-                    DailyExpenseBar(dayOfMonth = 3, amount = 75000.0),
-                    DailyExpenseBar(dayOfMonth = 5, amount = 90000.0),
-                    DailyExpenseBar(dayOfMonth = 9, amount = 55000.0)
-                ),
-                recentActivity = listOf(
-                    RecentActivityUi(
-                        icon = "FD",
-                        title = "Dinner with team",
-                        subtitle = "Dining • Today",
-                        amount = "-124,500",
-                        isIncome = false
-                    ),
-                    RecentActivityUi(
-                        icon = "SL",
-                        title = "Salary deposit",
-                        subtitle = "Income • Yesterday",
-                        amount = "+${formatCurrencyVnd(monthlySummary.totalIncome)}",
-                        isIncome = true
-                    ),
-                    RecentActivityUi(
-                        icon = "TR",
-                        title = "Taxi ride",
-                        subtitle = "Transport • 2 days ago",
-                        amount = "-24,000",
-                        isIncome = false
-                    )
-                ),
-                monthlySummary = monthlySummary
-            )
-        }
-    }
-}
-
-data class PersonalDashboardSummary(
-    val totalIncome: String,
-    val totalExpense: String,
-    val balance: String,
-    val balanceNote: String
-)
-
-data class CategoryBreakdown(
-    val name: String,
-    val percentage: String,
-    val amount: String,
-    val progress: Float
-)
-
-private fun MonthlySummary.toDashboardSummary(
-    balanceNote: String
-): PersonalDashboardSummary {
-    return PersonalDashboardSummary(
-        totalIncome = formatCurrencyVnd(totalIncome),
-        totalExpense = formatCurrencyVnd(totalExpense),
-        balance = formatCurrencyVnd(balance),
-        balanceNote = balanceNote
-    )
-}
-
-private fun formatCurrencyVnd(amount: Double): String {
-    val grouped = String.format(Locale.US, "%,d", amount.toLong())
-    return grouped.replace(',', '.') + "đ"
-}
 
 @Composable
 fun PersonalScreen(
-    onOpenAssistant: () -> Unit,
-    onAddExpense: () -> Unit = {},
-    onAddIncome: () -> Unit = {},
-    onOpenHistory: () -> Unit = {},
-    onOpenCategoryManagement: () -> Unit = {},
-    uiState: PersonalDashboardUiState = PersonalDashboardUiState.default()
+    onOpenSearch: () -> Unit,
+    onAddTransaction: () -> Unit
 ) {
-    AppScaffold(
-        title = "Personal",
-        actions = {
-            TextButton(onClick = onOpenAssistant) {
-                Text("AI")
+    Scaffold(
+        topBar = {
+            PersonalTopBar(onOpenSearch)
+        },
+        floatingActionButton = {
+            FloatingActionButton(
+                onClick = onAddTransaction,
+                containerColor = MaterialTheme.colorScheme.primary,
+                contentColor = Color.White,
+                shape = CircleShape,
+                modifier = Modifier
+                    .padding(bottom = 80.dp)
+                    .size(56.dp)
+                    .shadow(12.dp, CircleShape, spotColor = MaterialTheme.colorScheme.primary.copy(alpha = 0.4f))
+            ) {
+                Icon(Icons.Default.Add, contentDescription = "Add Transaction", modifier = Modifier.size(28.dp))
             }
         }
-    ) {
-        when (uiState) {
-            PersonalDashboardUiState.Loading -> LoadingBlock(message = "Loading personal finance...")
-            PersonalDashboardUiState.Empty -> PersonalDashboardEmptyContent(
-                modifier = Modifier.verticalScroll(rememberScrollState()),
-                onAddExpense = onAddExpense,
-                onAddIncome = onAddIncome,
-                onOpenHistory = onOpenHistory,
-                onOpenCategoryManagement = onOpenCategoryManagement
-            )
-            is PersonalDashboardUiState.HasData -> PersonalDashboardContent(
-                modifier = Modifier.verticalScroll(rememberScrollState()),
-                summary = uiState.summary,
-                categoryBreakdowns = uiState.categoryBreakdowns,
-                pieChartData = uiState.pieChartData,
-                dailyExpenseBars = uiState.dailyExpenseBars,
-                recentActivity = uiState.recentActivity,
-                onAddExpense = onAddExpense,
-                onAddIncome = onAddIncome,
-                onOpenHistory = onOpenHistory,
-                onOpenCategoryManagement = onOpenCategoryManagement
-            )
+    ) { padding ->
+        LazyColumn(
+            modifier = Modifier
+                .fillMaxSize()
+                .background(MaterialTheme.colorScheme.background)
+                .padding(padding),
+            contentPadding = PaddingValues(24.dp),
+            verticalArrangement = Arrangement.spacedBy(32.dp)
+        ) {
+            // Month Selector
+            item {
+                Row(
+                    modifier = Modifier.fillMaxWidth(),
+                    horizontalArrangement = Arrangement.SpaceBetween,
+                    verticalAlignment = Alignment.CenterVertically
+                ) {
+                    Surface(
+                        color = MaterialTheme.colorScheme.surfaceContainerLow,
+                        shape = CircleShape,
+                        onClick = { }
+                    ) {
+                        Row(
+                            modifier = Modifier.padding(horizontal = 16.dp, vertical = 8.dp),
+                            verticalAlignment = Alignment.CenterVertically,
+                            horizontalArrangement = Arrangement.spacedBy(8.dp)
+                        ) {
+                            Text("Tháng này", style = MaterialTheme.typography.labelLarge.copy(fontWeight = FontWeight.SemiBold))
+                            Icon(Icons.Default.ExpandMore, contentDescription = null, modifier = Modifier.size(16.dp))
+                        }
+                    }
+                    Surface(
+                        modifier = Modifier.size(40.dp),
+                        shape = CircleShape,
+                        color = MaterialTheme.colorScheme.surfaceContainerLowest,
+                        shadowElevation = 2.dp,
+                        onClick = { }
+                    ) {
+                        Box(contentAlignment = Alignment.Center) {
+                            Icon(Icons.Default.CalendarToday, contentDescription = "Calendar", tint = MaterialTheme.colorScheme.primary, modifier = Modifier.size(18.dp))
+                        }
+                    }
+                }
+            }
+
+            // Total Balance Card
+            item {
+                TotalBalanceCard(amount = "42.850.000", trend = "+12% so với tháng trước")
+            }
+
+            // Income & Expense Summary
+            item {
+                Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(16.dp)) {
+                    SummaryCard(
+                        title = "THU NHẬP",
+                        amount = "15.200.000 ₫",
+                        icon = Icons.Default.ArrowDownward,
+                        containerColor = MaterialTheme.colorScheme.secondaryContainer,
+                        contentColor = MaterialTheme.colorScheme.onSecondaryContainer,
+                        modifier = Modifier.weight(1f)
+                    )
+                    SummaryCard(
+                        title = "CHI TIÊU",
+                        amount = "8.450.000 ₫",
+                        icon = Icons.Default.ArrowUpward,
+                        containerColor = MaterialTheme.colorScheme.surfaceContainerHighest,
+                        contentColor = MaterialTheme.colorScheme.onSurface,
+                        modifier = Modifier.weight(1f)
+                    )
+                }
+            }
+
+            // Spending Insights
+            item {
+                SpendingInsights()
+            }
+
+            // Recent Transactions
+            item {
+                RecentTransactions()
+            }
+            
+            item {
+                Spacer(modifier = Modifier.height(100.dp))
+            }
         }
     }
 }
 
 @Composable
-private fun PersonalDashboardContent(
-    modifier: Modifier = Modifier,
-    summary: PersonalDashboardSummary,
-    categoryBreakdowns: List<CategoryBreakdown>,
-    pieChartData: List<PieCategorySlice>,
-    dailyExpenseBars: List<DailyExpenseBar>,
-    recentActivity: List<RecentActivityUi>,
-    onAddExpense: () -> Unit,
-    onAddIncome: () -> Unit,
-    onOpenHistory: () -> Unit,
-    onOpenCategoryManagement: () -> Unit
-) {
-    Column(
-        modifier = modifier,
-        verticalArrangement = Arrangement.spacedBy(AppDimens.spaceLg)
+private fun PersonalTopBar(onOpenSearch: () -> Unit) {
+    Surface(
+        color = MaterialTheme.colorScheme.background,
+        modifier = Modifier.fillMaxWidth()
     ) {
-        AppCard {
-            Column(
-                verticalArrangement = Arrangement.spacedBy(AppDimens.spaceXs)
-            ) {
-                Text(
-                    text = "Total wealth",
-                    style = MaterialTheme.typography.labelMedium,
-                    color = MaterialTheme.colorScheme.onSurfaceVariant
+        Row(
+            modifier = Modifier
+                .statusBarsPadding()
+                .fillMaxWidth()
+                .height(64.dp)
+                .padding(horizontal = 24.dp),
+            verticalAlignment = Alignment.CenterVertically,
+            horizontalArrangement = Arrangement.SpaceBetween
+        ) {
+            Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(12.dp)) {
+                AsyncImage(
+                    model = "https://lh3.googleusercontent.com/aida-public/AB6AXuBrTcbnPTJYc3oKoNqwZbAOfRBTUlpopr6ox14uOMg0f7rolpi4uEXGYw4VWsu_CgW1483NmhrnC2eLueHugduotYCTpEAE5KYd-NljY5rPUPmFCMlbHOyNEcXnh8Ia_MIY_smhsagMqSJneA9mr79rwCg3Y73LavyW2g65gFys4_HTFkdZNjBoa3ZXXRkhLDnFO3usg68xb5ChZzV3WAu0Ta8TKuib4SElaoFDOIHKcQRKGFraVTmbk6PO-AMtzRvDDxFMzUjPTyg",
+                    contentDescription = "Profile",
+                    modifier = Modifier.size(40.dp).clip(CircleShape),
+                    contentScale = ContentScale.Crop
                 )
                 Text(
-                    text = summary.balance,
-                    style = MaterialTheme.typography.displaySmall
-                )
-                Text(
-                    text = summary.balanceNote,
-                    style = MaterialTheme.typography.bodyMedium,
+                    text = "DineSplit",
+                    style = MaterialTheme.typography.titleLarge.copy(fontWeight = FontWeight.Bold, letterSpacing = (-0.5).sp),
                     color = MaterialTheme.colorScheme.primary
                 )
             }
-        }
-
-        Row(
-            horizontalArrangement = Arrangement.spacedBy(AppDimens.spaceMd)
-        ) {
-            SummaryInfoCard(
-                modifier = Modifier.weight(1f),
-                title = "Income",
-                value = summary.totalIncome
-            )
-
-            SummaryInfoCard(
-                modifier = Modifier.weight(1f),
-                title = "Spent",
-                value = summary.totalExpense
-            )
-        }
-
-        AppCard {
-            Column(
-                verticalArrangement = Arrangement.spacedBy(AppDimens.spaceMd)
-            ) {
-                Text(
-                    text = "Cash Flow",
-                    style = MaterialTheme.typography.titleMedium
-                )
-
-                PersonalDailyExpenseBarChart(
-                    bars = dailyExpenseBars,
-                    modifier = Modifier.fillMaxWidth()
-                )
+            IconButton(onClick = onOpenSearch) {
+                Icon(Icons.Default.Search, contentDescription = "Search", tint = MaterialTheme.colorScheme.onSurface)
             }
         }
-
-        AppCard {
-            Column(
-                verticalArrangement = Arrangement.spacedBy(AppDimens.spaceMd)
-            ) {
-                Text(
-                    text = "Recent Activity",
-                    style = MaterialTheme.typography.titleMedium
-                )
-
-                recentActivity.forEachIndexed { index, item ->
-                    RecentActivityRow(item = item)
-                    if (index != recentActivity.lastIndex) {
-                        HorizontalDivider()
-                    }
-                }
-            }
-        }
-
-        AppCard {
-            Column(
-                verticalArrangement = Arrangement.spacedBy(AppDimens.spaceMd)
-            ) {
-                Text(
-                    text = "Quick actions",
-                    style = MaterialTheme.typography.titleMedium
-                )
-
-                PrimaryButton(
-                    text = "+ Add Expense",
-                    onClick = onAddExpense
-                )
-
-                SecondaryButton(
-                    text = "+ Add Income",
-                    onClick = onAddIncome
-                )
-
-                TextButton(onClick = onOpenHistory) {
-                    Text("View Transaction History")
-                }
-
-                TextButton(onClick = onOpenCategoryManagement) {
-                    Text("Manage Categories")
-                }
-            }
-        }
-
-        if (categoryBreakdowns.isNotEmpty() || pieChartData.isNotEmpty()) {
-            AppCard {
-                Column(
-                    verticalArrangement = Arrangement.spacedBy(AppDimens.spaceMd)
-                ) {
-                    Text(
-                        text = "Category Breakdown",
-                        style = MaterialTheme.typography.titleMedium
-                    )
-
-                    if (pieChartData.isNotEmpty()) {
-                        PersonalPieChart(
-                            slices = pieChartData,
-                            modifier = Modifier.fillMaxWidth()
-                        )
-                    }
-
-                    categoryBreakdowns.forEach { item ->
-                        CategoryBreakdownRow(item = item)
-                    }
-                }
-            }
-        }
-
-        Spacer(modifier = Modifier.height(AppDimens.spaceXs))
     }
 }
 
 @Composable
-private fun SummaryInfoCard(
-    modifier: Modifier = Modifier,
-    title: String,
-    value: String
-) {
-    AppCard(modifier = modifier) {
-        Column(
-            verticalArrangement = Arrangement.spacedBy(AppDimens.spaceXs)
-        ) {
-            Text(
-                text = title,
-                style = MaterialTheme.typography.labelMedium,
-                color = MaterialTheme.colorScheme.onSurfaceVariant
-            )
-            Text(
-                text = value,
-                style = MaterialTheme.typography.titleLarge
-            )
-        }
-    }
-}
-
-data class RecentActivityUi(
-    val icon: String,
-    val title: String,
-    val subtitle: String,
-    val amount: String,
-    val isIncome: Boolean
-)
-
-
-@Composable
-private fun RecentActivityRow(
-    item: RecentActivityUi
-) {
-    Row(
-        modifier = Modifier
-            .fillMaxWidth()
-            .padding(vertical = AppDimens.spaceXs),
-        horizontalArrangement = Arrangement.spacedBy(AppDimens.spaceMd),
-        verticalAlignment = Alignment.CenterVertically
+private fun TotalBalanceCard(amount: String, trend: String) {
+    Surface(
+        modifier = Modifier.fillMaxWidth(),
+        shape = RoundedCornerShape(24.dp),
+        color = MaterialTheme.colorScheme.primary
     ) {
-        Box(
-            modifier = Modifier
-                .size(40.dp)
-                .background(
-                    color = MaterialTheme.colorScheme.primaryContainer,
-                    shape = MaterialTheme.shapes.medium
-                ),
-            contentAlignment = Alignment.Center
-        ) {
-            Text(
-                text = item.icon,
-                style = MaterialTheme.typography.labelLarge,
-                color = MaterialTheme.colorScheme.onPrimaryContainer
-            )
-        }
-
-        Column(modifier = Modifier.weight(1f)) {
-            Text(
-                text = item.title,
-                style = MaterialTheme.typography.titleSmall
-            )
-            Text(
-                text = item.subtitle,
-                style = MaterialTheme.typography.bodySmall,
-                color = MaterialTheme.colorScheme.onSurfaceVariant
-            )
-        }
-
-        Text(
-            text = item.amount,
-            style = MaterialTheme.typography.titleSmall,
-            color = if (item.isIncome) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.onSurface
-        )
-    }
-}
-
-@Composable
-private fun PersonalDashboardEmptyContent(
-    modifier: Modifier = Modifier,
-    onAddExpense: () -> Unit,
-    onAddIncome: () -> Unit,
-    onOpenHistory: () -> Unit,
-    onOpenCategoryManagement: () -> Unit
-) {
-    Column(
-        modifier = modifier,
-        verticalArrangement = Arrangement.spacedBy(AppDimens.spaceLg)
-    ) {
-        AppCard {
-            Column(
-                verticalArrangement = Arrangement.spacedBy(AppDimens.spaceMd)
-            ) {
-                Text(
-                    text = "No transactions yet",
-                    style = MaterialTheme.typography.titleMedium
-                )
-                Text(
-                    text = "Start by adding your first income or expense. The dashboard will show summary, balance, and category spending here.",
-                    style = MaterialTheme.typography.bodyMedium,
-                    color = MaterialTheme.colorScheme.onSurfaceVariant
-                )
-
-                PrimaryButton(
-                    text = "+ Add Expense",
-                    onClick = onAddExpense
-                )
-
-                SecondaryButton(
-                    text = "+ Add Income",
-                    onClick = onAddIncome
-                )
-
-                TextButton(onClick = onOpenHistory) {
-                    Text("Open Transaction History")
-                }
-
-                TextButton(onClick = onOpenCategoryManagement) {
-                    Text("Open Category Management")
-                }
-            }
-        }
-
-        AppCard {
-            Column(
-                verticalArrangement = Arrangement.spacedBy(AppDimens.spaceSm)
-            ) {
-                Text(
-                    text = "What you'll see here",
-                    style = MaterialTheme.typography.titleMedium
-                )
-                Text(
-                    text = "Income, expense, balance, and a simple chart once you have data.",
-                    style = MaterialTheme.typography.bodyMedium,
-                    color = MaterialTheme.colorScheme.onSurfaceVariant
-                )
-            }
-        }
-    }
-}
-
-@Composable
-private fun CategoryBreakdownRow(
-    item: CategoryBreakdown
-) {
-    Column(
-        verticalArrangement = Arrangement.spacedBy(AppDimens.spaceXs)
-    ) {
-        Row(
-            modifier = Modifier.fillMaxWidth(),
-            horizontalArrangement = Arrangement.SpaceBetween
-        ) {
-            Text(
-                text = item.name,
-                style = MaterialTheme.typography.bodyMedium
-            )
-            Text(
-                text = "${item.percentage} • ${item.amount}",
-                style = MaterialTheme.typography.bodyMedium,
-                color = MaterialTheme.colorScheme.onSurfaceVariant
-            )
-        }
-
         Box(
             modifier = Modifier
                 .fillMaxWidth()
-                .height(10.dp)
-                .background(
-                    color = MaterialTheme.colorScheme.surfaceVariant,
-                    shape = MaterialTheme.shapes.small
-                )
+                .background(Brush.linearGradient(listOf(MaterialTheme.colorScheme.primary, MaterialTheme.colorScheme.primaryContainer)))
+                .padding(32.dp)
         ) {
+            // Decorative Glow
             Box(
                 modifier = Modifier
-                    .fillMaxWidth(item.progress.coerceIn(0f, 1f))
-                    .height(10.dp)
-                    .background(
-                        color = MaterialTheme.colorScheme.primary,
-                        shape = MaterialTheme.shapes.small
-                    )
+                    .align(Alignment.TopEnd)
+                    .offset(x = 48.dp, y = (-48).dp)
+                    .size(192.dp)
+                    .background(Color.White.copy(alpha = 0.1f), CircleShape)
+                    .blur(48.dp)
             )
+
+            Column {
+                Text("TỔNG SỐ DƯ", style = MaterialTheme.typography.labelSmall.copy(fontSize = 11.sp, fontWeight = FontWeight.Bold, letterSpacing = 2.sp), color = Color.White.copy(alpha = 0.8f))
+                Spacer(modifier = Modifier.height(8.dp))
+                Row(verticalAlignment = Alignment.Bottom) {
+                    Text(amount, style = MaterialTheme.typography.displayMedium.copy(fontWeight = FontWeight.Black), color = Color.White)
+                    Text(" ₫", style = MaterialTheme.typography.titleLarge.copy(fontWeight = FontWeight.Normal), color = Color.White.copy(alpha = 0.8f), modifier = Modifier.padding(bottom = 8.dp))
+                }
+                Spacer(modifier = Modifier.height(16.dp))
+                Surface(
+                    color = Color.White.copy(alpha = 0.2f),
+                    shape = CircleShape
+                ) {
+                    Row(
+                        modifier = Modifier.padding(horizontal = 12.dp, vertical = 4.dp),
+                        verticalAlignment = Alignment.CenterVertically,
+                        horizontalArrangement = Arrangement.spacedBy(8.dp)
+                    ) {
+                        Icon(Icons.Default.TrendingUp, contentDescription = null, tint = Color.White, modifier = Modifier.size(16.dp))
+                        Text(trend, style = MaterialTheme.typography.labelSmall.copy(fontWeight = FontWeight.Medium), color = Color.White)
+                    }
+                }
+            }
         }
     }
 }
 
-@Preview(showBackground = true, showSystemUi = true)
 @Composable
-private fun PersonalDashboardPreview() {
-    DineSplitTheme {
-        PersonalScreen(
-            onOpenAssistant = {},
-            uiState = PersonalDashboardUiState.default()
-        )
+private fun SummaryCard(
+    title: String,
+    amount: String,
+    icon: ImageVector,
+    containerColor: Color,
+    contentColor: Color,
+    modifier: Modifier = Modifier
+) {
+    Surface(
+        modifier = modifier.height(140.dp),
+        shape = RoundedCornerShape(20.dp),
+        color = containerColor
+    ) {
+        Column(
+            modifier = Modifier.padding(20.dp),
+            verticalArrangement = Arrangement.SpaceBetween
+        ) {
+            Surface(
+                modifier = Modifier.size(40.dp),
+                shape = CircleShape,
+                color = Color.White.copy(alpha = 0.4f)
+            ) {
+                Box(contentAlignment = Alignment.Center) {
+                    Icon(icon, contentDescription = null, tint = contentColor, modifier = Modifier.size(20.dp))
+                }
+            }
+            Column {
+                Text(title, style = MaterialTheme.typography.labelSmall.copy(fontSize = 10.sp, fontWeight = FontWeight.Bold, letterSpacing = 1.sp), color = contentColor.copy(alpha = 0.7f))
+                Text(amount, style = MaterialTheme.typography.titleMedium.copy(fontWeight = FontWeight.Black), color = contentColor)
+            }
+        }
     }
 }
 
-@Preview(showBackground = true, showSystemUi = true)
 @Composable
-private fun PersonalDashboardLoadingPreview() {
-    DineSplitTheme {
-        PersonalScreen(
-            onOpenAssistant = {},
-            uiState = PersonalDashboardUiState.Loading
-        )
+private fun SpendingInsights() {
+    Column(verticalArrangement = Arrangement.spacedBy(16.dp)) {
+        Text("Phân tích chi tiêu", style = MaterialTheme.typography.titleLarge.copy(fontWeight = FontWeight.Bold))
+        
+        Card(
+            modifier = Modifier.fillMaxWidth(),
+            shape = RoundedCornerShape(24.dp),
+            colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surfaceContainerLowest)
+        ) {
+            Column(modifier = Modifier.padding(24.dp), verticalArrangement = Arrangement.spacedBy(24.dp)) {
+                Row(verticalAlignment = Alignment.CenterVertically) {
+                    // Custom Donut Chart
+                    Box(modifier = Modifier.size(100.dp), contentAlignment = Alignment.Center) {
+                        val primary = MaterialTheme.colorScheme.primary
+                        val secondary = MaterialTheme.colorScheme.secondary
+                        val tertiary = MaterialTheme.colorScheme.tertiary
+                        val track = MaterialTheme.colorScheme.surfaceContainerLow
+                        
+                        Canvas(modifier = Modifier.fillMaxSize()) {
+                            drawCircle(color = track, style = Stroke(width = 8.dp.toPx()))
+                            drawArc(color = primary, startAngle = -90f, sweepAngle = 216f, useCenter = false, style = Stroke(width = 8.dp.toPx(), cap = StrokeCap.Round))
+                            drawArc(color = tertiary, startAngle = 126f, sweepAngle = 90f, useCenter = false, style = Stroke(width = 8.dp.toPx(), cap = StrokeCap.Round))
+                            drawArc(color = secondary, startAngle = 216f, sweepAngle = 54f, useCenter = false, style = Stroke(width = 8.dp.toPx(), cap = StrokeCap.Round))
+                        }
+                        Text("Tháng 10", style = MaterialTheme.typography.labelSmall.copy(fontSize = 9.sp, fontWeight = FontWeight.Bold), color = MaterialTheme.colorScheme.outline)
+                    }
+                    
+                    Spacer(modifier = Modifier.width(32.dp))
+                    
+                    Column(modifier = Modifier.weight(1f), verticalArrangement = Arrangement.spacedBy(12.dp)) {
+                        InsightItem(label = "Ăn uống", percentage = "60%", color = MaterialTheme.colorScheme.primary)
+                        InsightItem(label = "Giải trí", percentage = "25%", color = MaterialTheme.colorScheme.tertiary)
+                        InsightItem(label = "Di chuyển", percentage = "15%", color = MaterialTheme.colorScheme.secondary)
+                    }
+                }
+
+                // Goal Card
+                Surface(
+                    modifier = Modifier.fillMaxWidth(),
+                    shape = RoundedCornerShape(16.dp),
+                    color = MaterialTheme.colorScheme.tertiaryContainer.copy(alpha = 0.1f),
+                    border = BorderStroke(1.dp, MaterialTheme.colorScheme.tertiaryContainer.copy(alpha = 0.2f))
+                ) {
+                    Column(modifier = Modifier.padding(16.dp)) {
+                        Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+                            Icon(Icons.Default.Savings, contentDescription = null, tint = MaterialTheme.colorScheme.tertiary, modifier = Modifier.size(16.dp))
+                            Text("MỤC TIÊU TIẾT KIỆM", style = MaterialTheme.typography.labelSmall.copy(fontWeight = FontWeight.Bold, letterSpacing = 1.sp), color = MaterialTheme.colorScheme.tertiary)
+                        }
+                        Spacer(modifier = Modifier.height(8.dp))
+                        Text("85%", style = MaterialTheme.typography.titleLarge.copy(fontWeight = FontWeight.Black), color = MaterialTheme.colorScheme.onTertiaryContainer)
+                        Spacer(modifier = Modifier.height(12.dp))
+                        LinearProgressIndicator(
+                            progress = { 0.85f },
+                            modifier = Modifier.fillMaxWidth().height(6.dp).clip(CircleShape),
+                            color = MaterialTheme.colorScheme.tertiary,
+                            trackColor = MaterialTheme.colorScheme.surfaceContainer
+                        )
+                    }
+                }
+            }
+        }
     }
 }
 
-@Preview(showBackground = true, showSystemUi = true)
 @Composable
-private fun PersonalDashboardEmptyPreview() {
-    DineSplitTheme {
-        PersonalScreen(
-            onOpenAssistant = {},
-            uiState = PersonalDashboardUiState.Empty
-        )
+private fun InsightItem(label: String, percentage: String, color: Color) {
+    Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.SpaceBetween, verticalAlignment = Alignment.CenterVertically) {
+        Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+            Box(modifier = Modifier.size(8.dp).background(color, CircleShape))
+            Text(label, style = MaterialTheme.typography.labelMedium.copy(fontWeight = FontWeight.Medium))
+        }
+        Text(percentage, style = MaterialTheme.typography.labelMedium.copy(fontWeight = FontWeight.Bold))
+    }
+}
+
+@Composable
+private fun RecentTransactions() {
+    Column(verticalArrangement = Arrangement.spacedBy(16.dp)) {
+        Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.SpaceBetween, verticalAlignment = Alignment.CenterVertically) {
+            Text("Giao dịch gần đây", style = MaterialTheme.typography.titleLarge.copy(fontWeight = FontWeight.Bold))
+            Text("Xem tất cả", style = MaterialTheme.typography.labelMedium.copy(fontWeight = FontWeight.Bold), color = MaterialTheme.colorScheme.primary)
+        }
+        
+        Column(verticalArrangement = Arrangement.spacedBy(12.dp)) {
+            TransactionItem(title = "Phở Thìn Lò Đúc", time = "Hôm nay, 12:30", amount = "-120.000 ₫", category = "Ăn uống", icon = Icons.Default.Restaurant, iconColor = MaterialTheme.colorScheme.primary)
+            TransactionItem(title = "Lương tháng 10", time = "Hôm qua, 09:00", amount = "+15.200.000 ₫", category = "Thu nhập", icon = Icons.Default.Payments, iconColor = MaterialTheme.colorScheme.secondary, isIncome = true)
+            TransactionItem(title = "CGV Cinema", time = "20 Th10, 20:15", amount = "-350.000 ₫", category = "Giải trí", icon = Icons.Default.Movie, iconColor = MaterialTheme.colorScheme.tertiary)
+            TransactionItem(title = "Grab Bike", time = "19 Th10, 18:45", amount = "-45.000 ₫", category = "Di chuyển", icon = Icons.Default.DirectionsCar, iconColor = MaterialTheme.colorScheme.onSurface)
+        }
+    }
+}
+
+@Composable
+private fun TransactionItem(
+    title: String,
+    time: String,
+    amount: String,
+    category: String,
+    icon: ImageVector,
+    iconColor: Color,
+    isIncome: Boolean = false
+) {
+    Surface(
+        modifier = Modifier.fillMaxWidth(),
+        shape = RoundedCornerShape(16.dp),
+        color = MaterialTheme.colorScheme.surfaceContainerLowest
+    ) {
+        Row(
+            modifier = Modifier.padding(16.dp),
+            verticalAlignment = Alignment.CenterVertically,
+            horizontalArrangement = Arrangement.SpaceBetween
+        ) {
+            Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(16.dp)) {
+                Box(
+                    modifier = Modifier.size(48.dp).background(iconColor.copy(alpha = 0.1f), CircleShape),
+                    contentAlignment = Alignment.Center
+                ) {
+                    Icon(icon, contentDescription = null, tint = iconColor, modifier = Modifier.size(24.dp))
+                }
+                Column {
+                    Text(title, style = MaterialTheme.typography.bodyLarge.copy(fontWeight = FontWeight.Bold))
+                    Text(time, style = MaterialTheme.typography.labelSmall, color = MaterialTheme.colorScheme.outline)
+                }
+            }
+            Column(horizontalAlignment = Alignment.End) {
+                Text(amount, style = MaterialTheme.typography.bodyLarge.copy(fontWeight = FontWeight.Black), color = if (isIncome) MaterialTheme.colorScheme.secondary else MaterialTheme.colorScheme.onSurface)
+                Surface(
+                    color = if (isIncome) MaterialTheme.colorScheme.secondary.copy(alpha = 0.1f) else MaterialTheme.colorScheme.surfaceContainer,
+                    shape = CircleShape
+                ) {
+                    Text(
+                        category,
+                        modifier = Modifier.padding(horizontal = 8.dp, vertical = 2.dp),
+                        style = MaterialTheme.typography.labelSmall.copy(fontSize = 9.sp, fontWeight = FontWeight.Bold),
+                        color = if (isIncome) MaterialTheme.colorScheme.secondary else MaterialTheme.colorScheme.outline
+                    )
+                }
+            }
+        }
+    }
+}
+
+@Preview(showBackground = true)
+@Composable
+fun PersonalScreenPreview() {
+    DineSplitTheme(darkTheme = false) {
+        PersonalScreen(onOpenSearch = {}, onAddTransaction = {})
     }
 }
