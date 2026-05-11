@@ -1,128 +1,114 @@
 package com.example.dinesplit.core.ui
 
 import androidx.compose.foundation.background
-import androidx.compose.foundation.layout.Box
-import androidx.compose.foundation.layout.fillMaxWidth
-import androidx.compose.foundation.layout.heightIn
-import androidx.compose.foundation.layout.padding
-import androidx.compose.material3.Button
-import androidx.compose.material3.ButtonDefaults
-import androidx.compose.material3.MaterialTheme
-import androidx.compose.material3.Surface
-import androidx.compose.material3.TextButton
-import androidx.compose.material3.Text
+import androidx.compose.foundation.layout.*
+import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.material3.*
 import androidx.compose.runtime.Composable
+import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.draw.shadow
 import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
-import androidx.compose.ui.Alignment
+import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.unit.dp
 
 @Composable
-fun PrimaryButton(
+fun DineSplitButton(
     text: String,
     onClick: () -> Unit,
     modifier: Modifier = Modifier,
-    enabled: Boolean = true
+    isLoading: Boolean = false,
+    enabled: Boolean = true,
+    icon: (@Composable () -> Unit)? = null
 ) {
-    Surface(
+    Button(
         onClick = onClick,
-        enabled = enabled,
         modifier = modifier
             .fillMaxWidth()
-            .heightIn(min = AppDimens.buttonHeight)
-            .background(
-                brush = Brush.linearGradient(
-                    colors = listOf(
-                        MaterialTheme.colorScheme.primary,
-                        MaterialTheme.colorScheme.primaryContainer
-                    )
-                ),
-                shape = AppShapes.full
+            .height(AppDimens.buttonHeight)
+            .shadow(
+                elevation = AppDimens.elevHigh,
+                shape = RoundedCornerShape(AppDimens.buttonHeight / 2),
+                spotColor = MaterialTheme.colorScheme.primary.copy(alpha = 0.3f)
             ),
-        shape = AppShapes.full,
-        color = Color.Transparent,
-        contentColor = MaterialTheme.colorScheme.onPrimary,
-        shadowElevation = AppDimens.cardElevation
+        shape = RoundedCornerShape(AppDimens.buttonHeight / 2),
+        colors = ButtonDefaults.buttonColors(containerColor = Color.Transparent),
+        contentPadding = PaddingValues(0.dp),
+        enabled = enabled && !isLoading
     ) {
         Box(
-            modifier = Modifier.padding(horizontal = AppDimens.spaceLg),
+            modifier = Modifier
+                .fillMaxSize()
+                .background(
+                    Brush.linearGradient(
+                        listOf(MaterialTheme.colorScheme.primary, MaterialTheme.colorScheme.primaryContainer)
+                    )
+                ),
             contentAlignment = Alignment.Center
         ) {
-            Text(
-                text = text,
-                style = MaterialTheme.typography.titleSmall,
-                color = MaterialTheme.colorScheme.onPrimary
-            )
+            if (isLoading) {
+                CircularProgressIndicator(
+                    modifier = Modifier.size(24.dp),
+                    color = MaterialTheme.colorScheme.onPrimary,
+                    strokeWidth = 2.dp
+                )
+            } else {
+                Row(
+                    verticalAlignment = Alignment.CenterVertically,
+                    horizontalArrangement = Arrangement.Center
+                ) {
+                    Text(
+                        text = text,
+                        style = MaterialTheme.typography.titleMedium.copy(fontWeight = FontWeight.Bold),
+                        color = MaterialTheme.colorScheme.onPrimary
+                    )
+                    if (icon != null) {
+                        Spacer(modifier = Modifier.width(AppDimens.spaceSm))
+                        icon()
+                    }
+                }
+            }
         }
     }
 }
 
 @Composable
-fun AppButton(
+fun DineSplitOutlinedButton(
     text: String,
     onClick: () -> Unit,
     modifier: Modifier = Modifier,
-    enabled: Boolean = true
+    icon: (@Composable () -> Unit)? = null
 ) {
-    PrimaryButton(
-        text = text,
+    OutlinedButton(
         onClick = onClick,
-        modifier = modifier,
-        enabled = enabled
-    )
-}
-
-@Composable
-fun SecondaryButton(
-    text: String,
-    onClick: () -> Unit,
-    modifier: Modifier = Modifier,
-    enabled: Boolean = true
-) {
-    Button(
-        onClick = onClick,
-        enabled = enabled,
         modifier = modifier
             .fillMaxWidth()
-            .heightIn(min = AppDimens.buttonHeight),
-        shape = AppShapes.full,
-        colors = ButtonDefaults.buttonColors(
-            containerColor = MaterialTheme.colorScheme.secondary,
-            contentColor = MaterialTheme.colorScheme.onSecondary,
-            disabledContainerColor = MaterialTheme.colorScheme.secondary.copy(alpha = 0.35f),
-            disabledContentColor = MaterialTheme.colorScheme.onSecondary.copy(alpha = 0.6f)
+            .height(AppDimens.buttonHeight),
+        shape = RoundedCornerShape(AppDimens.buttonHeight / 2),
+        colors = ButtonDefaults.outlinedButtonColors(containerColor = Color.White),
+        border = ButtonDefaults.outlinedButtonBorder.copy(
+            brush = Brush.linearGradient(
+                colors = listOf(
+                    MaterialTheme.colorScheme.outlineVariant.copy(alpha = 0.2f),
+                    MaterialTheme.colorScheme.outlineVariant.copy(alpha = 0.2f)
+                )
+            )
         )
     ) {
-        Text(
-            text = text,
-            style = MaterialTheme.typography.titleSmall
-        )
-    }
-}
-
-@Suppress("unused")
-@Composable
-fun TertiaryButton(
-    text: String,
-    onClick: () -> Unit,
-    modifier: Modifier = Modifier,
-    enabled: Boolean = true
-) {
-    TextButton(
-        onClick = onClick,
-        enabled = enabled,
-        modifier = modifier
-            .fillMaxWidth()
-            .heightIn(min = AppDimens.buttonHeight),
-        shape = AppShapes.full,
-        colors = ButtonDefaults.textButtonColors(
-            contentColor = MaterialTheme.colorScheme.primary,
-            disabledContentColor = MaterialTheme.colorScheme.primary.copy(alpha = 0.5f)
-        )
-    ) {
-        Text(
-            text = text,
-            style = MaterialTheme.typography.titleSmall
-        )
+        Row(
+            verticalAlignment = Alignment.CenterVertically,
+            horizontalArrangement = Arrangement.Center
+        ) {
+            if (icon != null) {
+                icon()
+                Spacer(modifier = Modifier.width(AppDimens.spaceMd))
+            }
+            Text(
+                text = text,
+                style = MaterialTheme.typography.titleSmall.copy(fontWeight = FontWeight.Bold),
+                color = MaterialTheme.colorScheme.onSurface
+            )
+        }
     }
 }
