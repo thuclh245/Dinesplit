@@ -11,6 +11,7 @@ sealed class AppRoute(val route: String) {
 
     data object Feed : AppRoute("feed")
     data object CreatePost : AppRoute("create_post")
+    data object CreateBill : AppRoute("create_bill")
     data object Search : AppRoute("search")
     data object PostDetail : AppRoute("post_detail") {
         const val ARG_ID = "postId"
@@ -29,6 +30,8 @@ sealed class AppRoute(val route: String) {
         }
     }
     data object Split : AppRoute("split")
+    data object GroupList : AppRoute("group_list")
+    data object GroupDetail : AppRoute("group_detail")
     data object Personal : AppRoute("personal")
     data object AddTransaction : AppRoute("add_transaction") {
         const val ARG_TYPE = "type"

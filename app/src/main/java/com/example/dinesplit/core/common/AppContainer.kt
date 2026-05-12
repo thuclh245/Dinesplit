@@ -69,5 +69,9 @@ object AppContainer {
             getCurrentUserProfileUseCase = getCurrentUserProfileUseCase(context)
         )
     }
+
+    fun splitRepository(context: Context): SplitRepository {
+        return FirebaseSplitRepository.getInstance(context)
+    }
 }
 

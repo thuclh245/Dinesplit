@@ -35,7 +35,9 @@ fun SplitScreen(
     onOpenNotifications: () -> Unit,
     onOpenSearch: () -> Unit,
     onNewGroup: () -> Unit,
-    onNewExpense: () -> Unit
+    onNewExpense: () -> Unit,
+    onViewAllGroups: () -> Unit,
+    onGroupClick: () -> Unit
 ) {
     Scaffold(
         topBar = {
@@ -104,15 +106,15 @@ fun SplitScreen(
                         verticalAlignment = Alignment.Bottom
                     ) {
                         Text(
-                            "Nhóm của bạn",
-                            style = MaterialTheme.typography.headlineSmall.copy(fontWeight = FontWeight.ExtraBold)
-                        )
-                        Text(
-                            "Xem tất cả",
-                            style = MaterialTheme.typography.labelSmall.copy(fontWeight = FontWeight.Bold),
-                            color = MaterialTheme.colorScheme.primary,
-                            modifier = Modifier.clickable { }
-                        )
+                                "Nhóm của bạn",
+                                style = MaterialTheme.typography.headlineSmall.copy(fontWeight = FontWeight.ExtraBold)
+                            )
+                            Text(
+                                "Xem tất cả",
+                                style = MaterialTheme.typography.labelSmall.copy(fontWeight = FontWeight.Bold),
+                                color = MaterialTheme.colorScheme.primary,
+                                modifier = Modifier.clickable { onViewAllGroups() }
+                            )
                     }
                     Spacer(modifier = Modifier.height(16.dp))
                     LazyRow(
@@ -130,7 +132,8 @@ fun SplitScreen(
                                     "https://lh3.googleusercontent.com/aida-public/AB6AXuAfYcO9jIaHFAy40rvG3ZeumiPaCSHqM8JklUt4-f3AFz1YuReCTFOxdRhc7tl18jk-P44QArUL3DsJ7EFTb0HJxVz2R3HQsHBZsk8-7BJLmaG8IClGKpMvMXT1Ul2gsWcPSP0zt5tLR7PofI8l0LRt20-UYnJ0SQg2y__LUNgCzG49LyqddGaTl_s3TYn-tew8fOGe6Nbhbg6QHOLpA9us25y_3J1HJ46YPlqDSsqjXq6maFBn6W67EhvDKbSrvDkHeGQhFlGDnF0"
                                 ),
                                 extraMembers = 3,
-                                containerColor = MaterialTheme.colorScheme.surfaceContainer
+                                containerColor = MaterialTheme.colorScheme.surfaceContainer,
+                                onClick = { onGroupClick() }
                             )
                         }
                         item {
@@ -143,7 +146,8 @@ fun SplitScreen(
                                     "https://lh3.googleusercontent.com/aida-public/AB6AXuA7gL19DfBLY4ZF-lgXkphKLVIYRaxB7Lz0QS4bc3VO47YvnBKTjpY--NH2LyOm-Jx6fJRyyQpIwSxHYKNFEhSlm0Zg07v7RXXB8rnYpeNeaSoQmI8MQHE3XaTbbkNfPDJwUWAQBGU7pjM9invkWYs9RiYG47luy0M5hvggOXwIJm-46KGeUUG7gZBk5EIWzM49lSD3rY9lnGz2iVw2__XEVHRniOcfB1Ch_x7B1xfv71Ytwjz9P25RN16WDti0-KOINCvtltNeh-c",
                                     "https://lh3.googleusercontent.com/aida-public/AB6AXuDn6mQNJRxPZ_JecfKdipvnL6MZMH2Eo4oNZnVD8QI5QcvFGv7MdFH1DpAnTSABYh1bA6Di5-qsPK4SRvonyYUGHYz0YIf7jZE2k2LHQm4i97ffUv4NMGlGoSZQ-BjgmvEYg43CV68P9-IQrsggCqcmahCqpt80GS8VegSmkgqVwWAhGUPZyMsBEoG6-_o1vrq5LQMOabSV6OBwfetSC2oRew69dYSP7cidixg7E2nH2QHJMVE1n-9wUFL5zotw2sXPY3FsJf7vzHQ"
                                 ),
-                                containerColor = MaterialTheme.colorScheme.secondaryContainer.copy(alpha = 0.3f)
+                                containerColor = MaterialTheme.colorScheme.secondaryContainer.copy(alpha = 0.3f),
+                                onClick = { onGroupClick() }
                             )
                         }
                         item {
@@ -269,9 +273,11 @@ private fun GroupCard(
     extraMembers: Int = 0,
     isSettled: Boolean = false,
     containerColor: Color
+    ,
+    onClick: () -> Unit = {}
 ) {
     Card(
-        modifier = Modifier.width(240.dp).height(192.dp),
+        modifier = Modifier.width(240.dp).height(192.dp).clickable { onClick() },
         shape = RoundedCornerShape(24.dp),
         colors = CardDefaults.cardColors(containerColor = containerColor)
     ) {
@@ -381,7 +387,9 @@ fun SplitScreenPreview() {
             onOpenNotifications = {},
             onOpenSearch = {},
             onNewGroup = {},
-            onNewExpense = {}
+            onNewExpense = {},
+            onViewAllGroups = {},
+            onGroupClick = {}
         )
     }
 }

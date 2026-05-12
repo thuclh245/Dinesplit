@@ -21,6 +21,12 @@ import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
+import androidx.compose.runtime.collectAsState
+import androidx.compose.runtime.LaunchedEffect
+import androidx.compose.runtime.rememberCoroutineScope
+import kotlinx.coroutines.launch
+import androidx.compose.ui.platform.LocalContext
+import com.example.dinesplit.core.common.AppContainer
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
@@ -41,20 +47,24 @@ private data class Cb_SplitMember(
 
 @Composable
 fun CreateBillScreen(
-    onBack: () -> Unit
+    onBack: () -> Unit,
+    groupId: String = "g1",
+    viewModel: CreateBillViewModel? = null
 ) {
+    val context = LocalContext.current
+    val vm = viewModel ?: remember { CreateBillViewModel(repository = AppContainer.splitRepository(context), groupId = groupId) }
     val colorScheme = MaterialTheme.colorScheme
     var billName by remember { mutableStateOf("") }
 
-    val members = listOf(
-        Cb_SplitMember("Bạn", "B", "400.000 đ", true),
-        Cb_SplitMember("Minh", "M", "400.000 đ", false),
-        Cb_SplitMember("Sarah Chen", "S", "400.000 đ", false)
-    )
+    val uiState by vm.uiState.collectAsState()
+    val members = uiState.members
+    val snackbarHostState = remember { androidx.compose.material3.SnackbarHostState() }
+    val coroutineScope = rememberCoroutineScope()
 
     Scaffold(
         containerColor = colorScheme.surface,
-        topBar = { Cb_TopBar(onBack = onBack) }
+        topBar = { Cb_TopBar(onBack = onBack) },
+        snackbarHost = { androidx.compose.material3.SnackbarHost(snackbarHostState) }
         // KHÔNG DÙNG bottomBar NỮA ĐỂ KHÔNG BỊ LỖI CUỘN
     ) { paddingValues ->
 
@@ -70,18 +80,31 @@ fun CreateBillScreen(
                 contentPadding = PaddingValues(start = 24.dp, end = 24.dp, top = 16.dp, bottom = 120.dp),
                 verticalArrangement = Arrangement.spacedBy(24.dp)
             ) {
-                item { Cb_MainInfoCard(billName = billName, onNameChange = { billName = it }) }
-                item { Cb_PayerSection() }
+                item { Cb_MainInfoCard(billName = uiState.billName, onNameChange = { vm.onBillNameChange(it) }, totalAmount = uiState.totalAmountStr, onTotalAmountChange = { vm.onTotalAmountChange(it) }) }
+                item { Cb_PayerSection(members = members, currentPayerId = uiState.payerId, onSelectPayer = { vm.setPayer(it) }) }
                 item { Cb_SplitMethodTabs() }
-                item { Cb_SplitDetailsList(members = members) }
+                item { Cb_SplitDetailsList(members = members, selectedIds = uiState.selectedMemberIds, payerId = uiState.payerId, onToggle = { vm.toggleMemberSelection(it) }, onSelectPayer = { vm.setPayer(it) }) }
             }
 
             // LỚP TRÊN: Nút bấm nổi lơ lửng ở dưới cùng
-            Box(modifier = Modifier.align(Alignment.BottomCenter)) {
-                Cb_BottomAction()
+                Box(modifier = Modifier.align(Alignment.BottomCenter)) {
+                    Cb_BottomAction(
+                        isLoading = uiState.isLoading,
+                        onConfirm = { vm.saveBill() }
+                    )
             }
         }
     }
+
+        LaunchedEffect(uiState.isSaved) {
+            if (uiState.isSaved) onBack()
+        }
+
+        LaunchedEffect(uiState.error) {
+            uiState.error?.let { err ->
+                coroutineScope.launch { snackbarHostState.showSnackbar(err) }
+            }
+        }
 }
 
 // --- CÁC COMPONENT GIAO DIỆN ---
@@ -119,7 +142,7 @@ private fun Cb_TopBar(onBack: () -> Unit) {
 }
 
 @Composable
-private fun Cb_MainInfoCard(billName: String, onNameChange: (String) -> Unit) {
+private fun Cb_MainInfoCard(billName: String, onNameChange: (String) -> Unit, totalAmount: String, onTotalAmountChange: (String) -> Unit) {
     val colorScheme = MaterialTheme.colorScheme
     Card(
         modifier = Modifier.fillMaxWidth(),
@@ -157,7 +180,12 @@ private fun Cb_MainInfoCard(billName: String, onNameChange: (String) -> Unit) {
 
             Text(text = "TỔNG CỘNG", fontSize = 12.sp, fontWeight = FontWeight.Bold, color = colorScheme.onSurfaceVariant.copy(alpha = 0.6f), letterSpacing = 1.sp)
             Spacer(modifier = Modifier.height(4.dp))
-            Text(text = "1.200.000 đ", fontSize = 32.sp, fontWeight = FontWeight.ExtraBold, color = colorScheme.primary)
+            BasicTextField(
+                value = totalAmount,
+                onValueChange = onTotalAmountChange,
+                textStyle = TextStyle(fontSize = 32.sp, fontWeight = FontWeight.ExtraBold, color = colorScheme.primary),
+                modifier = Modifier.fillMaxWidth()
+            )
 
             Spacer(modifier = Modifier.height(16.dp))
 
@@ -176,8 +204,9 @@ private fun Cb_MainInfoCard(billName: String, onNameChange: (String) -> Unit) {
 }
 
 @Composable
-private fun Cb_PayerSection() {
+private fun Cb_PayerSection(members: List<com.example.dinesplit.domain.model.Member>, currentPayerId: String, onSelectPayer: (String) -> Unit) {
     val colorScheme = MaterialTheme.colorScheme
+    var expanded by remember { mutableStateOf(false) }
     Column {
         Text(
             text = "NGƯỜI THANH TOÁN",
@@ -199,7 +228,8 @@ private fun Cb_PayerSection() {
                 verticalAlignment = Alignment.CenterVertically,
                 horizontalArrangement = Arrangement.SpaceBetween
             ) {
-                Row(verticalAlignment = Alignment.CenterVertically) {
+                Row(verticalAlignment = Alignment.CenterVertically, modifier = Modifier.clickable { expanded = true }) {
+                    val payer = members.find { it.id == currentPayerId } ?: members.firstOrNull()
                     Box(
                         modifier = Modifier
                             .size(40.dp)
@@ -209,15 +239,23 @@ private fun Cb_PayerSection() {
                             .background(colorScheme.onSurfaceVariant),
                         contentAlignment = Alignment.Center
                     ) {
-                        Text("B", color = colorScheme.surfaceContainerLowest, fontWeight = FontWeight.Bold)
+                        Text(payer?.initial ?: "-", color = colorScheme.surfaceContainerLowest, fontWeight = FontWeight.Bold)
                     }
                     Spacer(modifier = Modifier.width(12.dp))
                     Column {
-                        Text("Bạn", fontWeight = FontWeight.Bold, color = colorScheme.onSurface)
+                        Text(payer?.name ?: "Không có", fontWeight = FontWeight.Bold, color = colorScheme.onSurface)
                         Text("Trả toàn bộ hóa đơn", fontSize = 12.sp, color = colorScheme.onSurfaceVariant)
                     }
                 }
                 Icon(Icons.Default.KeyboardArrowDown, contentDescription = "Đổi người", tint = colorScheme.onSurfaceVariant)
+            }
+            DropdownMenu(expanded = expanded, onDismissRequest = { expanded = false }) {
+                members.forEach { m ->
+                    DropdownMenuItem(text = { Text(m.name) }, onClick = {
+                        onSelectPayer(m.id)
+                        expanded = false
+                    })
+                }
             }
         }
     }
@@ -257,7 +295,13 @@ private fun Cb_SplitMethodTabs() {
 }
 
 @Composable
-private fun Cb_SplitDetailsList(members: List<Cb_SplitMember>) {
+private fun Cb_SplitDetailsList(
+    members: List<com.example.dinesplit.domain.model.Member>,
+    selectedIds: Set<String>,
+    payerId: String,
+    onToggle: (String) -> Unit,
+    onSelectPayer: (String) -> Unit
+) {
     val colorScheme = MaterialTheme.colorScheme
     Card(
         modifier = Modifier.fillMaxWidth(),
@@ -267,6 +311,7 @@ private fun Cb_SplitDetailsList(members: List<Cb_SplitMember>) {
     ) {
         Column {
             members.forEach { member ->
+                val included = selectedIds.contains(member.id)
                 Row(
                     modifier = Modifier
                         .fillMaxWidth()
@@ -280,7 +325,8 @@ private fun Cb_SplitDetailsList(members: List<Cb_SplitMember>) {
                             modifier = Modifier
                                 .size(40.dp)
                                 .clip(CircleShape)
-                                .background(if (member.isMe) colorScheme.primary else colorScheme.outlineVariant),
+                                .background(if (member.id == payerId) colorScheme.primary else if (member.isMe) colorScheme.primary else colorScheme.outlineVariant)
+                                .clickable { onSelectPayer(member.id) },
                             contentAlignment = Alignment.Center
                         ) {
                             Text(member.initial, color = colorScheme.surfaceContainerLowest, fontWeight = FontWeight.Bold)
@@ -289,7 +335,7 @@ private fun Cb_SplitDetailsList(members: List<Cb_SplitMember>) {
                         Column {
                             Text(member.name, fontWeight = FontWeight.Bold, color = colorScheme.onSurface)
                             Text(
-                                text = member.amount,
+                                text = "${if (included) "Đang tham gia" else "Không tham gia"}",
                                 fontSize = 12.sp,
                                 fontWeight = FontWeight.Medium,
                                 color = if (member.isMe) colorScheme.primary else colorScheme.onSurfaceVariant
@@ -301,10 +347,11 @@ private fun Cb_SplitDetailsList(members: List<Cb_SplitMember>) {
                         modifier = Modifier
                             .size(24.dp)
                             .clip(CircleShape)
-                            .background(colorScheme.primary),
+                            .background(if (included) colorScheme.primary else colorScheme.surfaceContainerHigh)
+                            .clickable { onToggle(member.id) },
                         contentAlignment = Alignment.Center
                     ) {
-                        Icon(Icons.Default.Check, contentDescription = null, tint = colorScheme.surfaceContainerLowest, modifier = Modifier.size(16.dp))
+                        Icon(Icons.Default.Check, contentDescription = null, tint = if (included) colorScheme.surfaceContainerLowest else colorScheme.onSurfaceVariant, modifier = Modifier.size(16.dp))
                     }
                 }
                 HorizontalDivider(color = colorScheme.outlineVariant.copy(alpha = 0.2f))
@@ -328,7 +375,7 @@ private fun Cb_SplitDetailsList(members: List<Cb_SplitMember>) {
 }
 
 @Composable
-private fun Cb_BottomAction() {
+private fun Cb_BottomAction(isLoading: Boolean = false, onConfirm: () -> Unit) {
     val colorScheme = MaterialTheme.colorScheme
     Box(
         modifier = Modifier
@@ -343,7 +390,8 @@ private fun Cb_BottomAction() {
             .padding(horizontal = 24.dp, vertical = 24.dp)
     ) {
         Button(
-            onClick = { /* Xử lý xác nhận */ },
+            onClick = { if (!isLoading) onConfirm() },
+            enabled = !isLoading,
             modifier = Modifier
                 .fillMaxWidth()
                 .height(56.dp),
@@ -357,12 +405,16 @@ private fun Cb_BottomAction() {
                     .background(brush = Brush.horizontalGradient(listOf(colorScheme.primaryContainer, colorScheme.primary))),
                 contentAlignment = Alignment.Center
             ) {
-                Text(
-                    text = "Xác nhận hóa đơn",
-                    color = colorScheme.surfaceContainerLowest,
-                    fontSize = 16.sp,
-                    fontWeight = FontWeight.ExtraBold
-                )
+                if (isLoading) {
+                    CircularProgressIndicator(color = colorScheme.surfaceContainerLowest, strokeWidth = 2.dp, modifier = Modifier.size(20.dp))
+                } else {
+                    Text(
+                        text = "Xác nhận hóa đơn",
+                        color = colorScheme.surfaceContainerLowest,
+                        fontSize = 16.sp,
+                        fontWeight = FontWeight.ExtraBold
+                    )
+                }
             }
         }
     }

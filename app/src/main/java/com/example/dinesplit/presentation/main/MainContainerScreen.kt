@@ -35,6 +35,9 @@ import com.example.dinesplit.presentation.profile.OtherUserProfileScreen
 import com.example.dinesplit.presentation.profile.ProfileScreen
 import com.example.dinesplit.presentation.profile.ProfileUiEffect
 import com.example.dinesplit.presentation.profile.ProfileViewModel
+import com.example.dinesplit.presentation.split.CreateBillScreen
+import com.example.dinesplit.presentation.split.GroupDetailScreen
+import com.example.dinesplit.presentation.split.GroupListScreen
 import com.example.dinesplit.presentation.split.SplitScreen
 import com.example.dinesplit.ui.theme.DineSplitTheme
 import kotlinx.coroutines.flow.collectLatest
@@ -109,8 +112,27 @@ fun MainContainerScreen(
                     userAvatarUrl = profileUiState.profile?.avatarUrl,
                     onOpenNotifications = onOpenNotifications,
                     onOpenSearch = { mainNavController.navigate(AppRoute.Search.route) },
-                    onNewGroup = { /* TODO */ },
-                    onNewExpense = { /* TODO */ }
+                    onNewGroup = { mainNavController.navigate(AppRoute.GroupList.route) },
+                    onNewExpense = { mainNavController.navigate(AppRoute.CreateBill.route) },
+                    onViewAllGroups = { mainNavController.navigate(AppRoute.GroupList.route) },
+                    onGroupClick = { mainNavController.navigate(AppRoute.GroupDetail.route) }
+                )
+            }
+
+            composable(AppRoute.GroupList.route) {
+                GroupListScreen(
+                    onNavigateToGroupDetail = { mainNavController.navigate(AppRoute.GroupDetail.route) },
+                    onNavigateToCreateGroup = { mainNavController.navigate(AppRoute.CreateBill.route) },
+                    onNavigateToAllGroups = { /* already here */ }
+                )
+            }
+
+            composable(AppRoute.GroupDetail.route) {
+                GroupDetailScreen(
+                    onBack = { mainNavController.navigateUp() },
+                    onNavigateToCreateBill = { mainNavController.navigate(AppRoute.CreateBill.route) },
+                    onNavigateToBillDetail = { mainNavController.navigate(AppRoute.CreateBill.route) },
+                    onNavigateToSettleSummary = { /* TODO */ }
                 )
             }
             composable(AppRoute.Personal.route) {
@@ -146,6 +168,9 @@ fun MainContainerScreen(
             }
             composable(AppRoute.CreatePost.route) {
                 CreatePostScreen(onBack = { mainNavController.navigateUp() })
+            }
+            composable(AppRoute.CreateBill.route) {
+                CreateBillScreen(onBack = { mainNavController.navigateUp() })
             }
             composable(AppRoute.PostDetail.routeWithArg) { backStackEntry ->
                 val postId = backStackEntry.arguments?.getString(AppRoute.PostDetail.ARG_ID) ?: ""
