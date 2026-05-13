@@ -21,6 +21,12 @@ class FakeSplitRepository : SplitRepository {
 
     override fun getGroups(): Flow<List<Group>> = MutableStateFlow(emptyList())
 
+    override fun getGroup(groupId: String): Flow<Group?> = MutableStateFlow(null)
+
+    override fun getBills(groupId: String): Flow<List<Bill>> = MutableStateFlow(emptyList())
+
+    override fun getBill(groupId: String, billId: String): Flow<Bill?> = MutableStateFlow(lastSavedBill)
+
     override suspend fun createGroup(group: Group) = Unit
 
     override suspend fun joinGroup(inviteCode: String) = Unit

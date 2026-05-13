@@ -6,10 +6,13 @@ import com.example.dinesplit.domain.model.Bill
 import com.example.dinesplit.domain.model.BillItem
 import com.example.dinesplit.domain.model.Group
 import com.example.dinesplit.domain.model.Member
+import com.example.dinesplit.domain.model.SplitMethod
 import com.example.dinesplit.domain.repository.SplitRepository
 import com.google.android.gms.tasks.Task
 import com.google.firebase.firestore.FirebaseFirestore
 import com.google.firebase.firestore.ListenerRegistration
+import com.google.firebase.firestore.DocumentSnapshot
+import com.google.firebase.firestore.FieldValue
 import com.google.firebase.firestore.QuerySnapshot
 import com.google.firebase.firestore.SetOptions
 import kotlinx.coroutines.channels.awaitClose
@@ -32,6 +35,52 @@ class FirebaseSplitRepository(
                     return@addSnapshotListener
                 }
                 trySend(snapshot?.toGroups().orEmpty())
+            }
+
+        awaitClose { registration.remove() }
+    }
+
+    override fun getGroup(groupId: String): Flow<Group?> = callbackFlow {
+        val registration = firestore.collection("groups")
+            .document(groupId)
+            .addSnapshotListener { snapshot, error ->
+                if (error != null) {
+                    close(error)
+                    return@addSnapshotListener
+                }
+                trySend(snapshot?.toGroup())
+            }
+
+        awaitClose { registration.remove() }
+    }
+
+    override fun getBills(groupId: String): Flow<List<Bill>> = callbackFlow {
+        val registration = firestore.collection("groups")
+            .document(groupId)
+            .collection("bills")
+            .orderBy("date", com.google.firebase.firestore.Query.Direction.DESCENDING)
+            .addSnapshotListener { snapshot, error ->
+                if (error != null) {
+                    close(error)
+                    return@addSnapshotListener
+                }
+                trySend(snapshot?.toBills().orEmpty())
+            }
+
+        awaitClose { registration.remove() }
+    }
+
+    override fun getBill(groupId: String, billId: String): Flow<Bill?> = callbackFlow {
+        val registration = firestore.collection("groups")
+            .document(groupId)
+            .collection("bills")
+            .document(billId)
+            .addSnapshotListener { snapshot, error ->
+                if (error != null) {
+                    close(error)
+                    return@addSnapshotListener
+                }
+                trySend(snapshot?.toBill())
             }
 
         awaitClose { registration.remove() }
@@ -62,25 +111,34 @@ class FirebaseSplitRepository(
 
     override suspend fun saveBill(bill: Bill): Result<Unit> {
         return runCatching {
-            val billsColl = firestore.collection("groups").document(bill.groupId).collection("bills")
+            val groupRef = firestore.collection("groups").document(bill.groupId)
+            val billsColl = groupRef.collection("bills")
             val docRef = billsColl.document(bill.id)
             docRef.set(bill.toMap(), SetOptions.merge()).awaitFirebase()
+            groupRef.update(
+                mapOf(
+                    "totalExpense" to FieldValue.increment(bill.totalAmount),
+                    "updatedAt" to System.currentTimeMillis()
+                )
+            ).awaitFirebase()
         }
     }
 
     private fun QuerySnapshot.toGroups(): List<Group> {
-        return documents.mapNotNull { doc ->
-            val name = doc.getString("name") ?: return@mapNotNull null
-            Group(
-                id = doc.getString("id") ?: doc.id,
-                name = name,
-                imageUrl = doc.getString("imageUrl"),
-                memberCount = doc.getLong("memberCount")?.toInt() ?: 0,
-                totalExpense = doc.getDouble("totalExpense") ?: 0.0,
-                yourBalance = doc.getDouble("yourBalance") ?: 0.0,
-                createdAt = doc.getLong("createdAt") ?: 0L
-            )
-        }
+        return documents.mapNotNull { doc -> doc.toGroup() }
+    }
+
+    private fun DocumentSnapshot.toGroup(): Group? {
+        val name = getString("name") ?: return null
+        return Group(
+            id = getString("id") ?: id,
+            name = name,
+            imageUrl = getString("imageUrl"),
+            memberCount = getLong("memberCount")?.toInt() ?: 0,
+            totalExpense = getDouble("totalExpense") ?: 0.0,
+            yourBalance = getDouble("yourBalance") ?: 0.0,
+            createdAt = getLong("createdAt") ?: 0L
+        )
     }
 
     private fun QuerySnapshot.toMembers(): List<Member> {
@@ -90,6 +148,57 @@ class FirebaseSplitRepository(
             val initial = doc.getString("initial") ?: name.firstOrNull()?.toString().orEmpty()
             val isMe = doc.getBoolean("isMe") ?: false
             Member(id = id, name = name, initial = initial, isMe = isMe)
+        }
+    }
+
+    private fun QuerySnapshot.toBills(): List<Bill> {
+        return documents.mapNotNull { doc -> doc.toBill() }
+    }
+
+    private fun DocumentSnapshot.toBill(): Bill? {
+        val groupId = getString("groupId") ?: reference.parent.parent?.id ?: return null
+        val name = getString("name") ?: return null
+        val method = runCatching {
+            SplitMethod.valueOf(getString("method") ?: SplitMethod.EQUAL.name)
+        }.getOrDefault(SplitMethod.EQUAL)
+
+        return Bill(
+            id = getString("id") ?: id,
+            groupId = groupId,
+            name = name,
+            totalAmount = getDouble("totalAmount") ?: 0.0,
+            payerId = getString("payerId").orEmpty(),
+            method = method,
+            items = getBillItems(),
+            shares = getShares(),
+            date = getLong("date") ?: 0L
+        )
+    }
+
+    private fun DocumentSnapshot.getBillItems(): List<BillItem> {
+        @Suppress("UNCHECKED_CAST")
+        val rawItems = get("items") as? List<Map<String, Any?>> ?: return emptyList()
+
+        return rawItems.mapNotNull { item ->
+            val name = item["name"] as? String ?: return@mapNotNull null
+            @Suppress("UNCHECKED_CAST")
+            val sharedBy = item["sharedByMemberIds"] as? List<String> ?: emptyList()
+
+            BillItem(
+                id = item["id"] as? String ?: "",
+                name = name,
+                price = (item["price"] as? Number)?.toDouble() ?: 0.0,
+                sharedByMemberIds = sharedBy
+            )
+        }
+    }
+
+    private fun DocumentSnapshot.getShares(): Map<String, Double> {
+        @Suppress("UNCHECKED_CAST")
+        val rawShares = get("shares") as? Map<String, Any?> ?: return emptyMap()
+
+        return rawShares.mapValues { (_, amount) ->
+            (amount as? Number)?.toDouble() ?: 0.0
         }
     }
 

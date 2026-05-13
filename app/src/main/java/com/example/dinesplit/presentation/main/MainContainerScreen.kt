@@ -30,12 +30,14 @@ import com.example.dinesplit.presentation.feed.FeedScreen
 import com.example.dinesplit.presentation.feed.PostDetailScreen
 import com.example.dinesplit.presentation.feed.SearchScreen
 import com.example.dinesplit.presentation.personal.PersonalScreen
+import com.example.dinesplit.presentation.split.BillDetailScreen
 import com.example.dinesplit.presentation.profile.EditProfileScreen
 import com.example.dinesplit.presentation.profile.OtherUserProfileScreen
 import com.example.dinesplit.presentation.profile.ProfileScreen
 import com.example.dinesplit.presentation.profile.ProfileUiEffect
 import com.example.dinesplit.presentation.profile.ProfileViewModel
 import com.example.dinesplit.presentation.split.CreateBillScreen
+import com.example.dinesplit.presentation.split.CreateGroupScreen
 import com.example.dinesplit.presentation.split.GroupDetailScreen
 import com.example.dinesplit.presentation.split.GroupListScreen
 import com.example.dinesplit.presentation.split.SplitScreen
@@ -113,25 +115,37 @@ fun MainContainerScreen(
                     onOpenNotifications = onOpenNotifications,
                     onOpenSearch = { mainNavController.navigate(AppRoute.Search.route) },
                     onNewGroup = { mainNavController.navigate(AppRoute.GroupList.route) },
-                    onNewExpense = { mainNavController.navigate(AppRoute.CreateBill.route) },
+                    onNewExpense = { mainNavController.navigate(AppRoute.GroupList.route) },
                     onViewAllGroups = { mainNavController.navigate(AppRoute.GroupList.route) },
-                    onGroupClick = { mainNavController.navigate(AppRoute.GroupDetail.route) }
+                    onGroupClick = { mainNavController.navigate(AppRoute.GroupList.route) }
                 )
             }
 
             composable(AppRoute.GroupList.route) {
                 GroupListScreen(
-                    onNavigateToGroupDetail = { mainNavController.navigate(AppRoute.GroupDetail.route) },
-                    onNavigateToCreateGroup = { mainNavController.navigate(AppRoute.CreateBill.route) },
+                    onNavigateToGroupDetail = { groupId ->
+                        mainNavController.navigate(AppRoute.GroupDetail.createRoute(groupId))
+                    },
+                    onNavigateToCreateGroup = { mainNavController.navigate(AppRoute.CreateGroup.route) },
                     onNavigateToAllGroups = { /* already here */ }
                 )
             }
 
-            composable(AppRoute.GroupDetail.route) {
+            composable(AppRoute.CreateGroup.route) {
+                CreateGroupScreen(onBack = { mainNavController.navigateUp() })
+            }
+
+            composable(AppRoute.GroupDetail.routeWithArg) { backStackEntry ->
+                val groupId = backStackEntry.arguments?.getString(AppRoute.GroupDetail.ARG_ID).orEmpty()
                 GroupDetailScreen(
+                    groupId = groupId,
                     onBack = { mainNavController.navigateUp() },
-                    onNavigateToCreateBill = { mainNavController.navigate(AppRoute.CreateBill.route) },
-                    onNavigateToBillDetail = { mainNavController.navigate(AppRoute.CreateBill.route) },
+                    onNavigateToCreateBill = {
+                        mainNavController.navigate(AppRoute.CreateBill.createRoute(groupId))
+                    },
+                    onNavigateToBillDetail = { billId ->
+                        mainNavController.navigate(AppRoute.BillDetail.createRoute(groupId, billId))
+                    },
                     onNavigateToSettleSummary = { /* TODO */ }
                 )
             }
@@ -169,8 +183,21 @@ fun MainContainerScreen(
             composable(AppRoute.CreatePost.route) {
                 CreatePostScreen(onBack = { mainNavController.navigateUp() })
             }
-            composable(AppRoute.CreateBill.route) {
-                CreateBillScreen(onBack = { mainNavController.navigateUp() })
+            composable(AppRoute.CreateBill.routeWithArg) { backStackEntry ->
+                val groupId = backStackEntry.arguments?.getString(AppRoute.CreateBill.ARG_GROUP_ID).orEmpty()
+                CreateBillScreen(
+                    groupId = groupId,
+                    onBack = { mainNavController.navigateUp() }
+                )
+            }
+            composable(AppRoute.BillDetail.routeWithArg) { backStackEntry ->
+                val groupId = backStackEntry.arguments?.getString(AppRoute.BillDetail.ARG_GROUP_ID).orEmpty()
+                val billId = backStackEntry.arguments?.getString(AppRoute.BillDetail.ARG_BILL_ID).orEmpty()
+                BillDetailScreen(
+                    groupId = groupId,
+                    billId = billId,
+                    onBack = { mainNavController.navigateUp() }
+                )
             }
             composable(AppRoute.PostDetail.routeWithArg) { backStackEntry ->
                 val postId = backStackEntry.arguments?.getString(AppRoute.PostDetail.ARG_ID) ?: ""

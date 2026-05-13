@@ -4,9 +4,15 @@ import androidx.compose.runtime.mutableStateListOf
 import androidx.compose.runtime.mutableStateMapOf
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
-import com.example.dinesplit.domain.model.*
+import com.example.dinesplit.domain.model.Bill
+import com.example.dinesplit.domain.model.BillItem
+import com.example.dinesplit.domain.model.Member
+import com.example.dinesplit.domain.model.SplitMethod
 import com.example.dinesplit.domain.repository.SplitRepository
-import kotlinx.coroutines.flow.*
+import kotlinx.coroutines.flow.MutableStateFlow
+import kotlinx.coroutines.flow.StateFlow
+import kotlinx.coroutines.flow.asStateFlow
+import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
 
 data class CreateBillUiState(
@@ -15,10 +21,16 @@ data class CreateBillUiState(
     val selectedMethod: SplitMethod = SplitMethod.EQUAL,
     val members: List<Member> = emptyList(),
     val selectedMemberIds: Set<String> = emptySet(),
-    val payerId: String = "1", // Mặc định là Bạn
+    val payerId: String = "",
     val isLoading: Boolean = false,
     val isSaved: Boolean = false,
     val error: String? = null
+)
+
+private val fallbackBillMembers = listOf(
+    Member(id = "me", name = "Bạn", initial = "B", isMe = true),
+    Member(id = "minh", name = "Minh", initial = "M"),
+    Member(id = "thanh_hang", name = "Thanh Hằng", initial = "T")
 )
 
 class CreateBillViewModel(
@@ -30,22 +42,35 @@ class CreateBillViewModel(
     private val _uiState = MutableStateFlow(CreateBillUiState())
     val uiState: StateFlow<CreateBillUiState> = _uiState.asStateFlow()
 
-    // Bill items and custom amounts are kept in observable state lists/maps for reactive UI
     val billItems = mutableStateListOf<BillItem>()
     val customAmounts = mutableStateMapOf<String, String>()
 
     init {
-        if (autoLoadMembers) loadGroupMembers()
-        // Khởi tạo món ăn đầu tiên
+        if (autoLoadMembers) {
+            loadGroupMembers()
+        } else {
+            applyMembers(fallbackBillMembers)
+        }
         billItems.add(BillItem(name = "Món 1", price = 0.0, sharedByMemberIds = emptyList()))
     }
 
     private fun loadGroupMembers() {
         viewModelScope.launch {
             repository.getGroupMembers(groupId).collect { members ->
-                val ids = members.map { it.id }.toSet()
-                _uiState.update { it.copy(members = members, selectedMemberIds = ids) }
+                applyMembers(members.ifEmpty { fallbackBillMembers })
             }
+        }
+    }
+
+    private fun applyMembers(members: List<Member>) {
+        val selectedIds = members.map { it.id }.toSet()
+        val payerId = members.firstOrNull { it.isMe }?.id ?: members.firstOrNull()?.id.orEmpty()
+        _uiState.update {
+            it.copy(
+                members = members,
+                selectedMemberIds = selectedIds,
+                payerId = payerId
+            )
         }
     }
 
@@ -61,23 +86,17 @@ class CreateBillViewModel(
         }
     }
 
-    // Test helper: set members directly
     fun setMembersForTest(members: List<Member>) {
-        _uiState.update {
-            it.copy(
-                members = members,
-                selectedMemberIds = members.map { member -> member.id }.toSet()
-            )
-        }
+        applyMembers(members)
     }
 
     fun onBillNameChange(newName: String) {
-        _uiState.update { it.copy(billName = newName) }
+        _uiState.update { it.copy(billName = newName, error = null) }
     }
 
     fun onTotalAmountChange(newAmount: String) {
         if (newAmount.all { it.isDigit() }) {
-            _uiState.update { it.copy(totalAmountStr = newAmount) }
+            _uiState.update { it.copy(totalAmountStr = newAmount, error = null) }
         }
     }
 
@@ -114,20 +133,21 @@ class CreateBillViewModel(
         }
     }
 
-    // Synchronous suspendable save function for tests
     suspend fun saveBillBlocking(): Result<Unit> {
         val currentState = _uiState.value
-        val totalAmount = if (currentState.selectedMethod == SplitMethod.ITEMIZED) {
-            billItems.sumOf { it.price }
-        } else {
-            currentState.totalAmountStr.toDoubleOrNull() ?: 0.0
+        val billName = currentState.billName.trim().ifBlank { "Hóa đơn mới" }
+
+        validateBillInput(currentState, billName)?.let { error ->
+            _uiState.update { it.copy(error = error) }
+            return Result.failure(IllegalArgumentException(error))
         }
 
-        val shares = calculateShares(totalAmount, currentState.selectedMethod)
+        val totalAmount = calculateTotalAmount(currentState)
 
+        val shares = calculateShares(totalAmount, currentState.selectedMethod)
         val bill = Bill(
             groupId = groupId,
-            name = currentState.billName,
+            name = billName,
             totalAmount = totalAmount,
             payerId = currentState.payerId,
             method = currentState.selectedMethod,
@@ -135,7 +155,7 @@ class CreateBillViewModel(
             shares = shares
         )
 
-        _uiState.update { it.copy(isLoading = true) }
+        _uiState.update { it.copy(isLoading = true, error = null) }
         val result = repository.saveBill(bill)
         _uiState.update {
             if (result.isSuccess) {
@@ -145,6 +165,29 @@ class CreateBillViewModel(
             }
         }
         return result
+    }
+
+    private fun validateBillInput(state: CreateBillUiState, billName: String): String? {
+        val totalAmount = calculateTotalAmount(state)
+
+        return when {
+            groupId.isBlank() -> "Thiếu nhóm để lưu hóa đơn"
+            totalAmount <= 0.0 -> "Tổng tiền phải lớn hơn 0"
+            state.selectedMemberIds.isEmpty() -> "Cần chọn ít nhất một người tham gia"
+            state.payerId.isBlank() -> "Cần chọn người thanh toán"
+            else -> null
+        }
+    }
+
+    private fun calculateTotalAmount(state: CreateBillUiState): Double {
+        return when (state.selectedMethod) {
+            SplitMethod.ITEMIZED -> billItems.sumOf { it.price }
+            SplitMethod.CUSTOM -> {
+                state.totalAmountStr.toDoubleOrNull()
+                    ?: customAmounts.values.sumOf { it.toDoubleOrNull() ?: 0.0 }
+            }
+            SplitMethod.EQUAL -> state.totalAmountStr.toDoubleOrNull() ?: 0.0
+        }
     }
 
     private fun calculateShares(totalAmount: Double, method: SplitMethod): Map<String, Double> {
@@ -169,8 +212,8 @@ class CreateBillViewModel(
                 billItems.forEach { item ->
                     if (item.sharedByMemberIds.isNotEmpty()) {
                         val perPerson = item.price / item.sharedByMemberIds.size
-                        item.sharedByMemberIds.forEach { mid ->
-                            shares[mid] = (shares[mid] ?: 0.0) + perPerson
+                        item.sharedByMemberIds.forEach { memberId ->
+                            shares[memberId] = (shares[memberId] ?: 0.0) + perPerson
                         }
                     }
                 }

@@ -11,7 +11,14 @@ sealed class AppRoute(val route: String) {
 
     data object Feed : AppRoute("feed")
     data object CreatePost : AppRoute("create_post")
-    data object CreateBill : AppRoute("create_bill")
+    data object CreateBill : AppRoute("create_bill") {
+        const val ARG_GROUP_ID = "groupId"
+        val routeWithArg = "$route/{$ARG_GROUP_ID}"
+
+        fun createRoute(groupId: String): String {
+            return "$route/$groupId"
+        }
+    }
     data object Search : AppRoute("search")
     data object PostDetail : AppRoute("post_detail") {
         const val ARG_ID = "postId"
@@ -31,7 +38,24 @@ sealed class AppRoute(val route: String) {
     }
     data object Split : AppRoute("split")
     data object GroupList : AppRoute("group_list")
-    data object GroupDetail : AppRoute("group_detail")
+    data object CreateGroup : AppRoute("create_group")
+    data object GroupDetail : AppRoute("group_detail") {
+        const val ARG_ID = "groupId"
+        val routeWithArg = "$route/{$ARG_ID}"
+
+        fun createRoute(groupId: String): String {
+            return "$route/$groupId"
+        }
+    }
+    data object BillDetail : AppRoute("bill_detail") {
+        const val ARG_GROUP_ID = "groupId"
+        const val ARG_BILL_ID = "billId"
+        val routeWithArg = "$route/{$ARG_GROUP_ID}/{$ARG_BILL_ID}"
+
+        fun createRoute(groupId: String, billId: String): String {
+            return "$route/$groupId/$billId"
+        }
+    }
     data object Personal : AppRoute("personal")
     data object AddTransaction : AppRoute("add_transaction") {
         const val ARG_TYPE = "type"
