@@ -29,5 +29,6 @@ data class Bill(
     val method: SplitMethod,
     val items: List<BillItem> = emptyList(),
     val shares: Map<String, Double> = emptyMap(), // MemberId -> Amount
+    val paidMemberIds: List<String> = emptyList(),
     val date: Long = System.currentTimeMillis()
 )

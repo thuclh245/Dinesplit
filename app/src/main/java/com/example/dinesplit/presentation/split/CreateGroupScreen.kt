@@ -218,12 +218,7 @@ private fun CreateGroupInfoCard(
                         .background(colorScheme.surfaceContainer),
                     contentAlignment = Alignment.Center
                 ) {
-                    Icon(
-                        imageVector = Icons.Default.Person,
-                        contentDescription = null,
-                        tint = colorScheme.outline,
-                        modifier = Modifier.size(38.dp)
-                    )
+                    Icon(Icons.Default.Person, contentDescription = null, tint = colorScheme.outline, modifier = Modifier.size(38.dp))
                 }
                 Box(
                     modifier = Modifier
@@ -233,12 +228,7 @@ private fun CreateGroupInfoCard(
                         .border(2.dp, colorScheme.surfaceContainerLowest, CircleShape),
                     contentAlignment = Alignment.Center
                 ) {
-                    Icon(
-                        imageVector = Icons.Default.Add,
-                        contentDescription = null,
-                        tint = colorScheme.surfaceContainerLowest,
-                        modifier = Modifier.size(16.dp)
-                    )
+                    Icon(Icons.Default.Add, contentDescription = null, tint = colorScheme.surfaceContainerLowest, modifier = Modifier.size(16.dp))
                 }
             }
 
@@ -251,20 +241,12 @@ private fun CreateGroupInfoCard(
                     .padding(horizontal = 16.dp, vertical = 16.dp)
             ) {
                 if (groupName.isEmpty()) {
-                    Text(
-                        text = "Tên nhóm (VD: Chuyến đi Vũng Tàu)",
-                        color = colorScheme.outline,
-                        fontSize = 14.sp
-                    )
+                    Text("Tên nhóm (VD: Chuyến đi Vũng Tàu)", color = colorScheme.outline, fontSize = 14.sp)
                 }
                 BasicTextField(
                     value = groupName,
                     onValueChange = onNameChange,
-                    textStyle = TextStyle(
-                        fontSize = 14.sp,
-                        fontWeight = FontWeight.Medium,
-                        color = colorScheme.onSurface
-                    ),
+                    textStyle = TextStyle(fontSize = 14.sp, fontWeight = FontWeight.Medium, color = colorScheme.onSurface),
                     modifier = Modifier.fillMaxWidth()
                 )
             }
@@ -325,12 +307,7 @@ private fun CreateGroupMembersSection(
                 .padding(horizontal = 16.dp, vertical = 12.dp),
             verticalAlignment = Alignment.CenterVertically
         ) {
-            Icon(
-                imageVector = Icons.Default.Search,
-                contentDescription = null,
-                tint = colorScheme.outline,
-                modifier = Modifier.size(20.dp)
-            )
+            Icon(Icons.Default.Search, contentDescription = null, tint = colorScheme.outline, modifier = Modifier.size(20.dp))
             Spacer(modifier = Modifier.width(12.dp))
             Box(modifier = Modifier.weight(1f)) {
                 if (searchQuery.isEmpty()) {
@@ -401,35 +378,17 @@ private fun CreateGroupMemberRow(
                     .background(friend.avatarColor()),
                 contentAlignment = Alignment.Center
             ) {
-                Text(
-                    text = friend.initial,
-                    color = colorScheme.surfaceContainerLowest,
-                    fontWeight = FontWeight.Bold,
-                    fontSize = 18.sp
-                )
+                Text(friend.initial, color = colorScheme.surfaceContainerLowest, fontWeight = FontWeight.Bold, fontSize = 18.sp)
             }
             Spacer(modifier = Modifier.width(16.dp))
             Column {
-                Text(
-                    text = friend.name,
-                    fontWeight = FontWeight.Bold,
-                    fontSize = 14.sp,
-                    color = colorScheme.onSurface
-                )
-                Text(
-                    text = friend.phone,
-                    fontSize = 12.sp,
-                    color = colorScheme.onSurfaceVariant.copy(alpha = 0.7f)
-                )
+                Text(friend.name, fontWeight = FontWeight.Bold, fontSize = 14.sp, color = colorScheme.onSurface)
+                Text(friend.phone, fontSize = 12.sp, color = colorScheme.onSurfaceVariant.copy(alpha = 0.7f))
             }
         }
 
         if (isSelected) {
-            Icon(
-                imageVector = Icons.Default.CheckCircle,
-                contentDescription = "Đã chọn",
-                tint = colorScheme.primaryContainer
-            )
+            Icon(Icons.Default.CheckCircle, contentDescription = "Đã chọn", tint = colorScheme.primaryContainer)
         } else {
             Box(
                 modifier = Modifier
@@ -437,12 +396,7 @@ private fun CreateGroupMemberRow(
                     .border(2.dp, colorScheme.outlineVariant, CircleShape),
                 contentAlignment = Alignment.Center
             ) {
-                Icon(
-                    imageVector = Icons.Default.Add,
-                    contentDescription = "Thêm",
-                    tint = colorScheme.outlineVariant,
-                    modifier = Modifier.size(16.dp)
-                )
+                Icon(Icons.Default.Add, contentDescription = "Thêm", tint = colorScheme.outlineVariant, modifier = Modifier.size(16.dp))
             }
         }
     }
@@ -472,11 +426,7 @@ private fun CreateGroupBottomAction(
                 verticalAlignment = Alignment.CenterVertically
             ) {
                 Row(horizontalArrangement = Arrangement.spacedBy((-12).dp)) {
-                    val avatarColors = listOf(
-                        colorScheme.onSurfaceVariant,
-                        colorScheme.outline,
-                        colorScheme.outlineVariant
-                    )
+                    val avatarColors = listOf(colorScheme.onSurfaceVariant, colorScheme.outline, colorScheme.outlineVariant)
                     repeat(minOf(3, selectedCount)) { index ->
                         Box(
                             modifier = Modifier
@@ -497,22 +447,12 @@ private fun CreateGroupBottomAction(
                                 .border(2.dp, colorScheme.surfaceContainerLowest, CircleShape),
                             contentAlignment = Alignment.Center
                         ) {
-                            Text(
-                                text = "+$extraCount",
-                                fontSize = 10.sp,
-                                fontWeight = FontWeight.Bold,
-                                color = colorScheme.onSurfaceVariant
-                            )
+                            Text("+$extraCount", fontSize = 10.sp, fontWeight = FontWeight.Bold, color = colorScheme.onSurfaceVariant)
                         }
                     }
                 }
                 Spacer(modifier = Modifier.width(12.dp))
-                Text(
-                    text = "Đã chọn $selectedCount thành viên",
-                    fontSize = 12.sp,
-                    fontWeight = FontWeight.Medium,
-                    color = colorScheme.onSurfaceVariant
-                )
+                Text("Đã chọn $selectedCount thành viên", fontSize = 12.sp, fontWeight = FontWeight.Medium, color = colorScheme.onSurfaceVariant)
             }
 
             Button(
@@ -538,13 +478,7 @@ private fun CreateGroupBottomAction(
                             strokeWidth = 2.dp
                         )
                     } else {
-                        Text(
-                            text = "TẠO NHÓM",
-                            color = colorScheme.surfaceContainerLowest,
-                            fontSize = 14.sp,
-                            fontWeight = FontWeight.Bold,
-                            letterSpacing = 1.sp
-                        )
+                        Text("TẠO NHÓM", color = colorScheme.surfaceContainerLowest, fontSize = 14.sp, fontWeight = FontWeight.Bold, letterSpacing = 1.sp)
                     }
                 }
             }

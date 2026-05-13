@@ -1,5 +1,6 @@
 package com.example.dinesplit.presentation.split
 
+import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
@@ -27,6 +28,7 @@ import androidx.compose.material.icons.filled.Add
 import androidx.compose.material.icons.filled.Check
 import androidx.compose.material.icons.filled.DateRange
 import androidx.compose.material.icons.filled.Edit
+import androidx.compose.material.icons.filled.Info
 import androidx.compose.material.icons.filled.KeyboardArrowDown
 import androidx.compose.material3.Button
 import androidx.compose.material3.ButtonDefaults
@@ -103,6 +105,10 @@ fun CreateBillScreen(
                 contentPadding = PaddingValues(start = 24.dp, end = 24.dp, top = 16.dp, bottom = 132.dp),
                 verticalArrangement = Arrangement.spacedBy(24.dp)
             ) {
+                if (uiState.isUsingFallbackMembers) {
+                    item { FallbackMembersNotice() }
+                }
+
                 item {
                     CreateBillMainInfoCard(
                         billName = uiState.billName,
@@ -212,6 +218,30 @@ private fun CreateBillTopBar(
 }
 
 @Composable
+private fun FallbackMembersNotice() {
+    val colorScheme = MaterialTheme.colorScheme
+    Card(
+        modifier = Modifier.fillMaxWidth(),
+        colors = CardDefaults.cardColors(containerColor = colorScheme.surfaceContainerLow),
+        shape = RoundedCornerShape(16.dp),
+        elevation = CardDefaults.cardElevation(defaultElevation = 0.dp)
+    ) {
+        Row(
+            modifier = Modifier.padding(14.dp),
+            verticalAlignment = Alignment.CenterVertically
+        ) {
+            Icon(Icons.Default.Info, contentDescription = null, tint = colorScheme.primary, modifier = Modifier.size(18.dp))
+            Spacer(modifier = Modifier.width(10.dp))
+            Text(
+                text = "Nhóm cũ chưa có danh sách thành viên thật, app đang dùng danh sách mặc định để tiếp tục tạo hóa đơn.",
+                fontSize = 12.sp,
+                color = colorScheme.onSurfaceVariant
+            )
+        }
+    }
+}
+
+@Composable
 private fun CreateBillMainInfoCard(
     billName: String,
     onNameChange: (String) -> Unit,
@@ -229,7 +259,10 @@ private fun CreateBillMainInfoCard(
         Column(modifier = Modifier.padding(20.dp)) {
             Row(verticalAlignment = Alignment.CenterVertically) {
                 Box(
-                    modifier = Modifier.size(40.dp).clip(CircleShape).background(colorScheme.errorContainer),
+                    modifier = Modifier
+                        .size(40.dp)
+                        .clip(CircleShape)
+                        .background(colorScheme.errorContainer),
                     contentAlignment = Alignment.Center
                 ) {
                     Icon(Icons.Default.Edit, contentDescription = null, tint = colorScheme.primary, modifier = Modifier.size(20.dp))
@@ -263,7 +296,9 @@ private fun CreateBillMainInfoCard(
             Spacer(modifier = Modifier.height(16.dp))
             Row(
                 verticalAlignment = Alignment.CenterVertically,
-                modifier = Modifier.background(colorScheme.surfaceContainerLow, RoundedCornerShape(12.dp)).padding(horizontal = 16.dp, vertical = 8.dp)
+                modifier = Modifier
+                    .background(colorScheme.surfaceContainerLow, RoundedCornerShape(12.dp))
+                    .padding(horizontal = 16.dp, vertical = 8.dp)
             ) {
                 Icon(Icons.Default.DateRange, contentDescription = null, tint = colorScheme.onSurfaceVariant, modifier = Modifier.size(16.dp))
                 Spacer(modifier = Modifier.width(8.dp))
@@ -297,17 +332,24 @@ private fun CreateBillPayerSection(
             modifier = Modifier.fillMaxWidth(),
             colors = CardDefaults.cardColors(containerColor = colorScheme.surfaceContainerLowest),
             shape = RoundedCornerShape(16.dp),
-            border = androidx.compose.foundation.BorderStroke(1.dp, colorScheme.outlineVariant.copy(alpha = 0.3f))
+            border = BorderStroke(1.dp, colorScheme.outlineVariant.copy(alpha = 0.3f))
         ) {
             Row(
-                modifier = Modifier.fillMaxWidth().clickable { expanded = true }.padding(16.dp),
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .clickable { expanded = true }
+                    .padding(16.dp),
                 verticalAlignment = Alignment.CenterVertically,
                 horizontalArrangement = Arrangement.SpaceBetween
             ) {
                 Row(verticalAlignment = Alignment.CenterVertically) {
                     Box(
-                        modifier = Modifier.size(40.dp).border(2.dp, colorScheme.primaryContainer, CircleShape).padding(2.dp)
-                            .clip(CircleShape).background(colorScheme.primary),
+                        modifier = Modifier
+                            .size(40.dp)
+                            .border(2.dp, colorScheme.primaryContainer, CircleShape)
+                            .padding(2.dp)
+                            .clip(CircleShape)
+                            .background(colorScheme.primary),
                         contentAlignment = Alignment.Center
                     ) {
                         Text(payer?.initial ?: "-", color = colorScheme.surfaceContainerLowest, fontWeight = FontWeight.Bold)
@@ -356,7 +398,8 @@ private fun CreateBillSplitMethodTabs(
             tabs.forEach { (method, label) ->
                 val selected = method == selectedMethod
                 Box(
-                    modifier = Modifier.weight(1f)
+                    modifier = Modifier
+                        .weight(1f)
                         .then(
                             if (selected) {
                                 Modifier.background(
@@ -419,11 +462,18 @@ private fun CustomSplitDetailsList(
             members.forEach { member ->
                 val included = selectedIds.contains(member.id)
                 Row(
-                    modifier = Modifier.fillMaxWidth().padding(16.dp),
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .padding(16.dp),
                     verticalAlignment = Alignment.CenterVertically,
                     horizontalArrangement = Arrangement.SpaceBetween
                 ) {
-                    Row(modifier = Modifier.weight(1f).clickable { onToggle(member.id) }, verticalAlignment = Alignment.CenterVertically) {
+                    Row(
+                        modifier = Modifier
+                            .weight(1f)
+                            .clickable { onToggle(member.id) },
+                        verticalAlignment = Alignment.CenterVertically
+                    ) {
                         AvatarBubble(member = member, selected = included)
                         Spacer(modifier = Modifier.width(12.dp))
                         Column {
@@ -432,7 +482,10 @@ private fun CustomSplitDetailsList(
                         }
                     }
                     Box(
-                        modifier = Modifier.width(104.dp).background(colorScheme.surfaceContainerLow, RoundedCornerShape(12.dp)).padding(horizontal = 12.dp, vertical = 10.dp)
+                        modifier = Modifier
+                            .width(104.dp)
+                            .background(colorScheme.surfaceContainerLow, RoundedCornerShape(12.dp))
+                            .padding(horizontal = 12.dp, vertical = 10.dp)
                     ) {
                         if (customAmounts[member.id].isNullOrEmpty()) {
                             Text("0 đ", fontSize = 14.sp, color = colorScheme.outline)
@@ -470,7 +523,10 @@ private fun ItemizedSplitDetailsList(
         Column(modifier = Modifier.padding(16.dp), verticalArrangement = Arrangement.spacedBy(14.dp)) {
             billItems.forEachIndexed { index, item ->
                 Column(
-                    modifier = Modifier.fillMaxWidth().background(colorScheme.surfaceContainerLow, RoundedCornerShape(14.dp)).padding(14.dp)
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .background(colorScheme.surfaceContainerLow, RoundedCornerShape(14.dp))
+                        .padding(14.dp)
                 ) {
                     Row(verticalAlignment = Alignment.CenterVertically) {
                         BasicTextField(
@@ -492,7 +548,8 @@ private fun ItemizedSplitDetailsList(
                         members.forEach { member ->
                             val selected = item.sharedByMemberIds.contains(member.id)
                             Box(
-                                modifier = Modifier.clip(RoundedCornerShape(50))
+                                modifier = Modifier
+                                    .clip(RoundedCornerShape(50))
                                     .background(if (selected) colorScheme.primary else colorScheme.surfaceContainerHigh)
                                     .clickable {
                                         val ids = item.sharedByMemberIds.toMutableList()
@@ -524,7 +581,11 @@ private fun ItemizedSplitDetailsList(
             }
 
             Row(
-                modifier = Modifier.fillMaxWidth().clip(RoundedCornerShape(14.dp)).clickable { onAddItem() }.padding(14.dp),
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .clip(RoundedCornerShape(14.dp))
+                    .clickable { onAddItem() }
+                    .padding(14.dp),
                 horizontalArrangement = Arrangement.Center,
                 verticalAlignment = Alignment.CenterVertically
             ) {
@@ -555,7 +616,8 @@ private fun SplitMemberListCard(
             members.forEach { member ->
                 val included = selectedIds.contains(member.id)
                 Row(
-                    modifier = Modifier.fillMaxWidth()
+                    modifier = Modifier
+                        .fillMaxWidth()
                         .background(if (member.isMe) colorScheme.primaryContainer.copy(alpha = 0.15f) else Color.Transparent)
                         .padding(16.dp),
                     verticalAlignment = Alignment.CenterVertically,
@@ -563,7 +625,9 @@ private fun SplitMemberListCard(
                 ) {
                     Row(verticalAlignment = Alignment.CenterVertically) {
                         Box(
-                            modifier = Modifier.size(40.dp).clip(CircleShape)
+                            modifier = Modifier
+                                .size(40.dp)
+                                .clip(CircleShape)
                                 .background(if (member.id == payerId) colorScheme.primary else if (member.isMe) colorScheme.primary else colorScheme.outlineVariant)
                                 .clickable { onSelectPayer(member.id) },
                             contentAlignment = Alignment.Center
@@ -582,7 +646,9 @@ private fun SplitMemberListCard(
                         }
                     }
                     Box(
-                        modifier = Modifier.size(24.dp).clip(CircleShape)
+                        modifier = Modifier
+                            .size(24.dp)
+                            .clip(CircleShape)
                             .background(if (included) colorScheme.primary else colorScheme.surfaceContainerHigh)
                             .clickable { onToggle(member.id) },
                         contentAlignment = Alignment.Center
@@ -600,7 +666,9 @@ private fun SplitMemberListCard(
 private fun AvatarBubble(member: Member, selected: Boolean) {
     val colorScheme = MaterialTheme.colorScheme
     Box(
-        modifier = Modifier.size(40.dp).clip(CircleShape)
+        modifier = Modifier
+            .size(40.dp)
+            .clip(CircleShape)
             .background(if (selected) colorScheme.primary else colorScheme.outlineVariant),
         contentAlignment = Alignment.Center
     ) {
@@ -615,7 +683,8 @@ private fun CreateBillBottomAction(
 ) {
     val colorScheme = MaterialTheme.colorScheme
     Box(
-        modifier = Modifier.fillMaxWidth()
+        modifier = Modifier
+            .fillMaxWidth()
             .background(
                 brush = Brush.verticalGradient(
                     colors = listOf(Color.Transparent, colorScheme.surface, colorScheme.surface),
@@ -629,13 +698,17 @@ private fun CreateBillBottomAction(
         Button(
             onClick = { if (!isLoading) onConfirm() },
             enabled = !isLoading,
-            modifier = Modifier.fillMaxWidth().height(56.dp),
+            modifier = Modifier
+                .fillMaxWidth()
+                .height(56.dp),
             colors = ButtonDefaults.buttonColors(containerColor = Color.Transparent),
             contentPadding = PaddingValues(0.dp),
             shape = RoundedCornerShape(50)
         ) {
             Box(
-                modifier = Modifier.fillMaxSize().background(brush = Brush.horizontalGradient(listOf(colorScheme.primaryContainer, colorScheme.primary))),
+                modifier = Modifier
+                    .fillMaxSize()
+                    .background(brush = Brush.horizontalGradient(listOf(colorScheme.primaryContainer, colorScheme.primary))),
                 contentAlignment = Alignment.Center
             ) {
                 if (isLoading) {

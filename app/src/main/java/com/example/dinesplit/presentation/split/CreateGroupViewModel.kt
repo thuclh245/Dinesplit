@@ -3,6 +3,7 @@ package com.example.dinesplit.presentation.split
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.example.dinesplit.domain.model.Group
+import com.example.dinesplit.domain.model.Member
 import com.example.dinesplit.domain.repository.SplitRepository
 import java.util.UUID
 import kotlinx.coroutines.flow.MutableStateFlow
@@ -10,6 +11,20 @@ import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
+
+private val currentUserMember = Member(
+    id = "me",
+    name = "Bạn",
+    initial = "B",
+    isMe = true
+)
+
+private val createGroupMemberDirectory = listOf(
+    currentUserMember,
+    Member(id = "minh", name = "Minh", initial = "M"),
+    Member(id = "thanh_hang", name = "Thanh Hằng", initial = "T"),
+    Member(id = "tuan_anh", name = "Tuấn Anh", initial = "A")
+)
 
 data class CreateGroupUiState(
     val groupName: String = "",
@@ -63,17 +78,18 @@ class CreateGroupViewModel(
 
             runCatching {
                 val now = System.currentTimeMillis()
-                repository.createGroup(
-                    Group(
-                        id = UUID.randomUUID().toString(),
-                        name = trimmedName,
-                        imageUrl = null,
-                        memberCount = (currentState.selectedMemberIds.size + 1).coerceAtLeast(1),
-                        totalExpense = 0.0,
-                        yourBalance = 0.0,
-                        createdAt = now
-                    )
+                val members = buildSelectedMembers(currentState.selectedMemberIds)
+                val group = Group(
+                    id = UUID.randomUUID().toString(),
+                    name = trimmedName,
+                    imageUrl = null,
+                    memberCount = members.size,
+                    totalExpense = 0.0,
+                    yourBalance = 0.0,
+                    createdAt = now
                 )
+
+                repository.createGroup(group, members)
             }.onSuccess {
                 _uiState.update { it.copy(isLoading = false, isCreated = true) }
             }.onFailure { throwable ->
@@ -85,5 +101,13 @@ class CreateGroupViewModel(
                 }
             }
         }
+    }
+
+    private fun buildSelectedMembers(selectedMemberIds: Set<String>): List<Member> {
+        val selectedMembers = createGroupMemberDirectory
+            .filter { it.id in selectedMemberIds }
+
+        return (listOf(currentUserMember) + selectedMembers)
+            .distinctBy { it.id }
     }
 }

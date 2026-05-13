@@ -24,7 +24,8 @@ data class CreateBillUiState(
     val payerId: String = "",
     val isLoading: Boolean = false,
     val isSaved: Boolean = false,
-    val error: String? = null
+    val error: String? = null,
+    val isUsingFallbackMembers: Boolean = false
 )
 
 private val fallbackBillMembers = listOf(
@@ -49,7 +50,7 @@ class CreateBillViewModel(
         if (autoLoadMembers) {
             loadGroupMembers()
         } else {
-            applyMembers(fallbackBillMembers)
+            applyMembers(fallbackBillMembers, isFallback = true)
         }
         billItems.add(BillItem(name = "Món 1", price = 0.0, sharedByMemberIds = emptyList()))
     }
@@ -57,19 +58,27 @@ class CreateBillViewModel(
     private fun loadGroupMembers() {
         viewModelScope.launch {
             repository.getGroupMembers(groupId).collect { members ->
-                applyMembers(members.ifEmpty { fallbackBillMembers })
+                if (members.isEmpty()) {
+                    applyMembers(fallbackBillMembers, isFallback = true)
+                } else {
+                    applyMembers(members, isFallback = false)
+                }
             }
         }
     }
 
-    private fun applyMembers(members: List<Member>) {
+    private fun applyMembers(
+        members: List<Member>,
+        isFallback: Boolean = false
+    ) {
         val selectedIds = members.map { it.id }.toSet()
         val payerId = members.firstOrNull { it.isMe }?.id ?: members.firstOrNull()?.id.orEmpty()
         _uiState.update {
             it.copy(
                 members = members,
                 selectedMemberIds = selectedIds,
-                payerId = payerId
+                payerId = payerId,
+                isUsingFallbackMembers = isFallback
             )
         }
     }
@@ -137,13 +146,12 @@ class CreateBillViewModel(
         val currentState = _uiState.value
         val billName = currentState.billName.trim().ifBlank { "Hóa đơn mới" }
 
-        validateBillInput(currentState, billName)?.let { error ->
+        validateBillInput(currentState)?.let { error ->
             _uiState.update { it.copy(error = error) }
             return Result.failure(IllegalArgumentException(error))
         }
 
         val totalAmount = calculateTotalAmount(currentState)
-
         val shares = calculateShares(totalAmount, currentState.selectedMethod)
         val bill = Bill(
             groupId = groupId,
@@ -152,7 +160,8 @@ class CreateBillViewModel(
             payerId = currentState.payerId,
             method = currentState.selectedMethod,
             items = if (currentState.selectedMethod == SplitMethod.ITEMIZED) billItems.toList() else emptyList(),
-            shares = shares
+            shares = shares,
+            paidMemberIds = listOf(currentState.payerId)
         )
 
         _uiState.update { it.copy(isLoading = true, error = null) }
@@ -167,7 +176,7 @@ class CreateBillViewModel(
         return result
     }
 
-    private fun validateBillInput(state: CreateBillUiState, billName: String): String? {
+    private fun validateBillInput(state: CreateBillUiState): String? {
         val totalAmount = calculateTotalAmount(state)
 
         return when {

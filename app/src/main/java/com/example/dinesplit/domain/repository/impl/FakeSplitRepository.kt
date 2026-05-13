@@ -27,7 +27,7 @@ class FakeSplitRepository : SplitRepository {
 
     override fun getBill(groupId: String, billId: String): Flow<Bill?> = MutableStateFlow(lastSavedBill)
 
-    override suspend fun createGroup(group: Group) = Unit
+    override suspend fun createGroup(group: Group, members: List<Member>) = Unit
 
     override suspend fun joinGroup(inviteCode: String) = Unit
 
@@ -35,6 +35,17 @@ class FakeSplitRepository : SplitRepository {
 
     override suspend fun saveBill(bill: Bill): Result<Unit> {
         lastSavedBill = bill
+        return Result.success(Unit)
+    }
+
+    override suspend fun markBillMemberPaid(
+        groupId: String,
+        billId: String,
+        memberId: String
+    ): Result<Unit> {
+        lastSavedBill = lastSavedBill?.copy(
+            paidMemberIds = (lastSavedBill?.paidMemberIds.orEmpty() + memberId).distinct()
+        )
         return Result.success(Unit)
     }
     

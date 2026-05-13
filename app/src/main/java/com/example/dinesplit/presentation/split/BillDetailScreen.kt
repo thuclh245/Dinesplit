@@ -66,6 +66,7 @@ private data class BillSplitRow(
     val initial: String,
     val amount: Double,
     val isPayer: Boolean,
+    val isPaid: Boolean,
     val isMe: Boolean
 )
 
@@ -91,7 +92,14 @@ fun BillDetailScreen(
         topBar = { BdTopBar(onBack = onBack) },
         bottomBar = {
             uiState.bill?.let { bill ->
-                BdBottomAction(payerName = resolveMemberName(bill.payerId, uiState.members))
+                BdBottomAction(
+                    payerName = resolveMemberName(bill.payerId, uiState.members),
+                    currentMemberId = uiState.currentMemberId,
+                    isCurrentMemberPayer = uiState.currentMemberId == bill.payerId,
+                    isCurrentMemberPaid = bill.paidMemberIds.contains(uiState.currentMemberId),
+                    isUpdating = uiState.isUpdatingPayment,
+                    onMarkPaid = viewModel::markCurrentMemberPaid
+                )
             }
         }
     ) { paddingValues ->
@@ -399,13 +407,27 @@ private fun BdSplitRow(row: BillSplitRow) {
                 )
                 Spacer(modifier = Modifier.height(4.dp))
 
-                if (row.isPayer) {
-                    Text(
-                        text = "ĐÃ TRẢ",
-                        fontSize = 10.sp,
-                        fontWeight = FontWeight.Bold,
-                        color = colorScheme.onSurfaceVariant.copy(alpha = 0.65f)
-                    )
+                if (row.isPaid) {
+                    Row(
+                        modifier = Modifier
+                            .background(colorScheme.secondaryContainer, RoundedCornerShape(50))
+                            .padding(horizontal = 6.dp, vertical = 2.dp),
+                        verticalAlignment = Alignment.CenterVertically
+                    ) {
+                        Icon(
+                            imageVector = Icons.Default.Check,
+                            contentDescription = null,
+                            tint = colorScheme.secondary,
+                            modifier = Modifier.size(12.dp)
+                        )
+                        Spacer(modifier = Modifier.width(2.dp))
+                        Text(
+                            text = "ĐÃ TRẢ",
+                            fontSize = 9.sp,
+                            fontWeight = FontWeight.Bold,
+                            color = colorScheme.secondary
+                        )
+                    }
                 } else {
                     Row(
                         modifier = Modifier
@@ -489,6 +511,9 @@ private fun BdItemBreakdown(items: List<BillItem>) {
 @Composable
 private fun BdFooterInfo(bill: Bill) {
     val colorScheme = MaterialTheme.colorScheme
+    val isSettled = bill.shares.keys
+        .filter { it != bill.payerId }
+        .all { bill.paidMemberIds.contains(it) }
 
     Card(
         modifier = Modifier.fillMaxWidth(),
@@ -504,6 +529,15 @@ private fun BdFooterInfo(bill: Bill) {
             Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.SpaceBetween) {
                 Text("Kiểu chia", fontSize = 12.sp, fontWeight = FontWeight.Medium, color = colorScheme.onSurfaceVariant)
                 Text(formatSplitMethod(bill.method), fontSize = 12.sp, fontWeight = FontWeight.Bold)
+            }
+            Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.SpaceBetween) {
+                Text("Trạng thái", fontSize = 12.sp, fontWeight = FontWeight.Medium, color = colorScheme.onSurfaceVariant)
+                Text(
+                    text = if (isSettled) "Đã thanh toán" else "Còn mở",
+                    fontSize = 12.sp,
+                    fontWeight = FontWeight.Bold,
+                    color = if (isSettled) colorScheme.secondary else colorScheme.primary
+                )
             }
         }
     }
@@ -531,8 +565,21 @@ private fun BdMessageCard(
 }
 
 @Composable
-private fun BdBottomAction(payerName: String) {
+private fun BdBottomAction(
+    payerName: String,
+    currentMemberId: String,
+    isCurrentMemberPayer: Boolean,
+    isCurrentMemberPaid: Boolean,
+    isUpdating: Boolean,
+    onMarkPaid: () -> Unit
+) {
     val colorScheme = MaterialTheme.colorScheme
+    val enabled = currentMemberId.isNotBlank() && !isCurrentMemberPayer && !isCurrentMemberPaid && !isUpdating
+    val label = when {
+        isCurrentMemberPayer -> "Bạn là người thanh toán"
+        isCurrentMemberPaid -> "Bạn đã trả cho $payerName"
+        else -> "Đánh dấu đã trả cho $payerName"
+    }
 
     Box(
         modifier = Modifier
@@ -542,26 +589,38 @@ private fun BdBottomAction(payerName: String) {
             .navigationBarsPadding()
     ) {
         Button(
-            onClick = { },
+            onClick = onMarkPaid,
+            enabled = enabled,
             modifier = Modifier
                 .fillMaxWidth()
                 .height(56.dp),
-            colors = ButtonDefaults.buttonColors(containerColor = colorScheme.primaryContainer),
+            colors = ButtonDefaults.buttonColors(
+                containerColor = colorScheme.primaryContainer,
+                disabledContainerColor = colorScheme.surfaceContainerHigh
+            ),
             shape = RoundedCornerShape(50),
             elevation = ButtonDefaults.buttonElevation(defaultElevation = 4.dp)
         ) {
-            Icon(
-                imageVector = Icons.Default.Check,
-                contentDescription = null,
-                tint = colorScheme.surfaceContainerLowest,
-                modifier = Modifier.size(18.dp)
-            )
+            if (isUpdating) {
+                CircularProgressIndicator(
+                    modifier = Modifier.size(18.dp),
+                    color = colorScheme.surfaceContainerLowest,
+                    strokeWidth = 2.dp
+                )
+            } else {
+                Icon(
+                    imageVector = Icons.Default.Check,
+                    contentDescription = null,
+                    tint = if (enabled) colorScheme.surfaceContainerLowest else colorScheme.onSurfaceVariant,
+                    modifier = Modifier.size(18.dp)
+                )
+            }
             Spacer(modifier = Modifier.width(8.dp))
             Text(
-                text = "Đánh dấu đã trả cho $payerName",
+                text = label,
                 fontSize = 15.sp,
                 fontWeight = FontWeight.Bold,
-                color = colorScheme.surfaceContainerLowest,
+                color = if (enabled) colorScheme.surfaceContainerLowest else colorScheme.onSurfaceVariant,
                 maxLines = 1,
                 overflow = TextOverflow.Ellipsis
             )
@@ -576,25 +635,38 @@ private fun buildSplitRows(bill: Bill, members: List<Member>): List<BillSplitRow
 
     return ids.map { memberId ->
         val member = memberById[memberId]
-        val name = member?.name ?: memberId
+        val name = member?.name ?: fallbackMemberName(memberId)
+        val isPayer = memberId == bill.payerId
         BillSplitRow(
             memberId = memberId,
             name = name,
             initial = member?.initial ?: name.firstOrNull()?.uppercase().orEmpty(),
             amount = bill.shares[memberId] ?: 0.0,
-            isPayer = memberId == bill.payerId,
-            isMe = member?.isMe ?: false
+            isPayer = isPayer,
+            isPaid = isPayer || bill.paidMemberIds.contains(memberId),
+            isMe = member?.isMe ?: (memberId == "me")
         )
     }.sortedWith(compareByDescending<BillSplitRow> { it.isPayer }.thenByDescending { it.isMe })
 }
 
 private fun resolveMemberName(memberId: String, members: List<Member>): String {
-    return members.firstOrNull { it.id == memberId }?.name ?: memberId.ifBlank { "Người thanh toán" }
+    return members.firstOrNull { it.id == memberId }?.name
+        ?: fallbackMemberName(memberId).ifBlank { "Người thanh toán" }
 }
 
 private fun resolveMemberInitial(memberId: String, members: List<Member>): String {
     val member = members.firstOrNull { it.id == memberId }
     return member?.initial ?: resolveMemberName(memberId, members).firstOrNull()?.uppercase().orEmpty()
+}
+
+private fun fallbackMemberName(memberId: String): String {
+    return when (memberId) {
+        "me" -> "Bạn"
+        "minh" -> "Minh"
+        "thanh_hang" -> "Thanh Hằng"
+        "tuan_anh" -> "Tuấn Anh"
+        else -> memberId
+    }
 }
 
 private fun formatSplitMethod(method: SplitMethod): String {

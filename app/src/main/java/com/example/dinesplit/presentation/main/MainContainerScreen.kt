@@ -117,7 +117,12 @@ fun MainContainerScreen(
                     onNewGroup = { mainNavController.navigate(AppRoute.GroupList.route) },
                     onNewExpense = { mainNavController.navigate(AppRoute.GroupList.route) },
                     onViewAllGroups = { mainNavController.navigate(AppRoute.GroupList.route) },
-                    onGroupClick = { mainNavController.navigate(AppRoute.GroupList.route) }
+                    onGroupClick = { groupId ->
+                        mainNavController.navigate(AppRoute.GroupDetail.createRoute(groupId))
+                    },
+                    onBillClick = { groupId, billId ->
+                        mainNavController.navigate(AppRoute.BillDetail.createRoute(groupId, billId))
+                    }
                 )
             }
 

@@ -86,8 +86,16 @@ class FirebaseSplitRepository(
         awaitClose { registration.remove() }
     }
 
-    override suspend fun createGroup(group: Group) {
-        firestore.collection("groups").document(group.id).set(group).await()
+    override suspend fun createGroup(group: Group, members: List<Member>) {
+        val groupRef = firestore.collection("groups").document(group.id)
+        val batch = firestore.batch()
+
+        batch.set(groupRef, group)
+        members.forEach { member ->
+            batch.set(groupRef.collection("members").document(member.id), member.toMap())
+        }
+
+        batch.commit().await()
     }
 
     override suspend fun joinGroup(inviteCode: String) {
@@ -121,6 +129,26 @@ class FirebaseSplitRepository(
                     "updatedAt" to System.currentTimeMillis()
                 )
             ).awaitFirebase()
+        }
+    }
+
+    override suspend fun markBillMemberPaid(
+        groupId: String,
+        billId: String,
+        memberId: String
+    ): Result<Unit> {
+        return runCatching {
+            firestore.collection("groups")
+                .document(groupId)
+                .collection("bills")
+                .document(billId)
+                .update(
+                    mapOf(
+                        "paidMemberIds" to FieldValue.arrayUnion(memberId),
+                        "updatedAt" to System.currentTimeMillis()
+                    )
+                )
+                .awaitFirebase()
         }
     }
 
@@ -171,6 +199,7 @@ class FirebaseSplitRepository(
             method = method,
             items = getBillItems(),
             shares = getShares(),
+            paidMemberIds = getPaidMemberIds(),
             date = getLong("date") ?: 0L
         )
     }
@@ -202,6 +231,14 @@ class FirebaseSplitRepository(
         }
     }
 
+    private fun DocumentSnapshot.getPaidMemberIds(): List<String> {
+        val paidMemberIds = (get("paidMemberIds") as? List<*>)
+            ?.filterIsInstance<String>()
+            .orEmpty()
+
+        return paidMemberIds.ifEmpty { listOfNotNull(getString("payerId")) }
+    }
+
     private fun Bill.toMap(): Map<String, Any> {
         return mapOf(
             "id" to id,
@@ -212,6 +249,7 @@ class FirebaseSplitRepository(
             "method" to method.name,
             "items" to items.map { it.toMap() },
             "shares" to shares,
+            "paidMemberIds" to paidMemberIds,
             "date" to date
         )
     }
@@ -222,6 +260,15 @@ class FirebaseSplitRepository(
             "name" to name,
             "price" to price,
             "sharedByMemberIds" to sharedByMemberIds
+        )
+    }
+
+    private fun Member.toMap(): Map<String, Any> {
+        return mapOf(
+            "id" to id,
+            "name" to name,
+            "initial" to initial,
+            "isMe" to isMe
         )
     }
 
