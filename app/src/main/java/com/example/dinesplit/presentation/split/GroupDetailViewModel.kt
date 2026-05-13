@@ -39,19 +39,83 @@ data class GroupDetailUiState(
     val totalExpense: Double = 0.0,
     val yourBalance: Double = 0.0,
     val isLoading: Boolean = true,
+    val isDeleting: Boolean = false,
+    val isDeleted: Boolean = false,
+    val isLeaving: Boolean = false,
+    val isLeft: Boolean = false,
+    val currentUserId: String? = null,
     val error: String? = null
-)
+) {
+    val isCurrentUserOwner: Boolean
+        get() = !group?.ownerId.isNullOrBlank() && group?.ownerId == currentUserId
+}
 
 class GroupDetailViewModel(
     private val repository: SplitRepository,
-    private val groupId: String
+    private val groupId: String,
+    private val currentUserId: String?
 ) : ViewModel() {
 
-    private val _uiState = MutableStateFlow(GroupDetailUiState())
+    private val _uiState = MutableStateFlow(GroupDetailUiState(currentUserId = currentUserId))
     val uiState: StateFlow<GroupDetailUiState> = _uiState.asStateFlow()
 
     init {
         observeGroupDetail()
+    }
+
+    fun deleteGroup() {
+        if (_uiState.value.isDeleting) return
+
+        val userId = currentUserId
+        if (userId.isNullOrBlank()) {
+            _uiState.update { it.copy(error = "Bạn cần đăng nhập để xóa nhóm") }
+            return
+        }
+
+        if (!_uiState.value.isCurrentUserOwner) {
+            _uiState.update { it.copy(error = "Chỉ chủ nhóm mới có quyền xóa nhóm") }
+            return
+        }
+
+        viewModelScope.launch {
+            _uiState.update { it.copy(isDeleting = true, error = null) }
+            val result = repository.deleteGroup(groupId = groupId, userId = userId)
+            _uiState.update {
+                if (result.isSuccess) {
+                    it.copy(isDeleting = false, isDeleted = true)
+                } else {
+                    it.copy(
+                        isDeleting = false,
+                        error = result.exceptionOrNull()?.message ?: "Không thể xóa nhóm"
+                    )
+                }
+            }
+        }
+    }
+
+    fun leaveGroup() {
+        if (_uiState.value.isLeaving) return
+
+        val userId = currentUserId
+        if (userId.isNullOrBlank()) {
+            _uiState.update { it.copy(error = "Bạn cần đăng nhập để rời nhóm") }
+            return
+        }
+
+        viewModelScope.launch {
+            _uiState.update { it.copy(isLeaving = true, error = null) }
+            val result = repository.leaveGroup(groupId = groupId, userId = userId)
+            _uiState.update {
+                if (result.isSuccess) {
+                    it.copy(isLeaving = false, isLeft = true)
+                } else {
+                    it.copy(
+                        isLeaving = false,
+                        error = result.exceptionOrNull()?.message ?: "Không thể rời nhóm"
+                    )
+                }
+            }
+        }
     }
 
     private fun observeGroupDetail() {
@@ -100,7 +164,11 @@ class GroupDetailViewModel(
         firestoreMembers: List<Member>,
         bills: List<Bill>
     ): List<Member> {
-        if (firestoreMembers.isNotEmpty()) return firestoreMembers
+        if (firestoreMembers.isNotEmpty()) {
+            return firestoreMembers.map { member ->
+                member.copy(isMe = member.id == currentUserId)
+            }
+        }
 
         val ids = bills
             .flatMap { bill -> bill.shares.keys + bill.payerId }
@@ -113,7 +181,7 @@ class GroupDetailViewModel(
                 id = id,
                 name = name,
                 initial = name.firstOrNull()?.uppercase().orEmpty(),
-                isMe = id == "me"
+                isMe = id == currentUserId
             )
         }
     }
@@ -143,7 +211,7 @@ class GroupDetailViewModel(
                 name = name,
                 initial = member?.initial ?: name.firstOrNull()?.uppercase().orEmpty(),
                 balance = if (abs(balance) < 0.5) 0.0 else balance,
-                isMe = member?.isMe ?: (memberId == "me")
+                isMe = member?.isMe ?: (memberId == currentUserId)
             )
         }.sortedWith(
             compareByDescending<GroupMemberBalance> { it.isMe }
@@ -193,6 +261,8 @@ class GroupDetailViewModel(
     }
 
     private fun fallbackMemberName(memberId: String): String {
+        if (memberId == currentUserId) return "Bạn"
+
         return when (memberId) {
             "me" -> "Bạn"
             "minh" -> "Minh"

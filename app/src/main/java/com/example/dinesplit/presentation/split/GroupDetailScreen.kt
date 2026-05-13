@@ -21,11 +21,13 @@ import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
+import androidx.compose.material.icons.automirrored.filled.ExitToApp
 import androidx.compose.material.icons.automirrored.filled.ReceiptLong
 import androidx.compose.material.icons.filled.Add
+import androidx.compose.material.icons.filled.Delete
 import androidx.compose.material.icons.filled.Info
-import androidx.compose.material.icons.filled.Settings
 import androidx.compose.material.icons.filled.SwapHoriz
+import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
 import androidx.compose.material3.CircularProgressIndicator
@@ -36,7 +38,9 @@ import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
+import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
@@ -53,6 +57,7 @@ import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.example.dinesplit.core.common.AppContainer
+import com.example.dinesplit.core.firebase.FirebaseProviders
 import com.example.dinesplit.domain.model.Bill
 import com.example.dinesplit.domain.model.SplitMethod
 import com.example.dinesplit.ui.theme.BrandPrimary
@@ -78,12 +83,47 @@ fun GroupDetailScreen(
     val viewModel = remember(groupId) {
         GroupDetailViewModel(
             repository = AppContainer.splitRepository(context),
-            groupId = groupId
+            groupId = groupId,
+            currentUserId = FirebaseProviders.auth.currentUser?.uid
         )
     }
     val uiState by viewModel.uiState.collectAsState()
     val colorScheme = MaterialTheme.colorScheme
     var selectedTab by remember { mutableStateOf(GroupDetailTab.Bills) }
+    var showLeaveDialog by remember { mutableStateOf(false) }
+    var showDeleteDialog by remember { mutableStateOf(false) }
+
+    LaunchedEffect(uiState.isDeleted, uiState.isLeft) {
+        if (uiState.isDeleted || uiState.isLeft) {
+            onBack()
+        }
+    }
+
+    if (showLeaveDialog) {
+        LeaveGroupConfirmDialog(
+            groupName = uiState.group?.name.orEmpty(),
+            isLeaving = uiState.isLeaving,
+            onDismiss = {
+                if (!uiState.isLeaving) {
+                    showLeaveDialog = false
+                }
+            },
+            onConfirm = viewModel::leaveGroup
+        )
+    }
+
+    if (showDeleteDialog) {
+        DeleteGroupConfirmDialog(
+            groupName = uiState.group?.name.orEmpty(),
+            isDeleting = uiState.isDeleting,
+            onDismiss = {
+                if (!uiState.isDeleting) {
+                    showDeleteDialog = false
+                }
+            },
+            onConfirm = viewModel::deleteGroup
+        )
+    }
 
     Scaffold(
         containerColor = colorScheme.surface,
@@ -91,7 +131,10 @@ fun GroupDetailScreen(
             DetailTopBar(
                 groupName = uiState.group?.name ?: "Chi tiết nhóm",
                 memberCount = uiState.members.size.takeIf { it > 0 } ?: uiState.group?.memberCount ?: 0,
-                onBack = onBack
+                isOwner = uiState.isCurrentUserOwner,
+                onBack = onBack,
+                onLeaveClick = { showLeaveDialog = true },
+                onDeleteClick = { showDeleteDialog = true }
             )
         },
         floatingActionButton = {
@@ -209,6 +252,7 @@ fun GroupDetailScreen(
                 }
             }
         }
+
     }
 }
 
@@ -216,7 +260,10 @@ fun GroupDetailScreen(
 private fun DetailTopBar(
     groupName: String,
     memberCount: Int,
-    onBack: () -> Unit
+    isOwner: Boolean,
+    onBack: () -> Unit,
+    onLeaveClick: () -> Unit,
+    onDeleteClick: () -> Unit
 ) {
     val colorScheme = MaterialTheme.colorScheme
 
@@ -257,7 +304,10 @@ private fun DetailTopBar(
             )
         }
 
-        Row(verticalAlignment = Alignment.CenterVertically) {
+        Row(
+            modifier = Modifier.clickable(onClick = onLeaveClick),
+            verticalAlignment = Alignment.CenterVertically
+        ) {
             Row(horizontalArrangement = Arrangement.spacedBy((-12).dp)) {
                 repeat(minOf(3, memberCount.coerceAtLeast(1))) {
                     Box(
@@ -270,13 +320,134 @@ private fun DetailTopBar(
             }
             Spacer(modifier = Modifier.width(8.dp))
             Icon(
-                imageVector = Icons.Default.Settings,
-                contentDescription = "Cài đặt",
+                imageVector = Icons.AutoMirrored.Filled.ExitToApp,
+                contentDescription = "Rời nhóm",
                 tint = colorScheme.outline,
                 modifier = Modifier.size(24.dp)
             )
         }
+
+        if (isOwner) {
+            IconButton(onClick = onDeleteClick, modifier = Modifier.size(40.dp)) {
+                Icon(
+                    imageVector = Icons.Default.Delete,
+                    contentDescription = "Xóa nhóm",
+                    tint = colorScheme.error,
+                    modifier = Modifier.size(22.dp)
+                )
+            }
+        }
     }
+}
+
+@Composable
+private fun LeaveGroupConfirmDialog(
+    groupName: String,
+    isLeaving: Boolean,
+    onDismiss: () -> Unit,
+    onConfirm: () -> Unit
+) {
+    val colorScheme = MaterialTheme.colorScheme
+    val displayName = groupName.ifBlank { "nhóm này" }
+
+    AlertDialog(
+        onDismissRequest = onDismiss,
+        title = {
+            Text(
+                text = "Rời nhóm?",
+                fontWeight = FontWeight.Bold,
+                color = colorScheme.onSurface
+            )
+        },
+        text = {
+            Text(
+                text = "Bạn sẽ rời khỏi nhóm \"$displayName\". Nhóm và hóa đơn vẫn được giữ lại cho các thành viên còn lại.",
+                color = colorScheme.onSurfaceVariant
+            )
+        },
+        confirmButton = {
+            TextButton(
+                onClick = onConfirm,
+                enabled = !isLeaving
+            ) {
+                if (isLeaving) {
+                    CircularProgressIndicator(
+                        modifier = Modifier.size(16.dp),
+                        strokeWidth = 2.dp
+                    )
+                } else {
+                    Text(
+                        text = "Rời nhóm",
+                        color = colorScheme.error,
+                        fontWeight = FontWeight.Bold
+                    )
+                }
+            }
+        },
+        dismissButton = {
+            TextButton(
+                onClick = onDismiss,
+                enabled = !isLeaving
+            ) {
+                Text("Hủy")
+            }
+        }
+    )
+}
+
+@Composable
+private fun DeleteGroupConfirmDialog(
+    groupName: String,
+    isDeleting: Boolean,
+    onDismiss: () -> Unit,
+    onConfirm: () -> Unit
+) {
+    val colorScheme = MaterialTheme.colorScheme
+    val displayName = groupName.ifBlank { "nhóm này" }
+
+    AlertDialog(
+        onDismissRequest = onDismiss,
+        title = {
+            Text(
+                text = "Xóa nhóm?",
+                fontWeight = FontWeight.Bold,
+                color = colorScheme.onSurface
+            )
+        },
+        text = {
+            Text(
+                text = "Nhóm \"$displayName\" cùng toàn bộ hóa đơn và thành viên sẽ bị xóa khỏi Firebase.",
+                color = colorScheme.onSurfaceVariant
+            )
+        },
+        confirmButton = {
+            TextButton(
+                onClick = onConfirm,
+                enabled = !isDeleting
+            ) {
+                if (isDeleting) {
+                    CircularProgressIndicator(
+                        modifier = Modifier.size(16.dp),
+                        strokeWidth = 2.dp
+                    )
+                } else {
+                    Text(
+                        text = "Xóa",
+                        color = colorScheme.error,
+                        fontWeight = FontWeight.Bold
+                    )
+                }
+            }
+        },
+        dismissButton = {
+            TextButton(
+                onClick = onDismiss,
+                enabled = !isDeleting
+            ) {
+                Text("Hủy")
+            }
+        }
+    )
 }
 
 @Composable

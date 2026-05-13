@@ -34,7 +34,7 @@ class FirebaseSplitRepository(
                     close(error)
                     return@addSnapshotListener
                 }
-                trySend(snapshot?.toGroups().orEmpty())
+                trySend(snapshot?.toVisibleGroups().orEmpty())
             }
 
         awaitClose { registration.remove() }
@@ -90,12 +90,68 @@ class FirebaseSplitRepository(
         val groupRef = firestore.collection("groups").document(group.id)
         val batch = firestore.batch()
 
-        batch.set(groupRef, group)
+        batch.set(groupRef, group.toMap(memberIds = members.map { it.id }))
         members.forEach { member ->
             batch.set(groupRef.collection("members").document(member.id), member.toMap())
         }
 
         batch.commit().await()
+    }
+
+    override suspend fun deleteGroup(groupId: String, userId: String): Result<Unit> {
+        return runCatching {
+            require(userId.isNotBlank()) { "Bạn cần đăng nhập để xóa nhóm" }
+
+            val groupRef = firestore.collection("groups").document(groupId)
+            val groupSnapshot = groupRef.get().awaitFirebase()
+            val ownerId = groupSnapshot.getString("ownerId")
+                ?: groupSnapshot.getStringListField("memberIds").firstOrNull()
+            require(ownerId == userId) {
+                "Chỉ chủ nhóm mới có quyền xóa nhóm"
+            }
+
+            val bills = groupRef.collection("bills").get().awaitFirebase()
+            val members = groupRef.collection("members").get().awaitFirebase()
+            val batch = firestore.batch()
+
+            bills.documents.forEach { document ->
+                batch.delete(document.reference)
+            }
+            members.documents.forEach { document ->
+                batch.delete(document.reference)
+            }
+            batch.delete(groupRef)
+            batch.commit().awaitFirebase()
+        }
+    }
+
+    override suspend fun leaveGroup(groupId: String, userId: String): Result<Unit> {
+        return runCatching {
+            require(userId.isNotBlank()) { "Bạn cần đăng nhập để rời nhóm" }
+
+            val groupRef = firestore.collection("groups").document(groupId)
+            val memberRef = groupRef.collection("members").document(userId)
+            val groupSnapshot = groupRef.get().awaitFirebase()
+            val currentMemberIds = groupSnapshot.getStringListField("memberIds")
+            val remainingMemberIds = currentMemberIds.filter { it != userId }
+            val ownerId = groupSnapshot.getString("ownerId")
+            val groupUpdates = mutableMapOf<String, Any>(
+                "memberIds" to FieldValue.arrayRemove(userId),
+                "leftMemberIds" to FieldValue.arrayUnion(userId),
+                "memberCount" to FieldValue.increment(-1),
+                "updatedAt" to System.currentTimeMillis()
+            )
+
+            if (ownerId == userId) {
+                groupUpdates["ownerId"] = remainingMemberIds.firstOrNull().orEmpty()
+            }
+
+            val batch = firestore.batch()
+
+            batch.delete(memberRef)
+            batch.update(groupRef, groupUpdates)
+            batch.commit().awaitFirebase()
+        }
     }
 
     override suspend fun joinGroup(inviteCode: String) {
@@ -152,8 +208,22 @@ class FirebaseSplitRepository(
         }
     }
 
-    private fun QuerySnapshot.toGroups(): List<Group> {
-        return documents.mapNotNull { doc -> doc.toGroup() }
+    private fun QuerySnapshot.toVisibleGroups(): List<Group> {
+        val currentUserId = FirebaseProviders.auth.currentUser?.uid
+        return documents
+            .filter { document -> document.isVisibleTo(currentUserId) }
+            .mapNotNull { doc -> doc.toGroup() }
+    }
+
+    private fun DocumentSnapshot.isVisibleTo(currentUserId: String?): Boolean {
+        if (currentUserId.isNullOrBlank()) return true
+
+        val memberIds = getStringListField("memberIds")
+        val leftMemberIds = getStringListField("leftMemberIds")
+        val hasMembershipList = contains("memberIds")
+
+        return currentUserId !in leftMemberIds &&
+            (!hasMembershipList || currentUserId in memberIds)
     }
 
     private fun DocumentSnapshot.toGroup(): Group? {
@@ -165,7 +235,8 @@ class FirebaseSplitRepository(
             memberCount = getLong("memberCount")?.toInt() ?: 0,
             totalExpense = getDouble("totalExpense") ?: 0.0,
             yourBalance = getDouble("yourBalance") ?: 0.0,
-            createdAt = getLong("createdAt") ?: 0L
+            createdAt = getLong("createdAt") ?: 0L,
+            ownerId = getString("ownerId") ?: getStringListField("memberIds").firstOrNull()
         )
     }
 
@@ -237,6 +308,28 @@ class FirebaseSplitRepository(
             .orEmpty()
 
         return paidMemberIds.ifEmpty { listOfNotNull(getString("payerId")) }
+    }
+
+    private fun DocumentSnapshot.getStringListField(field: String): List<String> {
+        return (get(field) as? List<*>)
+            ?.filterIsInstance<String>()
+            .orEmpty()
+    }
+
+    private fun Group.toMap(memberIds: List<String>): Map<String, Any?> {
+        return mapOf(
+            "id" to id,
+            "name" to name,
+            "imageUrl" to imageUrl,
+            "memberCount" to memberCount,
+            "memberIds" to memberIds,
+            "leftMemberIds" to emptyList<String>(),
+            "ownerId" to ownerId,
+            "totalExpense" to totalExpense,
+            "yourBalance" to yourBalance,
+            "createdAt" to createdAt,
+            "updatedAt" to createdAt
+        )
     }
 
     private fun Bill.toMap(): Map<String, Any> {

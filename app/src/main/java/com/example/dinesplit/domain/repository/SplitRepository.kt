@@ -11,6 +11,8 @@ interface SplitRepository {
     fun getBills(groupId: String): Flow<List<Bill>>
     fun getBill(groupId: String, billId: String): Flow<Bill?>
     suspend fun createGroup(group: Group, members: List<Member> = emptyList())
+    suspend fun deleteGroup(groupId: String, userId: String): Result<Unit>
+    suspend fun leaveGroup(groupId: String, userId: String): Result<Unit>
     suspend fun joinGroup(inviteCode: String)
     fun getGroupMembers(groupId: String): Flow<List<Member>>
     suspend fun saveBill(bill: Bill): Result<Unit>

@@ -29,6 +29,10 @@ class FakeSplitRepository : SplitRepository {
 
     override suspend fun createGroup(group: Group, members: List<Member>) = Unit
 
+    override suspend fun deleteGroup(groupId: String, userId: String): Result<Unit> = Result.success(Unit)
+
+    override suspend fun leaveGroup(groupId: String, userId: String): Result<Unit> = Result.success(Unit)
+
     override suspend fun joinGroup(inviteCode: String) = Unit
 
     override fun getGroupMembers(groupId: String): Flow<List<Member>> = _members

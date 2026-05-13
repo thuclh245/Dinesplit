@@ -46,9 +46,7 @@ import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
-import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
-import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
@@ -60,14 +58,8 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.example.dinesplit.core.common.AppContainer
-
-private data class CreateGroupMemberOption(
-    val id: String,
-    val name: String,
-    val initial: String,
-    val phone: String,
-    val avatarColor: @Composable () -> Color
-)
+import com.example.dinesplit.core.firebase.FirebaseProviders
+import com.example.dinesplit.domain.model.UserProfile
 
 @Composable
 fun CreateGroupScreen(
@@ -75,18 +67,16 @@ fun CreateGroupScreen(
 ) {
     val colorScheme = MaterialTheme.colorScheme
     val context = LocalContext.current
-    val viewModel = remember { CreateGroupViewModel(AppContainer.splitRepository(context)) }
+    val viewModel = remember {
+        CreateGroupViewModel(
+            repository = AppContainer.splitRepository(context),
+            profileRepository = AppContainer.profileRepository(context),
+            currentUserId = FirebaseProviders.auth.currentUser?.uid
+        )
+    }
     val uiState by viewModel.uiState.collectAsState()
     val snackbarHostState = remember { SnackbarHostState() }
-    var searchQuery by remember { mutableStateOf("") }
-
     val categories = listOf("Ăn uống", "Du lịch", "Nhà ở", "Khác")
-    val friends = listOf(
-        CreateGroupMemberOption("minh", "Minh", "M", "090 123 4567", { colorScheme.onSurfaceVariant }),
-        CreateGroupMemberOption("thanh_hang", "Thanh Hằng", "T", "091 987 6543", { colorScheme.outline }),
-        CreateGroupMemberOption("tuan_anh", "Tuấn Anh", "A", "098 555 1234", { colorScheme.outlineVariant })
-    )
-    val selectedCount = uiState.selectedMemberIds.size
 
     LaunchedEffect(uiState.isCreated) {
         if (uiState.isCreated) onBack()
@@ -107,7 +97,7 @@ fun CreateGroupScreen(
         },
         bottomBar = {
             CreateGroupBottomAction(
-                selectedCount = selectedCount,
+                selectedCount = uiState.totalMemberCount,
                 isLoading = uiState.isLoading,
                 canCreate = uiState.groupName.isNotBlank(),
                 onCreateGroup = viewModel::createGroup
@@ -135,11 +125,12 @@ fun CreateGroupScreen(
 
             item {
                 CreateGroupMembersSection(
-                    searchQuery = searchQuery,
-                    onSearchChange = { searchQuery = it },
-                    friends = friends,
+                    searchQuery = uiState.searchQuery,
+                    onSearchChange = viewModel::onSearchQueryChange,
+                    profiles = uiState.searchResults,
                     selectedMemberIds = uiState.selectedMemberIds,
-                    onMemberToggle = viewModel::onMemberToggled
+                    isSearching = uiState.isSearching,
+                    onProfileToggle = viewModel::onProfileToggled
                 )
             }
         }
@@ -283,9 +274,10 @@ private fun CreateGroupInfoCard(
 private fun CreateGroupMembersSection(
     searchQuery: String,
     onSearchChange: (String) -> Unit,
-    friends: List<CreateGroupMemberOption>,
+    profiles: List<UserProfile>,
     selectedMemberIds: Set<String>,
-    onMemberToggle: (String) -> Unit
+    isSearching: Boolean,
+    onProfileToggle: (UserProfile) -> Unit
 ) {
     val colorScheme = MaterialTheme.colorScheme
 
@@ -311,7 +303,7 @@ private fun CreateGroupMembersSection(
             Spacer(modifier = Modifier.width(12.dp))
             Box(modifier = Modifier.weight(1f)) {
                 if (searchQuery.isEmpty()) {
-                    Text("Tìm kiếm bạn bè...", color = colorScheme.outline, fontSize = 14.sp)
+                    Text("Tìm theo username...", color = colorScheme.outline, fontSize = 14.sp)
                 }
                 BasicTextField(
                     value = searchQuery,
@@ -324,13 +316,28 @@ private fun CreateGroupMembersSection(
 
         Spacer(modifier = Modifier.height(16.dp))
 
-        Text(
-            text = "Gợi ý",
-            fontSize = 12.sp,
-            fontWeight = FontWeight.SemiBold,
-            color = colorScheme.onSurfaceVariant.copy(alpha = 0.7f),
-            modifier = Modifier.padding(start = 8.dp, bottom = 8.dp)
-        )
+        Row(
+            modifier = Modifier
+                .fillMaxWidth()
+                .padding(start = 8.dp, bottom = 8.dp),
+            verticalAlignment = Alignment.CenterVertically,
+            horizontalArrangement = Arrangement.SpaceBetween
+        ) {
+            Text(
+                text = if (searchQuery.isBlank()) "Người dùng gần đây" else "Kết quả tìm kiếm",
+                fontSize = 12.sp,
+                fontWeight = FontWeight.SemiBold,
+                color = colorScheme.onSurfaceVariant.copy(alpha = 0.7f)
+            )
+            if (isSearching) {
+                CircularProgressIndicator(modifier = Modifier.size(14.dp), strokeWidth = 2.dp)
+            }
+        }
+
+        if (profiles.isEmpty() && !isSearching) {
+            EmptyProfileSearchCard(searchQuery = searchQuery)
+            return
+        }
 
         Card(
             modifier = Modifier.fillMaxWidth(),
@@ -339,13 +346,13 @@ private fun CreateGroupMembersSection(
             shape = RoundedCornerShape(16.dp)
         ) {
             Column {
-                friends.forEachIndexed { index, friend ->
+                profiles.forEachIndexed { index, profile ->
                     CreateGroupMemberRow(
-                        friend = friend,
-                        isSelected = selectedMemberIds.contains(friend.id),
-                        onClick = { onMemberToggle(friend.id) }
+                        profile = profile,
+                        isSelected = selectedMemberIds.contains(profile.uid),
+                        onClick = { onProfileToggle(profile) }
                     )
-                    if (index < friends.size - 1) {
+                    if (index < profiles.size - 1) {
                         HorizontalDivider(color = colorScheme.surfaceContainerHigh)
                     }
                 }
@@ -355,12 +362,36 @@ private fun CreateGroupMembersSection(
 }
 
 @Composable
+private fun EmptyProfileSearchCard(searchQuery: String) {
+    val colorScheme = MaterialTheme.colorScheme
+    Card(
+        modifier = Modifier.fillMaxWidth(),
+        colors = CardDefaults.cardColors(containerColor = colorScheme.surfaceContainerLowest),
+        elevation = CardDefaults.cardElevation(defaultElevation = 1.dp),
+        shape = RoundedCornerShape(16.dp)
+    ) {
+        Text(
+            text = if (searchQuery.isBlank()) {
+                "Chưa có người dùng nào để gợi ý."
+            } else {
+                "Không tìm thấy người dùng phù hợp."
+            },
+            modifier = Modifier.padding(18.dp),
+            fontSize = 13.sp,
+            color = colorScheme.onSurfaceVariant
+        )
+    }
+}
+
+@Composable
 private fun CreateGroupMemberRow(
-    friend: CreateGroupMemberOption,
+    profile: UserProfile,
     isSelected: Boolean,
     onClick: () -> Unit
 ) {
     val colorScheme = MaterialTheme.colorScheme
+    val displayName = profile.displayName.ifBlank { profile.username.ifBlank { profile.email } }
+    val initial = displayName.firstOrNull()?.uppercase().orEmpty()
 
     Row(
         modifier = Modifier
@@ -375,15 +406,19 @@ private fun CreateGroupMemberRow(
                 modifier = Modifier
                     .size(48.dp)
                     .clip(CircleShape)
-                    .background(friend.avatarColor()),
+                    .background(if (isSelected) colorScheme.primary else colorScheme.outlineVariant),
                 contentAlignment = Alignment.Center
             ) {
-                Text(friend.initial, color = colorScheme.surfaceContainerLowest, fontWeight = FontWeight.Bold, fontSize = 18.sp)
+                Text(initial, color = colorScheme.surfaceContainerLowest, fontWeight = FontWeight.Bold, fontSize = 18.sp)
             }
             Spacer(modifier = Modifier.width(16.dp))
             Column {
-                Text(friend.name, fontWeight = FontWeight.Bold, fontSize = 14.sp, color = colorScheme.onSurface)
-                Text(friend.phone, fontSize = 12.sp, color = colorScheme.onSurfaceVariant.copy(alpha = 0.7f))
+                Text(displayName, fontWeight = FontWeight.Bold, fontSize = 14.sp, color = colorScheme.onSurface)
+                Text(
+                    text = "@${profile.username}",
+                    fontSize = 12.sp,
+                    color = colorScheme.onSurfaceVariant.copy(alpha = 0.7f)
+                )
             }
         }
 
@@ -426,7 +461,7 @@ private fun CreateGroupBottomAction(
                 verticalAlignment = Alignment.CenterVertically
             ) {
                 Row(horizontalArrangement = Arrangement.spacedBy((-12).dp)) {
-                    val avatarColors = listOf(colorScheme.onSurfaceVariant, colorScheme.outline, colorScheme.outlineVariant)
+                    val avatarColors = listOf(colorScheme.primary, colorScheme.secondary, colorScheme.tertiary)
                     repeat(minOf(3, selectedCount)) { index ->
                         Box(
                             modifier = Modifier

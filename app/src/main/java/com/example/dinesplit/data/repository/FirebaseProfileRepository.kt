@@ -35,6 +35,33 @@ class FirebaseProfileRepository private constructor(
         }
     }
 
+    override suspend fun searchProfiles(query: String, limit: Long): Result<List<UserProfile>> {
+        return runCatching {
+            val normalizedQuery = normalizeUsername(query)
+            val usersRef = firestore.collection(COLLECTION_USERS)
+
+            val snapshot = if (normalizedQuery.isBlank()) {
+                usersRef
+                    .orderBy(FIELD_UPDATED_AT, com.google.firebase.firestore.Query.Direction.DESCENDING)
+                    .limit(limit)
+                    .get()
+                    .awaitFirebase()
+            } else {
+                usersRef
+                    .orderBy(FIELD_USERNAME_LOWER)
+                    .startAt(normalizedQuery)
+                    .endAt(normalizedQuery + "\uf8ff")
+                    .limit(limit)
+                    .get()
+                    .awaitFirebase()
+            }
+
+            snapshot.documents.mapNotNull { document ->
+                document.toUserProfile(document.id)
+            }
+        }
+    }
+
     override suspend fun upsertProfile(profile: UserProfile): Result<Unit> {
         return runCatching {
             val normalizedUsername = normalizeUsername(profile.username)
