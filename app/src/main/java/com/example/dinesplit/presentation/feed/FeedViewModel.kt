@@ -1,0 +1,58 @@
+package com.example.dinesplit.presentation.feed
+
+import android.app.Application
+import androidx.lifecycle.AndroidViewModel
+import androidx.lifecycle.viewModelScope
+import com.example.dinesplit.core.common.AppContainer
+import com.example.dinesplit.domain.model.Post
+import com.example.dinesplit.domain.model.UserProfile
+import kotlinx.coroutines.flow.SharingStarted
+import kotlinx.coroutines.flow.StateFlow
+import kotlinx.coroutines.flow.combine
+import kotlinx.coroutines.flow.stateIn
+import kotlinx.coroutines.launch
+
+data class FeedUiState(
+    val posts: List<Post> = emptyList(),
+    val currentUser: UserProfile? = null,
+    val isLoading: Boolean = true
+)
+
+class FeedViewModel(application: Application) : AndroidViewModel(application) {
+
+    private val getFeedUseCase = AppContainer.getFeedUseCase()
+    private val observeSessionUseCase = AppContainer.observeSessionUseCase(application)
+    private val getCurrentUserProfileUseCase = AppContainer.getCurrentUserProfileUseCase(application)
+    private val likePostUseCase = AppContainer.likePostUseCase()
+    private val unlikePostUseCase = AppContainer.unlikePostUseCase()
+
+    val uiState: StateFlow<FeedUiState> = combine(
+        getFeedUseCase(),
+        observeSessionUseCase()
+    ) { posts, session ->
+        val userProfile = session?.uid?.let { getCurrentUserProfileUseCase(it) }
+        FeedUiState(
+            posts = posts,
+            currentUser = userProfile,
+            isLoading = false
+        )
+    }.stateIn(
+        scope = viewModelScope,
+        started = SharingStarted.WhileSubscribed(5000),
+        initialValue = FeedUiState()
+    )
+
+    fun onLikePost(postId: String) {
+        val uid = uiState.value.currentUser?.uid ?: return
+        viewModelScope.launch {
+            likePostUseCase(postId, uid)
+        }
+    }
+
+    fun onUnlikePost(postId: String) {
+        val uid = uiState.value.currentUser?.uid ?: return
+        viewModelScope.launch {
+            unlikePostUseCase(postId, uid)
+        }
+    }
+}
