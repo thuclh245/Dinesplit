@@ -66,11 +66,11 @@ fun PersonalScreen(
     onOpenCategories: () -> Unit = {},
     onRefresh: () -> Unit = {}
 ) {
-    val expenseSlices = remember(uiState.transactions, uiState.categories) {
-        buildExpenseSlices(uiState.transactions, uiState.categories)
+    val expenseSlices = remember(chartState) {
+        chartState.pieSlices
     }
-    val dailyBars = remember(uiState.transactions) {
-        buildDailyExpenseBars(uiState.transactions)
+    val dailyBars = remember(chartState) {
+        chartState.dailyExpenseBars
     }
 
     Scaffold(
@@ -374,43 +374,8 @@ private fun TransactionRow(transaction: Transaction) {
     }
 }
 
-private fun buildExpenseSlices(
-    transactions: List<Transaction>,
-    categories: List<StoredCategory>
-): List<PieCategorySlice> {
-    val categoryNames = categories.associate { it.id to it.name }
-    val expenseByCategory = transactions
-        .filter { it.type == TransactionType.EXPENSE }
-        .groupBy { it.categoryId }
-        .mapValues { (_, items) -> items.sumOf { it.amount } }
-    val totalExpense = expenseByCategory.values.sum()
-
-    if (totalExpense <= 0.0) return emptyList()
-
-    return expenseByCategory
-        .entries
-        .sortedByDescending { it.value }
-        .map { (categoryId, amount) ->
-            PieCategorySlice(
-                category = categoryNames[categoryId] ?: "Unknown",
-                amount = amount,
-                percentage = (amount / totalExpense).toFloat()
-            )
-        }
-}
-
-private fun buildDailyExpenseBars(transactions: List<Transaction>): List<DailyExpenseBar> {
-    return transactions
-        .filter { it.type == TransactionType.EXPENSE }
-        .groupBy { transaction ->
-            Calendar.getInstance().apply { timeInMillis = transaction.date }
-                .get(Calendar.DAY_OF_MONTH)
-        }
-        .map { (day, items) ->
-            DailyExpenseBar(dayOfMonth = day, amount = items.sumOf { it.amount })
-        }
-        .sortedBy { it.dayOfMonth }
-}
+// Chart data is now computed in PersonalViewModel via chartState
+// No need to recompute here - chartState.pieSlices and chartState.dailyExpenseBars are ready to use
 
 private fun formatSignedMoney(transaction: Transaction): String {
     val sign = if (transaction.type == TransactionType.INCOME) "+" else "-"

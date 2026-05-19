@@ -13,7 +13,10 @@ data class Notification(
     val relatedId: String? = null,  // Can reference Split, Bill, Transaction, Post ID
     val isRead: Boolean = false,
     val createdAt: Long,
-    val updatedAt: Long
+    val updatedAt: Long,
+    // Deep link support for tuần 2
+    val deepLinkDestination: String? = null,  // NotificationDestination name
+    val deepLinkTargetId: String? = null
 )
 
 enum class NotificationType {

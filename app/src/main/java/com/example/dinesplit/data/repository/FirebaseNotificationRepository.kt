@@ -82,7 +82,9 @@ class FirebaseNotificationRepository private constructor(
             relatedId = getString(FIELD_RELATED_ID),
             isRead = getBoolean(FIELD_IS_READ) ?: false,
             createdAt = getLong(FIELD_CREATED_AT) ?: return null,
-            updatedAt = getLong(FIELD_UPDATED_AT) ?: System.currentTimeMillis()
+            updatedAt = getLong(FIELD_UPDATED_AT) ?: System.currentTimeMillis(),
+            deepLinkDestination = getString(FIELD_DEEP_LINK_DESTINATION),
+            deepLinkTargetId = getString(FIELD_DEEP_LINK_TARGET_ID)
         )
     }
 
@@ -113,6 +115,8 @@ class FirebaseNotificationRepository private constructor(
         private const val FIELD_IS_READ = "isRead"
         private const val FIELD_CREATED_AT = "createdAt"
         private const val FIELD_UPDATED_AT = "updatedAt"
+        private const val FIELD_DEEP_LINK_DESTINATION = "deepLinkDestination"
+        private const val FIELD_DEEP_LINK_TARGET_ID = "deepLinkTargetId"
 
         @Volatile
         private var INSTANCE: FirebaseNotificationRepository? = null
