@@ -112,7 +112,34 @@ fun AppNavHost(
         }
 
         composable(AppRoute.Notifications.route) {
-            NotificationScreen()
+            NotificationScreen(
+                onNotificationClick = { notification ->
+                    // Deep link navigation based on notification type
+                    val destination = notification.deepLinkDestination
+                    val targetId = notification.deepLinkTargetId
+
+                    if (destination != null && targetId != null) {
+                        when (destination) {
+                            "SPLIT_DETAIL" -> navController.navigate(
+                                AppRoute.GroupDetail.createRoute(targetId)
+                            )
+                            "TRANSACTION_DETAIL" -> navController.navigate(
+                                AppRoute.TransactionDetail.createRoute(targetId)
+                            )
+                            "SPLIT_SETTLE" -> navController.navigate(
+                                AppRoute.BillDetail.createRoute("", targetId)
+                            )
+                            "ACTIVITY_DETAIL" -> navController.navigate(
+                                AppRoute.PostDetail.createRoute(targetId)
+                            )
+                            "PROFILE" -> navController.navigate(
+                                AppRoute.OtherUserProfile.createRoute(targetId)
+                            )
+                            else -> {} // No navigation
+                        }
+                    }
+                }
+            )
         }
 
         composable(AppRoute.Assistant.route) {

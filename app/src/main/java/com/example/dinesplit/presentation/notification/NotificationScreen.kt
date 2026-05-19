@@ -1,5 +1,6 @@
 package com.example.dinesplit.presentation.notification
 
+import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
@@ -31,7 +32,9 @@ import com.example.dinesplit.core.ui.LoadingBlock
 import com.example.dinesplit.domain.model.NotificationType
 
 @Composable
-fun NotificationScreen() {
+fun NotificationScreen(
+    onNotificationClick: (Notification) -> Unit = {}
+) {
     val viewModel: NotificationViewModel = viewModel()
     val notifications = viewModel.notifications.collectAsState().value
     val uiState = viewModel.uiState.collectAsState().value
@@ -83,6 +86,9 @@ fun NotificationScreen() {
                                 if (!notification.isRead) {
                                     viewModel.markAsRead(notification.id)
                                 }
+                            },
+                            onClick = {
+                                onNotificationClick(notification)
                             }
                         )
                     }
@@ -95,7 +101,8 @@ fun NotificationScreen() {
 @Composable
 private fun NotificationItemCard(
     notification: com.example.dinesplit.domain.model.Notification,
-    onMarkAsRead: () -> Unit
+    onMarkAsRead: () -> Unit,
+    onClick: () -> Unit = {}
 ) {
     val icon = when (notification.type) {
         NotificationType.PAYMENT_COMPLETED -> Icons.Filled.CheckCircle
@@ -107,7 +114,9 @@ private fun NotificationItemCard(
         NotificationType.OTHER -> Icons.Filled.NotificationsActive
     }
 
-    AppCard {
+    AppCard(
+        modifier = Modifier.clickable { onClick() }
+    ) {
         Row(
             modifier = Modifier.fillMaxWidth(),
             verticalAlignment = Alignment.Top,

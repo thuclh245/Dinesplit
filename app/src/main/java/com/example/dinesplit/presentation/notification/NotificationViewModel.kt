@@ -6,7 +6,9 @@ import androidx.lifecycle.viewModelScope
 import com.example.dinesplit.core.common.AppContainer
 import com.example.dinesplit.core.firebase.FirebaseErrorMapper
 import com.example.dinesplit.core.firebase.FirebaseProviders
-import com.example.dinesplit.domain.model.Notification
+import com.example.dinesplit.domain.model.SplitNotificationTrigger
+import com.example.dinesplit.domain.model.FeedNotificationTrigger
+import com.example.dinesplit.domain.model.NotificationFactory
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
@@ -80,6 +82,35 @@ class NotificationViewModel(application: Application) : AndroidViewModel(applica
             }.onFailure { throwable ->
                 _uiState.value = _uiState.value.copy(
                     errorMessage = FirebaseErrorMapper.toUserMessage(throwable)
+                )
+            }
+        }
+    }
+
+    // Tuần 3: Trigger handlers từ B/D
+    fun onFeedTrigger(trigger: FeedNotificationTrigger) {
+        viewModelScope.launch(Dispatchers.IO) {
+            runCatching {
+                val notification = NotificationFactory.fromFeedTrigger(trigger, currentUserId())
+                // Lưu vào Firestore (tuần 3+)
+                // Giờ chỉ add vào in-memory
+                _notifications.value = listOf(notification) + _notifications.value
+                _uiState.value = _uiState.value.copy(
+                    unreadCount = _notifications.value.count { !it.isRead }
+                )
+            }
+        }
+    }
+
+    fun onSplitTrigger(trigger: SplitNotificationTrigger) {
+        viewModelScope.launch(Dispatchers.IO) {
+            runCatching {
+                val notification = NotificationFactory.fromSplitTrigger(trigger, currentUserId())
+                // Lưu vào Firestore (tuần 3+)
+                // Giờ chỉ add vào in-memory
+                _notifications.value = listOf(notification) + _notifications.value
+                _uiState.value = _uiState.value.copy(
+                    unreadCount = _notifications.value.count { !it.isRead }
                 )
             }
         }
