@@ -1,5 +1,7 @@
 package com.example.dinesplit.core.navigation
 
+import android.net.Uri
+
 sealed class AppRoute(val route: String) {
 
     data object Splash : AppRoute("splash")
@@ -7,7 +9,22 @@ sealed class AppRoute(val route: String) {
     data object Register : AppRoute("register")
     data object CompleteProfile : AppRoute("complete_profile")
 
-    data object MainContainer : AppRoute("main")
+    data object MainContainer : AppRoute("main") {
+        const val ARG_TAB = "tab"
+        const val ARG_TARGET = "target"
+        val routeWithArgs = "$route?$ARG_TAB={$ARG_TAB}&$ARG_TARGET={$ARG_TARGET}"
+
+        fun createRoute(
+            tab: String? = null,
+            target: String? = null
+        ): String {
+            val args = buildList {
+                if (!tab.isNullOrBlank()) add("$ARG_TAB=${Uri.encode(tab)}")
+                if (!target.isNullOrBlank()) add("$ARG_TARGET=${Uri.encode(target)}")
+            }
+            return if (args.isEmpty()) route else "$route?${args.joinToString("&")}"
+        }
+    }
 
     data object Feed : AppRoute("feed")
     data object CreatePost : AppRoute("create_post")

@@ -515,7 +515,7 @@ private fun previewManagedCategories(): List<ManagedCategory> {
             type = CategoryTypeFilter.EXPENSE,
             isCustom = false,
             description = "Restaurants, cafes, and delivery.",
-            amountLabel = "$1,450.00",
+            amountLabel = "1,450,000 VND",
             progress = 0.65f,
             isActive = true
         ),
@@ -526,7 +526,7 @@ private fun previewManagedCategories(): List<ManagedCategory> {
             type = CategoryTypeFilter.EXPENSE,
             isCustom = false,
             description = "Supermarkets and local markets.",
-            amountLabel = "$820.45",
+            amountLabel = "820,000 VND",
             progress = 0.40f,
             isActive = false
         ),
@@ -537,7 +537,7 @@ private fun previewManagedCategories(): List<ManagedCategory> {
             type = CategoryTypeFilter.EXPENSE,
             isCustom = false,
             description = "Rideshares and public transport.",
-            amountLabel = "$340.00",
+            amountLabel = "340,000 VND",
             progress = 0.0f,
             isActive = false
         ),
@@ -548,7 +548,7 @@ private fun previewManagedCategories(): List<ManagedCategory> {
             type = CategoryTypeFilter.INCOME,
             isCustom = false,
             description = "Monthly fixed salary income.",
-            amountLabel = "$3,500.00",
+            amountLabel = "3,500,000 VND",
             progress = 0.72f,
             isActive = true
         )

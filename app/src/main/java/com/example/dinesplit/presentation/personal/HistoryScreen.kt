@@ -10,8 +10,6 @@ import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
-import androidx.compose.foundation.rememberScrollState
-import androidx.compose.foundation.verticalScroll
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.material3.FilterChip
 import androidx.compose.material3.HorizontalDivider
@@ -20,7 +18,6 @@ import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
 import androidx.compose.material3.TextFieldDefaults
-import androidx.compose.material3.FilterChip
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
@@ -38,6 +35,7 @@ import com.example.dinesplit.core.ui.AppScaffold
 import com.example.dinesplit.core.ui.EmptyStateBlock
 import com.example.dinesplit.domain.model.TransactionType
 import com.example.dinesplit.ui.theme.DineSplitTheme
+import java.text.NumberFormat
 import java.util.Locale
 
 data class HistoryTransactionItem(
@@ -54,7 +52,7 @@ data class HistoryTransactionItem(
 @Composable
 fun HistoryScreen(
     onBack: () -> Unit,
-    transactions: List<HistoryTransactionItem> = defaultHistoryTransactions(),
+    transactions: List<HistoryTransactionItem> = emptyList(),
     onTransactionClick: (HistoryTransactionItem) -> Unit = {}
 ) {
     var query by rememberSaveable { mutableStateOf("") }
@@ -121,7 +119,7 @@ fun HistoryScreen(
                         Column {
                             Text("Income", style = MaterialTheme.typography.labelSmall)
                             Text(
-                                "+\$${String.format(Locale.US, "%.2f", summaryStats.first)}",
+                                "+${formatHistoryMoney(summaryStats.first)}",
                                 style = MaterialTheme.typography.titleMedium,
                                 color = MaterialTheme.colorScheme.primary
                             )
@@ -129,7 +127,7 @@ fun HistoryScreen(
                         Column(horizontalAlignment = Alignment.End) {
                             Text("Expense", style = MaterialTheme.typography.labelSmall)
                             Text(
-                                "-\$${String.format(Locale.US, "%.2f", summaryStats.second)}",
+                                "-${formatHistoryMoney(summaryStats.second)}",
                                 style = MaterialTheme.typography.titleMedium,
                                 color = MaterialTheme.colorScheme.error
                             )
@@ -139,7 +137,7 @@ fun HistoryScreen(
                     Row(horizontalArrangement = Arrangement.spacedBy(AppDimens.spaceSm)) {
                         Text("Net:", style = MaterialTheme.typography.labelSmall)
                         Text(
-                            "\$${String.format(Locale.US, "%.2f", summaryStats.first - summaryStats.second)}",
+                            formatHistoryMoney(summaryStats.first - summaryStats.second),
                             style = MaterialTheme.typography.titleSmall,
                             fontWeight = FontWeight.Bold
                         )
@@ -184,7 +182,11 @@ fun HistoryScreen(
             if (groupedTransactions.isEmpty()) {
                 EmptyStateBlock(
                     title = "No transactions found",
-                    subtitle = "Try a different keyword."
+                    subtitle = if (transactions.isEmpty()) {
+                        "Add a transaction to build your Firebase ledger."
+                    } else {
+                        "Try a different keyword."
+                    }
                 )
             } else {
                 LazyColumn(
@@ -234,6 +236,11 @@ private fun historyGroupLabel(item: HistoryTransactionItem): String {
 
 private fun parseAmount(amountStr: String): Double {
     return amountStr.replace(Regex("[^\\d.-]"), "").toDoubleOrNull() ?: 0.0
+}
+
+private fun formatHistoryMoney(amount: Double): String {
+    val formatter = NumberFormat.getNumberInstance(Locale("vi", "VN"))
+    return "${formatter.format(amount.toLong())} VND"
 }
 
 @Composable
@@ -302,61 +309,6 @@ private fun HistoryTransactionRow(
             )
         }
     }
-}
-
-private fun defaultHistoryTransactions(): List<HistoryTransactionItem> {
-    return listOf(
-        HistoryTransactionItem(
-            id = "tx_1",
-            categoryIcon = "FD",
-            category = "The Continental",
-            amount = "-84.50",
-            date = "Today, 8:30 PM",
-            month = "Apr 2026",
-            type = TransactionType.EXPENSE,
-            note = "Dinner with Sarah"
-        ),
-        HistoryTransactionItem(
-            id = "tx_2",
-            categoryIcon = "PM",
-            category = "Sarah M.",
-            amount = "+42.25",
-            date = "Today, 9:00 PM",
-            month = "Apr 2026",
-            type = TransactionType.INCOME,
-            note = "Venmo transfer"
-        ),
-        HistoryTransactionItem(
-            id = "tx_3",
-            categoryIcon = "CF",
-            category = "Blue Bottle",
-            amount = "-6.80",
-            date = "Today, 7:45 AM",
-            month = "Apr 2026",
-            type = TransactionType.EXPENSE,
-            note = "Morning coffee"
-        ),
-        HistoryTransactionItem(
-            id = "tx_4",
-            categoryIcon = "SP",
-            category = "Whole Foods Market",
-            amount = "-142.90",
-            date = "Yesterday, 2:15 PM",
-            month = "Apr 2026",
-            type = TransactionType.EXPENSE,
-            note = "Groceries"
-        ),
-        HistoryTransactionItem(
-            id = "tx_5",
-            categoryIcon = "TR",
-            category = "Uber",
-            amount = "-38.50",
-            date = "Yesterday, 10:00 AM",
-            month = "Apr 2026",
-            type = TransactionType.EXPENSE,
-            note = "Ride to airport"
-        )
-    )
 }
 
 @Preview(showBackground = true, showSystemUi = true)

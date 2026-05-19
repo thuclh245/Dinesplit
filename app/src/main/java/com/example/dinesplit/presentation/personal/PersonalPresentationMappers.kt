@@ -80,7 +80,7 @@ private fun formatSignedPersonalMoney(transaction: Transaction): String {
 
 private fun formatPersonalMoney(amount: Double): String {
     val formatter = NumberFormat.getNumberInstance(Locale("vi", "VN"))
-    return "${formatter.format(amount.toLong())}đ"
+    return "${formatter.format(amount.toLong())} VND"
 }
 
 private fun formatHistoryDate(epochMillis: Long): String {

@@ -15,6 +15,7 @@ import com.example.dinesplit.core.ui.AppScaffold
 import com.example.dinesplit.domain.model.Transaction
 import com.example.dinesplit.domain.model.TransactionType
 import com.example.dinesplit.ui.theme.DineSplitTheme
+import java.text.NumberFormat
 import java.text.SimpleDateFormat
 import java.util.Date
 import java.util.Locale
@@ -90,7 +91,8 @@ fun TransactionDetailScreen(
 
 private fun formatDetailAmount(transaction: Transaction): String {
     val sign = if (transaction.type == TransactionType.INCOME) "+" else "-"
-    return "$sign${String.format(Locale.US, "%,.0f", transaction.amount).replace(',', '.')}đ"
+    val formatter = NumberFormat.getNumberInstance(Locale("vi", "VN"))
+    return "$sign${formatter.format(transaction.amount.toLong())} VND"
 }
 
 private fun formatDateTime(epochMillis: Long): String {

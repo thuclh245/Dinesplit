@@ -31,23 +31,26 @@ class FirebaseNotificationRepository private constructor(
         }
     }
 
-    override suspend fun markAsRead(notificationId: String) {
+    override suspend fun insertNotification(notification: Notification) {
         val uid = requireCurrentUserId()
         firestore
             .collection(COLLECTION_USER_NOTIFICATIONS)
             .document(uid)
             .collection(COLLECTION_NOTIFICATIONS)
-            .document(notificationId)
-            .update(
-                mapOf(
-                    FIELD_IS_READ to true,
-                    FIELD_UPDATED_AT to System.currentTimeMillis()
-                )
-            )
+            .document(notification.id)
+            .set(notification.toFirestoreMap())
             .awaitFirebase()
     }
 
+    override suspend fun markAsRead(notificationId: String) {
+        updateReadState(notificationId = notificationId, isRead = true)
+    }
+
     override suspend fun markAsUnread(notificationId: String) {
+        updateReadState(notificationId = notificationId, isRead = false)
+    }
+
+    private suspend fun updateReadState(notificationId: String, isRead: Boolean) {
         val uid = requireCurrentUserId()
         firestore
             .collection(COLLECTION_USER_NOTIFICATIONS)
@@ -56,7 +59,7 @@ class FirebaseNotificationRepository private constructor(
             .document(notificationId)
             .update(
                 mapOf(
-                    FIELD_IS_READ to false,
+                    FIELD_IS_READ to isRead,
                     FIELD_UPDATED_AT to System.currentTimeMillis()
                 )
             )
@@ -65,11 +68,11 @@ class FirebaseNotificationRepository private constructor(
 
     private fun requireCurrentUserId(): String {
         return FirebaseProviders.auth.currentUser?.uid
-            ?: throw IllegalStateException("Bạn cần đăng nhập để dùng Notification")
+            ?: throw IllegalStateException("Please sign in to use notifications")
     }
 
     private fun com.google.firebase.firestore.DocumentSnapshot.toNotification(uid: String): Notification? {
-        val typeStr = getString(FIELD_TYPE)?.let { value ->
+        val type = getString(FIELD_TYPE)?.let { value ->
             NotificationType.entries.firstOrNull { it.name == value }
         } ?: return null
 
@@ -78,13 +81,29 @@ class FirebaseNotificationRepository private constructor(
             userId = getString(FIELD_USER_ID) ?: uid,
             title = getString(FIELD_TITLE) ?: return null,
             subtitle = getString(FIELD_SUBTITLE) ?: return null,
-            type = typeStr,
-            relatedId = getString(FIELD_RELATED_ID),
+            type = type,
+            relatedId = getString(FIELD_RELATED_ID)?.takeIf { it.isNotBlank() },
             isRead = getBoolean(FIELD_IS_READ) ?: false,
             createdAt = getLong(FIELD_CREATED_AT) ?: return null,
             updatedAt = getLong(FIELD_UPDATED_AT) ?: System.currentTimeMillis(),
-            deepLinkDestination = getString(FIELD_DEEP_LINK_DESTINATION),
-            deepLinkTargetId = getString(FIELD_DEEP_LINK_TARGET_ID)
+            deepLinkDestination = getString(FIELD_DEEP_LINK_DESTINATION)?.takeIf { it.isNotBlank() },
+            deepLinkTargetId = getString(FIELD_DEEP_LINK_TARGET_ID)?.takeIf { it.isNotBlank() }
+        )
+    }
+
+    private fun Notification.toFirestoreMap(): Map<String, Any> {
+        return mapOf(
+            FIELD_ID to id,
+            FIELD_USER_ID to userId,
+            FIELD_TITLE to title,
+            FIELD_SUBTITLE to subtitle,
+            FIELD_TYPE to type.name,
+            FIELD_RELATED_ID to relatedId.orEmpty(),
+            FIELD_IS_READ to isRead,
+            FIELD_CREATED_AT to createdAt,
+            FIELD_UPDATED_AT to updatedAt,
+            FIELD_DEEP_LINK_DESTINATION to deepLinkDestination.orEmpty(),
+            FIELD_DEEP_LINK_TARGET_ID to deepLinkTargetId.orEmpty()
         )
     }
 
@@ -128,4 +147,3 @@ class FirebaseNotificationRepository private constructor(
         }
     }
 }
-

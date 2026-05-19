@@ -116,6 +116,76 @@ service cloud.firestore {
         && data.updatedAt is number;
     }
 
+    function validPersonalReminder(data, uid, reminderId) {
+      return data.keys().hasOnly([
+          'id',
+          'userId',
+          'categoryId',
+          'categoryName',
+          'budgetAmount',
+          'currentSpent',
+          'threshold',
+          'reminderType',
+          'isEnabled',
+          'lastAlertedAt',
+          'createdAt',
+          'updatedAt'
+        ])
+        && data.id == reminderId
+        && data.userId == uid
+        && data.categoryId is string
+        && data.categoryName is string
+        && data.categoryName.size() > 0
+        && data.budgetAmount is number
+        && data.budgetAmount > 0
+        && data.currentSpent is number
+        && data.currentSpent >= 0
+        && data.threshold is number
+        && data.threshold > 0
+        && data.threshold <= 1
+        && data.reminderType in ['DAILY', 'WEEKLY', 'MONTHLY', 'MILESTONE']
+        && data.isEnabled is bool
+        && data.lastAlertedAt is number
+        && data.createdAt is number
+        && data.updatedAt is number;
+    }
+
+    function validNotification(data, uid, notificationId) {
+      return data.keys().hasOnly([
+          'id',
+          'userId',
+          'title',
+          'subtitle',
+          'type',
+          'relatedId',
+          'isRead',
+          'createdAt',
+          'updatedAt',
+          'deepLinkDestination',
+          'deepLinkTargetId'
+        ])
+        && data.id == notificationId
+        && data.userId == uid
+        && data.title is string
+        && data.title.size() > 0
+        && data.subtitle is string
+        && data.type in [
+          'PAYMENT_COMPLETED',
+          'PAYMENT_PENDING',
+          'BILL_CREATED',
+          'SPLIT_COMPLETED',
+          'TRANSACTION_ALERT',
+          'ACTIVITY_UPDATE',
+          'OTHER'
+        ]
+        && data.relatedId is string
+        && data.isRead is bool
+        && data.createdAt is number
+        && data.updatedAt is number
+        && data.deepLinkDestination is string
+        && data.deepLinkTargetId is string;
+    }
+
     match /user_profiles/{uid} {
       allow get, list: if signedIn();
       allow create: if isOwner(uid) && validUserProfile(request.resource.data) && claimMatchesProfileAfterWrite(request.resource.data);
@@ -149,6 +219,26 @@ service cloud.firestore {
         allow read: if isOwner(uid);
         allow create, update: if isOwner(uid)
           && validPersonalCategory(request.resource.data, categoryId);
+        allow delete: if isOwner(uid);
+      }
+
+      match /reminders/{reminderId} {
+        allow read: if isOwner(uid);
+        allow create, update: if isOwner(uid)
+          && validPersonalReminder(request.resource.data, uid, reminderId);
+        allow delete: if isOwner(uid);
+      }
+    }
+
+    match /user_notifications/{uid} {
+      allow get: if isOwner(uid);
+      allow list: if false;
+      allow create, update, delete: if isOwner(uid);
+
+      match /notifications/{notificationId} {
+        allow read: if isOwner(uid);
+        allow create, update: if isOwner(uid)
+          && validNotification(request.resource.data, uid, notificationId);
         allow delete: if isOwner(uid);
       }
     }

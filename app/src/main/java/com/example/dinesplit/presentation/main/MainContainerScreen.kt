@@ -34,6 +34,7 @@ import com.example.dinesplit.presentation.personal.CategoryManagementScreen
 import com.example.dinesplit.presentation.personal.HistoryScreen
 import com.example.dinesplit.presentation.personal.PersonalScreen
 import com.example.dinesplit.presentation.personal.PersonalViewModel
+import com.example.dinesplit.presentation.personal.SpendingReminderScreen
 import com.example.dinesplit.presentation.personal.TransactionDetailScreen
 import com.example.dinesplit.presentation.personal.toHistoryItems
 import com.example.dinesplit.presentation.personal.toManagedCategories
@@ -54,6 +55,8 @@ import kotlinx.coroutines.flow.collectLatest
 
 @Composable
 fun MainContainerScreen(
+    initialTabRoute: String = AppRoute.Feed.route,
+    pendingRoute: String? = null,
     onOpenNotifications: () -> Unit,
     onOpenAssistant: () -> Unit,
     onLogout: () -> Unit
@@ -65,6 +68,7 @@ fun MainContainerScreen(
     val editProfileUiState by profileViewModel.editUiState.collectAsState()
     val personalUiState by personalViewModel.uiState.collectAsState()
     val personalChartState by personalViewModel.chartState.collectAsState()
+    val personalReminders by personalViewModel.reminders.collectAsState()
     val navBackStackEntry by mainNavController.currentBackStackEntryAsState()
     val currentDestination = navBackStackEntry?.destination
     val showBottomBar = BottomTab.items.any { tab ->
@@ -78,6 +82,22 @@ fun MainContainerScreen(
             when (effect) {
                 ProfileUiEffect.LogoutSuccess -> onLogout()
                 ProfileUiEffect.SaveSuccess -> mainNavController.navigateUp()
+            }
+        }
+    }
+
+    LaunchedEffect(initialTabRoute, pendingRoute) {
+        if (initialTabRoute != AppRoute.Feed.route) {
+            mainNavController.navigate(initialTabRoute) {
+                popUpTo(AppRoute.Feed.route) { saveState = true }
+                launchSingleTop = true
+                restoreState = true
+            }
+        }
+
+        if (!pendingRoute.isNullOrBlank()) {
+            mainNavController.navigate(pendingRoute) {
+                launchSingleTop = true
             }
         }
     }
@@ -170,10 +190,12 @@ fun MainContainerScreen(
                     userAvatarUrl = profileUiState.profile?.avatarUrl,
                     uiState = personalUiState,
                     chartState = personalChartState,
+                    reminderCount = personalReminders.size,
                     onOpenSearch = { mainNavController.navigate(AppRoute.Search.route) },
                     onAddTransaction = { mainNavController.navigate(AppRoute.AddTransaction.route) },
                     onOpenHistory = { mainNavController.navigate(AppRoute.TransactionHistory.route) },
                     onOpenCategories = { mainNavController.navigate(AppRoute.CategoryManagement.route) },
+                    onOpenReminders = { mainNavController.navigate(AppRoute.SpendingReminders.route) },
                     onRefresh = personalViewModel::refreshState
                 )
             }
@@ -230,6 +252,24 @@ fun MainContainerScreen(
                         personalViewModel.deleteCategory(category.id)
                     },
                     onBack = { mainNavController.navigateUp() }
+                )
+            }
+            composable(AppRoute.SpendingReminders.route) {
+                SpendingReminderScreen(
+                    onBack = { mainNavController.navigateUp() },
+                    reminders = personalReminders,
+                    categories = personalUiState.categories,
+                    errorMessage = personalUiState.errorMessage,
+                    onCreateReminder = { categoryId, categoryName, budget, threshold, type ->
+                        personalViewModel.addSpendingReminder(
+                            categoryId = categoryId,
+                            categoryName = categoryName,
+                            budgetAmount = budget,
+                            threshold = threshold,
+                            reminderType = type
+                        )
+                    },
+                    onDeleteReminder = personalViewModel::deleteSpendingReminder
                 )
             }
             composable(AppRoute.Profile.route) {

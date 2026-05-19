@@ -277,7 +277,7 @@ private fun AmountInputBlock(
             horizontalArrangement = Arrangement.spacedBy(AppDimens.spaceSm)
         ) {
             Text(
-                text = "$",
+                text = "VND",
                 style = MaterialTheme.typography.displaySmall,
                 color = MaterialTheme.colorScheme.outline
             )

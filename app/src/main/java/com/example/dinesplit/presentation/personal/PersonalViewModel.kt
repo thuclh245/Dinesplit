@@ -7,6 +7,10 @@ import com.example.dinesplit.core.common.AppContainer
 import com.example.dinesplit.core.firebase.FirebaseErrorMapper
 import com.example.dinesplit.core.firebase.FirebaseProviders
 import com.example.dinesplit.data.model.StoredCategory
+import com.example.dinesplit.domain.model.NotificationFactory
+import com.example.dinesplit.domain.model.PersonalReminderTrigger
+import com.example.dinesplit.domain.model.ReminderType
+import com.example.dinesplit.domain.model.SpendingReminder
 import com.example.dinesplit.domain.model.Transaction
 import com.example.dinesplit.domain.model.TransactionType
 import kotlinx.coroutines.Dispatchers
@@ -19,6 +23,7 @@ import java.util.UUID
 
 class PersonalViewModel(application: Application) : AndroidViewModel(application) {
     private val repository = AppContainer.personalRepository(application)
+    private val notificationRepository = AppContainer.notificationRepository(application)
     private val currentMonthFilter = MutableStateFlow<MonthYearFilter?>(null)
 
     private val _transactions = MutableStateFlow<List<Transaction>>(emptyList())
@@ -36,6 +41,9 @@ class PersonalViewModel(application: Application) : AndroidViewModel(application
     private val _uiState = MutableStateFlow(PersonalUiState())
     val uiState: StateFlow<PersonalUiState> = _uiState.asStateFlow()
 
+    private val _reminders = MutableStateFlow<List<SpendingReminder>>(emptyList())
+    val reminders: StateFlow<List<SpendingReminder>> = _reminders.asStateFlow()
+
     init {
         refreshState()
     }
@@ -47,11 +55,7 @@ class PersonalViewModel(application: Application) : AndroidViewModel(application
                 repository.insertTransaction(transaction)
                 refreshStateInternal(showLoading = false)
             }.onFailure { throwable ->
-                _uiState.value = _uiState.value.copy(
-                    isLoading = false,
-                    isSaving = false,
-                    errorMessage = FirebaseErrorMapper.toUserMessage(throwable)
-                )
+                setError(throwable)
             }
         }
     }
@@ -73,18 +77,14 @@ class PersonalViewModel(application: Application) : AndroidViewModel(application
                         type = type,
                         isCustom = isCustom,
                         description = description.trim(),
-                        amountLabel = "0đ",
+                        amountLabel = "0 VND",
                         progress = 0f,
                         isActive = false
                     )
                 )
                 refreshStateInternal(showLoading = false)
             }.onFailure { throwable ->
-                _uiState.value = _uiState.value.copy(
-                    isLoading = false,
-                    isSaving = false,
-                    errorMessage = FirebaseErrorMapper.toUserMessage(throwable)
-                )
+                setError(throwable)
             }
         }
     }
@@ -113,11 +113,7 @@ class PersonalViewModel(application: Application) : AndroidViewModel(application
                 )
                 refreshStateInternal(showLoading = false)
             }.onFailure { throwable ->
-                _uiState.value = _uiState.value.copy(
-                    isLoading = false,
-                    isSaving = false,
-                    errorMessage = FirebaseErrorMapper.toUserMessage(throwable)
-                )
+                setError(throwable)
             }
         }
     }
@@ -129,11 +125,7 @@ class PersonalViewModel(application: Application) : AndroidViewModel(application
                 repository.deleteCategory(categoryId)
                 refreshStateInternal(showLoading = false)
             }.onFailure { throwable ->
-                _uiState.value = _uiState.value.copy(
-                    isLoading = false,
-                    isSaving = false,
-                    errorMessage = FirebaseErrorMapper.toUserMessage(throwable)
-                )
+                setError(throwable)
             }
         }
     }
@@ -151,6 +143,56 @@ class PersonalViewModel(application: Application) : AndroidViewModel(application
     fun refreshState() {
         viewModelScope.launch(Dispatchers.IO) {
             refreshStateInternal()
+        }
+    }
+
+    fun addSpendingReminder(
+        categoryId: String?,
+        categoryName: String,
+        budgetAmount: Double,
+        threshold: Float,
+        reminderType: ReminderType
+    ) {
+        viewModelScope.launch(Dispatchers.IO) {
+            _uiState.value = _uiState.value.copy(isSaving = true, errorMessage = null)
+            runCatching {
+                repository.insertSpendingReminder(
+                    SpendingReminder(
+                        id = UUID.randomUUID().toString(),
+                        userId = currentUserId(),
+                        categoryId = categoryId,
+                        categoryName = categoryName.trim(),
+                        budgetAmount = budgetAmount,
+                        threshold = threshold,
+                        reminderType = reminderType
+                    )
+                )
+                refreshStateInternal(showLoading = false)
+            }.onFailure { throwable ->
+                setError(throwable)
+            }
+        }
+    }
+
+    fun deleteSpendingReminder(reminderId: String) {
+        viewModelScope.launch(Dispatchers.IO) {
+            _uiState.value = _uiState.value.copy(isSaving = true, errorMessage = null)
+            runCatching {
+                repository.deleteSpendingReminder(reminderId)
+                refreshStateInternal(showLoading = false)
+            }.onFailure { throwable ->
+                setError(throwable)
+            }
+        }
+    }
+
+    fun checkSpendingReminders() {
+        viewModelScope.launch(Dispatchers.IO) {
+            runCatching {
+                syncSpendingReminders(repository.getAllTransactions())
+            }.onFailure { throwable ->
+                setError(throwable)
+            }
         }
     }
 
@@ -187,6 +229,8 @@ class PersonalViewModel(application: Application) : AndroidViewModel(application
                 transactions = filteredTransactions,
                 categories = categories
             )
+
+            syncSpendingReminders(allTransactions)
         }.onFailure { throwable ->
             _transactions.value = emptyList()
             _categories.value = emptyList()
@@ -211,9 +255,8 @@ class PersonalViewModel(application: Application) : AndroidViewModel(application
             val calendar = Calendar.getInstance().apply {
                 timeInMillis = transaction.date
             }
-            val month = calendar.get(Calendar.MONTH) + 1
-            val year = calendar.get(Calendar.YEAR)
-            month == monthFilter.month && year == monthFilter.year
+            calendar.get(Calendar.MONTH) + 1 == monthFilter.month &&
+                calendar.get(Calendar.YEAR) == monthFilter.year
         }
     }
 
@@ -221,13 +264,12 @@ class PersonalViewModel(application: Application) : AndroidViewModel(application
         transactions: List<Transaction>,
         categories: List<StoredCategory>
     ): PersonalUiState {
-        val totalIncome = transactions
+        val income = transactions
             .filter { it.type == TransactionType.INCOME }
             .sumOf { it.amount }
-        val totalExpense = transactions
+        val expense = transactions
             .filter { it.type == TransactionType.EXPENSE }
             .sumOf { it.amount }
-        val balance = totalIncome - totalExpense
 
         return PersonalUiState(
             isLoading = false,
@@ -236,9 +278,91 @@ class PersonalViewModel(application: Application) : AndroidViewModel(application
             currentUserId = currentUserId(),
             transactions = transactions,
             categories = categories,
-            totalIncome = totalIncome,
-            totalExpense = totalExpense,
-            balance = balance
+            totalIncome = income,
+            totalExpense = expense,
+            balance = income - expense
+        )
+    }
+
+    private suspend fun syncSpendingReminders(allTransactions: List<Transaction>) {
+        val uid = currentUserId()
+        if (uid.isEmpty()) {
+            _reminders.value = emptyList()
+            return
+        }
+
+        val reminders = repository.getSpendingReminders()
+        val activeReminders = reminders.filter { it.isEnabled }
+        if (activeReminders.isEmpty()) {
+            _reminders.value = reminders
+            return
+        }
+
+        val calendar = Calendar.getInstance()
+        val currentMonth = calendar.get(Calendar.MONTH) + 1
+        val currentYear = calendar.get(Calendar.YEAR)
+        val currentMonthTransactions = allTransactions.filter { transaction ->
+            val transactionCalendar = Calendar.getInstance().apply {
+                timeInMillis = transaction.date
+            }
+            transactionCalendar.get(Calendar.MONTH) + 1 == currentMonth &&
+                transactionCalendar.get(Calendar.YEAR) == currentYear
+        }
+        val spentByCategory = currentMonthTransactions
+            .filter { it.type == TransactionType.EXPENSE }
+            .groupBy { it.categoryId }
+            .mapValues { (_, items) -> items.sumOf { it.amount } }
+
+        activeReminders.forEach { reminder ->
+            val spent = if (reminder.categoryId == null) {
+                spentByCategory.values.sum()
+            } else {
+                spentByCategory[reminder.categoryId] ?: 0.0
+            }
+            val isOverThreshold = spent >= reminder.budgetAmount * reminder.threshold
+            val wasNotAlertedToday = reminder.lastAlertedAt?.let { lastAlertedAt ->
+                val lastCalendar = Calendar.getInstance().apply {
+                    timeInMillis = lastAlertedAt
+                }
+                lastCalendar.get(Calendar.YEAR) != calendar.get(Calendar.YEAR) ||
+                    lastCalendar.get(Calendar.DAY_OF_YEAR) != calendar.get(Calendar.DAY_OF_YEAR)
+            } ?: true
+
+            when {
+                isOverThreshold && wasNotAlertedToday -> {
+                    notificationRepository.insertNotification(
+                        NotificationFactory.fromReminderTrigger(
+                            PersonalReminderTrigger(
+                                categoryId = reminder.categoryId,
+                                categoryName = reminder.categoryName,
+                                currentSpent = spent,
+                                budgetLimit = reminder.budgetAmount,
+                                thresholdPercent = reminder.threshold
+                            ),
+                            uid
+                        )
+                    )
+                    repository.updateSpendingReminder(
+                        reminder.copy(
+                            currentSpent = spent,
+                            lastAlertedAt = System.currentTimeMillis()
+                        )
+                    )
+                }
+                spent != reminder.currentSpent -> {
+                    repository.updateSpendingReminder(reminder.copy(currentSpent = spent))
+                }
+            }
+        }
+
+        _reminders.value = repository.getSpendingReminders()
+    }
+
+    private fun setError(throwable: Throwable) {
+        _uiState.value = _uiState.value.copy(
+            isLoading = false,
+            isSaving = false,
+            errorMessage = FirebaseErrorMapper.toUserMessage(throwable)
         )
     }
 

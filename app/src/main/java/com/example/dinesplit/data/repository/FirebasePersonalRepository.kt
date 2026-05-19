@@ -3,6 +3,8 @@ package com.example.dinesplit.data.repository
 import android.content.Context
 import com.example.dinesplit.core.firebase.FirebaseProviders
 import com.example.dinesplit.data.model.StoredCategory
+import com.example.dinesplit.domain.model.ReminderType
+import com.example.dinesplit.domain.model.SpendingReminder
 import com.example.dinesplit.domain.model.Transaction
 import com.example.dinesplit.domain.model.TransactionType
 import com.example.dinesplit.domain.repository.PersonalRepository
@@ -94,6 +96,44 @@ class FirebasePersonalRepository private constructor(
             .awaitFirebase()
     }
 
+    override suspend fun getSpendingReminders(): List<SpendingReminder> {
+        val uid = requireCurrentUserId()
+        val snapshot = firestore
+            .collection(COLLECTION_USER_PERSONAL)
+            .document(uid)
+            .collection(COLLECTION_REMINDERS)
+            .get()
+            .awaitFirebase()
+
+        return snapshot.documents.mapNotNull { it.toSpendingReminder() }
+    }
+
+    override suspend fun insertSpendingReminder(reminder: SpendingReminder) {
+        val uid = requireCurrentUserId()
+        firestore
+            .collection(COLLECTION_USER_PERSONAL)
+            .document(uid)
+            .collection(COLLECTION_REMINDERS)
+            .document(reminder.id)
+            .set(reminder.toFirestoreMap())
+            .awaitFirebase()
+    }
+
+    override suspend fun updateSpendingReminder(reminder: SpendingReminder) {
+        insertSpendingReminder(reminder)
+    }
+
+    override suspend fun deleteSpendingReminder(reminderId: String) {
+        val uid = requireCurrentUserId()
+        firestore
+            .collection(COLLECTION_USER_PERSONAL)
+            .document(uid)
+            .collection(COLLECTION_REMINDERS)
+            .document(reminderId)
+            .delete()
+            .awaitFirebase()
+    }
+
     private suspend fun ensureDefaultCategories(uid: String) {
         val categoriesRef = firestore
             .collection(COLLECTION_USER_PERSONAL)
@@ -112,7 +152,7 @@ class FirebasePersonalRepository private constructor(
 
     private fun requireCurrentUserId(): String {
         return FirebaseProviders.auth.currentUser?.uid
-            ?: throw IllegalStateException("Bạn cần đăng nhập để dùng dữ liệu Personal")
+            ?: throw IllegalStateException("Please sign in to use Personal data")
     }
 
     private fun DocumentSnapshot.toTransaction(uid: String): Transaction? {
@@ -146,9 +186,30 @@ class FirebasePersonalRepository private constructor(
             type = type,
             isCustom = getBoolean(FIELD_IS_CUSTOM) ?: false,
             description = getString(FIELD_DESCRIPTION) ?: "",
-            amountLabel = getString(FIELD_AMOUNT_LABEL) ?: "0đ",
+            amountLabel = getString(FIELD_AMOUNT_LABEL) ?: "0 VND",
             progress = getNumberDouble(FIELD_PROGRESS)?.toFloat() ?: 0f,
             isActive = getBoolean(FIELD_IS_ACTIVE) ?: false
+        )
+    }
+
+    private fun DocumentSnapshot.toSpendingReminder(): SpendingReminder? {
+        val type = getString(FIELD_REMINDER_TYPE)?.let { value ->
+            ReminderType.entries.firstOrNull { it.name == value }
+        } ?: ReminderType.MONTHLY
+
+        return SpendingReminder(
+            id = getString(FIELD_ID) ?: id,
+            userId = getString(FIELD_USER_ID) ?: "",
+            categoryId = getString(FIELD_CATEGORY_ID)?.takeIf { it.isNotBlank() },
+            categoryName = getString(FIELD_CATEGORY_NAME) ?: "Overall",
+            budgetAmount = getNumberDouble(FIELD_BUDGET_AMOUNT) ?: 0.0,
+            currentSpent = getNumberDouble(FIELD_CURRENT_SPENT) ?: 0.0,
+            threshold = getNumberDouble(FIELD_THRESHOLD)?.toFloat() ?: 0.8f,
+            reminderType = type,
+            isEnabled = getBoolean(FIELD_IS_ENABLED) ?: true,
+            lastAlertedAt = getLong(FIELD_LAST_ALERTED_AT),
+            createdAt = getLong(FIELD_CREATED_AT) ?: 0L,
+            updatedAt = getLong(FIELD_UPDATED_AT) ?: 0L
         )
     }
 
@@ -189,6 +250,23 @@ class FirebasePersonalRepository private constructor(
         )
     }
 
+    private fun SpendingReminder.toFirestoreMap(): Map<String, Any> {
+        return mapOf(
+            FIELD_ID to id,
+            FIELD_USER_ID to userId,
+            FIELD_CATEGORY_ID to categoryId.orEmpty(),
+            FIELD_CATEGORY_NAME to categoryName,
+            FIELD_BUDGET_AMOUNT to budgetAmount,
+            FIELD_CURRENT_SPENT to currentSpent,
+            FIELD_THRESHOLD to threshold,
+            FIELD_REMINDER_TYPE to reminderType.name,
+            FIELD_IS_ENABLED to isEnabled,
+            FIELD_LAST_ALERTED_AT to (lastAlertedAt ?: 0L),
+            FIELD_CREATED_AT to createdAt,
+            FIELD_UPDATED_AT to System.currentTimeMillis()
+        )
+    }
+
     private suspend fun <T> Task<T>.awaitFirebase(): T {
         return suspendCancellableCoroutine { continuation ->
             addOnCompleteListener { task ->
@@ -207,6 +285,7 @@ class FirebasePersonalRepository private constructor(
         private const val COLLECTION_USER_PERSONAL = "user_personal"
         private const val COLLECTION_TRANSACTIONS = "transactions"
         private const val COLLECTION_CATEGORIES = "categories"
+        private const val COLLECTION_REMINDERS = "reminders"
 
         private const val FIELD_ID = "id"
         private const val FIELD_USER_ID = "userId"
@@ -225,6 +304,13 @@ class FirebasePersonalRepository private constructor(
         private const val FIELD_AMOUNT_LABEL = "amountLabel"
         private const val FIELD_PROGRESS = "progress"
         private const val FIELD_IS_ACTIVE = "isActive"
+        private const val FIELD_CATEGORY_NAME = "categoryName"
+        private const val FIELD_BUDGET_AMOUNT = "budgetAmount"
+        private const val FIELD_CURRENT_SPENT = "currentSpent"
+        private const val FIELD_THRESHOLD = "threshold"
+        private const val FIELD_REMINDER_TYPE = "reminderType"
+        private const val FIELD_IS_ENABLED = "isEnabled"
+        private const val FIELD_LAST_ALERTED_AT = "lastAlertedAt"
 
         @Volatile
         private var INSTANCE: FirebasePersonalRepository? = null
@@ -237,14 +323,14 @@ class FirebasePersonalRepository private constructor(
 
         private fun defaultCategories(): List<StoredCategory> {
             return listOf(
-                StoredCategory("c_food", "Dining Out", "FD", TransactionType.EXPENSE, false, "Restaurants, cafes, and delivery.", "0đ", 0f, true),
-                StoredCategory("c_grocery", "Groceries", "GR", TransactionType.EXPENSE, false, "Supermarkets and local markets.", "0đ", 0f, false),
-                StoredCategory("c_transit", "Transit", "TR", TransactionType.EXPENSE, false, "Rideshares and public transport.", "0đ", 0f, false),
-                StoredCategory("c_fun", "Entertainment", "EN", TransactionType.EXPENSE, true, "Movies, events, and subscriptions.", "0đ", 0f, false),
-                StoredCategory("c_salary", "Salary", "SL", TransactionType.INCOME, false, "Monthly fixed salary income.", "0đ", 0f, true),
-                StoredCategory("c_bonus", "Bonus", "BN", TransactionType.INCOME, false, "Project and performance rewards.", "0đ", 0f, false),
-                StoredCategory("c_gift", "Gift", "GF", TransactionType.INCOME, true, "Personal gifts and contributions.", "0đ", 0f, false),
-                StoredCategory("c_other_income", "Other", "OT", TransactionType.INCOME, true, "Other incoming cash flows.", "0đ", 0f, false)
+                StoredCategory("c_food", "Dining Out", "FD", TransactionType.EXPENSE, false, "Restaurants, cafes, and delivery.", "0 VND", 0f, true),
+                StoredCategory("c_grocery", "Groceries", "GR", TransactionType.EXPENSE, false, "Supermarkets and local markets.", "0 VND", 0f, false),
+                StoredCategory("c_transit", "Transit", "TR", TransactionType.EXPENSE, false, "Rideshares and public transport.", "0 VND", 0f, false),
+                StoredCategory("c_fun", "Entertainment", "EN", TransactionType.EXPENSE, true, "Movies, events, and subscriptions.", "0 VND", 0f, false),
+                StoredCategory("c_salary", "Salary", "SL", TransactionType.INCOME, false, "Monthly fixed salary income.", "0 VND", 0f, true),
+                StoredCategory("c_bonus", "Bonus", "BN", TransactionType.INCOME, false, "Project and performance rewards.", "0 VND", 0f, false),
+                StoredCategory("c_gift", "Gift", "GF", TransactionType.INCOME, true, "Personal gifts and contributions.", "0 VND", 0f, false),
+                StoredCategory("c_other_income", "Other", "OT", TransactionType.INCOME, true, "Other incoming cash flows.", "0 VND", 0f, false)
             )
         }
     }

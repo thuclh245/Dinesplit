@@ -42,9 +42,10 @@ fun List<Transaction>.toMonthlySummary(): MonthlySummary {
 }
 
 fun List<Transaction>.toPieCategorySlices(): List<PieCategorySlice> {
-    if (isEmpty()) return emptyList()
+    val expenseTransactions = filter { it.type == TransactionType.EXPENSE }
+    if (expenseTransactions.isEmpty()) return emptyList()
 
-    val totalsByCategory = groupBy { it.category }
+    val totalsByCategory = expenseTransactions.groupBy { it.category }
         .mapValues { (_, items) -> items.sumOf { it.amount } }
 
     val totalAmount = totalsByCategory.values.sum()

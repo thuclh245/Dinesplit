@@ -1,32 +1,14 @@
 package com.example.dinesplit.domain.model
 
+import java.text.NumberFormat
 import java.util.Locale
 
-/**
- * Notification Trigger Contract - Tuần 3 Final
- *
- * B/D sẽ call các function này để trigger notification từ C.
- * C sẽ manage notification generation và storage.
- *
- * Usage by B (Feed):
- *   - userLiked: khi ai like post
- *   - userCommented: khi ai comment post
- *
- * Usage by D (Split):
- *   - billCreated: khi bill được tạo
- *   - paymentReceived: khi payment done
- *   - billConfirmed: khi all members confirm bill
- */
-
-/**
- * Trigger từ Feed (B)
- */
 data class FeedNotificationTrigger(
     val postId: String,
     val postTitle: String,
     val triggeredByUserId: String,
     val triggeredByUserName: String,
-    val triggerType: FeedTriggerType  // LIKE, COMMENT, COMMENT_REPLY, etc.
+    val triggerType: FeedTriggerType
 )
 
 enum class FeedTriggerType {
@@ -36,9 +18,6 @@ enum class FeedTriggerType {
     POST_SHARED
 }
 
-/**
- * Trigger từ Split (D)
- */
 data class SplitNotificationTrigger(
     val billId: String,
     val groupId: String,
@@ -52,16 +31,13 @@ data class SplitNotificationTrigger(
 enum class SplitTriggerType {
     BILL_CREATED,
     PAYMENT_RECEIVED,
-    PAYMENT_PENDING,  // Reminder khi gần deadline
+    PAYMENT_PENDING,
     BILL_CONFIRMED,
     BILL_SETTLED,
     YOU_OWE_MONEY,
     SOMEONE_OWES_YOU
 }
 
-/**
- * Trigger từ Personal (C) - Local reminder
- */
 data class PersonalReminderTrigger(
     val categoryId: String?,
     val categoryName: String,
@@ -70,10 +46,6 @@ data class PersonalReminderTrigger(
     val thresholdPercent: Float
 )
 
-/**
- * Standard Notification Factory - Tuần 3+
- * C sẽ dùng các factory này để generate structured notifications
- */
 object NotificationFactory {
     fun fromFeedTrigger(trigger: FeedNotificationTrigger, recipientUserId: String): Notification {
         val (title, subtitle) = when (trigger.triggerType) {
@@ -124,7 +96,7 @@ object NotificationFactory {
             id = "${System.currentTimeMillis()}_${trigger.billId}",
             userId = recipientUserId,
             title = title,
-            subtitle = "${trigger.billTitle} - \$${String.format(Locale.US, "%.2f", trigger.amount)}",
+            subtitle = "${trigger.billTitle} - ${formatMoney(trigger.amount)}",
             type = notificationType,
             relatedId = trigger.billId,
             isRead = false,
@@ -139,18 +111,22 @@ object NotificationFactory {
         val percentUsed = (trigger.currentSpent / trigger.budgetLimit * 100).toInt()
 
         return Notification(
-            id = "${System.currentTimeMillis()}_reminder_${trigger.categoryId}",
+            id = "${System.currentTimeMillis()}_reminder_${trigger.categoryId ?: "overall"}",
             userId = userId,
             title = "Spending alert: ${trigger.categoryName}",
-            subtitle = "You've spent ${percentUsed}% of your \$${String.format(Locale.US, "%.2f", trigger.budgetLimit)} budget",
+            subtitle = "You have spent $percentUsed% of your ${formatMoney(trigger.budgetLimit)} budget",
             type = NotificationType.TRANSACTION_ALERT,
             relatedId = trigger.categoryId,
             isRead = false,
             createdAt = System.currentTimeMillis(),
             updatedAt = System.currentTimeMillis(),
-            deepLinkDestination = null,  // Local alert, no deep link
-            deepLinkTargetId = null
+            deepLinkDestination = "SPENDING_REMINDERS",
+            deepLinkTargetId = trigger.categoryId
         )
     }
-}
 
+    private fun formatMoney(amount: Double): String {
+        val formatter = NumberFormat.getNumberInstance(Locale("vi", "VN"))
+        return "${formatter.format(amount.toLong())} VND"
+    }
+}

@@ -22,6 +22,7 @@ import androidx.compose.material.icons.filled.ArrowDownward
 import androidx.compose.material.icons.filled.ArrowUpward
 import androidx.compose.material.icons.filled.Category
 import androidx.compose.material.icons.filled.History
+import androidx.compose.material.icons.filled.NotificationsActive
 import androidx.compose.material.icons.filled.Refresh
 import androidx.compose.material3.FloatingActionButton
 import androidx.compose.material3.Icon
@@ -60,10 +61,12 @@ fun PersonalScreen(
     userAvatarUrl: String?,
     uiState: PersonalUiState = PersonalUiState(isLoading = false),
     chartState: PersonalChartState = PersonalChartState(),
+    reminderCount: Int = 0,
     onOpenSearch: () -> Unit,
     onAddTransaction: () -> Unit,
     onOpenHistory: () -> Unit = {},
     onOpenCategories: () -> Unit = {},
+    onOpenReminders: () -> Unit = {},
     onRefresh: () -> Unit = {}
 ) {
     val expenseSlices = remember(chartState) {
@@ -122,9 +125,9 @@ fun PersonalScreen(
 
                 item {
                     BalanceCard(
-                        balance = uiState.balance,
-                        income = uiState.totalIncome,
-                        expense = uiState.totalExpense
+                        balance = chartState.monthlySummary.balance,
+                        income = chartState.monthlySummary.totalIncome,
+                        expense = chartState.monthlySummary.totalExpense
                     )
                 }
 
@@ -148,6 +151,16 @@ fun PersonalScreen(
                             onClick = onOpenCategories
                         )
                     }
+                }
+
+                item {
+                    QuickActionCard(
+                        modifier = Modifier.fillMaxWidth(),
+                        icon = Icons.Default.NotificationsActive,
+                        label = "Reminders",
+                        value = "$reminderCount active",
+                        onClick = onOpenReminders
+                    )
                 }
 
                 item {
@@ -384,7 +397,7 @@ private fun formatSignedMoney(transaction: Transaction): String {
 
 private fun formatMoney(amount: Double): String {
     val formatter = NumberFormat.getNumberInstance(Locale("vi", "VN"))
-    return "${formatter.format(amount.toLong())}đ"
+    return "${formatter.format(amount.toLong())} VND"
 }
 
 private fun formatDate(epochMillis: Long): String {

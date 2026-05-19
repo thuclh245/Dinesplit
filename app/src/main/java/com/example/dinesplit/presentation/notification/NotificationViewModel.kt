@@ -6,9 +6,10 @@ import androidx.lifecycle.viewModelScope
 import com.example.dinesplit.core.common.AppContainer
 import com.example.dinesplit.core.firebase.FirebaseErrorMapper
 import com.example.dinesplit.core.firebase.FirebaseProviders
-import com.example.dinesplit.domain.model.SplitNotificationTrigger
 import com.example.dinesplit.domain.model.FeedNotificationTrigger
+import com.example.dinesplit.domain.model.Notification
 import com.example.dinesplit.domain.model.NotificationFactory
+import com.example.dinesplit.domain.model.SplitNotificationTrigger
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
@@ -52,29 +53,39 @@ class NotificationViewModel(application: Application) : AndroidViewModel(applica
     }
 
     fun markAsRead(notificationId: String) {
-        viewModelScope.launch(Dispatchers.IO) {
-            runCatching {
-                repository.markAsRead(notificationId)
-                _notifications.value = _notifications.value.map { notif ->
-                    if (notif.id == notificationId) notif.copy(isRead = true) else notif
-                }
-                _uiState.value = _uiState.value.copy(
-                    unreadCount = _notifications.value.count { !it.isRead }
-                )
-            }.onFailure { throwable ->
-                _uiState.value = _uiState.value.copy(
-                    errorMessage = FirebaseErrorMapper.toUserMessage(throwable)
-                )
-            }
-        }
+        updateNotificationReadState(notificationId = notificationId, isRead = true)
     }
 
     fun markAsUnread(notificationId: String) {
+        updateNotificationReadState(notificationId = notificationId, isRead = false)
+    }
+
+    fun onFeedTrigger(trigger: FeedNotificationTrigger) {
+        insertGeneratedNotification(
+            notification = NotificationFactory.fromFeedTrigger(trigger, currentUserId())
+        )
+    }
+
+    fun onSplitTrigger(trigger: SplitNotificationTrigger) {
+        insertGeneratedNotification(
+            notification = NotificationFactory.fromSplitTrigger(trigger, currentUserId())
+        )
+    }
+
+    private fun updateNotificationReadState(notificationId: String, isRead: Boolean) {
         viewModelScope.launch(Dispatchers.IO) {
             runCatching {
-                repository.markAsUnread(notificationId)
-                _notifications.value = _notifications.value.map { notif ->
-                    if (notif.id == notificationId) notif.copy(isRead = false) else notif
+                if (isRead) {
+                    repository.markAsRead(notificationId)
+                } else {
+                    repository.markAsUnread(notificationId)
+                }
+                _notifications.value = _notifications.value.map { notification ->
+                    if (notification.id == notificationId) {
+                        notification.copy(isRead = isRead)
+                    } else {
+                        notification
+                    }
                 }
                 _uiState.value = _uiState.value.copy(
                     unreadCount = _notifications.value.count { !it.isRead }
@@ -87,30 +98,17 @@ class NotificationViewModel(application: Application) : AndroidViewModel(applica
         }
     }
 
-    // Tuần 3: Trigger handlers từ B/D
-    fun onFeedTrigger(trigger: FeedNotificationTrigger) {
+    private fun insertGeneratedNotification(notification: Notification) {
         viewModelScope.launch(Dispatchers.IO) {
             runCatching {
-                val notification = NotificationFactory.fromFeedTrigger(trigger, currentUserId())
-                // Lưu vào Firestore (tuần 3+)
-                // Giờ chỉ add vào in-memory
+                repository.insertNotification(notification)
                 _notifications.value = listOf(notification) + _notifications.value
                 _uiState.value = _uiState.value.copy(
                     unreadCount = _notifications.value.count { !it.isRead }
                 )
-            }
-        }
-    }
-
-    fun onSplitTrigger(trigger: SplitNotificationTrigger) {
-        viewModelScope.launch(Dispatchers.IO) {
-            runCatching {
-                val notification = NotificationFactory.fromSplitTrigger(trigger, currentUserId())
-                // Lưu vào Firestore (tuần 3+)
-                // Giờ chỉ add vào in-memory
-                _notifications.value = listOf(notification) + _notifications.value
+            }.onFailure { throwable ->
                 _uiState.value = _uiState.value.copy(
-                    unreadCount = _notifications.value.count { !it.isRead }
+                    errorMessage = FirebaseErrorMapper.toUserMessage(throwable)
                 )
             }
         }
@@ -127,4 +125,3 @@ data class NotificationUiState(
     val currentUserId: String = "",
     val unreadCount: Int = 0
 )
-
