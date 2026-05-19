@@ -30,6 +30,9 @@ class PersonalViewModel(application: Application) : AndroidViewModel(application
     private val _categoryNamesByType = MutableStateFlow<Map<TransactionType, List<String>>>(emptyMap())
     val categoryNamesByType: StateFlow<Map<TransactionType, List<String>>> = _categoryNamesByType.asStateFlow()
 
+    private val _chartState = MutableStateFlow(PersonalChartState())
+    val chartState: StateFlow<PersonalChartState> = _chartState.asStateFlow()
+
     private val _uiState = MutableStateFlow(PersonalUiState())
     val uiState: StateFlow<PersonalUiState> = _uiState.asStateFlow()
 
@@ -174,6 +177,12 @@ class PersonalViewModel(application: Application) : AndroidViewModel(application
                 .groupBy { it.type }
                 .mapValues { (_, items) -> items.map { it.name }.sorted() }
 
+            _chartState.value = PersonalChartState(
+                pieSlices = filteredTransactions.toPieCategorySlices(),
+                dailyExpenseBars = filteredTransactions.toDailyExpenseBars(),
+                monthlySummary = filteredTransactions.toMonthlySummary()
+            )
+
             _uiState.value = buildUiState(
                 transactions = filteredTransactions,
                 categories = categories
@@ -182,6 +191,7 @@ class PersonalViewModel(application: Application) : AndroidViewModel(application
             _transactions.value = emptyList()
             _categories.value = emptyList()
             _categoryNamesByType.value = emptyMap()
+            _chartState.value = PersonalChartState()
             _uiState.value = _uiState.value.copy(
                 isLoading = false,
                 isSaving = false,

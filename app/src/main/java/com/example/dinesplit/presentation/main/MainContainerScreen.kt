@@ -64,6 +64,7 @@ fun MainContainerScreen(
     val profileUiState by profileViewModel.profileUiState.collectAsState()
     val editProfileUiState by profileViewModel.editUiState.collectAsState()
     val personalUiState by personalViewModel.uiState.collectAsState()
+    val personalChartState by personalViewModel.chartState.collectAsState()
     val navBackStackEntry by mainNavController.currentBackStackEntryAsState()
     val currentDestination = navBackStackEntry?.destination
     val showBottomBar = BottomTab.items.any { tab ->
@@ -168,6 +169,7 @@ fun MainContainerScreen(
                 PersonalScreen(
                     userAvatarUrl = profileUiState.profile?.avatarUrl,
                     uiState = personalUiState,
+                    chartState = personalChartState,
                     onOpenSearch = { mainNavController.navigate(AppRoute.Search.route) },
                     onAddTransaction = { mainNavController.navigate(AppRoute.AddTransaction.route) },
                     onOpenHistory = { mainNavController.navigate(AppRoute.TransactionHistory.route) },

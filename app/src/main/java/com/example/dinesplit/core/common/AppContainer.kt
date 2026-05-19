@@ -19,6 +19,10 @@ object AppContainer {
         return FirebasePersonalRepository.getInstance(context)
     }
 
+    fun notificationRepository(context: Context): com.example.dinesplit.domain.repository.NotificationRepository {
+        return com.example.dinesplit.data.repository.FirebaseNotificationRepository.getInstance(context)
+    }
+
     fun feedRepository(): FeedRepository {
         return FirebaseFeedRepository(FirebaseFirestore.getInstance())
     }

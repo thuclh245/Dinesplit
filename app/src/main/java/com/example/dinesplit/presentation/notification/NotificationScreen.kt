@@ -17,15 +17,25 @@ import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.collectAsState
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.unit.dp
+import androidx.lifecycle.viewmodel.compose.viewModel
 import com.example.dinesplit.core.ui.AppCard
 import com.example.dinesplit.core.ui.AppDimens
 import com.example.dinesplit.core.ui.AppScaffold
+import com.example.dinesplit.core.ui.EmptyStateBlock
+import com.example.dinesplit.core.ui.ErrorStateBlock
+import com.example.dinesplit.core.ui.LoadingBlock
+import com.example.dinesplit.domain.model.NotificationType
 
 @Composable
 fun NotificationScreen() {
+    val viewModel: NotificationViewModel = viewModel()
+    val notifications = viewModel.notifications.collectAsState().value
+    val uiState = viewModel.uiState.collectAsState().value
+
     AppScaffold(title = "Notifications") {
         Column(
             modifier = Modifier
@@ -33,51 +43,70 @@ fun NotificationScreen() {
                 .verticalScroll(rememberScrollState()),
             verticalArrangement = Arrangement.spacedBy(AppDimens.spaceLg)
         ) {
-            AppCard {
-                Column(verticalArrangement = Arrangement.spacedBy(AppDimens.spaceSm)) {
-                    Icon(
-                        imageVector = Icons.Filled.NotificationsActive,
-                        contentDescription = null,
-                        tint = MaterialTheme.colorScheme.primary
-                    )
-                    Text(text = "Activity feed", style = MaterialTheme.typography.titleLarge)
-                    Text(
-                        text = "Tổng hợp các nhắc nợ, cập nhật split và trạng thái thanh toán gần đây.",
-                        style = MaterialTheme.typography.bodyMedium,
-                        color = MaterialTheme.colorScheme.onSurfaceVariant
+            if (uiState.isLoading) {
+                LoadingBlock(message = "Loading notifications...")
+            } else {
+                uiState.errorMessage?.let { message ->
+                    ErrorStateBlock(
+                        title = "Cannot load notifications",
+                        subtitle = message,
+                        onRetryClick = { viewModel.refreshNotifications() }
                     )
                 }
-            }
 
-            NotificationItem(
-                icon = Icons.Filled.Payments,
-                title = "Minh vừa thanh toán",
-                subtitle = "Bữa tối tại Sushi House đã được đánh dấu là đã trả.",
-                trailing = "2m"
-            )
-            NotificationItem(
-                icon = Icons.Filled.WarningAmber,
-                title = "Còn 1 khoản chưa hoàn tất",
-                subtitle = "Bạn còn thiếu 65,000đ trong split cuối tuần.",
-                trailing = "15m"
-            )
-            NotificationItem(
-                icon = Icons.Filled.CheckCircle,
-                title = "Split đã hoàn tất",
-                subtitle = "Tất cả thành viên đã xác nhận hóa đơn cà phê.",
-                trailing = "1h"
-            )
+                AppCard {
+                    Column(verticalArrangement = Arrangement.spacedBy(AppDimens.spaceSm)) {
+                        Icon(
+                            imageVector = Icons.Filled.NotificationsActive,
+                            contentDescription = null,
+                            tint = MaterialTheme.colorScheme.primary
+                        )
+                        Text(text = "Activity feed", style = MaterialTheme.typography.titleLarge)
+                        Text(
+                            text = "${uiState.unreadCount} unread · ${notifications.size} total",
+                            style = MaterialTheme.typography.bodyMedium,
+                            color = MaterialTheme.colorScheme.onSurfaceVariant
+                        )
+                    }
+                }
+
+                if (notifications.isEmpty()) {
+                    EmptyStateBlock(
+                        title = "No notifications yet",
+                        subtitle = "You'll see payment updates, split changes, and activity here."
+                    )
+                } else {
+                    notifications.forEach { notification ->
+                        NotificationItemCard(
+                            notification = notification,
+                            onMarkAsRead = {
+                                if (!notification.isRead) {
+                                    viewModel.markAsRead(notification.id)
+                                }
+                            }
+                        )
+                    }
+                }
+            }
         }
     }
 }
 
 @Composable
-private fun NotificationItem(
-    icon: androidx.compose.ui.graphics.vector.ImageVector,
-    title: String,
-    subtitle: String,
-    trailing: String
+private fun NotificationItemCard(
+    notification: com.example.dinesplit.domain.model.Notification,
+    onMarkAsRead: () -> Unit
 ) {
+    val icon = when (notification.type) {
+        NotificationType.PAYMENT_COMPLETED -> Icons.Filled.CheckCircle
+        NotificationType.PAYMENT_PENDING -> Icons.Filled.WarningAmber
+        NotificationType.BILL_CREATED -> Icons.Filled.Payments
+        NotificationType.SPLIT_COMPLETED -> Icons.Filled.CheckCircle
+        NotificationType.TRANSACTION_ALERT -> Icons.Filled.WarningAmber
+        NotificationType.ACTIVITY_UPDATE -> Icons.Filled.NotificationsActive
+        NotificationType.OTHER -> Icons.Filled.NotificationsActive
+    }
+
     AppCard {
         Row(
             modifier = Modifier.fillMaxWidth(),
@@ -87,18 +116,57 @@ private fun NotificationItem(
             Icon(
                 imageVector = icon,
                 contentDescription = null,
-                tint = MaterialTheme.colorScheme.secondary,
+                tint = if (notification.isRead) {
+                    MaterialTheme.colorScheme.outlineVariant
+                } else {
+                    MaterialTheme.colorScheme.secondary
+                },
                 modifier = Modifier.size(24.dp)
             )
-            Column(modifier = Modifier.fillMaxWidth(0.82f), verticalArrangement = Arrangement.spacedBy(AppDimens.spaceXs)) {
-                Text(text = title, style = MaterialTheme.typography.titleSmall)
+            Column(
+                modifier = Modifier.fillMaxWidth(0.82f),
+                verticalArrangement = Arrangement.spacedBy(AppDimens.spaceXs)
+            ) {
                 Text(
-                    text = subtitle,
+                    text = notification.title,
+                    style = MaterialTheme.typography.titleSmall,
+                    color = if (notification.isRead) {
+                        MaterialTheme.colorScheme.onSurfaceVariant
+                    } else {
+                        MaterialTheme.colorScheme.onSurface
+                    }
+                )
+                Text(
+                    text = notification.subtitle,
                     style = MaterialTheme.typography.bodySmall,
                     color = MaterialTheme.colorScheme.onSurfaceVariant
                 )
             }
-            Text(text = trailing, style = MaterialTheme.typography.labelSmall, color = MaterialTheme.colorScheme.outline)
+            Text(
+                text = formatTimeAgo(notification.createdAt),
+                style = MaterialTheme.typography.labelSmall,
+                color = MaterialTheme.colorScheme.outline
+            )
         }
+    }
+
+    if (!notification.isRead) {
+        onMarkAsRead()
+    }
+}
+
+private fun formatTimeAgo(epochMillis: Long): String {
+    val now = System.currentTimeMillis()
+    val diffMillis = now - epochMillis
+    val diffMinutes = diffMillis / (1000 * 60)
+    val diffHours = diffMillis / (1000 * 60 * 60)
+    val diffDays = diffMillis / (1000 * 60 * 60 * 24)
+
+    return when {
+        diffMinutes < 1 -> "now"
+        diffMinutes < 60 -> "${diffMinutes}m"
+        diffHours < 24 -> "${diffHours}h"
+        diffDays < 7 -> "${diffDays}d"
+        else -> "${diffDays / 7}w"
     }
 }

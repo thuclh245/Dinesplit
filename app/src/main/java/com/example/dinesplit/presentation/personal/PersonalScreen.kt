@@ -59,6 +59,7 @@ import java.util.Locale
 fun PersonalScreen(
     userAvatarUrl: String?,
     uiState: PersonalUiState = PersonalUiState(isLoading = false),
+    chartState: PersonalChartState = PersonalChartState(),
     onOpenSearch: () -> Unit,
     onAddTransaction: () -> Unit,
     onOpenHistory: () -> Unit = {},
@@ -432,6 +433,8 @@ private fun PersonalScreenPreview() {
     DineSplitTheme {
         PersonalScreen(
             userAvatarUrl = null,
+            uiState = PersonalUiState(isLoading = false),
+            chartState = PersonalChartState(),
             onOpenSearch = {},
             onAddTransaction = {}
         )
