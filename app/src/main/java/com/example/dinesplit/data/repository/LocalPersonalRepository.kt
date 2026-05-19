@@ -13,7 +13,7 @@ class LocalPersonalRepository private constructor(
 ) : PersonalRepository {
     private val dbHelper = PersonalDatabaseHelper.getInstance(context)
 
-    override fun getAllTransactions(): List<Transaction> {
+    override suspend fun getAllTransactions(): List<Transaction> {
         val db = dbHelper.readableDatabase
         val cursor = db.query(
             "transactions",
@@ -47,7 +47,7 @@ class LocalPersonalRepository private constructor(
         }
     }
 
-    override fun getCategories(): List<StoredCategory> {
+    override suspend fun getCategories(): List<StoredCategory> {
         val db = dbHelper.readableDatabase
         val cursor = db.query(
             "categories",
@@ -91,7 +91,7 @@ class LocalPersonalRepository private constructor(
         }
     }
 
-    override fun insertTransaction(transaction: Transaction) {
+    override suspend fun insertTransaction(transaction: Transaction) {
         val db = dbHelper.writableDatabase
         val values = ContentValues().apply {
             put("id", transaction.id)
@@ -107,12 +107,12 @@ class LocalPersonalRepository private constructor(
         db.insert("transactions", null, values)
     }
 
-    override fun insertCategory(category: StoredCategory) {
+    override suspend fun insertCategory(category: StoredCategory) {
         val db = dbHelper.writableDatabase
         db.insert("categories", null, category.toContentValues())
     }
 
-    override fun updateCategory(category: StoredCategory) {
+    override suspend fun updateCategory(category: StoredCategory) {
         val db = dbHelper.writableDatabase
         db.update(
             "categories",
@@ -122,7 +122,7 @@ class LocalPersonalRepository private constructor(
         )
     }
 
-    override fun deleteCategory(categoryId: String) {
+    override suspend fun deleteCategory(categoryId: String) {
         val db = dbHelper.writableDatabase
         db.delete(
             "categories",

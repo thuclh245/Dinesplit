@@ -29,7 +29,15 @@ import com.example.dinesplit.presentation.feed.CreatePostScreen
 import com.example.dinesplit.presentation.feed.FeedScreen
 import com.example.dinesplit.presentation.feed.PostDetailScreen
 import com.example.dinesplit.presentation.feed.SearchScreen
+import com.example.dinesplit.presentation.personal.AddTransactionScreen
+import com.example.dinesplit.presentation.personal.CategoryManagementScreen
+import com.example.dinesplit.presentation.personal.HistoryScreen
 import com.example.dinesplit.presentation.personal.PersonalScreen
+import com.example.dinesplit.presentation.personal.PersonalViewModel
+import com.example.dinesplit.presentation.personal.TransactionDetailScreen
+import com.example.dinesplit.presentation.personal.toHistoryItems
+import com.example.dinesplit.presentation.personal.toManagedCategories
+import com.example.dinesplit.presentation.personal.toTransactionType
 import com.example.dinesplit.presentation.split.BillDetailScreen
 import com.example.dinesplit.presentation.profile.EditProfileScreen
 import com.example.dinesplit.presentation.profile.OtherUserProfileScreen
@@ -52,8 +60,10 @@ fun MainContainerScreen(
 ) {
     val mainNavController = rememberNavController()
     val profileViewModel: ProfileViewModel = viewModel()
+    val personalViewModel: PersonalViewModel = viewModel()
     val profileUiState by profileViewModel.profileUiState.collectAsState()
     val editProfileUiState by profileViewModel.editUiState.collectAsState()
+    val personalUiState by personalViewModel.uiState.collectAsState()
     val navBackStackEntry by mainNavController.currentBackStackEntryAsState()
     val currentDestination = navBackStackEntry?.destination
     val showBottomBar = BottomTab.items.any { tab ->
@@ -157,8 +167,67 @@ fun MainContainerScreen(
             composable(AppRoute.Personal.route) {
                 PersonalScreen(
                     userAvatarUrl = profileUiState.profile?.avatarUrl,
+                    uiState = personalUiState,
                     onOpenSearch = { mainNavController.navigate(AppRoute.Search.route) },
-                    onAddTransaction = { mainNavController.navigate(AppRoute.AddTransaction.route) }
+                    onAddTransaction = { mainNavController.navigate(AppRoute.AddTransaction.route) },
+                    onOpenHistory = { mainNavController.navigate(AppRoute.TransactionHistory.route) },
+                    onOpenCategories = { mainNavController.navigate(AppRoute.CategoryManagement.route) },
+                    onRefresh = personalViewModel::refreshState
+                )
+            }
+            composable(AppRoute.AddTransaction.route) {
+                AddTransactionScreen(
+                    onBack = { mainNavController.navigateUp() },
+                    currentUserId = personalUiState.currentUserId,
+                    availableCategoriesByType = personalUiState.categories.groupBy { it.type },
+                    onSave = personalViewModel::addTransaction
+                )
+            }
+            composable(AppRoute.TransactionHistory.route) {
+                HistoryScreen(
+                    onBack = { mainNavController.navigateUp() },
+                    transactions = personalUiState.transactions.toHistoryItems(personalUiState.categories),
+                    onTransactionClick = { item ->
+                        mainNavController.navigate(AppRoute.TransactionDetail.createRoute(item.id))
+                    }
+                )
+            }
+            composable(AppRoute.TransactionDetail.routeWithArg) { backStackEntry ->
+                val transactionId = backStackEntry.arguments
+                    ?.getString(AppRoute.TransactionDetail.ARG_ID)
+                    .orEmpty()
+                TransactionDetailScreen(
+                    transactionId = transactionId,
+                    transaction = personalUiState.transactions.firstOrNull { it.id == transactionId },
+                    onBack = { mainNavController.navigateUp() }
+                )
+            }
+            composable(AppRoute.CategoryManagement.route) {
+                CategoryManagementScreen(
+                    categories = personalUiState.categories.toManagedCategories(personalUiState.transactions),
+                    usedCategoryIds = personalUiState.transactions.map { it.categoryId }.toSet(),
+                    onAddCategory = { input ->
+                        personalViewModel.addCategory(
+                            name = input.name,
+                            description = input.description,
+                            type = input.type.toTransactionType(),
+                            isCustom = input.isCustom
+                        )
+                    },
+                    onUpdateCategory = { category, input ->
+                        personalViewModel.updateCategory(
+                            categoryId = category.id,
+                            name = input.name,
+                            description = input.description,
+                            type = input.type.toTransactionType(),
+                            isCustom = input.isCustom,
+                            isActive = category.isActive
+                        )
+                    },
+                    onDeleteCategory = { category ->
+                        personalViewModel.deleteCategory(category.id)
+                    },
+                    onBack = { mainNavController.navigateUp() }
                 )
             }
             composable(AppRoute.Profile.route) {

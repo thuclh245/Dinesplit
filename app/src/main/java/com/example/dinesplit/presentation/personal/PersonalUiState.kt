@@ -5,6 +5,9 @@ import com.example.dinesplit.domain.model.Transaction
 
 data class PersonalUiState(
     val isLoading: Boolean = true,
+    val isSaving: Boolean = false,
+    val errorMessage: String? = null,
+    val currentUserId: String = "",
     val transactions: List<Transaction> = emptyList(),
     val categories: List<StoredCategory> = emptyList(),
     val totalIncome: Double = 0.0,

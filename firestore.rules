@@ -58,6 +58,64 @@ service cloud.firestore {
         && data.username.size() >= 3;
     }
 
+    function validPersonalTransaction(data, uid, transactionId) {
+      return data.keys().hasOnly([
+          'id',
+          'userId',
+          'amount',
+          'type',
+          'categoryId',
+          'category',
+          'note',
+          'date',
+          'createdAt',
+          'updatedAt'
+        ])
+        && data.id == transactionId
+        && data.userId == uid
+        && data.amount is number
+        && data.amount > 0
+        && data.type in ['INCOME', 'EXPENSE']
+        && data.categoryId is string
+        && data.categoryId.size() > 0
+        && data.category is string
+        && data.category.size() > 0
+        && data.note is string
+        && data.date is number
+        && data.createdAt is number
+        && data.updatedAt is number;
+    }
+
+    function validPersonalCategory(data, categoryId) {
+      return data.keys().hasOnly([
+          'id',
+          'name',
+          'icon',
+          'type',
+          'isCustom',
+          'description',
+          'amountLabel',
+          'progress',
+          'isActive',
+          'createdAt',
+          'updatedAt'
+        ])
+        && data.id == categoryId
+        && data.name is string
+        && data.name.size() > 0
+        && data.icon is string
+        && data.type in ['INCOME', 'EXPENSE']
+        && data.isCustom is bool
+        && data.description is string
+        && data.amountLabel is string
+        && data.progress is number
+        && data.progress >= 0
+        && data.progress <= 1
+        && data.isActive is bool
+        && data.createdAt is number
+        && data.updatedAt is number;
+    }
+
     match /user_profiles/{uid} {
       allow get, list: if signedIn();
       allow create: if isOwner(uid) && validUserProfile(request.resource.data) && claimMatchesProfileAfterWrite(request.resource.data);
@@ -73,6 +131,26 @@ service cloud.firestore {
         && resource.data.uid == request.auth.uid
         && validUsernameClaim(request.resource.data, usernameLower);
       allow delete: if signedIn() && resource.data.uid == request.auth.uid;
+    }
+
+    match /user_personal/{uid} {
+      allow get: if isOwner(uid);
+      allow list: if false;
+      allow create, update, delete: if isOwner(uid);
+
+      match /transactions/{transactionId} {
+        allow read: if isOwner(uid);
+        allow create, update: if isOwner(uid)
+          && validPersonalTransaction(request.resource.data, uid, transactionId);
+        allow delete: if isOwner(uid);
+      }
+
+      match /categories/{categoryId} {
+        allow read: if isOwner(uid);
+        allow create, update: if isOwner(uid)
+          && validPersonalCategory(request.resource.data, categoryId);
+        allow delete: if isOwner(uid);
+      }
     }
   }
 }

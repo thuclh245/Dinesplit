@@ -4,6 +4,8 @@ import android.app.Application
 import androidx.lifecycle.AndroidViewModel
 import androidx.lifecycle.viewModelScope
 import com.example.dinesplit.core.common.AppContainer
+import com.example.dinesplit.core.firebase.FirebaseErrorMapper
+import com.example.dinesplit.core.firebase.FirebaseProviders
 import com.example.dinesplit.data.model.StoredCategory
 import com.example.dinesplit.domain.model.Transaction
 import com.example.dinesplit.domain.model.TransactionType
@@ -37,8 +39,17 @@ class PersonalViewModel(application: Application) : AndroidViewModel(application
 
     fun addTransaction(transaction: Transaction) {
         viewModelScope.launch(Dispatchers.IO) {
-            repository.insertTransaction(transaction)
-            refreshStateInternal()
+            _uiState.value = _uiState.value.copy(isSaving = true, errorMessage = null)
+            runCatching {
+                repository.insertTransaction(transaction)
+                refreshStateInternal(showLoading = false)
+            }.onFailure { throwable ->
+                _uiState.value = _uiState.value.copy(
+                    isLoading = false,
+                    isSaving = false,
+                    errorMessage = FirebaseErrorMapper.toUserMessage(throwable)
+                )
+            }
         }
     }
 
@@ -49,20 +60,29 @@ class PersonalViewModel(application: Application) : AndroidViewModel(application
         isCustom: Boolean
     ) {
         viewModelScope.launch(Dispatchers.IO) {
-            repository.insertCategory(
-                StoredCategory(
-                    id = UUID.randomUUID().toString(),
-                    name = name.trim(),
-                    icon = iconCodeForName(name),
-                    type = type,
-                    isCustom = isCustom,
-                    description = description.trim(),
-                    amountLabel = "$0.00",
-                    progress = 0f,
-                    isActive = false
+            _uiState.value = _uiState.value.copy(isSaving = true, errorMessage = null)
+            runCatching {
+                repository.insertCategory(
+                    StoredCategory(
+                        id = UUID.randomUUID().toString(),
+                        name = name.trim(),
+                        icon = iconCodeForName(name),
+                        type = type,
+                        isCustom = isCustom,
+                        description = description.trim(),
+                        amountLabel = "0đ",
+                        progress = 0f,
+                        isActive = false
+                    )
                 )
-            )
-            refreshStateInternal()
+                refreshStateInternal(showLoading = false)
+            }.onFailure { throwable ->
+                _uiState.value = _uiState.value.copy(
+                    isLoading = false,
+                    isSaving = false,
+                    errorMessage = FirebaseErrorMapper.toUserMessage(throwable)
+                )
+            }
         }
     }
 
@@ -75,25 +95,43 @@ class PersonalViewModel(application: Application) : AndroidViewModel(application
         isActive: Boolean
     ) {
         viewModelScope.launch(Dispatchers.IO) {
-            val existing = _categories.value.firstOrNull { it.id == categoryId } ?: return@launch
-            repository.updateCategory(
-                existing.copy(
-                    name = name.trim(),
-                    icon = iconCodeForName(name),
-                    type = type,
-                    isCustom = isCustom,
-                    description = description.trim(),
-                    isActive = isActive
+            _uiState.value = _uiState.value.copy(isSaving = true, errorMessage = null)
+            runCatching {
+                val existing = _categories.value.firstOrNull { it.id == categoryId } ?: return@runCatching
+                repository.updateCategory(
+                    existing.copy(
+                        name = name.trim(),
+                        icon = iconCodeForName(name),
+                        type = type,
+                        isCustom = isCustom,
+                        description = description.trim(),
+                        isActive = isActive
+                    )
                 )
-            )
-            refreshStateInternal()
+                refreshStateInternal(showLoading = false)
+            }.onFailure { throwable ->
+                _uiState.value = _uiState.value.copy(
+                    isLoading = false,
+                    isSaving = false,
+                    errorMessage = FirebaseErrorMapper.toUserMessage(throwable)
+                )
+            }
         }
     }
 
     fun deleteCategory(categoryId: String) {
         viewModelScope.launch(Dispatchers.IO) {
-            repository.deleteCategory(categoryId)
-            refreshStateInternal()
+            _uiState.value = _uiState.value.copy(isSaving = true, errorMessage = null)
+            runCatching {
+                repository.deleteCategory(categoryId)
+                refreshStateInternal(showLoading = false)
+            }.onFailure { throwable ->
+                _uiState.value = _uiState.value.copy(
+                    isLoading = false,
+                    isSaving = false,
+                    errorMessage = FirebaseErrorMapper.toUserMessage(throwable)
+                )
+            }
         }
     }
 
@@ -113,26 +151,44 @@ class PersonalViewModel(application: Application) : AndroidViewModel(application
         }
     }
 
-    private fun refreshStateInternal() {
-        _uiState.value = _uiState.value.copy(isLoading = true)
+    private suspend fun refreshStateInternal(showLoading: Boolean = true) {
+        if (showLoading) {
+            _uiState.value = _uiState.value.copy(
+                isLoading = true,
+                errorMessage = null,
+                currentUserId = currentUserId()
+            )
+        }
 
-        val allTransactions = repository.getAllTransactions()
-        val filteredTransactions = filterTransactions(
-            transactions = allTransactions,
-            monthFilter = currentMonthFilter.value
-        )
-        val categories = repository.getCategories()
+        runCatching {
+            val categories = repository.getCategories()
+            val allTransactions = repository.getAllTransactions()
+            val filteredTransactions = filterTransactions(
+                transactions = allTransactions,
+                monthFilter = currentMonthFilter.value
+            )
 
-        _transactions.value = filteredTransactions
-        _categories.value = categories
-        _categoryNamesByType.value = categories
-            .groupBy { it.type }
-            .mapValues { (_, items) -> items.map { it.name }.sorted() }
+            _transactions.value = filteredTransactions
+            _categories.value = categories
+            _categoryNamesByType.value = categories
+                .groupBy { it.type }
+                .mapValues { (_, items) -> items.map { it.name }.sorted() }
 
-        _uiState.value = buildUiState(
-            transactions = filteredTransactions,
-            categories = categories
-        )
+            _uiState.value = buildUiState(
+                transactions = filteredTransactions,
+                categories = categories
+            )
+        }.onFailure { throwable ->
+            _transactions.value = emptyList()
+            _categories.value = emptyList()
+            _categoryNamesByType.value = emptyMap()
+            _uiState.value = _uiState.value.copy(
+                isLoading = false,
+                isSaving = false,
+                currentUserId = currentUserId(),
+                errorMessage = FirebaseErrorMapper.toUserMessage(throwable)
+            )
+        }
     }
 
     private fun filterTransactions(
@@ -165,6 +221,9 @@ class PersonalViewModel(application: Application) : AndroidViewModel(application
 
         return PersonalUiState(
             isLoading = false,
+            isSaving = false,
+            errorMessage = null,
+            currentUserId = currentUserId(),
             transactions = transactions,
             categories = categories,
             totalIncome = totalIncome,
@@ -177,6 +236,10 @@ class PersonalViewModel(application: Application) : AndroidViewModel(application
         val month: Int,
         val year: Int
     )
+
+    private fun currentUserId(): String {
+        return FirebaseProviders.auth.currentUser?.uid.orEmpty()
+    }
 
     private fun iconCodeForName(name: String): String {
         val parts = name.trim().split(" ").filter { it.isNotBlank() }

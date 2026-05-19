@@ -19,7 +19,6 @@ import kotlinx.coroutines.channels.awaitClose
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.callbackFlow
 import kotlinx.coroutines.suspendCancellableCoroutine
-import kotlinx.coroutines.tasks.await
 import kotlin.coroutines.resume
 import kotlin.coroutines.resumeWithException
 
@@ -95,7 +94,7 @@ class FirebaseSplitRepository(
             batch.set(groupRef.collection("members").document(member.id), member.toMap())
         }
 
-        batch.commit().await()
+        batch.commit().awaitFirebase()
     }
 
     override suspend fun deleteGroup(groupId: String, userId: String): Result<Unit> {

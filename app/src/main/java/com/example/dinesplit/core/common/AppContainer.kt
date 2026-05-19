@@ -16,7 +16,7 @@ object AppContainer {
     }
 
     fun personalRepository(context: Context): PersonalRepository {
-        return LocalPersonalRepository.getInstance(context)
+        return FirebasePersonalRepository.getInstance(context)
     }
 
     fun feedRepository(): FeedRepository {
