@@ -163,44 +163,67 @@ private fun Notification.toMainContainerRoute(): String {
     val targetId = deepLinkTargetId
 
     return when {
+        // Activity/Feed detail
         destination == "ACTIVITY_DETAIL" && !targetId.isNullOrBlank() -> {
             AppRoute.MainContainer.createRoute(
                 tab = AppRoute.Feed.route,
                 target = AppRoute.PostDetail.createRoute(targetId)
             )
         }
+        // Personal transaction detail
         destination == "TRANSACTION_DETAIL" && !targetId.isNullOrBlank() -> {
             AppRoute.MainContainer.createRoute(
                 tab = AppRoute.Personal.route,
                 target = AppRoute.TransactionDetail.createRoute(targetId)
             )
         }
+        // Spending reminders (budget alert)
+        destination == "SPENDING_REMINDERS" -> {
+            AppRoute.MainContainer.createRoute(
+                tab = AppRoute.Personal.route,
+                target = AppRoute.SpendingReminders.route
+            )
+        }
+        // Split bill detail
+        destination == "SPLIT_DETAIL" && !targetId.isNullOrBlank() -> {
+            AppRoute.MainContainer.createRoute(
+                tab = AppRoute.Split.route
+            )
+        }
+        // Split settle/payment
+        destination == "SPLIT_SETTLE" && !targetId.isNullOrBlank() -> {
+            AppRoute.MainContainer.createRoute(
+                tab = AppRoute.Split.route
+            )
+        }
+        // Other user profile (from activity)
         destination == "PROFILE" && !targetId.isNullOrBlank() -> {
             AppRoute.MainContainer.createRoute(
                 tab = AppRoute.Profile.route,
                 target = AppRoute.OtherUserProfile.createRoute(targetId)
             )
         }
-        destination == "SPLIT_DETAIL" || destination == "SPLIT_SETTLE" -> {
+        // Fallback: route to split tab if payment/bill notification
+        type in setOf(
+            NotificationType.BILL_CREATED,
+            NotificationType.PAYMENT_PENDING,
+            NotificationType.PAYMENT_COMPLETED,
+            NotificationType.SPLIT_COMPLETED
+        ) -> {
             AppRoute.MainContainer.createRoute(tab = AppRoute.Split.route)
         }
+        // Fallback: route to activity/feed if activity update
+        type == NotificationType.ACTIVITY_UPDATE -> {
+            AppRoute.MainContainer.createRoute(tab = AppRoute.Feed.route)
+        }
+        // Fallback: route to personal if transaction alert
         type == NotificationType.TRANSACTION_ALERT -> {
             AppRoute.MainContainer.createRoute(
                 tab = AppRoute.Personal.route,
                 target = AppRoute.SpendingReminders.route
             )
         }
-        type == NotificationType.ACTIVITY_UPDATE -> {
-            AppRoute.MainContainer.createRoute(tab = AppRoute.Feed.route)
-        }
-        type in setOf(
-            NotificationType.PAYMENT_COMPLETED,
-            NotificationType.PAYMENT_PENDING,
-            NotificationType.BILL_CREATED,
-            NotificationType.SPLIT_COMPLETED
-        ) -> {
-            AppRoute.MainContainer.createRoute(tab = AppRoute.Split.route)
-        }
+        // Default fallback
         else -> AppRoute.MainContainer.createRoute()
     }
 }

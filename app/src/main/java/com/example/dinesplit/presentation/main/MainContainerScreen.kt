@@ -29,7 +29,7 @@ import com.example.dinesplit.presentation.feed.CreatePostScreen
 import com.example.dinesplit.presentation.feed.FeedScreen
 import com.example.dinesplit.presentation.feed.PostDetailScreen
 import com.example.dinesplit.presentation.feed.SearchScreen
-import com.example.dinesplit.presentation.personal.AddTransactionScreen
+import com.example.dinesplit.presentation.personal.AddEditTransactionScreen
 import com.example.dinesplit.presentation.personal.CategoryManagementScreen
 import com.example.dinesplit.presentation.personal.HistoryScreen
 import com.example.dinesplit.presentation.personal.PersonalScreen
@@ -200,11 +200,15 @@ fun MainContainerScreen(
                 )
             }
             composable(AppRoute.AddTransaction.route) {
-                AddTransactionScreen(
+                AddEditTransactionScreen(
                     onBack = { mainNavController.navigateUp() },
-                    currentUserId = personalUiState.currentUserId,
-                    availableCategoriesByType = personalUiState.categories.groupBy { it.type },
-                    onSave = personalViewModel::addTransaction
+                    transactionId = null,
+                    initialTransaction = null,
+                    availableCategories = personalUiState.categories,
+                    onSave = { transaction ->
+                        personalViewModel.addTransaction(transaction)
+                        mainNavController.navigateUp()
+                    }
                 )
             }
             composable(AppRoute.TransactionHistory.route) {

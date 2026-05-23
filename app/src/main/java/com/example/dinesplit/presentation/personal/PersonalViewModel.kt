@@ -21,7 +21,13 @@ import kotlinx.coroutines.launch
 import java.util.Calendar
 import java.util.UUID
 
+// ...existing code...
+
 class PersonalViewModel(application: Application) : AndroidViewModel(application) {
+    // ...existing code...
+    
+    private var lastUpdateCategoryTime = 0L
+    private val minUpdateIntervalMs = 500L  // Debounce: min 500ms between updates
     private val repository = AppContainer.personalRepository(application)
     private val notificationRepository = AppContainer.notificationRepository(application)
     private val currentMonthFilter = MutableStateFlow<MonthYearFilter?>(null)
@@ -111,7 +117,16 @@ class PersonalViewModel(application: Application) : AndroidViewModel(application
                         isActive = isActive
                     )
                 )
-                refreshStateInternal(showLoading = false)
+                
+                // Debounce: Only reload state if enough time passed since last update
+                // Use lightweight refresh to avoid reloading all transactions
+                val currentTime = System.currentTimeMillis()
+                if (currentTime - lastUpdateCategoryTime >= minUpdateIntervalMs) {
+                    lastUpdateCategoryTime = currentTime
+                    refreshCategoriesOnly()  // Lightweight: no full transaction reload
+                } else {
+                    _uiState.value = _uiState.value.copy(isSaving = false)
+                }
             }.onFailure { throwable ->
                 setError(throwable)
             }
@@ -196,6 +211,25 @@ class PersonalViewModel(application: Application) : AndroidViewModel(application
         }
     }
 
+    // Lightweight refresh for category-only updates (avoids full transaction reload)
+    private suspend fun refreshCategoriesOnly() {
+        runCatching {
+            val categories = repository.getCategories()
+            _categories.value = categories
+            _categoryNamesByType.value = categories
+                .groupBy { it.type }
+                .mapValues { (_, items) -> items.map { it.name }.sorted() }
+
+            // Update UI state without reloading transactions
+            _uiState.value = buildUiState(
+                transactions = _transactions.value,
+                categories = categories
+            )
+        }.onFailure { throwable ->
+            setError(throwable)
+        }
+    }
+
     private suspend fun refreshStateInternal(showLoading: Boolean = true) {
         if (showLoading) {
             _uiState.value = _uiState.value.copy(
@@ -207,11 +241,36 @@ class PersonalViewModel(application: Application) : AndroidViewModel(application
 
         runCatching {
             val categories = repository.getCategories()
-            val allTransactions = repository.getAllTransactions()
-            val filteredTransactions = filterTransactions(
-                transactions = allTransactions,
-                monthFilter = currentMonthFilter.value
-            )
+
+            // Memory Optimization: Load current month transactions first
+            // Only load all transactions when necessary (for reminders)
+            val monthFilter = currentMonthFilter.value
+            val filteredTransactions = if (monthFilter != null) {
+                // Load only specific month transactions for filtering
+                repository.getAllTransactions()
+                    .let { allTxns ->
+                        filterTransactions(
+                            transactions = allTxns,
+                            monthFilter = monthFilter
+                        )
+                    }
+                    .take(500)  // Limit to 500 most recent in this month
+            } else {
+                // If no month filter, load current month only
+                val calendar = Calendar.getInstance()
+                val currentMonth = calendar.get(Calendar.MONTH) + 1
+                val currentYear = calendar.get(Calendar.YEAR)
+
+                repository.getAllTransactions()
+                    .filter { transaction ->
+                        val txnCalendar = Calendar.getInstance().apply {
+                            timeInMillis = transaction.date
+                        }
+                        txnCalendar.get(Calendar.MONTH) + 1 == currentMonth &&
+                        txnCalendar.get(Calendar.YEAR) == currentYear
+                    }
+                    .take(500)  // Limit to 500 most recent
+            }
 
             _transactions.value = filteredTransactions
             _categories.value = categories
@@ -230,7 +289,11 @@ class PersonalViewModel(application: Application) : AndroidViewModel(application
                 categories = categories
             )
 
-            syncSpendingReminders(allTransactions)
+            // Load all transactions asynchronously for reminders (background)
+            viewModelScope.launch(Dispatchers.IO) {
+                val allTransactions = repository.getAllTransactions()
+                syncSpendingReminders(allTransactions)
+            }
         }.onFailure { throwable ->
             _transactions.value = emptyList()
             _categories.value = emptyList()

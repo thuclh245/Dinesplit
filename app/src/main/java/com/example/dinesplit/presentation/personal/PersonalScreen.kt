@@ -69,10 +69,10 @@ fun PersonalScreen(
     onOpenReminders: () -> Unit = {},
     onRefresh: () -> Unit = {}
 ) {
-    val expenseSlices = remember(chartState) {
+    val expenseSlices = remember(chartState.pieSlices) {
         chartState.pieSlices
     }
-    val dailyBars = remember(chartState) {
+    val dailyBars = remember(chartState.dailyExpenseBars) {
         chartState.dailyExpenseBars
     }
 

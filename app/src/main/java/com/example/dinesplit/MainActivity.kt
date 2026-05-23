@@ -9,6 +9,8 @@ import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Surface
 import androidx.compose.ui.Modifier
 import androidx.navigation.compose.rememberNavController
+import coil.Coil
+import com.example.dinesplit.core.di.CoilConfiguration
 import com.example.dinesplit.core.firebase.FirebaseBaselineCheck
 import com.example.dinesplit.core.navigation.AppNavHost
 import com.example.dinesplit.ui.theme.DineSplitTheme
@@ -17,6 +19,9 @@ class MainActivity : ComponentActivity() {
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         enableEdgeToEdge()
+
+        // Initialize Coil with memory-optimized config
+        Coil.setImageLoader(CoilConfiguration.createImageLoader(this))
 
         try {
             runCatching {
