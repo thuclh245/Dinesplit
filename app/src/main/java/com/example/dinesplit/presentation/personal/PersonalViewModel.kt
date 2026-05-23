@@ -1,20 +1,29 @@
 package com.example.dinesplit.presentation.personal
 
 import android.app.Application
+import android.net.Uri
 import androidx.lifecycle.AndroidViewModel
 import androidx.lifecycle.viewModelScope
 import com.example.dinesplit.core.common.AppContainer
 import com.example.dinesplit.core.firebase.FirebaseErrorMapper
 import com.example.dinesplit.core.firebase.FirebaseProviders
 import com.example.dinesplit.data.model.StoredCategory
+import com.example.dinesplit.domain.model.Bill
+import com.example.dinesplit.domain.model.GoalStatus
 import com.example.dinesplit.domain.model.Notification
 import com.example.dinesplit.domain.model.NotificationFactory
 import com.example.dinesplit.domain.model.NotificationType
+import com.example.dinesplit.domain.model.PersonalGoal
+import com.example.dinesplit.domain.model.PersonalWallet
 import com.example.dinesplit.domain.model.PersonalReminderTrigger
+import com.example.dinesplit.domain.model.RecurringCadence
+import com.example.dinesplit.domain.model.RecurringRule
 import com.example.dinesplit.domain.model.ReminderType
 import com.example.dinesplit.domain.model.SpendingReminder
 import com.example.dinesplit.domain.model.Transaction
+import com.example.dinesplit.domain.model.TransactionSource
 import com.example.dinesplit.domain.model.TransactionType
+import com.example.dinesplit.domain.model.WalletType
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
@@ -52,6 +61,15 @@ class PersonalViewModel(application: Application) : AndroidViewModel(application
     private val _reminders = MutableStateFlow<List<SpendingReminder>>(emptyList())
     val reminders: StateFlow<List<SpendingReminder>> = _reminders.asStateFlow()
 
+    private val _recurringRules = MutableStateFlow<List<RecurringRule>>(emptyList())
+    val recurringRules: StateFlow<List<RecurringRule>> = _recurringRules.asStateFlow()
+
+    private val _goals = MutableStateFlow<List<PersonalGoal>>(emptyList())
+    val goals: StateFlow<List<PersonalGoal>> = _goals.asStateFlow()
+
+    private val _wallets = MutableStateFlow<List<PersonalWallet>>(emptyList())
+    val wallets: StateFlow<List<PersonalWallet>> = _wallets.asStateFlow()
+
     init {
         refreshState()
     }
@@ -60,17 +78,58 @@ class PersonalViewModel(application: Application) : AndroidViewModel(application
         viewModelScope.launch(Dispatchers.IO) {
             _uiState.value = _uiState.value.copy(isSaving = true, errorMessage = null)
             runCatching {
-                repository.insertTransaction(transaction)
+                val preparedTransaction = transaction.withUploadedReceiptIfNeeded()
+                repository.insertTransaction(preparedTransaction)
                 
                 // Trigger notification for transaction added
                 val notification = NotificationFactory.transactionAdded(
-                    amount = transaction.amount,
-                    categoryName = transaction.category,
-                    type = transaction.type,
+                    amount = preparedTransaction.amount,
+                    categoryName = preparedTransaction.category,
+                    type = preparedTransaction.type,
                     userId = currentUserId()
                 )
                 notificationRepository.insertNotification(notification)
                 
+                refreshStateInternal(showLoading = false)
+            }.onFailure { throwable ->
+                setError(throwable)
+            }
+        }
+    }
+
+    fun addSplitBillTransaction(bill: Bill) {
+        viewModelScope.launch(Dispatchers.IO) {
+            runCatching {
+                val uid = currentUserId()
+                if (uid.isBlank()) return@runCatching
+
+                val categories = _categories.value.ifEmpty { repository.getCategories() }
+                val category = categories.firstOrNull { it.type == TransactionType.EXPENSE && it.id == "c_food" }
+                    ?: categories.firstOrNull { it.type == TransactionType.EXPENSE }
+                    ?: return@runCatching
+                val amount = when {
+                    bill.payerId == uid -> bill.totalAmount
+                    bill.shares[uid] != null -> bill.shares[uid].orZero()
+                    else -> 0.0
+                }
+                if (amount <= 0.0) return@runCatching
+
+                repository.insertTransaction(
+                    Transaction(
+                        id = "split_${bill.id}",
+                        userId = uid,
+                        amount = amount,
+                        type = TransactionType.EXPENSE,
+                        categoryId = category.id,
+                        category = category.name,
+                        note = "Split bill: ${bill.name}",
+                        date = bill.date,
+                        createdAt = System.currentTimeMillis(),
+                        source = TransactionSource.SPLIT,
+                        sourceGroupId = bill.groupId,
+                        sourceBillId = bill.id
+                    )
+                )
                 refreshStateInternal(showLoading = false)
             }.onFailure { throwable ->
                 setError(throwable)
@@ -228,6 +287,124 @@ class PersonalViewModel(application: Application) : AndroidViewModel(application
         }
     }
 
+    fun addRecurringRule(
+        name: String,
+        amount: Double,
+        type: TransactionType,
+        categoryId: String,
+        categoryName: String,
+        cadence: RecurringCadence,
+        dayOfMonth: Int
+    ) {
+        viewModelScope.launch(Dispatchers.IO) {
+            _uiState.value = _uiState.value.copy(isSaving = true, errorMessage = null)
+            runCatching {
+                val now = System.currentTimeMillis()
+                repository.insertRecurringRule(
+                    RecurringRule(
+                        id = UUID.randomUUID().toString(),
+                        userId = currentUserId(),
+                        name = name.trim(),
+                        amount = amount,
+                        type = type,
+                        categoryId = categoryId,
+                        categoryName = categoryName,
+                        cadence = cadence,
+                        dayOfMonth = dayOfMonth.coerceIn(1, 31),
+                        nextRunAt = nextMonthlyRunAt(dayOfMonth),
+                        isEnabled = true,
+                        createdAt = now,
+                        updatedAt = now
+                    )
+                )
+                refreshStateInternal(showLoading = false)
+            }.onFailure { throwable -> setError(throwable) }
+        }
+    }
+
+    fun deleteRecurringRule(ruleId: String) {
+        viewModelScope.launch(Dispatchers.IO) {
+            runCatching {
+                repository.deleteRecurringRule(ruleId)
+                refreshStateInternal(showLoading = false)
+            }.onFailure { throwable -> setError(throwable) }
+        }
+    }
+
+    fun addGoal(
+        title: String,
+        targetAmount: Double,
+        currentAmount: Double,
+        categoryId: String?
+    ) {
+        viewModelScope.launch(Dispatchers.IO) {
+            _uiState.value = _uiState.value.copy(isSaving = true, errorMessage = null)
+            runCatching {
+                val now = System.currentTimeMillis()
+                repository.insertGoal(
+                    PersonalGoal(
+                        id = UUID.randomUUID().toString(),
+                        userId = currentUserId(),
+                        title = title.trim(),
+                        targetAmount = targetAmount,
+                        currentAmount = currentAmount,
+                        categoryId = categoryId,
+                        deadlineAt = endOfCurrentMonth(),
+                        status = GoalStatus.ACTIVE,
+                        createdAt = now,
+                        updatedAt = now
+                    )
+                )
+                refreshStateInternal(showLoading = false)
+            }.onFailure { throwable -> setError(throwable) }
+        }
+    }
+
+    fun deleteGoal(goalId: String) {
+        viewModelScope.launch(Dispatchers.IO) {
+            runCatching {
+                repository.deleteGoal(goalId)
+                refreshStateInternal(showLoading = false)
+            }.onFailure { throwable -> setError(throwable) }
+        }
+    }
+
+    fun addWallet(
+        name: String,
+        type: WalletType,
+        balance: Double
+    ) {
+        viewModelScope.launch(Dispatchers.IO) {
+            _uiState.value = _uiState.value.copy(isSaving = true, errorMessage = null)
+            runCatching {
+                val now = System.currentTimeMillis()
+                repository.insertWallet(
+                    PersonalWallet(
+                        id = UUID.randomUUID().toString(),
+                        userId = currentUserId(),
+                        name = name.trim(),
+                        type = type,
+                        balance = balance,
+                        color = "#AB2D00",
+                        isArchived = false,
+                        createdAt = now,
+                        updatedAt = now
+                    )
+                )
+                refreshStateInternal(showLoading = false)
+            }.onFailure { throwable -> setError(throwable) }
+        }
+    }
+
+    fun deleteWallet(walletId: String) {
+        viewModelScope.launch(Dispatchers.IO) {
+            runCatching {
+                repository.deleteWallet(walletId)
+                refreshStateInternal(showLoading = false)
+            }.onFailure { throwable -> setError(throwable) }
+        }
+    }
+
     fun deleteSpendingReminder(reminderId: String) {
         viewModelScope.launch(Dispatchers.IO) {
             _uiState.value = _uiState.value.copy(isSaving = true, errorMessage = null)
@@ -280,19 +457,20 @@ class PersonalViewModel(application: Application) : AndroidViewModel(application
 
         runCatching {
             val categories = repository.getCategories()
+            val recurringRules = repository.getRecurringRules()
+            val goals = repository.getGoals()
+            val wallets = repository.getWallets()
+            val allTransactions = repository.getAllTransactions()
 
             // Memory Optimization: Load current month transactions first
             // Only load all transactions when necessary (for reminders)
             val monthFilter = currentMonthFilter.value
             val filteredTransactions = if (monthFilter != null) {
                 // Load only specific month transactions for filtering
-                repository.getAllTransactions()
-                    .let { allTxns ->
-                        filterTransactions(
-                            transactions = allTxns,
-                            monthFilter = monthFilter
-                        )
-                    }
+                filterTransactions(
+                    transactions = allTransactions,
+                    monthFilter = monthFilter
+                )
                     .take(500)  // Limit to 500 most recent in this month
             } else {
                 // If no month filter, load current month only
@@ -300,19 +478,28 @@ class PersonalViewModel(application: Application) : AndroidViewModel(application
                 val currentMonth = calendar.get(Calendar.MONTH) + 1
                 val currentYear = calendar.get(Calendar.YEAR)
 
-                repository.getAllTransactions()
-                    .filter { transaction ->
-                        val txnCalendar = Calendar.getInstance().apply {
-                            timeInMillis = transaction.date
-                        }
-                        txnCalendar.get(Calendar.MONTH) + 1 == currentMonth &&
-                        txnCalendar.get(Calendar.YEAR) == currentYear
+                allTransactions.filter { transaction ->
+                    val txnCalendar = Calendar.getInstance().apply {
+                        timeInMillis = transaction.date
                     }
+                    txnCalendar.get(Calendar.MONTH) + 1 == currentMonth &&
+                    txnCalendar.get(Calendar.YEAR) == currentYear
+                }
                     .take(500)  // Limit to 500 most recent
             }
+            val upcomingRecurringExpense = recurringRules
+                .filter { it.isEnabled && it.type == TransactionType.EXPENSE }
+                .sumOf { it.amount }
+            val savingsGoal = goals
+                .filter { it.status == GoalStatus.ACTIVE }
+                .sumOf { (it.targetAmount - it.currentAmount).coerceAtLeast(0.0) }
+                .coerceAtMost(5_000_000.0)
 
             _transactions.value = filteredTransactions
             _categories.value = categories
+            _recurringRules.value = recurringRules
+            _goals.value = goals
+            _wallets.value = wallets
             _categoryNamesByType.value = categories
                 .groupBy { it.type }
                 .mapValues { (_, items) -> items.map { it.name }.sorted() }
@@ -320,22 +507,32 @@ class PersonalViewModel(application: Application) : AndroidViewModel(application
             _chartState.value = PersonalChartState(
                 pieSlices = filteredTransactions.toPieCategorySlices(),
                 dailyExpenseBars = filteredTransactions.toDailyExpenseBars(),
-                monthlySummary = filteredTransactions.toMonthlySummary()
+                monthlySummary = filteredTransactions.toMonthlySummary(),
+                insights = allTransactions.toMonthlyInsights(),
+                safeToSpend = allTransactions.toSafeToSpendForecast(
+                    upcomingRecurringExpense = upcomingRecurringExpense,
+                    savingsGoal = savingsGoal
+                )
             )
 
             _uiState.value = buildUiState(
                 transactions = filteredTransactions,
-                categories = categories
+                categories = categories,
+                recurringRules = recurringRules,
+                goals = goals,
+                wallets = wallets
             )
 
             // Load all transactions asynchronously for reminders (background)
             viewModelScope.launch(Dispatchers.IO) {
-                val allTransactions = repository.getAllTransactions()
                 syncSpendingReminders(allTransactions)
             }
         }.onFailure { throwable ->
             _transactions.value = emptyList()
             _categories.value = emptyList()
+            _recurringRules.value = emptyList()
+            _goals.value = emptyList()
+            _wallets.value = emptyList()
             _categoryNamesByType.value = emptyMap()
             _chartState.value = PersonalChartState()
             _uiState.value = _uiState.value.copy(
@@ -364,7 +561,10 @@ class PersonalViewModel(application: Application) : AndroidViewModel(application
 
     private fun buildUiState(
         transactions: List<Transaction>,
-        categories: List<StoredCategory>
+        categories: List<StoredCategory>,
+        recurringRules: List<RecurringRule> = _recurringRules.value,
+        goals: List<PersonalGoal> = _goals.value,
+        wallets: List<PersonalWallet> = _wallets.value
     ): PersonalUiState {
         val income = transactions
             .filter { it.type == TransactionType.INCOME }
@@ -380,6 +580,9 @@ class PersonalViewModel(application: Application) : AndroidViewModel(application
             currentUserId = currentUserId(),
             transactions = transactions,
             categories = categories,
+            recurringRules = recurringRules,
+            goals = goals,
+            wallets = wallets,
             totalIncome = income,
             totalExpense = expense,
             balance = income - expense
@@ -460,6 +663,19 @@ class PersonalViewModel(application: Application) : AndroidViewModel(application
         _reminders.value = repository.getSpendingReminders()
     }
 
+    private suspend fun Transaction.withUploadedReceiptIfNeeded(): Transaction {
+        val receiptValue = receiptImageUrl?.takeIf { it.isNotBlank() } ?: return this
+        val receiptUri = Uri.parse(receiptValue)
+        val isLocalReceipt = receiptUri.scheme == "content" || receiptUri.scheme == "file"
+        if (!isLocalReceipt) return this
+
+        val uploadedUrl = repository.uploadReceiptImage(id, receiptUri).getOrThrow()
+        return copy(
+            receiptImageUrl = uploadedUrl,
+            source = if (source == TransactionSource.MANUAL) TransactionSource.RECEIPT else source
+        )
+    }
+
     private fun setError(throwable: Throwable) {
         _uiState.value = _uiState.value.copy(
             isLoading = false,
@@ -485,4 +701,34 @@ class PersonalViewModel(application: Application) : AndroidViewModel(application
             else -> "${parts[0].first()}${parts[1].first()}".uppercase()
         }
     }
+
+    private fun nextMonthlyRunAt(dayOfMonth: Int): Long {
+        val calendar = Calendar.getInstance()
+        val targetDay = dayOfMonth.coerceIn(1, calendar.getActualMaximum(Calendar.DAY_OF_MONTH))
+        calendar.set(Calendar.DAY_OF_MONTH, targetDay)
+        calendar.set(Calendar.HOUR_OF_DAY, 9)
+        calendar.set(Calendar.MINUTE, 0)
+        calendar.set(Calendar.SECOND, 0)
+        calendar.set(Calendar.MILLISECOND, 0)
+        if (calendar.timeInMillis <= System.currentTimeMillis()) {
+            calendar.add(Calendar.MONTH, 1)
+            calendar.set(
+                Calendar.DAY_OF_MONTH,
+                dayOfMonth.coerceIn(1, calendar.getActualMaximum(Calendar.DAY_OF_MONTH))
+            )
+        }
+        return calendar.timeInMillis
+    }
+
+    private fun endOfCurrentMonth(): Long {
+        return Calendar.getInstance().apply {
+            set(Calendar.DAY_OF_MONTH, getActualMaximum(Calendar.DAY_OF_MONTH))
+            set(Calendar.HOUR_OF_DAY, 23)
+            set(Calendar.MINUTE, 59)
+            set(Calendar.SECOND, 59)
+            set(Calendar.MILLISECOND, 999)
+        }.timeInMillis
+    }
+
+    private fun Double?.orZero(): Double = this ?: 0.0
 }

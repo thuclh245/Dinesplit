@@ -31,7 +31,7 @@ service cloud.firestore {
         && data.createdAt is int
         && data.updatedAt is int
         && data.uid == request.auth.uid
-        && data.usernameLower == lower(data.username)
+        && data.usernameLower == data.username.lower()
         && data.displayName.size() > 0
         && data.username.size() >= 3;
     }
@@ -48,13 +48,15 @@ service cloud.firestore {
     }
 
     function validUsernameClaim(data, usernameLower) {
-      return data.keys().hasOnly(['uid', 'usernameLower', 'username'])
+      return data.keys().hasOnly(['uid', 'usernameLower', 'username', 'claimedAt', 'updatedAt'])
         && data.uid is string
         && data.usernameLower is string
         && data.username is string
+        && data.claimedAt is number
+        && data.updatedAt is number
         && data.uid == request.auth.uid
         && data.usernameLower == usernameLower
-        && data.usernameLower == lower(data.username)
+        && data.usernameLower == data.username.lower()
         && data.username.size() >= 3;
     }
 
@@ -69,7 +71,13 @@ service cloud.firestore {
           'note',
           'date',
           'createdAt',
-          'updatedAt'
+          'updatedAt',
+          'source',
+          'sourceGroupId',
+          'sourceBillId',
+          'recurringRuleId',
+          'receiptImageUrl',
+          'walletId'
         ])
         && data.id == transactionId
         && data.userId == uid
@@ -83,7 +91,13 @@ service cloud.firestore {
         && data.note is string
         && data.date is number
         && data.createdAt is number
-        && data.updatedAt is number;
+        && data.updatedAt is number
+        && data.source in ['MANUAL', 'SPLIT', 'RECURRING', 'RECEIPT']
+        && data.sourceGroupId is string
+        && data.sourceBillId is string
+        && data.recurringRuleId is string
+        && data.receiptImageUrl is string
+        && data.walletId is string;
     }
 
     function validPersonalCategory(data, categoryId) {
@@ -146,6 +160,93 @@ service cloud.firestore {
         && data.reminderType in ['DAILY', 'WEEKLY', 'MONTHLY', 'MILESTONE']
         && data.isEnabled is bool
         && data.lastAlertedAt is number
+        && data.createdAt is number
+        && data.updatedAt is number;
+    }
+
+    function validRecurringRule(data, uid, ruleId) {
+      return data.keys().hasOnly([
+          'id',
+          'userId',
+          'name',
+          'amount',
+          'type',
+          'categoryId',
+          'categoryName',
+          'cadence',
+          'dayOfMonth',
+          'nextRunAt',
+          'isEnabled',
+          'createdAt',
+          'updatedAt'
+        ])
+        && data.id == ruleId
+        && data.userId == uid
+        && data.name is string
+        && data.name.size() > 0
+        && data.amount is number
+        && data.amount > 0
+        && data.type in ['INCOME', 'EXPENSE']
+        && data.categoryId is string
+        && data.categoryName is string
+        && data.cadence in ['WEEKLY', 'MONTHLY']
+        && data.dayOfMonth is number
+        && data.dayOfMonth >= 1
+        && data.dayOfMonth <= 31
+        && data.nextRunAt is number
+        && data.isEnabled is bool
+        && data.createdAt is number
+        && data.updatedAt is number;
+    }
+
+    function validPersonalGoal(data, uid, goalId) {
+      return data.keys().hasOnly([
+          'id',
+          'userId',
+          'title',
+          'targetAmount',
+          'currentAmount',
+          'categoryId',
+          'deadlineAt',
+          'status',
+          'createdAt',
+          'updatedAt'
+        ])
+        && data.id == goalId
+        && data.userId == uid
+        && data.title is string
+        && data.title.size() > 0
+        && data.targetAmount is number
+        && data.targetAmount > 0
+        && data.currentAmount is number
+        && data.currentAmount >= 0
+        && data.categoryId is string
+        && data.deadlineAt is number
+        && data.status in ['ACTIVE', 'COMPLETED', 'PAUSED']
+        && data.createdAt is number
+        && data.updatedAt is number;
+    }
+
+    function validPersonalWallet(data, uid, walletId) {
+      return data.keys().hasOnly([
+          'id',
+          'userId',
+          'name',
+          'walletType',
+          'balance',
+          'color',
+          'isArchived',
+          'createdAt',
+          'updatedAt'
+        ])
+        && data.id == walletId
+        && data.userId == uid
+        && data.name is string
+        && data.name.size() > 0
+        && data.walletType in ['CASH', 'BANK', 'EWALLET', 'CREDIT']
+        && data.balance is number
+        && data.color is string
+        && data.isArchived is bool
         && data.createdAt is number
         && data.updatedAt is number;
     }
@@ -228,6 +329,27 @@ service cloud.firestore {
           && validPersonalReminder(request.resource.data, uid, reminderId);
         allow delete: if isOwner(uid);
       }
+
+      match /recurring_rules/{ruleId} {
+        allow read: if isOwner(uid);
+        allow create, update: if isOwner(uid)
+          && validRecurringRule(request.resource.data, uid, ruleId);
+        allow delete: if isOwner(uid);
+      }
+
+      match /goals/{goalId} {
+        allow read: if isOwner(uid);
+        allow create, update: if isOwner(uid)
+          && validPersonalGoal(request.resource.data, uid, goalId);
+        allow delete: if isOwner(uid);
+      }
+
+      match /wallets/{walletId} {
+        allow read: if isOwner(uid);
+        allow create, update: if isOwner(uid)
+          && validPersonalWallet(request.resource.data, uid, walletId);
+        allow delete: if isOwner(uid);
+      }
     }
 
     match /user_notifications/{uid} {
@@ -242,6 +364,23 @@ service cloud.firestore {
         allow delete: if isOwner(uid);
       }
     }
+
+    match /groups/{groupId} {
+      allow read, list: if signedIn();
+      allow create: if signedIn();
+      allow update, delete: if signedIn();
+
+      match /members/{memberId} {
+        allow read, write: if signedIn();
+      }
+
+      match /bills/{billId} {
+        allow read, write: if signedIn();
+      }
+    }
+
+    match /posts/{postId} {
+      allow read, write: if signedIn();
+    }
   }
 }
-

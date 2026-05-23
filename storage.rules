@@ -12,6 +12,10 @@ service firebase.storage {
     match /avatars/{uid}/{allPaths=**} {
       allow read, write: if isAvatarOwner(uid);
     }
+
+    match /receipts/{uid}/{allPaths=**} {
+      allow read, write: if isAvatarOwner(uid);
+    }
   }
 }
 

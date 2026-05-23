@@ -24,6 +24,7 @@ data class CreateBillUiState(
     val payerId: String = "",
     val isLoading: Boolean = false,
     val isSaved: Boolean = false,
+    val savedBill: Bill? = null,
     val error: String? = null,
     val isUsingFallbackMembers: Boolean = false
 )
@@ -168,7 +169,7 @@ class CreateBillViewModel(
         val result = repository.saveBill(bill)
         _uiState.update {
             if (result.isSuccess) {
-                it.copy(isLoading = false, isSaved = true)
+                it.copy(isLoading = false, isSaved = true, savedBill = bill)
             } else {
                 it.copy(isLoading = false, error = "Không thể lưu hóa đơn")
             }

@@ -65,6 +65,7 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.example.dinesplit.core.common.AppContainer
+import com.example.dinesplit.domain.model.Bill
 import com.example.dinesplit.domain.model.BillItem
 import com.example.dinesplit.domain.model.Member
 import com.example.dinesplit.domain.model.SplitMethod
@@ -74,7 +75,8 @@ import kotlinx.coroutines.launch
 fun CreateBillScreen(
     onBack: () -> Unit,
     groupId: String = "g1",
-    viewModel: CreateBillViewModel? = null
+    viewModel: CreateBillViewModel? = null,
+    onBillSavedForPersonal: (Bill) -> Unit = {}
 ) {
     val context = LocalContext.current
     val vm = viewModel ?: remember(groupId) {
@@ -170,7 +172,10 @@ fun CreateBillScreen(
     }
 
     LaunchedEffect(uiState.isSaved) {
-        if (uiState.isSaved) onBack()
+        if (uiState.isSaved) {
+            uiState.savedBill?.let(onBillSavedForPersonal)
+            onBack()
+        }
     }
 
     LaunchedEffect(uiState.error) {

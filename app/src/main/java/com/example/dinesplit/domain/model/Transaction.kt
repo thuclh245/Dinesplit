@@ -13,7 +13,20 @@ data class Transaction(
     val category: String,
     val note: String?,
     val date: Long,
-    val createdAt: Long
+    val createdAt: Long,
+    val source: TransactionSource = TransactionSource.MANUAL,
+    val sourceGroupId: String? = null,
+    val sourceBillId: String? = null,
+    val recurringRuleId: String? = null,
+    val receiptImageUrl: String? = null,
+    val walletId: String? = null
 )
+
+enum class TransactionSource {
+    MANUAL,
+    SPLIT,
+    RECURRING,
+    RECEIPT
+}
 
 

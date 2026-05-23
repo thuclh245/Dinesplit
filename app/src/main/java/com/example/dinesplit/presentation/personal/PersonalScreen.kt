@@ -21,9 +21,13 @@ import androidx.compose.material.icons.filled.Add
 import androidx.compose.material.icons.filled.ArrowDownward
 import androidx.compose.material.icons.filled.ArrowUpward
 import androidx.compose.material.icons.filled.Category
+import androidx.compose.material.icons.filled.EventRepeat
+import androidx.compose.material.icons.filled.Flag
 import androidx.compose.material.icons.filled.History
+import androidx.compose.material.icons.filled.Lightbulb
 import androidx.compose.material.icons.filled.NotificationsActive
 import androidx.compose.material.icons.filled.Refresh
+import androidx.compose.material.icons.filled.Savings
 import androidx.compose.material3.FloatingActionButton
 import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
@@ -67,6 +71,7 @@ fun PersonalScreen(
     onOpenHistory: () -> Unit = {},
     onOpenCategories: () -> Unit = {},
     onOpenReminders: () -> Unit = {},
+    onOpenPlans: () -> Unit = {},
     onRefresh: () -> Unit = {}
 ) {
     val expenseSlices = remember(chartState.pieSlices) {
@@ -132,6 +137,14 @@ fun PersonalScreen(
                 }
 
                 item {
+                    SafeToSpendCard(forecast = chartState.safeToSpend)
+                }
+
+                item {
+                    InsightSection(insights = chartState.insights)
+                }
+
+                item {
                     Row(
                         modifier = Modifier.fillMaxWidth(),
                         horizontalArrangement = Arrangement.spacedBy(AppDimens.spaceMd)
@@ -154,13 +167,25 @@ fun PersonalScreen(
                 }
 
                 item {
-                    QuickActionCard(
+                    Row(
                         modifier = Modifier.fillMaxWidth(),
-                        icon = Icons.Default.NotificationsActive,
-                        label = "Reminders",
-                        value = "$reminderCount active",
-                        onClick = onOpenReminders
-                    )
+                        horizontalArrangement = Arrangement.spacedBy(AppDimens.spaceMd)
+                    ) {
+                        QuickActionCard(
+                            modifier = Modifier.weight(1f),
+                            icon = Icons.Default.NotificationsActive,
+                            label = "Reminders",
+                            value = "$reminderCount active",
+                            onClick = onOpenReminders
+                        )
+                        QuickActionCard(
+                            modifier = Modifier.weight(1f),
+                            icon = Icons.Default.EventRepeat,
+                            label = "Plans",
+                            value = "${uiState.recurringRules.size + uiState.goals.size + uiState.wallets.size} active",
+                            onClick = onOpenPlans
+                        )
+                    }
                 }
 
                 item {
@@ -248,6 +273,108 @@ private fun BalanceCard(
                     title = "Expense",
                     amount = expense,
                     color = MaterialTheme.colorScheme.error
+                )
+            }
+        }
+    }
+}
+
+@Composable
+private fun SafeToSpendCard(forecast: SafeToSpendForecast) {
+    val statusColor = when (forecast.status) {
+        SafeToSpendStatus.HEALTHY -> MaterialTheme.colorScheme.secondary
+        SafeToSpendStatus.WATCH -> MaterialTheme.colorScheme.tertiary
+        SafeToSpendStatus.OVER -> MaterialTheme.colorScheme.error
+    }
+
+    AppCard {
+        Row(
+            modifier = Modifier.fillMaxWidth(),
+            horizontalArrangement = Arrangement.spacedBy(AppDimens.spaceMd),
+            verticalAlignment = Alignment.CenterVertically
+        ) {
+            Surface(
+                shape = CircleShape,
+                color = statusColor.copy(alpha = 0.12f)
+            ) {
+                Icon(
+                    imageVector = Icons.Default.Savings,
+                    contentDescription = null,
+                    tint = statusColor,
+                    modifier = Modifier
+                        .padding(AppDimens.spaceMd)
+                        .size(24.dp)
+                )
+            }
+            Column(
+                modifier = Modifier.weight(1f),
+                verticalArrangement = Arrangement.spacedBy(AppDimens.spaceXs)
+            ) {
+                Text(
+                    text = "Safe to spend today",
+                    style = MaterialTheme.typography.labelMedium,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant
+                )
+                Text(
+                    text = formatMoney(forecast.dailyAmount),
+                    style = MaterialTheme.typography.headlineSmall,
+                    fontWeight = FontWeight.ExtraBold,
+                    color = statusColor
+                )
+                Text(
+                    text = "${forecast.daysLeft} days left. ${forecast.message}",
+                    style = MaterialTheme.typography.bodySmall,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant
+                )
+            }
+        }
+    }
+}
+
+@Composable
+private fun InsightSection(insights: List<PersonalInsight>) {
+    Column(verticalArrangement = Arrangement.spacedBy(AppDimens.spaceSm)) {
+        SectionHeader(title = "Monthly insights")
+        insights.forEach { insight ->
+            InsightCard(insight = insight)
+        }
+    }
+}
+
+@Composable
+private fun InsightCard(insight: PersonalInsight) {
+    val toneColor = when (insight.tone) {
+        PersonalInsightTone.POSITIVE -> MaterialTheme.colorScheme.secondary
+        PersonalInsightTone.WARNING -> MaterialTheme.colorScheme.error
+        PersonalInsightTone.INFO -> MaterialTheme.colorScheme.primary
+    }
+
+    AppCard(contentPadding = PaddingValues(AppDimens.spaceMd)) {
+        Row(
+            modifier = Modifier.fillMaxWidth(),
+            horizontalArrangement = Arrangement.spacedBy(AppDimens.spaceMd),
+            verticalAlignment = Alignment.CenterVertically
+        ) {
+            Icon(
+                imageVector = when (insight.tone) {
+                    PersonalInsightTone.POSITIVE -> Icons.Default.Flag
+                    PersonalInsightTone.WARNING -> Icons.Default.ArrowUpward
+                    PersonalInsightTone.INFO -> Icons.Default.Lightbulb
+                },
+                contentDescription = null,
+                tint = toneColor,
+                modifier = Modifier.size(22.dp)
+            )
+            Column(verticalArrangement = Arrangement.spacedBy(AppDimens.spaceXs)) {
+                Text(
+                    text = insight.title,
+                    style = MaterialTheme.typography.titleSmall,
+                    fontWeight = FontWeight.Bold
+                )
+                Text(
+                    text = insight.message,
+                    style = MaterialTheme.typography.bodySmall,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant
                 )
             }
         }

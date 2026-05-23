@@ -33,6 +33,7 @@ import com.example.dinesplit.presentation.personal.AddEditTransactionScreen
 import com.example.dinesplit.presentation.personal.CategoryManagementScreen
 import com.example.dinesplit.presentation.personal.HistoryScreen
 import com.example.dinesplit.presentation.personal.PersonalScreen
+import com.example.dinesplit.presentation.personal.PersonalPlansScreen
 import com.example.dinesplit.presentation.personal.PersonalViewModel
 import com.example.dinesplit.presentation.personal.SpendingReminderScreen
 import com.example.dinesplit.presentation.personal.TransactionDetailScreen
@@ -196,6 +197,7 @@ fun MainContainerScreen(
                     onOpenHistory = { mainNavController.navigate(AppRoute.TransactionHistory.route) },
                     onOpenCategories = { mainNavController.navigate(AppRoute.CategoryManagement.route) },
                     onOpenReminders = { mainNavController.navigate(AppRoute.SpendingReminders.route) },
+                    onOpenPlans = { mainNavController.navigate(AppRoute.PersonalPlans.route) },
                     onRefresh = personalViewModel::refreshState
                 )
             }
@@ -276,10 +278,27 @@ fun MainContainerScreen(
                     onDeleteReminder = personalViewModel::deleteSpendingReminder
                 )
             }
+            composable(AppRoute.PersonalPlans.route) {
+                PersonalPlansScreen(
+                    onBack = { mainNavController.navigateUp() },
+                    categories = personalUiState.categories,
+                    recurringRules = personalUiState.recurringRules,
+                    goals = personalUiState.goals,
+                    wallets = personalUiState.wallets,
+                    onAddRecurring = personalViewModel::addRecurringRule,
+                    onDeleteRecurring = personalViewModel::deleteRecurringRule,
+                    onAddGoal = personalViewModel::addGoal,
+                    onDeleteGoal = personalViewModel::deleteGoal,
+                    onAddWallet = personalViewModel::addWallet,
+                    onDeleteWallet = personalViewModel::deleteWallet
+                )
+            }
             composable(AppRoute.Profile.route) {
                 ProfileScreen(
                     userAvatarUrl = profileUiState.profile?.avatarUrl,
                     userName = profileUiState.profile?.displayName ?: "User",
+                    userHandle = profileUiState.profile?.username?.let { "@$it" }.orEmpty(),
+                    userBio = profileUiState.profile?.bio.orEmpty(),
                     onEditProfile = { mainNavController.navigate(AppRoute.EditProfile.route) },
                     onOpenSettings = { /* TODO: Implement settings */ },
                     onOpenSearch = { mainNavController.navigate(AppRoute.Search.route) }
@@ -307,7 +326,8 @@ fun MainContainerScreen(
                 val groupId = backStackEntry.arguments?.getString(AppRoute.CreateBill.ARG_GROUP_ID).orEmpty()
                 CreateBillScreen(
                     groupId = groupId,
-                    onBack = { mainNavController.navigateUp() }
+                    onBack = { mainNavController.navigateUp() },
+                    onBillSavedForPersonal = personalViewModel::addSplitBillTransaction
                 )
             }
             composable(AppRoute.BillDetail.routeWithArg) { backStackEntry ->
@@ -336,15 +356,16 @@ private fun MainBottomBar(
     isTabSelected: (BottomTab) -> Boolean,
     onTabSelected: (BottomTab) -> Unit
 ) {
+    val colorScheme = MaterialTheme.colorScheme
     Surface(
         modifier = Modifier
             .fillMaxWidth()
             .windowInsetsPadding(WindowInsets.navigationBars),
-        color = Color.White,
+        color = colorScheme.surfaceContainerLowest,
         tonalElevation = 8.dp
     ) {
         Column {
-            HorizontalDivider(color = Color.LightGray.copy(alpha = 0.3f), thickness = 0.5.dp)
+            HorizontalDivider(color = colorScheme.outlineVariant.copy(alpha = 0.35f), thickness = 0.5.dp)
             Row(
                 modifier = Modifier
                     .fillMaxWidth()
@@ -366,7 +387,7 @@ private fun MainBottomBar(
                         Icon(
                             imageVector = tab.icon,
                             contentDescription = tab.label,
-                            tint = if (selected) Color(0xFFE65100) else Color.LightGray,
+                            tint = if (selected) colorScheme.primary else colorScheme.outlineVariant,
                             modifier = Modifier.size(26.dp)
                         )
                         Spacer(modifier = Modifier.height(4.dp))
@@ -376,7 +397,7 @@ private fun MainBottomBar(
                                 fontWeight = if (selected) FontWeight.Bold else FontWeight.Medium,
                                 fontSize = 11.sp
                             ),
-                            color = if (selected) Color(0xFFE65100) else Color.LightGray
+                            color = if (selected) colorScheme.primary else colorScheme.outlineVariant
                         )
                     }
                 }

@@ -78,22 +78,17 @@ class FirebaseProfileRepository private constructor(
             val currentProfileSnapshot = profileRef.get().awaitFirebase()
             val oldUsernameLower = currentProfileSnapshot.profileUsernameLower()
 
-            // 3. Update Profile Document
-            profileRef.set(
-                profile.toFirestoreMap(normalizedUsername),
-                SetOptions.merge()
-            ).awaitFirebase()
+            val batch = firestore.batch()
 
-            // 4. Update Username Claim
-            claimRef.set(
-                profile.toUsernameClaimMap(normalizedUsername),
-                SetOptions.merge()
-            ).awaitFirebase()
+            // Profile rules require the username claim to exist after the same commit.
+            batch.set(profileRef, profile.toFirestoreMap(normalizedUsername), SetOptions.merge())
+            batch.set(claimRef, profile.toUsernameClaimMap(normalizedUsername), SetOptions.merge())
 
-            // 5. Release old username if it changed
             if (oldUsernameLower != null && oldUsernameLower != normalizedUsername) {
-                usernameClaimDocument(oldUsernameLower).delete().awaitFirebase()
+                batch.delete(usernameClaimDocument(oldUsernameLower))
             }
+
+            batch.commit().awaitFirebase()
         }
     }
 

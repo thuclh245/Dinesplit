@@ -94,6 +94,7 @@ sealed class AppRoute(val route: String) {
     }
     data object CategoryManagement : AppRoute("category_management")
     data object SpendingReminders : AppRoute("spending_reminders")
+    data object PersonalPlans : AppRoute("personal_plans")
     data object Profile : AppRoute("profile")
     data object EditProfile : AppRoute("edit_profile")
 
