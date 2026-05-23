@@ -8,6 +8,7 @@ interface PersonalRepository {
     suspend fun getAllTransactions(): List<Transaction>
     suspend fun getCategories(): List<StoredCategory>
     suspend fun insertTransaction(transaction: Transaction)
+    suspend fun updateTransaction(transaction: Transaction)
     suspend fun insertCategory(category: StoredCategory)
     suspend fun updateCategory(category: StoredCategory)
     suspend fun deleteCategory(categoryId: String)

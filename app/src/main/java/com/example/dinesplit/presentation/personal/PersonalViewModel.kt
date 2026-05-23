@@ -7,7 +7,9 @@ import com.example.dinesplit.core.common.AppContainer
 import com.example.dinesplit.core.firebase.FirebaseErrorMapper
 import com.example.dinesplit.core.firebase.FirebaseProviders
 import com.example.dinesplit.data.model.StoredCategory
+import com.example.dinesplit.domain.model.Notification
 import com.example.dinesplit.domain.model.NotificationFactory
+import com.example.dinesplit.domain.model.NotificationType
 import com.example.dinesplit.domain.model.PersonalReminderTrigger
 import com.example.dinesplit.domain.model.ReminderType
 import com.example.dinesplit.domain.model.SpendingReminder
@@ -59,6 +61,16 @@ class PersonalViewModel(application: Application) : AndroidViewModel(application
             _uiState.value = _uiState.value.copy(isSaving = true, errorMessage = null)
             runCatching {
                 repository.insertTransaction(transaction)
+                
+                // Trigger notification for transaction added
+                val notification = NotificationFactory.transactionAdded(
+                    amount = transaction.amount,
+                    categoryName = transaction.category,
+                    type = transaction.type,
+                    userId = currentUserId()
+                )
+                notificationRepository.insertNotification(notification)
+                
                 refreshStateInternal(showLoading = false)
             }.onFailure { throwable ->
                 setError(throwable)
@@ -88,6 +100,15 @@ class PersonalViewModel(application: Application) : AndroidViewModel(application
                         isActive = false
                     )
                 )
+
+                // Trigger notification for category created
+                val notification = NotificationFactory.categoryCreated(
+                    categoryName = name,
+                    type = type,
+                    userId = currentUserId()
+                )
+                notificationRepository.insertNotification(notification)
+
                 refreshStateInternal(showLoading = false)
             }.onFailure { throwable ->
                 setError(throwable)
@@ -107,6 +128,11 @@ class PersonalViewModel(application: Application) : AndroidViewModel(application
             _uiState.value = _uiState.value.copy(isSaving = true, errorMessage = null)
             runCatching {
                 val existing = _categories.value.firstOrNull { it.id == categoryId } ?: return@runCatching
+
+                // Check if type changed (EXPENSE <-> INCOME)
+                val typeChanged = existing.type != type
+
+                // Update category
                 repository.updateCategory(
                     existing.copy(
                         name = name.trim(),
@@ -118,15 +144,19 @@ class PersonalViewModel(application: Application) : AndroidViewModel(application
                     )
                 )
                 
-                // Debounce: Only reload state if enough time passed since last update
-                // Use lightweight refresh to avoid reloading all transactions
-                val currentTime = System.currentTimeMillis()
-                if (currentTime - lastUpdateCategoryTime >= minUpdateIntervalMs) {
-                    lastUpdateCategoryTime = currentTime
-                    refreshCategoriesOnly()  // Lightweight: no full transaction reload
-                } else {
-                    _uiState.value = _uiState.value.copy(isSaving = false)
+                // If type changed, update all transactions with this category
+                if (typeChanged) {
+                    val allTransactions = repository.getAllTransactions()
+                    val transactionsToUpdate = allTransactions.filter { it.categoryId == categoryId }
+                    transactionsToUpdate.forEach { transaction ->
+                        repository.updateTransaction(
+                            transaction.copy(type = type)
+                        )
+                    }
                 }
+
+                // Always do full refresh after category update (whether type changed or not)
+                refreshStateInternal(showLoading = false)
             }.onFailure { throwable ->
                 setError(throwable)
             }
@@ -182,6 +212,15 @@ class PersonalViewModel(application: Application) : AndroidViewModel(application
                         reminderType = reminderType
                     )
                 )
+
+                // Trigger notification for reminder created
+                val notification = NotificationFactory.reminderCreated(
+                    categoryName = categoryName,
+                    budgetAmount = budgetAmount,
+                    userId = currentUserId()
+                )
+                notificationRepository.insertNotification(notification)
+
                 refreshStateInternal(showLoading = false)
             }.onFailure { throwable ->
                 setError(throwable)

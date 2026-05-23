@@ -125,6 +125,69 @@ object NotificationFactory {
         )
     }
 
+    fun transactionAdded(
+        amount: Double,
+        categoryName: String,
+        type: TransactionType,
+        userId: String
+    ): Notification {
+        val typeLabel = if (type == TransactionType.EXPENSE) "Expense" else "Income"
+        return Notification(
+            id = "${System.currentTimeMillis()}_transaction",
+            userId = userId,
+            title = "$typeLabel Added",
+            subtitle = "$categoryName +${formatMoney(amount)} VND",
+            type = NotificationType.TRANSACTION_ALERT,
+            relatedId = null,
+            isRead = false,
+            createdAt = System.currentTimeMillis(),
+            updatedAt = System.currentTimeMillis(),
+            deepLinkDestination = null,
+            deepLinkTargetId = null
+        )
+    }
+
+    fun reminderCreated(
+        categoryName: String,
+        budgetAmount: Double,
+        userId: String
+    ): Notification {
+        return Notification(
+            id = "${System.currentTimeMillis()}_reminder_created",
+            userId = userId,
+            title = "Spending Reminder Created",
+            subtitle = "Monitoring $categoryName (Budget: ${formatMoney(budgetAmount)} VND)",
+            type = NotificationType.TRANSACTION_ALERT,
+            relatedId = null,
+            isRead = false,
+            createdAt = System.currentTimeMillis(),
+            updatedAt = System.currentTimeMillis(),
+            deepLinkDestination = "SPENDING_REMINDERS",
+            deepLinkTargetId = null
+        )
+    }
+
+    fun categoryCreated(
+        categoryName: String,
+        type: TransactionType,
+        userId: String
+    ): Notification {
+        val typeLabel = if (type == TransactionType.EXPENSE) "Expense" else "Income"
+        return Notification(
+            id = "${System.currentTimeMillis()}_category_created",
+            userId = userId,
+            title = "New Category Created",
+            subtitle = "$typeLabel category '$categoryName' added",
+            type = NotificationType.TRANSACTION_ALERT,
+            relatedId = null,
+            isRead = false,
+            createdAt = System.currentTimeMillis(),
+            updatedAt = System.currentTimeMillis(),
+            deepLinkDestination = "CATEGORY_MANAGEMENT",
+            deepLinkTargetId = null
+        )
+    }
+
     private fun formatMoney(amount: Double): String {
         val formatter = NumberFormat.getNumberInstance(Locale("vi", "VN"))
         return "${formatter.format(amount.toLong())} VND"

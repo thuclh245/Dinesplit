@@ -63,6 +63,10 @@ class FirebasePersonalRepository private constructor(
             .awaitFirebase()
     }
 
+    override suspend fun updateTransaction(transaction: Transaction) {
+        insertTransaction(transaction)
+    }
+
     override suspend fun insertCategory(category: StoredCategory) {
         val uid = requireCurrentUserId()
         firestore

@@ -28,6 +28,7 @@ import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
+import androidx.compose.runtime.saveable.mapSaver
 import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
@@ -55,6 +56,31 @@ data class AddEditTransactionInput(
     val dateMillis: Long = System.currentTimeMillis()
 )
 
+private val AddEditTransactionInputSaver = mapSaver(
+    save = {
+        mapOf(
+            "id" to it.id,
+            "amount" to it.amount,
+            "type" to it.type.name,
+            "categoryId" to it.categoryId,
+            "categoryName" to it.categoryName,
+            "note" to it.note,
+            "dateMillis" to it.dateMillis
+        )
+    },
+    restore = {
+        AddEditTransactionInput(
+            id = it["id"] as String,
+            amount = it["amount"] as String,
+            type = TransactionType.valueOf(it["type"] as String),
+            categoryId = it["categoryId"] as String,
+            categoryName = it["categoryName"] as String,
+            note = it["note"] as String,
+            dateMillis = it["dateMillis"] as Long
+        )
+    }
+)
+
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun AddEditTransactionScreen(
@@ -64,7 +90,7 @@ fun AddEditTransactionScreen(
     availableCategories: List<StoredCategory> = emptyList(),
     onSave: (Transaction) -> Unit = {}
 ) {
-    var input by rememberSaveable {
+    var input by rememberSaveable(stateSaver = AddEditTransactionInputSaver) {
         mutableStateOf(
             if (initialTransaction != null) {
                 AddEditTransactionInput(
@@ -72,7 +98,7 @@ fun AddEditTransactionScreen(
                     amount = initialTransaction.amount.toString(),
                     type = initialTransaction.type,
                     categoryId = initialTransaction.categoryId,
-                    categoryName = initialTransaction.category,
+                    categoryName = initialTransaction.category.orEmpty(),
                     note = initialTransaction.note.orEmpty(),
                     dateMillis = initialTransaction.date
                 )
