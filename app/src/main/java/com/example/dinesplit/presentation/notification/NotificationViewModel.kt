@@ -9,6 +9,7 @@ import com.example.dinesplit.core.firebase.FirebaseProviders
 import com.example.dinesplit.domain.model.FeedNotificationTrigger
 import com.example.dinesplit.domain.model.Notification
 import com.example.dinesplit.domain.model.NotificationFactory
+import com.example.dinesplit.domain.model.PersonalNotificationTrigger
 import com.example.dinesplit.domain.model.SplitNotificationTrigger
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.flow.MutableStateFlow
@@ -60,6 +61,23 @@ class NotificationViewModel(application: Application) : AndroidViewModel(applica
         updateNotificationReadState(notificationId = notificationId, isRead = false)
     }
 
+    fun markAllAsRead() {
+        viewModelScope.launch(Dispatchers.IO) {
+            runCatching {
+                val unreadNotifications = _notifications.value.filter { !it.isRead }
+                unreadNotifications.forEach { notification ->
+                    repository.markAsRead(notification.id)
+                }
+                _notifications.value = _notifications.value.map { it.copy(isRead = true) }
+                _uiState.value = _uiState.value.copy(unreadCount = 0)
+            }.onFailure { throwable ->
+                _uiState.value = _uiState.value.copy(
+                    errorMessage = FirebaseErrorMapper.toUserMessage(throwable)
+                )
+            }
+        }
+    }
+
     fun onFeedTrigger(trigger: FeedNotificationTrigger) {
         insertGeneratedNotification(
             notification = NotificationFactory.fromFeedTrigger(trigger, currentUserId())
@@ -69,6 +87,12 @@ class NotificationViewModel(application: Application) : AndroidViewModel(applica
     fun onSplitTrigger(trigger: SplitNotificationTrigger) {
         insertGeneratedNotification(
             notification = NotificationFactory.fromSplitTrigger(trigger, currentUserId())
+        )
+    }
+
+    fun onPersonalTrigger(trigger: PersonalNotificationTrigger) {
+        insertGeneratedNotification(
+            notification = NotificationFactory.fromPersonalTrigger(trigger, currentUserId())
         )
     }
 

@@ -19,10 +19,12 @@ import androidx.compose.ui.unit.sp
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.lifecycle.viewmodel.compose.viewModel
 import androidx.navigation.NavDestination.Companion.hierarchy
+import androidx.navigation.NavType
 import androidx.navigation.compose.NavHost
 import androidx.navigation.compose.composable
 import androidx.navigation.compose.currentBackStackEntryAsState
 import androidx.navigation.compose.rememberNavController
+import androidx.navigation.navArgument
 import com.example.dinesplit.core.navigation.AppRoute
 import com.example.dinesplit.core.navigation.BottomTab
 import com.example.dinesplit.presentation.feed.CreatePostScreen
@@ -32,7 +34,10 @@ import com.example.dinesplit.presentation.feed.SearchScreen
 import com.example.dinesplit.presentation.personal.AddEditTransactionScreen
 import com.example.dinesplit.presentation.personal.CategoryManagementScreen
 import com.example.dinesplit.presentation.personal.HistoryScreen
+import com.example.dinesplit.presentation.personal.MonthlySummaryScreen
+import com.example.dinesplit.presentation.personal.PersonalIntelligenceScreen
 import com.example.dinesplit.presentation.personal.PersonalScreen
+import com.example.dinesplit.presentation.personal.PersonalPlanFocus
 import com.example.dinesplit.presentation.personal.PersonalPlansScreen
 import com.example.dinesplit.presentation.personal.PersonalViewModel
 import com.example.dinesplit.presentation.personal.SpendingReminderScreen
@@ -195,9 +200,26 @@ fun MainContainerScreen(
                     onOpenSearch = { mainNavController.navigate(AppRoute.Search.route) },
                     onAddTransaction = { mainNavController.navigate(AppRoute.AddTransaction.route) },
                     onOpenHistory = { mainNavController.navigate(AppRoute.TransactionHistory.route) },
+                    onOpenMonthlySummary = { mainNavController.navigate(AppRoute.MonthlySummary.route) },
                     onOpenCategories = { mainNavController.navigate(AppRoute.CategoryManagement.route) },
                     onOpenReminders = { mainNavController.navigate(AppRoute.SpendingReminders.route) },
+                    onOpenInsights = { mainNavController.navigate(AppRoute.PersonalInsights.route) },
                     onOpenPlans = { mainNavController.navigate(AppRoute.PersonalPlans.route) },
+                    onOpenRecurringPlans = {
+                        mainNavController.navigate(
+                            AppRoute.PersonalPlans.createRoute(AppRoute.PersonalPlans.FOCUS_RECURRING)
+                        )
+                    },
+                    onOpenGoalPlans = {
+                        mainNavController.navigate(
+                            AppRoute.PersonalPlans.createRoute(AppRoute.PersonalPlans.FOCUS_GOALS)
+                        )
+                    },
+                    onOpenWalletPlans = {
+                        mainNavController.navigate(
+                            AppRoute.PersonalPlans.createRoute(AppRoute.PersonalPlans.FOCUS_WALLETS)
+                        )
+                    },
                     onRefresh = personalViewModel::refreshState
                 )
             }
@@ -220,6 +242,13 @@ fun MainContainerScreen(
                     onTransactionClick = { item ->
                         mainNavController.navigate(AppRoute.TransactionDetail.createRoute(item.id))
                     }
+                )
+            }
+            composable(AppRoute.MonthlySummary.route) {
+                MonthlySummaryScreen(
+                    onBack = { mainNavController.navigateUp() },
+                    summary = personalChartState.monthlySummary,
+                    categorySpending = personalChartState.pieSlices
                 )
             }
             composable(AppRoute.TransactionDetail.routeWithArg) { backStackEntry ->
@@ -278,9 +307,32 @@ fun MainContainerScreen(
                     onDeleteReminder = personalViewModel::deleteSpendingReminder
                 )
             }
-            composable(AppRoute.PersonalPlans.route) {
+            composable(AppRoute.PersonalInsights.route) {
+                PersonalIntelligenceScreen(
+                    onBack = { mainNavController.navigateUp() },
+                    uiState = personalUiState,
+                    chartState = personalChartState,
+                    reminderCount = personalReminders.size,
+                    onOpenHistory = { mainNavController.navigate(AppRoute.TransactionHistory.route) },
+                    onOpenReminders = { mainNavController.navigate(AppRoute.SpendingReminders.route) },
+                    onOpenPlans = { mainNavController.navigate(AppRoute.PersonalPlans.route) }
+                )
+            }
+            composable(
+                route = AppRoute.PersonalPlans.routeWithFocus,
+                arguments = listOf(
+                    navArgument(AppRoute.PersonalPlans.ARG_FOCUS) {
+                        type = NavType.StringType
+                        nullable = true
+                        defaultValue = null
+                    }
+                )
+            ) { backStackEntry ->
                 PersonalPlansScreen(
                     onBack = { mainNavController.navigateUp() },
+                    initialFocus = PersonalPlanFocus.fromRouteValue(
+                        backStackEntry.arguments?.getString(AppRoute.PersonalPlans.ARG_FOCUS)
+                    ),
                     categories = personalUiState.categories,
                     recurringRules = personalUiState.recurringRules,
                     goals = personalUiState.goals,

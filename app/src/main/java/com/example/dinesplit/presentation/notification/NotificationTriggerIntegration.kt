@@ -3,7 +3,9 @@ package com.example.dinesplit.presentation.notification
 import com.example.dinesplit.core.common.AppContainer
 import com.example.dinesplit.domain.model.FeedNotificationTrigger
 import com.example.dinesplit.domain.model.NotificationFactory
+import com.example.dinesplit.domain.model.PersonalNotificationTrigger
 import com.example.dinesplit.domain.model.SplitNotificationTrigger
+import kotlinx.coroutines.DelicateCoroutinesApi
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.GlobalScope
 import kotlinx.coroutines.launch
@@ -22,6 +24,7 @@ import kotlinx.coroutines.launch
 @Suppress("unused", "ObjectName")
 object NotificationTriggerIntegration {
 
+    @OptIn(DelicateCoroutinesApi::class)
     @Suppress("kotlin:S6808")  // Suppress GlobalScope warning for notification dispatch
     fun triggerFeedNotification(
         context: android.content.Context,
@@ -39,6 +42,7 @@ object NotificationTriggerIntegration {
         }
     }
 
+    @OptIn(DelicateCoroutinesApi::class)
     @Suppress("kotlin:S6808")
     fun triggerSplitNotification(
         context: android.content.Context,
@@ -49,6 +53,24 @@ object NotificationTriggerIntegration {
             try {
                 val notificationRepo = AppContainer.notificationRepository(context)
                 val notification = NotificationFactory.fromSplitTrigger(trigger, userId)
+                notificationRepo.insertNotification(notification)
+            } catch (e: Exception) {
+                e.printStackTrace()
+            }
+        }
+    }
+
+    @OptIn(DelicateCoroutinesApi::class)
+    @Suppress("kotlin:S6808")
+    fun triggerPersonalNotification(
+        context: android.content.Context,
+        trigger: PersonalNotificationTrigger,
+        userId: String
+    ) {
+        GlobalScope.launch(Dispatchers.IO) {
+            try {
+                val notificationRepo = AppContainer.notificationRepository(context)
+                val notification = NotificationFactory.fromPersonalTrigger(trigger, userId)
                 notificationRepo.insertNotification(notification)
             } catch (e: Exception) {
                 e.printStackTrace()

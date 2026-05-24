@@ -144,6 +144,13 @@ fun AppNavHost(
 
         composable(AppRoute.Notifications.route) {
             NotificationScreen(
+                onBack = {
+                    if (!navController.navigateUp()) {
+                        navController.navigate(NavGraph.MAIN) {
+                            launchSingleTop = true
+                        }
+                    }
+                },
                 onNotificationClick = { notification ->
                     navController.navigate(notification.toMainContainerRoute()) {
                         launchSingleTop = true
@@ -182,6 +189,23 @@ private fun Notification.toMainContainerRoute(): String {
             AppRoute.MainContainer.createRoute(
                 tab = AppRoute.Personal.route,
                 target = AppRoute.SpendingReminders.route
+            )
+        }
+        destination == "CATEGORY_MANAGEMENT" -> {
+            AppRoute.MainContainer.createRoute(
+                tab = AppRoute.Personal.route,
+                target = AppRoute.CategoryManagement.route
+            )
+        }
+        destination == "PERSONAL_PLANS" -> {
+            AppRoute.MainContainer.createRoute(
+                tab = AppRoute.Personal.route,
+                target = AppRoute.PersonalPlans.route
+            )
+        }
+        destination == "PERSONAL" -> {
+            AppRoute.MainContainer.createRoute(
+                tab = AppRoute.Personal.route
             )
         }
         // Split bill detail

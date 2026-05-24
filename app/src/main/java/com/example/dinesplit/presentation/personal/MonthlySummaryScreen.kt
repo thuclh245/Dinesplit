@@ -1,31 +1,41 @@
 package com.example.dinesplit.presentation.personal
 
+import androidx.compose.animation.core.animateFloatAsState
+import androidx.compose.animation.core.tween
+import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.rememberScrollState
+import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.automirrored.filled.ArrowBack
 import androidx.compose.material.icons.filled.ArrowDownward
 import androidx.compose.material.icons.filled.ArrowUpward
+import androidx.compose.material.icons.filled.AutoGraph
 import androidx.compose.foundation.layout.size
 import androidx.compose.material3.Icon
-import androidx.compose.material3.IconButton
+import androidx.compose.material3.LinearProgressIndicator
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.graphics.Brush
+import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import com.example.dinesplit.core.ui.AppCard
 import com.example.dinesplit.core.ui.AppDimens
 import com.example.dinesplit.core.ui.AppScaffold
+import com.example.dinesplit.core.ui.AppShapes
+import com.example.dinesplit.core.ui.BackNavigationButton
 import java.text.NumberFormat
 import java.text.SimpleDateFormat
 import java.util.Calendar
@@ -53,9 +63,7 @@ fun MonthlySummaryScreen(
     AppScaffold(
         title = "Monthly Summary",
         navigationIcon = {
-            IconButton(onClick = onBack) {
-                Icon(Icons.AutoMirrored.Filled.ArrowBack, contentDescription = "Back")
-            }
+            BackNavigationButton(onClick = onBack)
         }
     ) {
         Column(
@@ -64,104 +72,170 @@ fun MonthlySummaryScreen(
                 .verticalScroll(rememberScrollState()),
             verticalArrangement = Arrangement.spacedBy(AppDimens.spaceLg)
         ) {
-            // Month header
-            Text(
-                text = "$monthName $year",
-                style = MaterialTheme.typography.displayMedium,
-                fontWeight = FontWeight.ExtraBold,
-                modifier = Modifier.padding(horizontal = AppDimens.screenHorizontal)
+            SummaryHeroCard(
+                monthLabel = "$monthName $year",
+                summary = summary
             )
 
-            // Main summary card
-            AppCard(
-                modifier = Modifier.padding(horizontal = AppDimens.screenHorizontal)
-            ) {
-                Column(verticalArrangement = Arrangement.spacedBy(AppDimens.spaceLg)) {
-                    // Balance
-                    Column(verticalArrangement = Arrangement.spacedBy(AppDimens.spaceXs)) {
-                        Text(
-                            text = "Balance",
-                            style = MaterialTheme.typography.labelMedium,
-                            color = MaterialTheme.colorScheme.onSurfaceVariant
-                        )
-                        Text(
-                            text = formatCurrency(summary.balance),
-                            style = MaterialTheme.typography.displaySmall,
-                            fontWeight = FontWeight.ExtraBold,
-                            color = if (summary.balance >= 0.0) {
-                                MaterialTheme.colorScheme.primary
-                            } else {
-                                MaterialTheme.colorScheme.error
-                            }
-                        )
-                    }
-
-                    // Income and Expense pills
-                    Row(
-                        modifier = Modifier.fillMaxWidth(),
-                        horizontalArrangement = Arrangement.spacedBy(AppDimens.spaceMd)
-                    ) {
-                        MetricPill(
-                            modifier = Modifier.weight(1f),
-                            icon = Icons.Filled.ArrowDownward,
-                            title = "Income",
-                            amount = summary.totalIncome,
-                            color = MaterialTheme.colorScheme.primary
-                        )
-                        MetricPill(
-                            modifier = Modifier.weight(1f),
-                            icon = Icons.Filled.ArrowUpward,
-                            title = "Expense",
-                            amount = summary.totalExpense,
-                            color = MaterialTheme.colorScheme.error
-                        )
-                    }
-                }
-            }
-
-            // Category breakdown
             if (categorySpending.isNotEmpty()) {
-                Text(
-                    text = "Spending Breakdown",
-                    style = MaterialTheme.typography.titleMedium,
-                    fontWeight = FontWeight.Bold,
-                    modifier = Modifier.padding(horizontal = AppDimens.screenHorizontal)
-                )
-
-                AppCard(
-                    modifier = Modifier.padding(horizontal = AppDimens.screenHorizontal)
-                ) {
+                AppCard {
                     Column(verticalArrangement = Arrangement.spacedBy(AppDimens.spaceMd)) {
-                        categorySpending.forEach { slice ->
-                            Row(
-                                modifier = Modifier
-                                    .fillMaxWidth()
-                                    .padding(AppDimens.spaceMd),
-                                horizontalArrangement = Arrangement.SpaceBetween,
-                                verticalAlignment = Alignment.CenterVertically
-                            ) {
-                                Column(modifier = Modifier.weight(1f)) {
-                                    Text(
-                                        text = slice.category,
-                                        style = MaterialTheme.typography.titleSmall
-                                    )
-                                    Text(
-                                        text = "${slice.percentage.toInt()}%",
-                                        style = MaterialTheme.typography.bodySmall,
-                                        color = MaterialTheme.colorScheme.onSurfaceVariant
-                                    )
-                                }
-                                Text(
-                                    text = formatCurrency(slice.amount),
-                                    style = MaterialTheme.typography.titleSmall,
-                                    fontWeight = FontWeight.Bold
-                                )
-                            }
+                        Text(
+                            text = "Spending breakdown",
+                            style = MaterialTheme.typography.titleMedium,
+                            fontWeight = FontWeight.Bold
+                        )
+                        categorySpending.forEachIndexed { index, slice ->
+                            CategorySpendRow(
+                                slice = slice,
+                                color = summaryToneColor(index)
+                            )
                         }
                     }
                 }
             }
         }
+    }
+}
+
+@Composable
+private fun SummaryHeroCard(
+    monthLabel: String,
+    summary: MonthlySummary
+) {
+    val onAccent = MaterialTheme.colorScheme.onPrimary
+    val balanceColor = if (summary.balance >= 0.0) {
+        MaterialTheme.colorScheme.secondary
+    } else {
+        MaterialTheme.colorScheme.error
+    }
+
+    Surface(
+        modifier = Modifier.fillMaxWidth(),
+        shape = AppShapes.xLarge,
+        color = Color.Transparent,
+        shadowElevation = AppDimens.cardElevation
+    ) {
+        Column(
+            modifier = Modifier
+                .background(
+                    brush = Brush.linearGradient(
+                        colors = listOf(
+                            MaterialTheme.colorScheme.primary,
+                            MaterialTheme.colorScheme.secondary
+                        )
+                    ),
+                    shape = AppShapes.xLarge
+                )
+                .padding(AppDimens.spaceLg),
+            verticalArrangement = Arrangement.spacedBy(AppDimens.spaceLg)
+        ) {
+            Row(
+                modifier = Modifier.fillMaxWidth(),
+                horizontalArrangement = Arrangement.SpaceBetween,
+                verticalAlignment = Alignment.Top
+            ) {
+                Column(
+                    modifier = Modifier.weight(1f),
+                    verticalArrangement = Arrangement.spacedBy(AppDimens.spaceXs)
+                ) {
+                    Text(
+                        text = monthLabel,
+                        style = MaterialTheme.typography.labelMedium,
+                        color = onAccent.copy(alpha = 0.78f)
+                    )
+                    Text(
+                        text = formatCurrency(summary.balance),
+                        style = MaterialTheme.typography.displaySmall,
+                        fontWeight = FontWeight.ExtraBold,
+                        color = onAccent,
+                        maxLines = 1,
+                        overflow = TextOverflow.Ellipsis
+                    )
+                }
+                Surface(
+                    shape = CircleShape,
+                    color = balanceColor.copy(alpha = 0.24f)
+                ) {
+                    Icon(
+                        imageVector = Icons.Default.AutoGraph,
+                        contentDescription = null,
+                        tint = onAccent,
+                        modifier = Modifier
+                            .padding(AppDimens.spaceMd)
+                            .size(22.dp)
+                    )
+                }
+            }
+
+            Row(horizontalArrangement = Arrangement.spacedBy(AppDimens.spaceMd)) {
+                MetricPill(
+                    modifier = Modifier.weight(1f),
+                    icon = Icons.Filled.ArrowDownward,
+                    title = "Income",
+                    amount = summary.totalIncome,
+                    color = onAccent
+                )
+                MetricPill(
+                    modifier = Modifier.weight(1f),
+                    icon = Icons.Filled.ArrowUpward,
+                    title = "Expense",
+                    amount = summary.totalExpense,
+                    color = onAccent
+                )
+            }
+        }
+    }
+}
+
+@Composable
+private fun CategorySpendRow(
+    slice: PieCategorySlice,
+    color: Color
+) {
+    val animatedProgress = animateFloatAsState(
+        targetValue = (slice.percentage / 100f).coerceIn(0f, 1f),
+        animationSpec = tween(durationMillis = 650),
+        label = "categorySpend"
+    ).value
+
+    Column(verticalArrangement = Arrangement.spacedBy(AppDimens.spaceXs)) {
+        Row(
+            modifier = Modifier.fillMaxWidth(),
+            horizontalArrangement = Arrangement.SpaceBetween,
+            verticalAlignment = Alignment.CenterVertically
+        ) {
+            Column(modifier = Modifier.weight(1f)) {
+                Text(
+                    text = slice.category,
+                    style = MaterialTheme.typography.titleSmall,
+                    fontWeight = FontWeight.Bold,
+                    maxLines = 1,
+                    overflow = TextOverflow.Ellipsis
+                )
+                Text(
+                    text = "${slice.percentage.toInt()}%",
+                    style = MaterialTheme.typography.bodySmall,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant
+                )
+            }
+            Text(
+                text = formatCurrency(slice.amount),
+                style = MaterialTheme.typography.titleSmall,
+                fontWeight = FontWeight.Bold,
+                color = color,
+                maxLines = 1,
+                overflow = TextOverflow.Ellipsis
+            )
+        }
+        LinearProgressIndicator(
+            progress = { animatedProgress },
+            modifier = Modifier
+                .fillMaxWidth()
+                .height(7.dp),
+            color = color,
+            trackColor = color.copy(alpha = 0.16f)
+        )
     }
 }
 
@@ -181,7 +255,7 @@ private fun MetricPill(
     Surface(
         modifier = modifier,
         shape = MaterialTheme.shapes.large,
-        color = MaterialTheme.colorScheme.surfaceVariant
+        color = color.copy(alpha = 0.12f)
     ) {
         Row(
             modifier = Modifier.padding(AppDimens.spaceMd),
@@ -198,14 +272,26 @@ private fun MetricPill(
                 Text(
                     text = title,
                     style = MaterialTheme.typography.labelSmall,
-                    color = MaterialTheme.colorScheme.onSurfaceVariant
+                    color = color.copy(alpha = 0.76f)
                 )
                 Text(
                     text = formatCurrency(amount),
-                    style = MaterialTheme.typography.titleSmall
+                    style = MaterialTheme.typography.titleSmall,
+                    color = color,
+                    maxLines = 1,
+                    overflow = TextOverflow.Ellipsis
                 )
             }
         }
+    }
+}
+
+@Composable
+private fun summaryToneColor(index: Int): Color {
+    return when (index % 3) {
+        0 -> MaterialTheme.colorScheme.primary
+        1 -> MaterialTheme.colorScheme.secondary
+        else -> MaterialTheme.colorScheme.tertiary
     }
 }
 

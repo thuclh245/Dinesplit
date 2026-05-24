@@ -38,6 +38,29 @@ enum class SplitTriggerType {
     SOMEONE_OWES_YOU
 }
 
+data class PersonalNotificationTrigger(
+    val relatedId: String? = null,
+    val label: String,
+    val amount: Double? = null,
+    val categoryName: String? = null,
+    val score: Int? = null,
+    val band: String? = null,
+    val triggerType: PersonalTriggerType
+)
+
+enum class PersonalTriggerType {
+    TRANSACTION_ADDED,
+    CATEGORY_CREATED,
+    REMINDER_CREATED,
+    REMINDER_THRESHOLD_REACHED,
+    RECURRING_RULE_CREATED,
+    GOAL_CREATED,
+    WALLET_CREATED,
+    SAFE_TO_SPEND_CHANGED,
+    PERSONAL_SCORE_CHANGED,
+    SPLIT_BRIDGED_TO_PERSONAL
+}
+
 data class PersonalReminderTrigger(
     val categoryId: String?,
     val categoryName: String,
@@ -107,21 +130,89 @@ object NotificationFactory {
         )
     }
 
+    fun fromPersonalTrigger(trigger: PersonalNotificationTrigger, userId: String): Notification {
+        val amountText = trigger.amount?.let { formatMoney(it) }
+        val (title, subtitle, destination) = when (trigger.triggerType) {
+            PersonalTriggerType.TRANSACTION_ADDED -> Triple(
+                "Personal transaction saved",
+                listOfNotNull(trigger.categoryName, amountText).joinToString(" - "),
+                "TRANSACTION_DETAIL"
+            )
+            PersonalTriggerType.CATEGORY_CREATED -> Triple(
+                "Category ready",
+                "${trigger.label} is now available in Personal",
+                "CATEGORY_MANAGEMENT"
+            )
+            PersonalTriggerType.REMINDER_CREATED -> Triple(
+                "Budget guard enabled",
+                "${trigger.label} at ${amountText ?: "your selected budget"}",
+                "SPENDING_REMINDERS"
+            )
+            PersonalTriggerType.REMINDER_THRESHOLD_REACHED -> Triple(
+                "Spending alert: ${trigger.categoryName ?: trigger.label}",
+                amountText?.let { "Current spending is $it" } ?: trigger.label,
+                "SPENDING_REMINDERS"
+            )
+            PersonalTriggerType.RECURRING_RULE_CREATED -> Triple(
+                "Recurring radar added",
+                "${trigger.label}${amountText?.let { " - $it" }.orEmpty()}",
+                "PERSONAL_PLANS"
+            )
+            PersonalTriggerType.GOAL_CREATED -> Triple(
+                "Goal added",
+                "${trigger.label}${amountText?.let { " - target $it" }.orEmpty()}",
+                "PERSONAL_PLANS"
+            )
+            PersonalTriggerType.WALLET_CREATED -> Triple(
+                "Wallet added",
+                "${trigger.label}${amountText?.let { " - balance $it" }.orEmpty()}",
+                "PERSONAL_PLANS"
+            )
+            PersonalTriggerType.SAFE_TO_SPEND_CHANGED -> Triple(
+                "Safe-to-spend updated",
+                "${trigger.label}${amountText?.let { " - $it today" }.orEmpty()}",
+                "PERSONAL"
+            )
+            PersonalTriggerType.PERSONAL_SCORE_CHANGED -> Triple(
+                "Personal score: ${trigger.band ?: "updated"}",
+                "Current score ${trigger.score ?: 0}. ${trigger.label}",
+                "PERSONAL"
+            )
+            PersonalTriggerType.SPLIT_BRIDGED_TO_PERSONAL -> Triple(
+                "Split saved to Personal",
+                "${trigger.label}${amountText?.let { " - $it" }.orEmpty()}",
+                "TRANSACTION_DETAIL"
+            )
+        }
+
+        val now = System.currentTimeMillis()
+        return Notification(
+            id = "${now}_personal_${trigger.triggerType.name.lowercase()}_${trigger.relatedId.orEmpty()}",
+            userId = userId,
+            title = title,
+            subtitle = subtitle.ifBlank { trigger.label },
+            type = NotificationType.TRANSACTION_ALERT,
+            relatedId = trigger.relatedId,
+            isRead = false,
+            createdAt = now,
+            updatedAt = now,
+            deepLinkDestination = destination,
+            deepLinkTargetId = trigger.relatedId
+        )
+    }
+
     fun fromReminderTrigger(trigger: PersonalReminderTrigger, userId: String): Notification {
         val percentUsed = (trigger.currentSpent / trigger.budgetLimit * 100).toInt()
 
-        return Notification(
-            id = "${System.currentTimeMillis()}_reminder_${trigger.categoryId ?: "overall"}",
-            userId = userId,
-            title = "Spending alert: ${trigger.categoryName}",
-            subtitle = "You have spent $percentUsed% of your ${formatMoney(trigger.budgetLimit)} budget",
-            type = NotificationType.TRANSACTION_ALERT,
-            relatedId = trigger.categoryId,
-            isRead = false,
-            createdAt = System.currentTimeMillis(),
-            updatedAt = System.currentTimeMillis(),
-            deepLinkDestination = "SPENDING_REMINDERS",
-            deepLinkTargetId = trigger.categoryId
+        return fromPersonalTrigger(
+            trigger = PersonalNotificationTrigger(
+                relatedId = trigger.categoryId,
+                label = "You have spent $percentUsed% of your ${formatMoney(trigger.budgetLimit)} budget",
+                amount = trigger.currentSpent,
+                categoryName = trigger.categoryName,
+                triggerType = PersonalTriggerType.REMINDER_THRESHOLD_REACHED
+            ),
+            userId = userId
         )
     }
 
@@ -129,21 +220,19 @@ object NotificationFactory {
         amount: Double,
         categoryName: String,
         type: TransactionType,
-        userId: String
+        userId: String,
+        transactionId: String? = null
     ): Notification {
         val typeLabel = if (type == TransactionType.EXPENSE) "Expense" else "Income"
-        return Notification(
-            id = "${System.currentTimeMillis()}_transaction",
-            userId = userId,
-            title = "$typeLabel Added",
-            subtitle = "$categoryName +${formatMoney(amount)} VND",
-            type = NotificationType.TRANSACTION_ALERT,
-            relatedId = null,
-            isRead = false,
-            createdAt = System.currentTimeMillis(),
-            updatedAt = System.currentTimeMillis(),
-            deepLinkDestination = null,
-            deepLinkTargetId = null
+        return fromPersonalTrigger(
+            trigger = PersonalNotificationTrigger(
+                relatedId = transactionId,
+                label = "$typeLabel added",
+                amount = amount,
+                categoryName = categoryName,
+                triggerType = PersonalTriggerType.TRANSACTION_ADDED
+            ),
+            userId = userId
         )
     }
 
@@ -152,18 +241,14 @@ object NotificationFactory {
         budgetAmount: Double,
         userId: String
     ): Notification {
-        return Notification(
-            id = "${System.currentTimeMillis()}_reminder_created",
-            userId = userId,
-            title = "Spending Reminder Created",
-            subtitle = "Monitoring $categoryName (Budget: ${formatMoney(budgetAmount)} VND)",
-            type = NotificationType.TRANSACTION_ALERT,
-            relatedId = null,
-            isRead = false,
-            createdAt = System.currentTimeMillis(),
-            updatedAt = System.currentTimeMillis(),
-            deepLinkDestination = "SPENDING_REMINDERS",
-            deepLinkTargetId = null
+        return fromPersonalTrigger(
+            trigger = PersonalNotificationTrigger(
+                label = categoryName,
+                amount = budgetAmount,
+                categoryName = categoryName,
+                triggerType = PersonalTriggerType.REMINDER_CREATED
+            ),
+            userId = userId
         )
     }
 
@@ -173,18 +258,13 @@ object NotificationFactory {
         userId: String
     ): Notification {
         val typeLabel = if (type == TransactionType.EXPENSE) "Expense" else "Income"
-        return Notification(
-            id = "${System.currentTimeMillis()}_category_created",
-            userId = userId,
-            title = "New Category Created",
-            subtitle = "$typeLabel category '$categoryName' added",
-            type = NotificationType.TRANSACTION_ALERT,
-            relatedId = null,
-            isRead = false,
-            createdAt = System.currentTimeMillis(),
-            updatedAt = System.currentTimeMillis(),
-            deepLinkDestination = "CATEGORY_MANAGEMENT",
-            deepLinkTargetId = null
+        return fromPersonalTrigger(
+            trigger = PersonalNotificationTrigger(
+                label = "$typeLabel category '$categoryName'",
+                categoryName = categoryName,
+                triggerType = PersonalTriggerType.CATEGORY_CREATED
+            ),
+            userId = userId
         )
     }
 

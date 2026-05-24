@@ -84,6 +84,7 @@ sealed class AppRoute(val route: String) {
         }
     }
     data object TransactionHistory : AppRoute("transaction_history")
+    data object MonthlySummary : AppRoute("monthly_summary")
     data object TransactionDetail : AppRoute("transaction_detail") {
         const val ARG_ID = "transactionId"
         val routeWithArg = "$route/{$ARG_ID}"
@@ -94,7 +95,19 @@ sealed class AppRoute(val route: String) {
     }
     data object CategoryManagement : AppRoute("category_management")
     data object SpendingReminders : AppRoute("spending_reminders")
-    data object PersonalPlans : AppRoute("personal_plans")
+    data object PersonalInsights : AppRoute("personal_insights")
+    data object PersonalPlans : AppRoute("personal_plans") {
+        const val ARG_FOCUS = "focus"
+        const val FOCUS_RECURRING = "recurring"
+        const val FOCUS_GOALS = "goals"
+        const val FOCUS_WALLETS = "wallets"
+        val routeWithFocus = "$route?$ARG_FOCUS={$ARG_FOCUS}"
+
+        fun createRoute(focus: String? = null): String {
+            if (focus.isNullOrBlank()) return route
+            return "$route?$ARG_FOCUS=${Uri.encode(focus)}"
+        }
+    }
     data object Profile : AppRoute("profile")
     data object EditProfile : AppRoute("edit_profile")
 

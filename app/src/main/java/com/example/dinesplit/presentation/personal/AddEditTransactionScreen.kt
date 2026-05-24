@@ -45,6 +45,7 @@ import androidx.compose.ui.text.font.FontWeight
 import com.example.dinesplit.core.ui.AppCard
 import com.example.dinesplit.core.ui.AppDimens
 import com.example.dinesplit.core.ui.AppScaffold
+import com.example.dinesplit.core.ui.BackNavigationButton
 import com.example.dinesplit.core.ui.PrimaryButton
 import com.example.dinesplit.data.ocr.MlKitReceiptTextRecognizer
 import com.example.dinesplit.data.model.StoredCategory
@@ -187,9 +188,7 @@ fun AddEditTransactionScreen(
     AppScaffold(
         title = if (transactionId == null) "Add Transaction" else "Edit Transaction",
         navigationIcon = {
-            TextButton(onClick = onBack) {
-                Text("Back")
-            }
+            BackNavigationButton(onClick = onBack)
         }
     ) {
         Column(

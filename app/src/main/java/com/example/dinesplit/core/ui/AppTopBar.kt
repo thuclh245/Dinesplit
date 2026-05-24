@@ -5,6 +5,7 @@ import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.automirrored.filled.ArrowBack
 import androidx.compose.material.icons.filled.Notifications
 import androidx.compose.material.icons.filled.Search
 import androidx.compose.material3.*
@@ -45,6 +46,19 @@ fun AppTopBar(
             actionIconContentColor = MaterialTheme.colorScheme.onSurface
         )
     )
+}
+
+@Composable
+fun BackNavigationButton(
+    onClick: () -> Unit,
+    contentDescription: String = "Back"
+) {
+    IconButton(onClick = onClick) {
+        Icon(
+            imageVector = Icons.AutoMirrored.Filled.ArrowBack,
+            contentDescription = contentDescription
+        )
+    }
 }
 
 /**

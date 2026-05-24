@@ -10,12 +10,12 @@ import com.example.dinesplit.core.firebase.FirebaseProviders
 import com.example.dinesplit.data.model.StoredCategory
 import com.example.dinesplit.domain.model.Bill
 import com.example.dinesplit.domain.model.GoalStatus
-import com.example.dinesplit.domain.model.Notification
 import com.example.dinesplit.domain.model.NotificationFactory
-import com.example.dinesplit.domain.model.NotificationType
 import com.example.dinesplit.domain.model.PersonalGoal
+import com.example.dinesplit.domain.model.PersonalNotificationTrigger
 import com.example.dinesplit.domain.model.PersonalWallet
 import com.example.dinesplit.domain.model.PersonalReminderTrigger
+import com.example.dinesplit.domain.model.PersonalTriggerType
 import com.example.dinesplit.domain.model.RecurringCadence
 import com.example.dinesplit.domain.model.RecurringRule
 import com.example.dinesplit.domain.model.ReminderType
@@ -86,7 +86,8 @@ class PersonalViewModel(application: Application) : AndroidViewModel(application
                     amount = preparedTransaction.amount,
                     categoryName = preparedTransaction.category,
                     type = preparedTransaction.type,
-                    userId = currentUserId()
+                    userId = currentUserId(),
+                    transactionId = preparedTransaction.id
                 )
                 notificationRepository.insertNotification(notification)
                 
@@ -114,20 +115,32 @@ class PersonalViewModel(application: Application) : AndroidViewModel(application
                 }
                 if (amount <= 0.0) return@runCatching
 
-                repository.insertTransaction(
-                    Transaction(
-                        id = "split_${bill.id}",
-                        userId = uid,
-                        amount = amount,
-                        type = TransactionType.EXPENSE,
-                        categoryId = category.id,
-                        category = category.name,
-                        note = "Split bill: ${bill.name}",
-                        date = bill.date,
-                        createdAt = System.currentTimeMillis(),
-                        source = TransactionSource.SPLIT,
-                        sourceGroupId = bill.groupId,
-                        sourceBillId = bill.id
+                val splitTransaction = Transaction(
+                    id = "split_${bill.id}",
+                    userId = uid,
+                    amount = amount,
+                    type = TransactionType.EXPENSE,
+                    categoryId = category.id,
+                    category = category.name,
+                    note = "Split bill: ${bill.name}",
+                    date = bill.date,
+                    createdAt = System.currentTimeMillis(),
+                    source = TransactionSource.SPLIT,
+                    sourceGroupId = bill.groupId,
+                    sourceBillId = bill.id
+                )
+
+                repository.insertTransaction(splitTransaction)
+                notificationRepository.insertNotification(
+                    NotificationFactory.fromPersonalTrigger(
+                        PersonalNotificationTrigger(
+                            relatedId = splitTransaction.id,
+                            label = bill.name,
+                            amount = amount,
+                            categoryName = category.name,
+                            triggerType = PersonalTriggerType.SPLIT_BRIDGED_TO_PERSONAL
+                        ),
+                        uid
                     )
                 )
                 refreshStateInternal(showLoading = false)
@@ -300,21 +313,33 @@ class PersonalViewModel(application: Application) : AndroidViewModel(application
             _uiState.value = _uiState.value.copy(isSaving = true, errorMessage = null)
             runCatching {
                 val now = System.currentTimeMillis()
-                repository.insertRecurringRule(
-                    RecurringRule(
-                        id = UUID.randomUUID().toString(),
-                        userId = currentUserId(),
-                        name = name.trim(),
-                        amount = amount,
-                        type = type,
-                        categoryId = categoryId,
-                        categoryName = categoryName,
-                        cadence = cadence,
-                        dayOfMonth = dayOfMonth.coerceIn(1, 31),
-                        nextRunAt = nextMonthlyRunAt(dayOfMonth),
-                        isEnabled = true,
-                        createdAt = now,
-                        updatedAt = now
+                val uid = currentUserId()
+                val rule = RecurringRule(
+                    id = UUID.randomUUID().toString(),
+                    userId = uid,
+                    name = name.trim(),
+                    amount = amount,
+                    type = type,
+                    categoryId = categoryId,
+                    categoryName = categoryName,
+                    cadence = cadence,
+                    dayOfMonth = dayOfMonth.coerceIn(1, 31),
+                    nextRunAt = nextMonthlyRunAt(dayOfMonth),
+                    isEnabled = true,
+                    createdAt = now,
+                    updatedAt = now
+                )
+                repository.insertRecurringRule(rule)
+                notificationRepository.insertNotification(
+                    NotificationFactory.fromPersonalTrigger(
+                        PersonalNotificationTrigger(
+                            relatedId = rule.id,
+                            label = rule.name,
+                            amount = rule.amount,
+                            categoryName = rule.categoryName,
+                            triggerType = PersonalTriggerType.RECURRING_RULE_CREATED
+                        ),
+                        uid
                     )
                 )
                 refreshStateInternal(showLoading = false)
@@ -341,18 +366,29 @@ class PersonalViewModel(application: Application) : AndroidViewModel(application
             _uiState.value = _uiState.value.copy(isSaving = true, errorMessage = null)
             runCatching {
                 val now = System.currentTimeMillis()
-                repository.insertGoal(
-                    PersonalGoal(
-                        id = UUID.randomUUID().toString(),
-                        userId = currentUserId(),
-                        title = title.trim(),
-                        targetAmount = targetAmount,
-                        currentAmount = currentAmount,
-                        categoryId = categoryId,
-                        deadlineAt = endOfCurrentMonth(),
-                        status = GoalStatus.ACTIVE,
-                        createdAt = now,
-                        updatedAt = now
+                val uid = currentUserId()
+                val goal = PersonalGoal(
+                    id = UUID.randomUUID().toString(),
+                    userId = uid,
+                    title = title.trim(),
+                    targetAmount = targetAmount,
+                    currentAmount = currentAmount,
+                    categoryId = categoryId,
+                    deadlineAt = endOfCurrentMonth(),
+                    status = GoalStatus.ACTIVE,
+                    createdAt = now,
+                    updatedAt = now
+                )
+                repository.insertGoal(goal)
+                notificationRepository.insertNotification(
+                    NotificationFactory.fromPersonalTrigger(
+                        PersonalNotificationTrigger(
+                            relatedId = goal.id,
+                            label = goal.title,
+                            amount = goal.targetAmount,
+                            triggerType = PersonalTriggerType.GOAL_CREATED
+                        ),
+                        uid
                     )
                 )
                 refreshStateInternal(showLoading = false)
@@ -378,17 +414,28 @@ class PersonalViewModel(application: Application) : AndroidViewModel(application
             _uiState.value = _uiState.value.copy(isSaving = true, errorMessage = null)
             runCatching {
                 val now = System.currentTimeMillis()
-                repository.insertWallet(
-                    PersonalWallet(
-                        id = UUID.randomUUID().toString(),
-                        userId = currentUserId(),
-                        name = name.trim(),
-                        type = type,
-                        balance = balance,
-                        color = "#AB2D00",
-                        isArchived = false,
-                        createdAt = now,
-                        updatedAt = now
+                val uid = currentUserId()
+                val wallet = PersonalWallet(
+                    id = UUID.randomUUID().toString(),
+                    userId = uid,
+                    name = name.trim(),
+                    type = type,
+                    balance = balance,
+                    color = "#AB2D00",
+                    isArchived = false,
+                    createdAt = now,
+                    updatedAt = now
+                )
+                repository.insertWallet(wallet)
+                notificationRepository.insertNotification(
+                    NotificationFactory.fromPersonalTrigger(
+                        PersonalNotificationTrigger(
+                            relatedId = wallet.id,
+                            label = wallet.name,
+                            amount = wallet.balance,
+                            triggerType = PersonalTriggerType.WALLET_CREATED
+                        ),
+                        uid
                     )
                 )
                 refreshStateInternal(showLoading = false)

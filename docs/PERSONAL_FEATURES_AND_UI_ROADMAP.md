@@ -176,6 +176,163 @@ Luu y:
 
 Do uu tien: Thap den trung binh.
 
+### 2.8 Personal Health Score and Score Bands
+
+Mo ta:
+Tinh diem suc khoe tai chinh ca nhan theo thang, vi du 0-100 hoac 0-1000, roi gan band:
+- Risk
+- Watch
+- Stable
+- Excellent
+
+Diem khong phai diem cua social/group. Diem chi thuoc Personal cua C, tinh tu:
+- ti le expense / income thang hien tai,
+- safe-to-spend runway,
+- so ngay co ghi giao dich,
+- muc do vuot reminder/budget,
+- tien do goals,
+- muc do dung recurring/wallets.
+
+Gia tri:
+- Mo rong band diem cua nguoi C rat ro: day la lop intelligence rieng, co cong thuc, UI, empty/error state, va co the test client-side.
+- Bien Personal tu ledger thanh "finance health cockpit".
+- Tao hook cho notification cua C: score giam, band doi, hoac sap vuot nguong thi gui nhac.
+
+MVP:
+- Hien card "Personal score" tren Personal Home.
+- Tinh score client-side tu transactions, reminders, goals, recurring rules.
+- Giai thich ngan bang 1 subtitle: "Stable month", "Watch spending", "Needs attention".
+- Khong can backend moi o ban dau.
+
+Mo rong:
+- Luu lich su score theo thang de ve trend.
+- Giai thich diem bang 3 dong: spending ratio, runway, goal progress.
+- Band badge trong Personal Plans.
+
+Du lieu can them neu muon persist:
+- `user_personal/{uid}/score_history/{yyyyMM}`:
+  `score, band, spendingRatio, runwayDaily, goalProgress, createdAt`.
+
+Do uu tien: Cao.
+
+### 2.9 Anomaly Guard and Smart Personal Nudges
+
+Mo ta:
+Phat hien cac giao dich bat thuong hoac hanh vi sap gay vuot budget, sau do tao notification/nudge rieng cua C.
+
+Vi du:
+- "Cafe hom nay cao hon trung binh 2.3x."
+- "Ban da dung 85% ngan sach an uong khi moi qua nua thang."
+- "Co 3 ngay lien tiep expense tang, nen bat reminder cho category nay?"
+
+Gia tri:
+- Khac biet voi reminder thu cong vi app tu phat hien bat thuong.
+- Gan truc tiep voi notification owner cua C nhung khong can B/D thay doi flow.
+- Tang diem ky thuat: co rule engine, threshold, cooldown, va UI explainability.
+
+MVP:
+- Rule client-side don gian:
+  - amount > average category expense 2x,
+  - category spent > threshold * budget,
+  - 3 ngay lien tiep expense tang.
+- Tao insight card + optional notification.
+- Co cooldown theo ngay de khong spam.
+
+Du lieu can them neu persist:
+- `user_personal/{uid}/nudges/{nudgeId}`:
+  `type, categoryId, severity, message, createdAt, dismissedAt, sourceTransactionId`.
+
+Do uu tien: Cao.
+
+### 2.10 Cashflow Calendar and What-if Simulator
+
+Mo ta:
+Dung recurring rules, goals, wallets va expense pace de tao lich dong tien den cuoi thang. User co the nhap mot gia dinh "neu toi chi them 300k cuoi tuan nay" de xem runway con lai.
+
+Gia tri:
+- Tinh nang cao cap hon chart thong thuong: khong chi xem qua khu, ma mo phong tuong lai.
+- Van nam trong scope C vi dung Personal data, recurring, goals, reminders.
+- Lam Safe-to-Spend co chieu sau hon.
+
+MVP:
+- Man nho trong Personal Plans:
+  - upcoming fixed expenses,
+  - projected end-of-month balance,
+  - daily safe amount sau khi tru what-if amount.
+- Input don gian: amount + category + date.
+- Khong save transaction khi simulate.
+
+Mo rong:
+- Nhieu scenario: Conservative, Normal, Dining weekend.
+- Luu scenario tam thoi trong local state hoac Firestore neu can share giua device.
+
+Du lieu can them neu persist:
+- `user_personal/{uid}/cashflow_scenarios/{scenarioId}`:
+  `name, amount, categoryId, plannedAt, projectedBalance, createdAt`.
+
+Do uu tien: Trung binh cao.
+
+### 2.11 Advanced Personal Intelligence Lab
+
+Day la bo 3 tinh nang kho hon, uu tien de nguoi C lay diem cao vi the hien duoc data reasoning, UI state, notification hook va kha nang mo rong backend sau nay.
+
+#### 2.11.1 Anomaly Radar
+
+Mo ta:
+Personal tu phat hien cac bat thuong trong thang hien tai:
+- giao dich lon hon trung binh nhieu lan,
+- mot category chiem ty trong qua lon,
+- Split expense chiem ty trong cao,
+- daily expense tang lien tiep 3 ngay.
+
+Gia tri:
+- Khac voi chart thu dong, tinh nang nay giai thich "co gi dang bat thuong".
+- Co the noi voi Notification cua C de gui nudge co cooldown.
+
+MVP:
+- Tinh client-side tu transactions hien co.
+- Hien 1-3 radar cards tren Personal Home.
+- CTA ve History hoac Spending Reminders.
+
+#### 2.11.2 Cashflow What-if Simulator
+
+Mo ta:
+Cho user thu cac kich ban chi tieu nhu Quick/Dinner/Group, sau do tinh:
+- projected end balance,
+- daily safe amount sau scenario,
+- fixed + goal reserve,
+- status Feasible/Tight/Blocked.
+
+Gia tri:
+- Mo phong tuong lai, khong chi xem qua khu.
+- Tan dung recurring rules, goals, wallets va safe-to-spend.
+
+MVP:
+- Chua can luu scenario vao Firestore.
+- Dung scenario chip tren Personal Home.
+- Neu mo rong se luu `cashflow_scenarios`.
+
+#### 2.11.3 Autopilot Action Queue
+
+Mo ta:
+Personal tu xep hang viec nen lam tiep theo:
+- tao reminder cho top category,
+- them recurring radar,
+- audit split impact,
+- them goal,
+- them wallet coverage.
+
+Gia tri:
+- Lam Personal co cam giac nhu co copilot tai chinh.
+- Co logic uu tien High/Medium/Low dua tren score band va data thuc.
+
+MVP:
+- Generate action cards client-side.
+- Moi card co CTA sang History, Reminders, Plans hoac Categories.
+- Sau nay co the mark done/dismiss va sync notification.
+
+Do uu tien: Cao neu can diem UI + business logic cho C.
+
 ## 3. UI co can update khong?
 
 Co. Nen lam mot dot UI consistency pass truoc khi them nhieu man moi.

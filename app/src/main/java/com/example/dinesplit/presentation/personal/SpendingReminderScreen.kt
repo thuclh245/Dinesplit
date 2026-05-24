@@ -33,6 +33,7 @@ import androidx.compose.ui.text.font.FontWeight
 import com.example.dinesplit.core.ui.AppCard
 import com.example.dinesplit.core.ui.AppDimens
 import com.example.dinesplit.core.ui.AppScaffold
+import com.example.dinesplit.core.ui.BackNavigationButton
 import com.example.dinesplit.core.ui.EmptyStateBlock
 import com.example.dinesplit.core.ui.ErrorStateBlock
 import com.example.dinesplit.core.ui.PrimaryButton
@@ -58,9 +59,7 @@ fun SpendingReminderScreen(
     AppScaffold(
         title = "Spending Reminders",
         navigationIcon = {
-            TextButton(onClick = onBack) {
-                Text("Back")
-            }
+            BackNavigationButton(onClick = onBack)
         }
     ) {
         Column(

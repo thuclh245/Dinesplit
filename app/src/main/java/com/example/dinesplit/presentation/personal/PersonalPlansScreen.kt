@@ -6,8 +6,12 @@ import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.size
+import androidx.compose.foundation.horizontalScroll
 import androidx.compose.foundation.rememberScrollState
+import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.AccountBalanceWallet
@@ -17,12 +21,15 @@ import androidx.compose.material.icons.filled.Repeat
 import androidx.compose.material3.FilterChip
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
+import androidx.compose.material3.LinearProgressIndicator
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.OutlinedTextField
+import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.key
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.saveable.rememberSaveable
@@ -31,9 +38,13 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.text.style.TextOverflow
+import androidx.compose.ui.unit.dp
 import com.example.dinesplit.core.ui.AppCard
 import com.example.dinesplit.core.ui.AppDimens
 import com.example.dinesplit.core.ui.AppScaffold
+import com.example.dinesplit.core.ui.AppShapes
+import com.example.dinesplit.core.ui.BackNavigationButton
 import com.example.dinesplit.core.ui.PrimaryButton
 import com.example.dinesplit.data.model.StoredCategory
 import com.example.dinesplit.domain.model.PersonalGoal
@@ -47,9 +58,23 @@ import java.text.SimpleDateFormat
 import java.util.Date
 import java.util.Locale
 
+enum class PersonalPlanFocus(val routeValue: String, val label: String) {
+    OVERVIEW("overview", "Overview"),
+    RECURRING("recurring", "Recurring"),
+    GOALS("goals", "Goals"),
+    WALLETS("wallets", "Wallets");
+
+    companion object {
+        fun fromRouteValue(value: String?): PersonalPlanFocus {
+            return values().firstOrNull { it.routeValue == value } ?: OVERVIEW
+        }
+    }
+}
+
 @Composable
 fun PersonalPlansScreen(
     onBack: () -> Unit,
+    initialFocus: PersonalPlanFocus = PersonalPlanFocus.OVERVIEW,
     categories: List<StoredCategory>,
     recurringRules: List<RecurringRule>,
     goals: List<PersonalGoal>,
@@ -61,43 +86,263 @@ fun PersonalPlansScreen(
     onAddWallet: (String, WalletType, Double) -> Unit,
     onDeleteWallet: (String) -> Unit
 ) {
+    var selectedFocusRoute by rememberSaveable(initialFocus.routeValue) {
+        mutableStateOf(initialFocus.routeValue)
+    }
+    val selectedFocus = remember(selectedFocusRoute) {
+        PersonalPlanFocus.fromRouteValue(selectedFocusRoute)
+    }
+    val orderedSections = remember(selectedFocus) {
+        val sections = listOf(
+            PersonalPlanFocus.RECURRING,
+            PersonalPlanFocus.GOALS,
+            PersonalPlanFocus.WALLETS
+        )
+        if (selectedFocus == PersonalPlanFocus.OVERVIEW) {
+            sections
+        } else {
+            listOf(selectedFocus) + sections.filterNot { it == selectedFocus }
+        }
+    }
+
     AppScaffold(
         title = "Personal Plans",
         navigationIcon = {
-            TextButton(onClick = onBack) {
-                Text("Back")
-            }
-        }
+            BackNavigationButton(onClick = onBack)
+        },
+        contentPadding = PaddingValues(0.dp)
     ) {
         Column(
             modifier = Modifier
                 .fillMaxSize()
                 .verticalScroll(rememberScrollState())
-                .padding(AppDimens.screenHorizontal),
+                .padding(horizontal = AppDimens.screenHorizontal),
             verticalArrangement = Arrangement.spacedBy(AppDimens.spaceLg)
         ) {
             Text(
-                text = "Automate, save, and organize.",
+                text = "Plan cockpit",
                 style = MaterialTheme.typography.headlineSmall,
                 fontWeight = FontWeight.ExtraBold
             )
 
-            RecurringPlanSection(
-                categories = categories,
-                rules = recurringRules,
-                onAdd = onAddRecurring,
-                onDelete = onDeleteRecurring
+            PlanFocusChips(
+                selectedFocus = selectedFocus,
+                onFocusSelected = { selectedFocusRoute = it.routeValue }
             )
-            GoalPlanSection(
-                goals = goals,
-                onAdd = onAddGoal,
-                onDelete = onDeleteGoal
+
+            if (selectedFocus == PersonalPlanFocus.OVERVIEW) {
+                PlanCockpitCard(
+                    recurringRules = recurringRules,
+                    goals = goals,
+                    wallets = wallets
+                )
+            }
+
+            orderedSections.forEach { focus ->
+                key(focus) {
+                    PlanFocusSection(
+                        focus = focus,
+                        categories = categories,
+                        recurringRules = recurringRules,
+                        goals = goals,
+                        wallets = wallets,
+                        onAddRecurring = onAddRecurring,
+                        onDeleteRecurring = onDeleteRecurring,
+                        onAddGoal = onAddGoal,
+                        onDeleteGoal = onDeleteGoal,
+                        onAddWallet = onAddWallet,
+                        onDeleteWallet = onDeleteWallet
+                    )
+                }
+            }
+
+            if (selectedFocus != PersonalPlanFocus.OVERVIEW) {
+                PlanCockpitCard(
+                    recurringRules = recurringRules,
+                    goals = goals,
+                    wallets = wallets
+                )
+            }
+        }
+    }
+}
+
+@Composable
+private fun PlanFocusChips(
+    selectedFocus: PersonalPlanFocus,
+    onFocusSelected: (PersonalPlanFocus) -> Unit
+) {
+    Row(
+        modifier = Modifier.horizontalScroll(rememberScrollState()),
+        horizontalArrangement = Arrangement.spacedBy(AppDimens.spaceSm)
+    ) {
+        PersonalPlanFocus.values().forEach { focus ->
+            FilterChip(
+                selected = selectedFocus == focus,
+                onClick = { onFocusSelected(focus) },
+                label = { Text(focus.label) }
             )
-            WalletPlanSection(
-                wallets = wallets,
-                onAdd = onAddWallet,
-                onDelete = onDeleteWallet
+        }
+    }
+}
+
+@Composable
+private fun PlanFocusSection(
+    focus: PersonalPlanFocus,
+    categories: List<StoredCategory>,
+    recurringRules: List<RecurringRule>,
+    goals: List<PersonalGoal>,
+    wallets: List<PersonalWallet>,
+    onAddRecurring: (String, Double, TransactionType, String, String, RecurringCadence, Int) -> Unit,
+    onDeleteRecurring: (String) -> Unit,
+    onAddGoal: (String, Double, Double, String?) -> Unit,
+    onDeleteGoal: (String) -> Unit,
+    onAddWallet: (String, WalletType, Double) -> Unit,
+    onDeleteWallet: (String) -> Unit
+) {
+    when (focus) {
+        PersonalPlanFocus.OVERVIEW -> Unit
+        PersonalPlanFocus.RECURRING -> RecurringPlanSection(
+            categories = categories,
+            rules = recurringRules,
+            onAdd = onAddRecurring,
+            onDelete = onDeleteRecurring
+        )
+        PersonalPlanFocus.GOALS -> GoalPlanSection(
+            goals = goals,
+            onAdd = onAddGoal,
+            onDelete = onDeleteGoal
+        )
+        PersonalPlanFocus.WALLETS -> WalletPlanSection(
+            wallets = wallets,
+            onAdd = onAddWallet,
+            onDelete = onDeleteWallet
+        )
+    }
+}
+
+@Composable
+private fun PlanCockpitCard(
+    recurringRules: List<RecurringRule>,
+    goals: List<PersonalGoal>,
+    wallets: List<PersonalWallet>
+) {
+    val monthlyOutflow = recurringRules
+        .filter { it.isEnabled && it.type == TransactionType.EXPENSE }
+        .sumOf { it.amount }
+    val goalTarget = goals.sumOf { it.targetAmount }
+    val goalCurrent = goals.sumOf { it.currentAmount }
+    val goalProgress = if (goalTarget > 0.0) {
+        (goalCurrent / goalTarget).toFloat().coerceIn(0f, 1f)
+    } else {
+        0f
+    }
+    val walletTotal = wallets.sumOf { it.balance }
+
+    AppCard {
+        Column(verticalArrangement = Arrangement.spacedBy(AppDimens.spaceMd)) {
+            Row(
+                modifier = Modifier.fillMaxWidth(),
+                horizontalArrangement = Arrangement.spacedBy(AppDimens.spaceMd),
+                verticalAlignment = Alignment.CenterVertically
+            ) {
+                Surface(
+                    shape = CircleShape,
+                    color = MaterialTheme.colorScheme.primary.copy(alpha = 0.12f)
+                ) {
+                    Icon(
+                        imageVector = Icons.Default.Flag,
+                        contentDescription = null,
+                        tint = MaterialTheme.colorScheme.primary,
+                        modifier = Modifier
+                            .padding(AppDimens.spaceMd)
+                            .size(22.dp)
+                    )
+                }
+                Column(modifier = Modifier.weight(1f)) {
+                    Text(
+                        text = "Personal planning engine",
+                        style = MaterialTheme.typography.titleMedium,
+                        fontWeight = FontWeight.Bold
+                    )
+                    Text(
+                        text = "Recurring radar, goals, and wallets stay inside C scope.",
+                        style = MaterialTheme.typography.bodySmall,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant
+                    )
+                }
+            }
+
+            LinearProgressIndicator(
+                progress = { goalProgress },
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .height(8.dp),
+                color = MaterialTheme.colorScheme.secondary,
+                trackColor = MaterialTheme.colorScheme.surfaceVariant
             )
+
+            Row(horizontalArrangement = Arrangement.spacedBy(AppDimens.spaceMd)) {
+                PlanMetricPill(
+                    modifier = Modifier.weight(1f),
+                    icon = Icons.Default.Repeat,
+                    label = "Monthly fixed",
+                    value = formatMoney(monthlyOutflow)
+                )
+                PlanMetricPill(
+                    modifier = Modifier.weight(1f),
+                    icon = Icons.Default.AccountBalanceWallet,
+                    label = "Wallet total",
+                    value = formatMoney(walletTotal)
+                )
+            }
+            PlanMetricPill(
+                modifier = Modifier.fillMaxWidth(),
+                icon = Icons.Default.Flag,
+                label = "Goal progress",
+                value = "${formatMoney(goalCurrent)} of ${formatMoney(goalTarget)}"
+            )
+        }
+    }
+}
+
+@Composable
+private fun PlanMetricPill(
+    modifier: Modifier,
+    icon: ImageVector,
+    label: String,
+    value: String
+) {
+    Surface(
+        modifier = modifier,
+        shape = AppShapes.large,
+        color = MaterialTheme.colorScheme.surfaceVariant
+    ) {
+        Row(
+            modifier = Modifier.padding(AppDimens.spaceMd),
+            horizontalArrangement = Arrangement.spacedBy(AppDimens.spaceSm),
+            verticalAlignment = Alignment.CenterVertically
+        ) {
+            Icon(
+                imageVector = icon,
+                contentDescription = null,
+                tint = MaterialTheme.colorScheme.primary,
+                modifier = Modifier.size(18.dp)
+            )
+            Column(modifier = Modifier.weight(1f)) {
+                Text(
+                    text = label,
+                    style = MaterialTheme.typography.labelSmall,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant
+                )
+                Text(
+                    text = value,
+                    style = MaterialTheme.typography.titleSmall,
+                    fontWeight = FontWeight.Bold,
+                    maxLines = 1,
+                    overflow = TextOverflow.Ellipsis
+                )
+            }
         }
     }
 }
@@ -223,15 +468,74 @@ private fun GoalPlanSection(
             }
         )
 
-        PlanList(
-            emptyTitle = "No goals yet",
-            items = goals,
-            itemTitle = { it.title },
-            itemSubtitle = {
-                "${formatMoney(it.currentAmount)} of ${formatMoney(it.targetAmount)} by ${formatDate(it.deadlineAt)}"
-            },
-            onDelete = { onDelete(it.id) }
+        GoalProgressList(
+            goals = goals,
+            onDelete = onDelete
         )
+    }
+}
+
+@Composable
+private fun GoalProgressList(
+    goals: List<PersonalGoal>,
+    onDelete: (String) -> Unit
+) {
+    if (goals.isEmpty()) {
+        Text(
+            text = "No goals yet",
+            style = MaterialTheme.typography.bodyMedium,
+            color = MaterialTheme.colorScheme.onSurfaceVariant
+        )
+        return
+    }
+
+    Column(verticalArrangement = Arrangement.spacedBy(AppDimens.spaceSm)) {
+        goals.forEach { goal ->
+            val progress = if (goal.targetAmount > 0.0) {
+                (goal.currentAmount / goal.targetAmount).toFloat().coerceIn(0f, 1f)
+            } else {
+                0f
+            }
+
+            AppCard(contentPadding = PaddingValues(AppDimens.spaceMd)) {
+                Row(
+                    modifier = Modifier.fillMaxWidth(),
+                    verticalAlignment = Alignment.CenterVertically,
+                    horizontalArrangement = Arrangement.spacedBy(AppDimens.spaceMd)
+                ) {
+                    Column(
+                        modifier = Modifier.weight(1f),
+                        verticalArrangement = Arrangement.spacedBy(AppDimens.spaceXs)
+                    ) {
+                        Text(
+                            text = goal.title,
+                            style = MaterialTheme.typography.titleSmall,
+                            fontWeight = FontWeight.Bold,
+                            maxLines = 1,
+                            overflow = TextOverflow.Ellipsis
+                        )
+                        LinearProgressIndicator(
+                            progress = { progress },
+                            modifier = Modifier
+                                .fillMaxWidth()
+                                .height(6.dp),
+                            color = MaterialTheme.colorScheme.secondary,
+                            trackColor = MaterialTheme.colorScheme.surfaceVariant
+                        )
+                        Text(
+                            text = "${formatMoney(goal.currentAmount)} of ${formatMoney(goal.targetAmount)} by ${formatDate(goal.deadlineAt)}",
+                            style = MaterialTheme.typography.bodySmall,
+                            color = MaterialTheme.colorScheme.onSurfaceVariant,
+                            maxLines = 1,
+                            overflow = TextOverflow.Ellipsis
+                        )
+                    }
+                    IconButton(onClick = { onDelete(goal.id) }) {
+                        Icon(Icons.Default.Delete, contentDescription = "Delete")
+                    }
+                }
+            }
+        }
     }
 }
 

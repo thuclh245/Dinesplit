@@ -37,6 +37,7 @@ import androidx.compose.ui.unit.dp
 import com.example.dinesplit.core.ui.AppCard
 import com.example.dinesplit.core.ui.AppDimens
 import com.example.dinesplit.core.ui.AppScaffold
+import com.example.dinesplit.core.ui.BackNavigationButton
 import com.example.dinesplit.ui.theme.DineSplitTheme
 import kotlinx.coroutines.launch
 
@@ -93,9 +94,7 @@ fun CategoryManagementScreen(
     AppScaffold(
         title = "Category Management",
         navigationIcon = {
-            TextButton(onClick = onBack) {
-                Text("Back")
-            }
+            BackNavigationButton(onClick = onBack)
         }
     ) {
         Column(
