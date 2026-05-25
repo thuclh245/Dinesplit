@@ -32,12 +32,42 @@ fun ProfileScreen(
     userName: String,
     userHandle: String = "",
     userBio: String = "",
+    isLoggingOut: Boolean = false,
     onEditProfile: () -> Unit,
     onOpenSettings: () -> Unit,
-    onOpenSearch: () -> Unit
+    onOpenSearch: () -> Unit,
+    onLogout: () -> Unit
 ) {
     val resolvedHandle = userHandle.ifBlank { "@" }
     val resolvedBio = userBio.ifBlank { "Add a bio so friends know who they are splitting with." }
+    var showLogoutConfirmation by remember { mutableStateOf(false) }
+
+    if (showLogoutConfirmation) {
+        AlertDialog(
+            onDismissRequest = { if (!isLoggingOut) showLogoutConfirmation = false },
+            title = { Text("Đăng xuất?") },
+            text = { Text("Bạn sẽ quay lại màn hình đăng nhập.") },
+            confirmButton = {
+                TextButton(
+                    enabled = !isLoggingOut,
+                    onClick = {
+                        showLogoutConfirmation = false
+                        onLogout()
+                    }
+                ) {
+                    Text("Đăng xuất")
+                }
+            },
+            dismissButton = {
+                TextButton(
+                    enabled = !isLoggingOut,
+                    onClick = { showLogoutConfirmation = false }
+                ) {
+                    Text("Hủy")
+                }
+            }
+        )
+    }
 
     Scaffold(
         topBar = {
@@ -65,7 +95,9 @@ fun ProfileScreen(
                 following = "0",
                 avatarUrl = userAvatarUrl.orEmpty(),
                 onEditProfile = onEditProfile,
-                onOpenSettings = onOpenSettings
+                onOpenSettings = onOpenSettings,
+                isLoggingOut = isLoggingOut,
+                onLogout = { showLogoutConfirmation = true }
             )
 
             ProfileTabs()
@@ -88,7 +120,9 @@ private fun ProfileHeader(
     following: String,
     avatarUrl: String,
     onEditProfile: () -> Unit,
-    onOpenSettings: () -> Unit
+    onOpenSettings: () -> Unit,
+    isLoggingOut: Boolean,
+    onLogout: () -> Unit
 ) {
     Column(modifier = Modifier.padding(24.dp)) {
         Row(
@@ -156,6 +190,23 @@ private fun ProfileHeader(
             Text(displayName, style = MaterialTheme.typography.bodyLarge.copy(fontWeight = FontWeight.Bold))
             Text(bio, style = MaterialTheme.typography.bodyMedium, color = MaterialTheme.colorScheme.onSurfaceVariant, lineHeight = 20.sp)
             Text(link, style = MaterialTheme.typography.labelLarge.copy(fontWeight = FontWeight.Bold), color = MaterialTheme.colorScheme.primary)
+        }
+
+        Spacer(modifier = Modifier.height(20.dp))
+
+        OutlinedButton(
+            onClick = onLogout,
+            enabled = !isLoggingOut,
+            modifier = Modifier.fillMaxWidth().height(46.dp),
+            shape = RoundedCornerShape(12.dp)
+        ) {
+            if (isLoggingOut) {
+                CircularProgressIndicator(modifier = Modifier.size(18.dp), strokeWidth = 2.dp)
+            } else {
+                Icon(Icons.Default.Logout, contentDescription = null, modifier = Modifier.size(18.dp))
+            }
+            Spacer(modifier = Modifier.width(8.dp))
+            Text(if (isLoggingOut) "Đang đăng xuất..." else "Đăng xuất")
         }
     }
 }
@@ -270,9 +321,11 @@ fun ProfileScreenPreview() {
         ProfileScreen(
             userAvatarUrl = null,
             userName = "Linh Trần",
+            isLoggingOut = false,
             onEditProfile = {},
             onOpenSettings = {},
-            onOpenSearch = {}
+            onOpenSearch = {},
+            onLogout = {}
         )
     }
 }

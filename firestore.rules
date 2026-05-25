@@ -40,20 +40,19 @@ service cloud.firestore {
       return /databases/$(database)/documents/username_claims/$(usernameLower);
     }
 
-    function claimMatchesProfileAfterWrite(data) {
-      return existsAfter(usernameClaimPath(data.usernameLower))
-        && getAfter(usernameClaimPath(data.usernameLower)).data.uid == request.auth.uid
-        && getAfter(usernameClaimPath(data.usernameLower)).data.usernameLower == data.usernameLower
-        && getAfter(usernameClaimPath(data.usernameLower)).data.username == data.username;
-    }
-
     function validUsernameClaim(data, usernameLower) {
-      return data.keys().hasOnly(['uid', 'usernameLower', 'username', 'claimedAt', 'updatedAt'])
+      return data.keys().hasOnly([
+          'uid',
+          'usernameLower',
+          'username',
+          'claimedAt',
+          'updatedAt'
+        ])
         && data.uid is string
         && data.usernameLower is string
         && data.username is string
-        && data.claimedAt is number
-        && data.updatedAt is number
+        && data.claimedAt is int
+        && data.updatedAt is int
         && data.uid == request.auth.uid
         && data.usernameLower == usernameLower
         && data.usernameLower == data.username.lower()
@@ -285,12 +284,99 @@ service cloud.firestore {
         && data.updatedAt is number
         && data.deepLinkDestination is string
         && data.deepLinkTargetId is string;
+    function groupPath(groupId) {
+      return /databases/$(database)/documents/groups/$(groupId);
+    }
+
+    function groupData(groupId) {
+      return get(groupPath(groupId)).data;
+    }
+
+    function isGroupMember(groupId) {
+      return signedIn()
+        && request.auth.uid in groupData(groupId).memberIds;
+    }
+
+    function isGroupOwner(groupId) {
+      return signedIn()
+        && groupData(groupId).ownerId == request.auth.uid;
+    }
+
+    function validNewGroup(data, groupId) {
+      return signedIn()
+        && data.keys().hasOnly([
+          'id',
+          'name',
+          'imageUrl',
+          'memberCount',
+          'memberIds',
+          'leftMemberIds',
+          'ownerId',
+          'totalExpense',
+          'yourBalance',
+          'createdAt',
+          'updatedAt'
+        ])
+        && data.id == groupId
+        && data.name is string
+        && data.name.size() > 0
+        && data.memberIds is list
+        && data.leftMemberIds is list
+        && data.ownerId == request.auth.uid
+        && request.auth.uid in data.memberIds
+        && data.memberCount == data.memberIds.size()
+        && data.leftMemberIds.size() == 0
+        && data.totalExpense == 0
+        && data.yourBalance == 0
+        && data.createdAt is int
+        && data.updatedAt is int;
+    }
+
+    function validNewMember(data, groupId, memberId) {
+      return data.keys().hasOnly(['id', 'name', 'initial', 'isMe'])
+        && data.id == memberId
+        && data.name is string
+        && data.name.size() > 0
+        && data.initial is string
+        && data.isMe is bool
+        && data.isMe == (memberId == request.auth.uid)
+        && memberId in getAfter(groupPath(groupId)).data.memberIds;
+    }
+
+    function validNewBill(data, groupId, billId) {
+      return data.keys().hasOnly([
+          'id',
+          'groupId',
+          'name',
+          'totalAmount',
+          'payerId',
+          'method',
+          'items',
+          'shares',
+          'paidMemberIds',
+          'date'
+        ])
+        && data.id == billId
+        && data.groupId == groupId
+        && data.name is string
+        && data.name.size() > 0
+        && (data.totalAmount is int || data.totalAmount is float)
+        && data.totalAmount > 0
+        && data.payerId in groupData(groupId).memberIds
+        && data.method in ['EQUAL', 'CUSTOM', 'ITEMIZED']
+        && data.items is list
+        && data.shares is map
+        && data.shares.keys().hasOnly(groupData(groupId).memberIds)
+        && data.paidMemberIds is list
+        && data.paidMemberIds.hasOnly([data.payerId])
+        && data.paidMemberIds.hasAll([data.payerId])
+        && data.date is int;
     }
 
     match /user_profiles/{uid} {
       allow get, list: if signedIn();
-      allow create: if isOwner(uid) && validUserProfile(request.resource.data) && claimMatchesProfileAfterWrite(request.resource.data);
-      allow update: if isOwner(uid) && validUserProfile(request.resource.data) && claimMatchesProfileAfterWrite(request.resource.data);
+      allow create: if isOwner(uid) && validUserProfile(request.resource.data);
+      allow update: if isOwner(uid) && validUserProfile(request.resource.data);
       allow delete: if isOwner(uid);
     }
 
@@ -365,22 +451,85 @@ service cloud.firestore {
       }
     }
 
+    match /posts/{postId} {
+      allow read, write: if signedIn();
+    }
+
     match /groups/{groupId} {
-      allow read, list: if signedIn();
-      allow create: if signedIn();
-      allow update, delete: if signedIn();
+      allow create: if validNewGroup(request.resource.data, groupId);
+
+      allow get, list: if signedIn()
+        && request.auth.uid in resource.data.memberIds;
+
+      // The current client denormalizes bill totals onto the group document.
+      allow update: if isGroupMember(groupId)
+        && request.resource.data.diff(resource.data).affectedKeys()
+          .hasOnly(['totalExpense', 'updatedAt'])
+        && request.resource.data.totalExpense >= resource.data.totalExpense;
+
+      allow update: if isGroupMember(groupId)
+        && request.resource.data.diff(resource.data).affectedKeys()
+          .hasOnly(['memberIds', 'leftMemberIds', 'memberCount', 'ownerId', 'updatedAt'])
+        && request.resource.data.memberIds == resource.data.memberIds.removeAll([request.auth.uid])
+        && request.auth.uid in request.resource.data.leftMemberIds
+        && request.resource.data.memberCount == request.resource.data.memberIds.size()
+        && (
+          (
+            resource.data.ownerId != request.auth.uid
+            && request.resource.data.ownerId == resource.data.ownerId
+          )
+          || (
+            resource.data.ownerId == request.auth.uid
+            && (
+              (
+                request.resource.data.memberIds.size() > 0
+                && request.resource.data.ownerId in request.resource.data.memberIds
+              )
+              || (
+                request.resource.data.memberIds.size() == 0
+                && request.resource.data.ownerId == ''
+              )
+            )
+          )
+        );
+
+      allow delete: if isGroupOwner(groupId);
 
       match /members/{memberId} {
-        allow read, write: if signedIn();
+        allow read: if isGroupMember(groupId);
+
+        allow create: if signedIn()
+          && getAfter(groupPath(groupId)).data.ownerId == request.auth.uid
+          && validNewMember(request.resource.data, groupId, memberId);
+
+        allow delete: if isGroupOwner(groupId)
+          || (isGroupMember(groupId) && request.auth.uid == memberId);
       }
 
       match /bills/{billId} {
-        allow read, write: if signedIn();
-      }
-    }
+        allow read: if isGroupMember(groupId);
 
-    match /posts/{postId} {
-      allow read, write: if signedIn();
+        allow create: if isGroupMember(groupId)
+          && validNewBill(request.resource.data, groupId, billId);
+
+        allow update: if isGroupMember(groupId)
+          && request.resource.data.diff(resource.data).affectedKeys()
+            .hasOnly(['paidMemberIds', 'updatedAt'])
+          && request.resource.data.paidMemberIds is list
+          && request.resource.data.paidMemberIds.hasAll(resource.data.paidMemberIds)
+          && request.resource.data.paidMemberIds.hasOnly(groupData(groupId).memberIds)
+          && request.resource.data.paidMemberIds.size()
+            <= resource.data.paidMemberIds.size() + 1
+          && (
+            isGroupOwner(groupId)
+            || (
+              request.auth.uid in request.resource.data.paidMemberIds
+              && !(request.auth.uid in resource.data.paidMemberIds)
+            )
+          );
+
+        allow delete: if isGroupOwner(groupId);
+      }
     }
   }
 }

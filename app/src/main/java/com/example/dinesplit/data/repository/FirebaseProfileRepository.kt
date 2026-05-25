@@ -78,12 +78,20 @@ class FirebaseProfileRepository private constructor(
             val currentProfileSnapshot = profileRef.get().awaitFirebase()
             val oldUsernameLower = currentProfileSnapshot.profileUsernameLower()
 
+            // Profile and username claim must become visible together for security rules.
             val batch = firestore.batch()
+            batch.set(
+                profileRef,
+                profile.toFirestoreMap(normalizedUsername),
+                SetOptions.merge()
+            )
+            batch.set(
+                claimRef,
+                profile.toUsernameClaimMap(normalizedUsername),
+                SetOptions.merge()
+            )
 
-            // Profile rules require the username claim to exist after the same commit.
-            batch.set(profileRef, profile.toFirestoreMap(normalizedUsername), SetOptions.merge())
-            batch.set(claimRef, profile.toUsernameClaimMap(normalizedUsername), SetOptions.merge())
-
+            // Release the previous username in the same atomic write.
             if (oldUsernameLower != null && oldUsernameLower != normalizedUsername) {
                 batch.delete(usernameClaimDocument(oldUsernameLower))
             }

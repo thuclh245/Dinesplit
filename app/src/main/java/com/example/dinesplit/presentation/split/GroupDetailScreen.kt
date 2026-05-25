@@ -59,6 +59,7 @@ import androidx.compose.ui.unit.sp
 import com.example.dinesplit.core.common.AppContainer
 import com.example.dinesplit.core.firebase.FirebaseProviders
 import com.example.dinesplit.domain.model.Bill
+import com.example.dinesplit.domain.model.BillStatus
 import com.example.dinesplit.domain.model.SplitMethod
 import com.example.dinesplit.ui.theme.BrandPrimary
 import com.example.dinesplit.ui.theme.BrandPrimaryContainer
@@ -76,8 +77,7 @@ fun GroupDetailScreen(
     groupId: String,
     onBack: () -> Unit,
     onNavigateToCreateBill: () -> Unit,
-    onNavigateToBillDetail: (String) -> Unit,
-    onNavigateToSettleSummary: () -> Unit
+    onNavigateToBillDetail: (String) -> Unit
 ) {
     val context = LocalContext.current
     val viewModel = remember(groupId) {
@@ -192,10 +192,7 @@ fun GroupDetailScreen(
                     item {
                         DetailTabNavigation(
                             selectedTab = selectedTab,
-                            onTabSelected = { tab ->
-                                selectedTab = tab
-                                if (tab == GroupDetailTab.Balances) onNavigateToSettleSummary()
-                            }
+                            onTabSelected = { tab -> selectedTab = tab }
                         )
                     }
 
@@ -243,7 +240,13 @@ fun GroupDetailScreen(
                                     }
                                 } else {
                                     items(uiState.settlements) { settlement ->
-                                        DetailSettlementCard(settlement = settlement)
+                                        DetailSettlementCard(
+                                            settlement = settlement,
+                                            isYourPayment = settlement.fromMemberId == uiState.currentUserId,
+                                            onOpenBill = settlement.relatedBillId?.let { billId ->
+                                                { onNavigateToBillDetail(billId) }
+                                            }
+                                        )
                                     }
                                 }
                             }
@@ -771,11 +774,23 @@ private fun DetailBalanceCard(balance: GroupMemberBalance) {
 }
 
 @Composable
-private fun DetailSettlementCard(settlement: SettlementSuggestion) {
+private fun DetailSettlementCard(
+    settlement: SettlementSuggestion,
+    isYourPayment: Boolean,
+    onOpenBill: (() -> Unit)?
+) {
     val colorScheme = MaterialTheme.colorScheme
 
     Card(
-        modifier = Modifier.fillMaxWidth(),
+        modifier = Modifier
+            .fillMaxWidth()
+            .then(
+                if (onOpenBill != null) {
+                    Modifier.clickable(onClick = onOpenBill)
+                } else {
+                    Modifier
+                }
+            ),
         colors = CardDefaults.cardColors(containerColor = colorScheme.surfaceContainerLowest),
         elevation = CardDefaults.cardElevation(defaultElevation = 1.dp),
         shape = RoundedCornerShape(20.dp)
@@ -818,6 +833,28 @@ private fun DetailSettlementCard(settlement: SettlementSuggestion) {
                     fontWeight = FontWeight.ExtraBold,
                     color = colorScheme.primary
                 )
+            }
+
+            if (onOpenBill != null) {
+                Spacer(modifier = Modifier.height(12.dp))
+                Surface(
+                    color = colorScheme.primaryContainer.copy(alpha = 0.18f),
+                    shape = RoundedCornerShape(12.dp)
+                ) {
+                    Text(
+                        text = if (isYourPayment) {
+                            "Chạm để mở hóa đơn và đánh dấu thanh toán"
+                        } else {
+                            "Chạm để xem hóa đơn chưa thanh toán liên quan"
+                        },
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .padding(horizontal = 12.dp, vertical = 10.dp),
+                        fontSize = 12.sp,
+                        fontWeight = FontWeight.SemiBold,
+                        color = colorScheme.primary
+                    )
+                }
             }
         }
     }
@@ -875,9 +912,7 @@ private fun formatDate(timestamp: Long): String {
 }
 
 private fun Bill.isSettled(): Boolean {
-    return shares.keys
-        .filter { it != payerId }
-        .all { paidMemberIds.contains(it) }
+    return status == BillStatus.SETTLED
 }
 
 private fun formatAmount(amount: Double): String {

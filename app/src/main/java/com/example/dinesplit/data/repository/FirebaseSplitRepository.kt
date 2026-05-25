@@ -27,7 +27,15 @@ class FirebaseSplitRepository(
 ) : SplitRepository {
 
     override fun getGroups(): Flow<List<Group>> = callbackFlow {
+        val currentUserId = FirebaseProviders.auth.currentUser?.uid
+        if (currentUserId.isNullOrBlank()) {
+            trySend(emptyList())
+            close()
+            return@callbackFlow
+        }
+
         val registration = firestore.collection("groups")
+            .whereArrayContains("memberIds", currentUserId)
             .addSnapshotListener { snapshot, error ->
                 if (error != null) {
                     close(error)

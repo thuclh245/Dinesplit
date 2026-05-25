@@ -6,13 +6,13 @@ import com.example.dinesplit.domain.model.Bill
 import com.example.dinesplit.domain.model.Group
 import com.example.dinesplit.domain.model.Member
 import com.example.dinesplit.domain.repository.SplitRepository
+import com.example.dinesplit.domain.usecase.SplitCalculationEngine
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.combine
 import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
-import kotlin.math.abs
 
 data class GroupMemberBalance(
     val memberId: String,
@@ -27,7 +27,8 @@ data class SettlementSuggestion(
     val fromName: String,
     val toMemberId: String,
     val toName: String,
-    val amount: Double
+    val amount: Double,
+    val relatedBillId: String? = null
 )
 
 data class GroupDetailUiState(
@@ -130,7 +131,7 @@ class GroupDetailViewModel(
                 }.collect { (group, bills, members) ->
                     val effectiveMembers = buildEffectiveMembers(members, bills)
                     val memberBalances = calculateMemberBalances(bills, effectiveMembers)
-                    val settlements = calculateSettlements(memberBalances)
+                    val settlements = calculateSettlements(memberBalances, bills)
                     val totalExpense = bills.sumOf { it.totalAmount }.takeIf { it > 0.0 }
                         ?: (group?.totalExpense ?: 0.0)
                     val yourBalance = memberBalances.firstOrNull { it.isMe }?.balance ?: 0.0
@@ -190,18 +191,10 @@ class GroupDetailViewModel(
         bills: List<Bill>,
         members: List<Member>
     ): List<GroupMemberBalance> {
-        val balances = members.associate { it.id to 0.0 }.toMutableMap()
-
-        bills.forEach { bill ->
-            bill.shares.forEach { (memberId, amount) ->
-                val isPayer = memberId == bill.payerId
-                val isPaid = bill.paidMemberIds.contains(memberId)
-                if (!isPayer && !isPaid && amount > 0.0) {
-                    balances[memberId] = (balances[memberId] ?: 0.0) - amount
-                    balances[bill.payerId] = (balances[bill.payerId] ?: 0.0) + amount
-                }
-            }
-        }
+        val balances = SplitCalculationEngine.calculateBalances(
+            bills = bills,
+            memberIds = members.map { it.id }
+        )
 
         return balances.map { (memberId, balance) ->
             val member = members.firstOrNull { it.id == memberId }
@@ -210,7 +203,7 @@ class GroupDetailViewModel(
                 memberId = memberId,
                 name = name,
                 initial = member?.initial ?: name.firstOrNull()?.uppercase().orEmpty(),
-                balance = if (abs(balance) < 0.5) 0.0 else balance,
+                balance = balance,
                 isMe = member?.isMe ?: (memberId == currentUserId)
             )
         }.sortedWith(
@@ -221,43 +214,46 @@ class GroupDetailViewModel(
     }
 
     private fun calculateSettlements(
-        balances: List<GroupMemberBalance>
+        balances: List<GroupMemberBalance>,
+        bills: List<Bill>
     ): List<SettlementSuggestion> {
-        val debtors = balances
-            .filter { it.balance < -0.5 }
-            .map { it to abs(it.balance) }
-            .toMutableList()
-        val creditors = balances
-            .filter { it.balance > 0.5 }
-            .map { it to it.balance }
-            .toMutableList()
-        val suggestions = mutableListOf<SettlementSuggestion>()
+        val balanceById = balances.associate { it.memberId to it.balance }
+        val memberById = balances.associateBy { it.memberId }
 
-        var debtorIndex = 0
-        var creditorIndex = 0
-        while (debtorIndex < debtors.size && creditorIndex < creditors.size) {
-            val (debtor, debtAmount) = debtors[debtorIndex]
-            val (creditor, creditAmount) = creditors[creditorIndex]
-            val amount = minOf(debtAmount, creditAmount)
-
-            if (amount > 0.5) {
-                suggestions += SettlementSuggestion(
-                    fromMemberId = debtor.memberId,
-                    fromName = debtor.name,
-                    toMemberId = creditor.memberId,
-                    toName = creditor.name,
-                    amount = amount
-                )
-            }
-
-            debtors[debtorIndex] = debtor to (debtAmount - amount)
-            creditors[creditorIndex] = creditor to (creditAmount - amount)
-
-            if (debtors[debtorIndex].second <= 0.5) debtorIndex++
-            if (creditors[creditorIndex].second <= 0.5) creditorIndex++
+        return SplitCalculationEngine.calculateSettlements(balanceById).map { settlement ->
+            val debtor = memberById[settlement.fromMemberId]
+            val creditor = memberById[settlement.toMemberId]
+            SettlementSuggestion(
+                fromMemberId = settlement.fromMemberId,
+                fromName = debtor?.name ?: fallbackMemberName(settlement.fromMemberId),
+                toMemberId = settlement.toMemberId,
+                toName = creditor?.name ?: fallbackMemberName(settlement.toMemberId),
+                amount = settlement.amount,
+                relatedBillId = findRelatedUnpaidBill(
+                    bills = bills,
+                    debtorId = settlement.fromMemberId,
+                    creditorId = settlement.toMemberId
+                )?.id
+            )
         }
+    }
 
-        return suggestions
+    private fun findRelatedUnpaidBill(
+        bills: List<Bill>,
+        debtorId: String,
+        creditorId: String
+    ): Bill? {
+        val unpaidBillsForDebtor = bills
+            .filter { bill ->
+                debtorId != bill.payerId &&
+                    (bill.shares[debtorId] ?: 0.0) > 0.0 &&
+                    debtorId !in bill.paidMemberIds
+            }
+            .sortedByDescending { it.date }
+
+        return unpaidBillsForDebtor.firstOrNull { bill ->
+            bill.payerId == creditorId
+        } ?: unpaidBillsForDebtor.firstOrNull()
     }
 
     private fun fallbackMemberName(memberId: String): String {

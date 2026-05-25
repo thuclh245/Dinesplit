@@ -18,13 +18,15 @@ data class BillDetailUiState(
     val currentMemberId: String = "",
     val isLoading: Boolean = true,
     val isUpdatingPayment: Boolean = false,
+    val paymentMessage: String? = null,
     val error: String? = null
 )
 
 class BillDetailViewModel(
     private val repository: SplitRepository,
     private val groupId: String,
-    private val billId: String
+    private val billId: String,
+    private val currentUserId: String?
 ) : ViewModel() {
 
     private val _uiState = MutableStateFlow(BillDetailUiState())
@@ -38,22 +40,42 @@ class BillDetailViewModel(
         val state = _uiState.value
         val bill = state.bill ?: return
         val memberId = state.currentMemberId
-        if (memberId.isBlank() || memberId == bill.payerId || bill.paidMemberIds.contains(memberId)) return
+        if (memberId.isBlank() || memberId == bill.payerId || memberId in bill.paidMemberIds) return
 
         viewModelScope.launch {
-            _uiState.update { it.copy(isUpdatingPayment = true, error = null) }
+            val optimisticBill = bill.copy(
+                paidMemberIds = (bill.paidMemberIds + memberId).distinct()
+            )
+            _uiState.update {
+                it.copy(
+                    bill = optimisticBill,
+                    isUpdatingPayment = true,
+                    paymentMessage = null,
+                    error = null
+                )
+            }
+
             val result = repository.markBillMemberPaid(groupId, billId, memberId)
             _uiState.update {
                 if (result.isSuccess) {
-                    it.copy(isUpdatingPayment = false)
-                } else {
                     it.copy(
                         isUpdatingPayment = false,
-                        error = result.exceptionOrNull()?.message ?: "Không thể cập nhật trạng thái thanh toán"
+                        paymentMessage = "Đã đánh dấu đã trả"
+                    )
+                } else {
+                    it.copy(
+                        bill = bill,
+                        isUpdatingPayment = false,
+                        paymentMessage = result.exceptionOrNull()?.message
+                            ?: "Không thể cập nhật trạng thái thanh toán"
                     )
                 }
             }
         }
+    }
+
+    fun consumePaymentMessage() {
+        _uiState.update { it.copy(paymentMessage = null) }
     }
 
     private fun observeBillDetail() {
@@ -69,8 +91,9 @@ class BillDetailViewModel(
                             it.copy(
                                 bill = bill,
                                 members = effectiveMembers,
-                                currentMemberId = resolveCurrentMemberId(effectiveMembers, bill),
+                                currentMemberId = resolveCurrentMemberId(effectiveMembers),
                                 isLoading = false,
+                                isUpdatingPayment = false,
                                 error = if (bill == null) "Không tìm thấy hóa đơn" else null
                             )
                         }
@@ -79,6 +102,7 @@ class BillDetailViewModel(
                 _uiState.update {
                     it.copy(
                         isLoading = false,
+                        isUpdatingPayment = false,
                         error = throwable.message ?: "Không thể tải chi tiết hóa đơn"
                     )
                 }
@@ -90,7 +114,11 @@ class BillDetailViewModel(
         firestoreMembers: List<Member>,
         bill: Bill?
     ): List<Member> {
-        if (firestoreMembers.isNotEmpty()) return firestoreMembers
+        if (firestoreMembers.isNotEmpty()) {
+            return firestoreMembers.map { member ->
+                member.copy(isMe = member.id == currentUserId)
+            }
+        }
         if (bill == null) return emptyList()
 
         val ids = (bill.shares.keys + bill.payerId)
@@ -103,22 +131,18 @@ class BillDetailViewModel(
                 id = id,
                 name = name,
                 initial = name.firstOrNull()?.uppercase().orEmpty(),
-                isMe = id == "me"
+                isMe = id == currentUserId
             )
         }
     }
 
-    private fun resolveCurrentMemberId(
-        members: List<Member>,
-        bill: Bill?
-    ): String {
-        return members.firstOrNull { it.isMe }?.id
-            ?: members.firstOrNull { it.id == "me" }?.id
-            ?: bill?.shares?.keys?.firstOrNull { it != bill.payerId }
-            ?: ""
+    private fun resolveCurrentMemberId(members: List<Member>): String {
+        return members.firstOrNull { it.id == currentUserId }?.id.orEmpty()
     }
 
     private fun fallbackMemberName(memberId: String): String {
+        if (memberId == currentUserId) return "Bạn"
+
         return when (memberId) {
             "me" -> "Bạn"
             "minh" -> "Minh"

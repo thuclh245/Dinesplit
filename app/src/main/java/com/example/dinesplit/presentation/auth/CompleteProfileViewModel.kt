@@ -139,7 +139,7 @@ class CompleteProfileViewModel(application: Application) : AndroidViewModel(appl
                         _uiState.value.copy(
                             isSubmitting = false,
                             isAvatarUploading = false,
-                            submitError = FirebaseErrorMapper.toUserMessage(throwable)
+                            submitError = "Không thể lưu hồ sơ: ${FirebaseErrorMapper.toUserMessage(throwable)}"
                         )
                     }
                 }

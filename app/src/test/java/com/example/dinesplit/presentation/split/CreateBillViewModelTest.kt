@@ -45,6 +45,7 @@ class CreateBillViewModelTest {
         vm.setMembersForTest(repo.getCurrentMembers())
 
         // set custom amounts
+        vm.onTotalAmountChange("300")
         vm.onCustomAmountChange("1", "50")
         vm.onCustomAmountChange("2", "100")
         vm.onCustomAmountChange("3", "150")
@@ -84,5 +85,40 @@ class CreateBillViewModelTest {
         assertEquals(100.0, shares["1"] ?: 0.0, 0.001)
         assertEquals(100.0, shares["2"] ?: 0.0, 0.001)
         assertEquals(100.0, shares["3"] ?: 0.0, 0.001)
+    }
+
+    @Test
+    fun `custom split rejects amounts that do not match total`() = runBlocking {
+        val repo = FakeSplitRepository()
+        val vm = CreateBillViewModel(repository = repo, groupId = "g1", autoLoadMembers = false)
+
+        vm.setMembersForTest(repo.getCurrentMembers())
+        vm.onTotalAmountChange("300")
+        vm.onCustomAmountChange("1", "50")
+        vm.onCustomAmountChange("2", "100")
+        vm.onCustomAmountChange("3", "100")
+        vm.onMethodSelect(SplitMethod.CUSTOM)
+
+        val result = vm.saveBillBlocking()
+
+        assertEquals(true, result.isFailure)
+        assertEquals(null, repo.lastSavedBill)
+    }
+
+    @Test
+    fun `equal split distributes remainder as whole dong`() = runBlocking {
+        val repo = FakeSplitRepository()
+        val vm = CreateBillViewModel(repository = repo, groupId = "g1", autoLoadMembers = false)
+
+        vm.setMembersForTest(repo.getCurrentMembers())
+        vm.onTotalAmountChange("100")
+        vm.onMethodSelect(SplitMethod.EQUAL)
+
+        vm.saveBillBlocking()
+
+        val saved = repo.lastSavedBill
+        assertNotNull(saved)
+        assertEquals(100.0, saved!!.shares.values.sum(), 0.001)
+        assertEquals(listOf(34.0, 33.0, 33.0), saved.shares.values.toList())
     }
 }

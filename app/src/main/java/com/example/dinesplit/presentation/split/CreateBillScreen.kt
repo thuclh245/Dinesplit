@@ -112,12 +112,17 @@ fun CreateBillScreen(
                 }
 
                 item {
+                    val itemizedTotal = vm.billItems.sumOf { it.price }.toLong().toString()
                     CreateBillMainInfoCard(
                         billName = uiState.billName,
                         onNameChange = vm::onBillNameChange,
-                        totalAmount = uiState.totalAmountStr,
+                        totalAmount = if (uiState.selectedMethod == SplitMethod.ITEMIZED) {
+                            itemizedTotal
+                        } else {
+                            uiState.totalAmountStr
+                        },
                         onTotalAmountChange = vm::onTotalAmountChange,
-                        showTotalAmount = uiState.selectedMethod != SplitMethod.ITEMIZED
+                        isTotalAmountEditable = uiState.selectedMethod != SplitMethod.ITEMIZED
                     )
                 }
                 item {
@@ -252,7 +257,7 @@ private fun CreateBillMainInfoCard(
     onNameChange: (String) -> Unit,
     totalAmount: String,
     onTotalAmountChange: (String) -> Unit,
-    showTotalAmount: Boolean
+    isTotalAmountEditable: Boolean
 ) {
     val colorScheme = MaterialTheme.colorScheme
     Card(
@@ -286,15 +291,25 @@ private fun CreateBillMainInfoCard(
                 }
             }
 
-            if (showTotalAmount) {
+            if (isTotalAmountEditable) {
                 Spacer(modifier = Modifier.height(24.dp))
                 Text(text = "TỔNG CỘNG", fontSize = 12.sp, fontWeight = FontWeight.Bold, color = colorScheme.onSurfaceVariant.copy(alpha = 0.6f), letterSpacing = 1.sp)
                 Spacer(modifier = Modifier.height(4.dp))
                 BasicTextField(
-                    value = totalAmount,
+                    value = formatCurrencyInput(totalAmount),
                     onValueChange = onTotalAmountChange,
                     textStyle = TextStyle(fontSize = 32.sp, fontWeight = FontWeight.ExtraBold, color = colorScheme.primary),
                     modifier = Modifier.fillMaxWidth()
+                )
+            } else {
+                Spacer(modifier = Modifier.height(24.dp))
+                Text(text = "Tá»”NG Cá»˜NG", fontSize = 12.sp, fontWeight = FontWeight.Bold, color = colorScheme.onSurfaceVariant.copy(alpha = 0.6f), letterSpacing = 1.sp)
+                Spacer(modifier = Modifier.height(4.dp))
+                Text(
+                    text = formatCurrencyInput(totalAmount).ifBlank { "0" },
+                    fontSize = 32.sp,
+                    fontWeight = FontWeight.ExtraBold,
+                    color = colorScheme.primary
                 )
             }
 
@@ -492,11 +507,12 @@ private fun CustomSplitDetailsList(
                             .background(colorScheme.surfaceContainerLow, RoundedCornerShape(12.dp))
                             .padding(horizontal = 12.dp, vertical = 10.dp)
                     ) {
-                        if (customAmounts[member.id].isNullOrEmpty()) {
+                        val customAmount = customAmounts[member.id].orEmpty()
+                        if (customAmount.isEmpty()) {
                             Text("0 đ", fontSize = 14.sp, color = colorScheme.outline)
                         }
                         BasicTextField(
-                            value = customAmounts[member.id].orEmpty(),
+                            value = formatCurrencyInput(customAmount),
                             onValueChange = { onAmountChange(member.id, it) },
                             enabled = included,
                             textStyle = TextStyle(fontSize = 14.sp, fontWeight = FontWeight.Bold, color = colorScheme.primary),
@@ -533,21 +549,62 @@ private fun ItemizedSplitDetailsList(
                         .background(colorScheme.surfaceContainerLow, RoundedCornerShape(14.dp))
                         .padding(14.dp)
                 ) {
-                    Row(verticalAlignment = Alignment.CenterVertically) {
-                        BasicTextField(
-                            value = item.name,
-                            onValueChange = { onUpdateItem(item.copy(name = it)) },
-                            textStyle = TextStyle(fontSize = 15.sp, fontWeight = FontWeight.Bold, color = colorScheme.onSurface),
-                            modifier = Modifier.weight(1f)
-                        )
-                        Spacer(modifier = Modifier.width(12.dp))
-                        BasicTextField(
-                            value = if (item.price <= 0.0) "" else item.price.toLong().toString(),
-                            onValueChange = { value -> onUpdateItem(item.copy(price = value.toDoubleOrNull() ?: 0.0)) },
-                            textStyle = TextStyle(fontSize = 15.sp, fontWeight = FontWeight.Bold, color = colorScheme.primary),
-                            modifier = Modifier.width(96.dp)
-                        )
+                    Row(
+                        verticalAlignment = Alignment.CenterVertically,
+                        horizontalArrangement = Arrangement.spacedBy(12.dp)
+                    ) {
+                        Box(
+                            modifier = Modifier
+                                .weight(1f)
+                                .background(colorScheme.surfaceContainerLowest, RoundedCornerShape(12.dp))
+                                .padding(horizontal = 12.dp, vertical = 10.dp)
+                        ) {
+                            if (item.name.isBlank()) {
+                                Text(
+                                    text = "Ten mon",
+                                    fontSize = 15.sp,
+                                    fontWeight = FontWeight.Bold,
+                                    color = colorScheme.outline
+                                )
+                            }
+                            BasicTextField(
+                                value = item.name,
+                                onValueChange = { onUpdateItem(item.copy(name = it)) },
+                                textStyle = TextStyle(fontSize = 15.sp, fontWeight = FontWeight.Bold, color = colorScheme.onSurface),
+                                modifier = Modifier.fillMaxWidth()
+                            )
+                        }
+
+                        Box(
+                            modifier = Modifier
+                                .width(112.dp)
+                                .background(colorScheme.surfaceContainerLowest, RoundedCornerShape(12.dp))
+                                .padding(horizontal = 12.dp, vertical = 10.dp)
+                        ) {
+                            if (item.price <= 0.0) {
+                                Text(
+                                    text = "0 đ",
+                                    fontSize = 15.sp,
+                                    fontWeight = FontWeight.Bold,
+                                    color = colorScheme.outline
+                                )
+                            }
+                            BasicTextField(
+                                value = if (item.price <= 0.0) "" else formatCurrencyInput(item.price.toLong().toString()),
+                                onValueChange = { value ->
+                                    onUpdateItem(item.copy(price = value.onlyDigits().toDoubleOrNull() ?: 0.0))
+                                },
+                                textStyle = TextStyle(fontSize = 15.sp, fontWeight = FontWeight.Bold, color = colorScheme.primary),
+                                modifier = Modifier.fillMaxWidth()
+                            )
+                        }
                     }
+                    Text(
+                        text = "Nhap gia mon va chon nguoi cung an mon nay",
+                        fontSize = 11.sp,
+                        color = colorScheme.onSurfaceVariant,
+                        modifier = Modifier.padding(top = 8.dp)
+                    )
                     Spacer(modifier = Modifier.height(10.dp))
                     Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
                         members.forEach { member ->
@@ -724,4 +781,20 @@ private fun CreateBillBottomAction(
             }
         }
     }
+}
+
+private fun formatCurrencyInput(value: String): String {
+    val digits = value.onlyDigits()
+    if (digits.isEmpty()) return ""
+
+    val normalized = digits.trimStart('0').ifEmpty { "0" }
+    return normalized
+        .reversed()
+        .chunked(3)
+        .joinToString(".")
+        .reversed()
+}
+
+private fun String.onlyDigits(): String {
+    return filter { it.isDigit() }
 }

@@ -187,8 +187,7 @@ fun MainContainerScreen(
                     },
                     onNavigateToBillDetail = { billId ->
                         mainNavController.navigate(AppRoute.BillDetail.createRoute(groupId, billId))
-                    },
-                    onNavigateToSettleSummary = { /* TODO */ }
+                    }
                 )
             }
             composable(AppRoute.Personal.route) {
@@ -351,9 +350,11 @@ fun MainContainerScreen(
                     userName = profileUiState.profile?.displayName ?: "User",
                     userHandle = profileUiState.profile?.username?.let { "@$it" }.orEmpty(),
                     userBio = profileUiState.profile?.bio.orEmpty(),
+                    isLoggingOut = profileUiState.isLoggingOut,
                     onEditProfile = { mainNavController.navigate(AppRoute.EditProfile.route) },
                     onOpenSettings = { /* TODO: Implement settings */ },
-                    onOpenSearch = { mainNavController.navigate(AppRoute.Search.route) }
+                    onOpenSearch = { mainNavController.navigate(AppRoute.Search.route) },
+                    onLogout = profileViewModel::logout
                 )
             }
             composable(AppRoute.EditProfile.route) {

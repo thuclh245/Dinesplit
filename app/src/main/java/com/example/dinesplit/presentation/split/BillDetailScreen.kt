@@ -36,8 +36,11 @@ import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Scaffold
+import androidx.compose.material3.SnackbarHost
+import androidx.compose.material3.SnackbarHostState
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.remember
@@ -52,9 +55,12 @@ import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.example.dinesplit.core.common.AppContainer
+import com.example.dinesplit.core.firebase.FirebaseProviders
 import com.example.dinesplit.domain.model.Bill
+import com.example.dinesplit.domain.model.BillStatus
 import com.example.dinesplit.domain.model.BillItem
 import com.example.dinesplit.domain.model.Member
+import com.example.dinesplit.domain.model.PaymentStatus
 import com.example.dinesplit.domain.model.SplitMethod
 import java.text.SimpleDateFormat
 import java.util.Date
@@ -65,10 +71,15 @@ private data class BillSplitRow(
     val name: String,
     val initial: String,
     val amount: Double,
-    val isPayer: Boolean,
-    val isPaid: Boolean,
+    val paymentStatus: PaymentStatus,
     val isMe: Boolean
-)
+) {
+    val isPayer: Boolean
+        get() = paymentStatus == PaymentStatus.PAYER
+
+    val isPaid: Boolean
+        get() = paymentStatus == PaymentStatus.PAYER || paymentStatus == PaymentStatus.PAID
+}
 
 @Composable
 fun BillDetailScreen(
@@ -81,15 +92,25 @@ fun BillDetailScreen(
         BillDetailViewModel(
             repository = AppContainer.splitRepository(context),
             groupId = groupId,
-            billId = billId
+            billId = billId,
+            currentUserId = FirebaseProviders.auth.currentUser?.uid
         )
     }
     val uiState by viewModel.uiState.collectAsState()
     val colorScheme = MaterialTheme.colorScheme
+    val snackbarHostState = remember { SnackbarHostState() }
+
+    LaunchedEffect(uiState.paymentMessage) {
+        uiState.paymentMessage?.let { message ->
+            snackbarHostState.showSnackbar(message)
+            viewModel.consumePaymentMessage()
+        }
+    }
 
     Scaffold(
         containerColor = colorScheme.surface,
         topBar = { BdTopBar(onBack = onBack) },
+        snackbarHost = { SnackbarHost(snackbarHostState) },
         bottomBar = {
             uiState.bill?.let { bill ->
                 BdBottomAction(
@@ -511,9 +532,7 @@ private fun BdItemBreakdown(items: List<BillItem>) {
 @Composable
 private fun BdFooterInfo(bill: Bill) {
     val colorScheme = MaterialTheme.colorScheme
-    val isSettled = bill.shares.keys
-        .filter { it != bill.payerId }
-        .all { bill.paidMemberIds.contains(it) }
+    val isSettled = bill.status == BillStatus.SETTLED
 
     Card(
         modifier = Modifier.fillMaxWidth(),
@@ -576,6 +595,7 @@ private fun BdBottomAction(
     val colorScheme = MaterialTheme.colorScheme
     val enabled = currentMemberId.isNotBlank() && !isCurrentMemberPayer && !isCurrentMemberPaid && !isUpdating
     val label = when {
+        isUpdating -> "Đang cập nhật thanh toán..."
         isCurrentMemberPayer -> "Bạn là người thanh toán"
         isCurrentMemberPaid -> "Bạn đã trả cho $payerName"
         else -> "Đánh dấu đã trả cho $payerName"
@@ -636,14 +656,12 @@ private fun buildSplitRows(bill: Bill, members: List<Member>): List<BillSplitRow
     return ids.map { memberId ->
         val member = memberById[memberId]
         val name = member?.name ?: fallbackMemberName(memberId)
-        val isPayer = memberId == bill.payerId
         BillSplitRow(
             memberId = memberId,
             name = name,
             initial = member?.initial ?: name.firstOrNull()?.uppercase().orEmpty(),
             amount = bill.shares[memberId] ?: 0.0,
-            isPayer = isPayer,
-            isPaid = isPayer || bill.paidMemberIds.contains(memberId),
+            paymentStatus = bill.paymentStatusFor(memberId),
             isMe = member?.isMe ?: (memberId == "me")
         )
     }.sortedWith(compareByDescending<BillSplitRow> { it.isPayer }.thenByDescending { it.isMe })

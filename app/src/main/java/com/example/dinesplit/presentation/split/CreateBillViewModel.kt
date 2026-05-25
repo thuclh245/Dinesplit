@@ -9,6 +9,7 @@ import com.example.dinesplit.domain.model.BillItem
 import com.example.dinesplit.domain.model.Member
 import com.example.dinesplit.domain.model.SplitMethod
 import com.example.dinesplit.domain.repository.SplitRepository
+import com.example.dinesplit.domain.usecase.SplitCalculationEngine
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
@@ -30,9 +31,9 @@ data class CreateBillUiState(
 )
 
 private val fallbackBillMembers = listOf(
-    Member(id = "me", name = "Bạn", initial = "B", isMe = true),
+    Member(id = "me", name = "Ban", initial = "B", isMe = true),
     Member(id = "minh", name = "Minh", initial = "M"),
-    Member(id = "thanh_hang", name = "Thanh Hằng", initial = "T")
+    Member(id = "thanh_hang", name = "Thanh Hang", initial = "T")
 )
 
 class CreateBillViewModel(
@@ -53,7 +54,7 @@ class CreateBillViewModel(
         } else {
             applyMembers(fallbackBillMembers, isFallback = true)
         }
-        billItems.add(BillItem(name = "Món 1", price = 0.0, sharedByMemberIds = emptyList()))
+        billItems.add(BillItem(name = "Mon 1", price = 0.0, sharedByMemberIds = emptyList()))
     }
 
     private fun loadGroupMembers() {
@@ -105,17 +106,16 @@ class CreateBillViewModel(
     }
 
     fun onTotalAmountChange(newAmount: String) {
-        if (newAmount.all { it.isDigit() }) {
-            _uiState.update { it.copy(totalAmountStr = newAmount, error = null) }
-        }
+        val normalizedAmount = newAmount.onlyDigits()
+        _uiState.update { it.copy(totalAmountStr = normalizedAmount, error = null) }
     }
 
     fun onMethodSelect(method: SplitMethod) {
-        _uiState.update { it.copy(selectedMethod = method) }
+        _uiState.update { it.copy(selectedMethod = method, error = null) }
     }
 
     fun addItem() {
-        billItems.add(BillItem(name = "Món ${billItems.size + 1}", price = 0.0, sharedByMemberIds = emptyList()))
+        billItems.add(BillItem(name = "Mon ${billItems.size + 1}", price = 0.0, sharedByMemberIds = emptyList()))
     }
 
     fun removeItem(item: BillItem) {
@@ -132,9 +132,7 @@ class CreateBillViewModel(
     }
 
     fun onCustomAmountChange(memberId: String, amount: String) {
-        if (amount.all { it.isDigit() }) {
-            customAmounts[memberId] = amount
-        }
+        customAmounts[memberId] = amount.onlyDigits()
     }
 
     fun saveBill() {
@@ -145,7 +143,7 @@ class CreateBillViewModel(
 
     suspend fun saveBillBlocking(): Result<Unit> {
         val currentState = _uiState.value
-        val billName = currentState.billName.trim().ifBlank { "Hóa đơn mới" }
+        val billName = currentState.billName.trim().ifBlank { "Hoa don moi" }
 
         validateBillInput(currentState)?.let { error ->
             _uiState.update { it.copy(error = error) }
@@ -153,7 +151,11 @@ class CreateBillViewModel(
         }
 
         val totalAmount = calculateTotalAmount(currentState)
-        val shares = calculateShares(totalAmount, currentState.selectedMethod)
+        val shares = calculateShares(totalAmount, currentState).getOrElse { throwable ->
+            val message = throwable.message ?: "Khong the tinh tien chia"
+            _uiState.update { it.copy(error = message) }
+            return Result.failure(IllegalArgumentException(message))
+        }
         val bill = Bill(
             groupId = groupId,
             name = billName,
@@ -171,7 +173,7 @@ class CreateBillViewModel(
             if (result.isSuccess) {
                 it.copy(isLoading = false, isSaved = true, savedBill = bill)
             } else {
-                it.copy(isLoading = false, error = "Không thể lưu hóa đơn")
+                it.copy(isLoading = false, error = "Khong the luu hoa don")
             }
         }
         return result
@@ -179,12 +181,28 @@ class CreateBillViewModel(
 
     private fun validateBillInput(state: CreateBillUiState): String? {
         val totalAmount = calculateTotalAmount(state)
+        val selectedMembers = state.selectedMemberIds.toList()
 
         return when {
-            groupId.isBlank() -> "Thiếu nhóm để lưu hóa đơn"
-            totalAmount <= 0.0 -> "Tổng tiền phải lớn hơn 0"
-            state.selectedMemberIds.isEmpty() -> "Cần chọn ít nhất một người tham gia"
-            state.payerId.isBlank() -> "Cần chọn người thanh toán"
+            groupId.isBlank() -> "Thieu nhom de luu hoa don"
+            totalAmount <= 0.0 -> "Tong tien phai lon hon 0"
+            state.selectedMemberIds.isEmpty() -> "Can chon it nhat mot nguoi tham gia"
+            state.payerId.isBlank() -> "Can chon nguoi thanh toan"
+            state.payerId !in state.members.map { it.id } -> "Nguoi thanh toan khong hop le"
+            state.selectedMethod == SplitMethod.CUSTOM &&
+                customAmounts.keys.any { it !in state.selectedMemberIds } -> "Custom amount chi ap dung cho nguoi duoc chon"
+            state.selectedMethod == SplitMethod.CUSTOM &&
+                selectedMembers.any { customAmounts[it].isNullOrBlank() } -> "Nhap so tien cho tat ca thanh vien duoc chon"
+            state.selectedMethod == SplitMethod.CUSTOM &&
+                !SplitCalculationEngine.moneyEquals(customAmountsForSelected(selectedMembers).values.sum(), totalAmount) ->
+                "Tong tien tu nhap phai bang tong hoa don"
+            state.selectedMethod == SplitMethod.ITEMIZED &&
+                billItems.any { it.name.isBlank() || it.price <= 0.0 } -> "Moi mon can co ten va gia hop le"
+            state.selectedMethod == SplitMethod.ITEMIZED &&
+                billItems.any { it.sharedByMemberIds.isEmpty() } -> "Moi mon can chon nguoi chia"
+            state.selectedMethod == SplitMethod.ITEMIZED &&
+                billItems.any { item -> item.sharedByMemberIds.any { it !in state.selectedMemberIds } } ->
+                "Nguoi chia mon phai nam trong danh sach tham gia"
             else -> null
         }
     }
@@ -192,43 +210,40 @@ class CreateBillViewModel(
     private fun calculateTotalAmount(state: CreateBillUiState): Double {
         return when (state.selectedMethod) {
             SplitMethod.ITEMIZED -> billItems.sumOf { it.price }
-            SplitMethod.CUSTOM -> {
-                state.totalAmountStr.toDoubleOrNull()
-                    ?: customAmounts.values.sumOf { it.toDoubleOrNull() ?: 0.0 }
-            }
+            SplitMethod.CUSTOM -> state.totalAmountStr.toDoubleOrNull() ?: 0.0
             SplitMethod.EQUAL -> state.totalAmountStr.toDoubleOrNull() ?: 0.0
         }
     }
 
-    private fun calculateShares(totalAmount: Double, method: SplitMethod): Map<String, Double> {
-        val shares = mutableMapOf<String, Double>()
-        val members = _uiState.value.members
-
-        when (method) {
-            SplitMethod.EQUAL -> {
-                val selected = _uiState.value.selectedMemberIds
-                if (selected.isNotEmpty()) {
-                    val share = totalAmount / selected.size
-                    selected.forEach { id -> shares[id] = share }
-                }
-            }
-            SplitMethod.CUSTOM -> {
-                _uiState.value.selectedMemberIds.forEach { id ->
-                    shares[id] = customAmounts[id]?.toDoubleOrNull() ?: 0.0
-                }
-            }
-            SplitMethod.ITEMIZED -> {
-                members.forEach { shares[it.id] = 0.0 }
-                billItems.forEach { item ->
-                    if (item.sharedByMemberIds.isNotEmpty()) {
-                        val perPerson = item.price / item.sharedByMemberIds.size
-                        item.sharedByMemberIds.forEach { memberId ->
-                            shares[memberId] = (shares[memberId] ?: 0.0) + perPerson
-                        }
-                    }
-                }
-            }
+    private fun calculateShares(
+        totalAmount: Double,
+        state: CreateBillUiState
+    ): Result<Map<String, Double>> {
+        val selectedMemberIds = state.selectedMemberIds.toList()
+        return when (state.selectedMethod) {
+            SplitMethod.EQUAL -> SplitCalculationEngine.calculateEqualShares(
+                totalAmount = totalAmount,
+                memberIds = selectedMemberIds
+            )
+            SplitMethod.CUSTOM -> SplitCalculationEngine.calculateCustomShares(
+                totalAmount = totalAmount,
+                memberIds = selectedMemberIds,
+                customAmounts = customAmountsForSelected(selectedMemberIds)
+            )
+            SplitMethod.ITEMIZED -> SplitCalculationEngine.calculateItemizedShares(
+                items = billItems.toList(),
+                memberIds = selectedMemberIds
+            )
         }
-        return shares
+    }
+
+    private fun customAmountsForSelected(memberIds: List<String>): Map<String, Double> {
+        return memberIds.associateWith { memberId ->
+            customAmounts[memberId]?.toDoubleOrNull() ?: 0.0
+        }
+    }
+
+    private fun String.onlyDigits(): String {
+        return filter { it.isDigit() }
     }
 }
