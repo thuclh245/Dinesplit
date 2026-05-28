@@ -21,6 +21,8 @@ import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import coil.compose.AsyncImage
+import com.example.dinesplit.core.ui.AppCard
+import com.example.dinesplit.core.ui.AppDimens
 import com.example.dinesplit.core.ui.HomeTopBar
 import com.example.dinesplit.ui.theme.DineSplitTheme
 
@@ -28,10 +30,45 @@ import com.example.dinesplit.ui.theme.DineSplitTheme
 fun ProfileScreen(
     userAvatarUrl: String?,
     userName: String,
+    userHandle: String = "",
+    userBio: String = "",
+    isLoggingOut: Boolean = false,
     onEditProfile: () -> Unit,
     onOpenSettings: () -> Unit,
-    onOpenSearch: () -> Unit
+    onOpenSearch: () -> Unit,
+    onLogout: () -> Unit
 ) {
+    val resolvedHandle = userHandle.ifBlank { "@" }
+    val resolvedBio = userBio.ifBlank { "Add a bio so friends know who they are splitting with." }
+    var showLogoutConfirmation by remember { mutableStateOf(false) }
+
+    if (showLogoutConfirmation) {
+        AlertDialog(
+            onDismissRequest = { if (!isLoggingOut) showLogoutConfirmation = false },
+            title = { Text("Đăng xuất?") },
+            text = { Text("Bạn sẽ quay lại màn hình đăng nhập.") },
+            confirmButton = {
+                TextButton(
+                    enabled = !isLoggingOut,
+                    onClick = {
+                        showLogoutConfirmation = false
+                        onLogout()
+                    }
+                ) {
+                    Text("Đăng xuất")
+                }
+            },
+            dismissButton = {
+                TextButton(
+                    enabled = !isLoggingOut,
+                    onClick = { showLogoutConfirmation = false }
+                ) {
+                    Text("Hủy")
+                }
+            }
+        )
+    }
+
     Scaffold(
         topBar = {
             HomeTopBar(
@@ -49,22 +86,23 @@ fun ProfileScreen(
                 .verticalScroll(rememberScrollState())
         ) {
             ProfileHeader(
-                userName = "linh_eats_saigon",
-                displayName = "Linh Trần",
-                bio = "Chasing flavors across the city 🍜\nSaigon | Food Explorer | Split Enthusiast",
-                link = "linktr.ee/linh_eats",
-                posts = "128",
-                followers = "4.2k",
-                following = "842",
-                avatarUrl = "https://lh3.googleusercontent.com/aida-public/AB6AXuA-suY-k2Nl-qCL-4wnA1hg-m6zuH1YcCMkIHMSe5mSzui6H4g6m2PhsF-EquINcQ40evSvEhwOFKKVD-f-AvP6yrvuLjY9ZOh2-13J-qRHgqN9S3NzBeLgm2Podb878O6hsHapq8VpaIvfgYsZ9cSNhk2GBQYJbLCYlpijNeSOu8fjq_ayNvVXxeTRJWQiHqVXcSClUiWQN24CcQZ6mEsc-3RuatfZuA8RIi3yVazdggBJbeS8GfpL9f0ai0sgfe-XYv59XOoYBzQ",
+                userName = resolvedHandle,
+                displayName = userName,
+                bio = resolvedBio,
+                link = "",
+                posts = "0",
+                followers = "0",
+                following = "0",
+                avatarUrl = userAvatarUrl.orEmpty(),
                 onEditProfile = onEditProfile,
-                onOpenSettings = onOpenSettings
+                onOpenSettings = onOpenSettings,
+                isLoggingOut = isLoggingOut,
+                onLogout = { showLogoutConfirmation = true }
             )
 
             ProfileTabs()
 
-            // Photo Grid (Simplified for scrollable column)
-            PhotoGrid(photos = samplePhotos)
+            ProfileOverview()
             
             Spacer(modifier = Modifier.height(120.dp))
         }
@@ -82,7 +120,9 @@ private fun ProfileHeader(
     following: String,
     avatarUrl: String,
     onEditProfile: () -> Unit,
-    onOpenSettings: () -> Unit
+    onOpenSettings: () -> Unit,
+    isLoggingOut: Boolean,
+    onLogout: () -> Unit
 ) {
     Column(modifier = Modifier.padding(24.dp)) {
         Row(
@@ -151,6 +191,23 @@ private fun ProfileHeader(
             Text(bio, style = MaterialTheme.typography.bodyMedium, color = MaterialTheme.colorScheme.onSurfaceVariant, lineHeight = 20.sp)
             Text(link, style = MaterialTheme.typography.labelLarge.copy(fontWeight = FontWeight.Bold), color = MaterialTheme.colorScheme.primary)
         }
+
+        Spacer(modifier = Modifier.height(20.dp))
+
+        OutlinedButton(
+            onClick = onLogout,
+            enabled = !isLoggingOut,
+            modifier = Modifier.fillMaxWidth().height(46.dp),
+            shape = RoundedCornerShape(12.dp)
+        ) {
+            if (isLoggingOut) {
+                CircularProgressIndicator(modifier = Modifier.size(18.dp), strokeWidth = 2.dp)
+            } else {
+                Icon(Icons.Default.Logout, contentDescription = null, modifier = Modifier.size(18.dp))
+            }
+            Spacer(modifier = Modifier.width(8.dp))
+            Text(if (isLoggingOut) "Đang đăng xuất..." else "Đăng xuất")
+        }
     }
 }
 
@@ -159,6 +216,25 @@ private fun StatItem(label: String, value: String) {
     Column {
         Text(value, style = MaterialTheme.typography.titleMedium.copy(fontWeight = FontWeight.Black))
         Text(label.uppercase(), style = MaterialTheme.typography.labelSmall.copy(fontWeight = FontWeight.Bold, letterSpacing = 1.sp), color = MaterialTheme.colorScheme.outlineVariant)
+    }
+}
+
+@Composable
+private fun ProfileOverview() {
+    Column(
+        modifier = Modifier.padding(horizontal = 24.dp, vertical = 16.dp),
+        verticalArrangement = Arrangement.spacedBy(AppDimens.spaceMd)
+    ) {
+        AppCard {
+            Column(verticalArrangement = Arrangement.spacedBy(AppDimens.spaceSm)) {
+                Text("Profile activity", style = MaterialTheme.typography.titleMedium, fontWeight = FontWeight.Bold)
+                Text(
+                    "Posts, saved meals, and tagged splits will appear here as real activity is added.",
+                    style = MaterialTheme.typography.bodyMedium,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant
+                )
+            }
+        }
     }
 }
 
@@ -245,9 +321,11 @@ fun ProfileScreenPreview() {
         ProfileScreen(
             userAvatarUrl = null,
             userName = "Linh Trần",
+            isLoggingOut = false,
             onEditProfile = {},
             onOpenSettings = {},
-            onOpenSearch = {}
+            onOpenSearch = {},
+            onLogout = {}
         )
     }
 }

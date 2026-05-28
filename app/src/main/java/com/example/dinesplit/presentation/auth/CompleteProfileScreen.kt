@@ -187,6 +187,16 @@ private fun CompleteProfileContent(
                     }
                 }
 
+                if (uiState.avatarError != null) {
+                    Spacer(modifier = Modifier.height(12.dp))
+                    Text(
+                        text = "Không thể tải ảnh đại diện: ${uiState.avatarError}",
+                        style = MaterialTheme.typography.bodySmall,
+                        color = MaterialTheme.colorScheme.error,
+                        textAlign = TextAlign.Center
+                    )
+                }
+
                 Spacer(modifier = Modifier.height(40.dp))
 
                 // Form Section

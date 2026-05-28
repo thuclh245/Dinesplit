@@ -118,7 +118,7 @@ fun PersonalPieChart(
                         )
                     }
                     Text(
-                        text = "${(slice.percentage * 100).toInt()}%",
+                        text = "${slice.percentage.toInt()}%",
                         style = MaterialTheme.typography.bodyMedium,
                         color = MaterialTheme.colorScheme.onSurfaceVariant
                     )

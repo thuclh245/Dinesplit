@@ -37,6 +37,7 @@ import androidx.compose.ui.unit.dp
 import com.example.dinesplit.core.ui.AppCard
 import com.example.dinesplit.core.ui.AppDimens
 import com.example.dinesplit.core.ui.AppScaffold
+import com.example.dinesplit.core.ui.BackNavigationButton
 import com.example.dinesplit.ui.theme.DineSplitTheme
 import kotlinx.coroutines.launch
 
@@ -93,9 +94,7 @@ fun CategoryManagementScreen(
     AppScaffold(
         title = "Category Management",
         navigationIcon = {
-            TextButton(onClick = onBack) {
-                Text("Back")
-            }
+            BackNavigationButton(onClick = onBack)
         }
     ) {
         Column(
@@ -515,7 +514,7 @@ private fun previewManagedCategories(): List<ManagedCategory> {
             type = CategoryTypeFilter.EXPENSE,
             isCustom = false,
             description = "Restaurants, cafes, and delivery.",
-            amountLabel = "$1,450.00",
+            amountLabel = "1,450,000 VND",
             progress = 0.65f,
             isActive = true
         ),
@@ -526,7 +525,7 @@ private fun previewManagedCategories(): List<ManagedCategory> {
             type = CategoryTypeFilter.EXPENSE,
             isCustom = false,
             description = "Supermarkets and local markets.",
-            amountLabel = "$820.45",
+            amountLabel = "820,000 VND",
             progress = 0.40f,
             isActive = false
         ),
@@ -537,7 +536,7 @@ private fun previewManagedCategories(): List<ManagedCategory> {
             type = CategoryTypeFilter.EXPENSE,
             isCustom = false,
             description = "Rideshares and public transport.",
-            amountLabel = "$340.00",
+            amountLabel = "340,000 VND",
             progress = 0.0f,
             isActive = false
         ),
@@ -548,7 +547,7 @@ private fun previewManagedCategories(): List<ManagedCategory> {
             type = CategoryTypeFilter.INCOME,
             isCustom = false,
             description = "Monthly fixed salary income.",
-            amountLabel = "$3,500.00",
+            amountLabel = "3,500,000 VND",
             progress = 0.72f,
             isActive = true
         )

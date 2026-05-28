@@ -21,7 +21,6 @@ import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
-import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
@@ -41,6 +40,7 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.example.dinesplit.core.ui.AppDimens
 import com.example.dinesplit.core.ui.AppScaffold
+import com.example.dinesplit.core.ui.BackNavigationButton
 import com.example.dinesplit.core.ui.PrimaryButton
 import com.example.dinesplit.core.ui.SecondaryButton
 import com.example.dinesplit.data.model.StoredCategory
@@ -59,6 +59,7 @@ import java.util.UUID
 fun AddTransactionScreen(
     onBack: () -> Unit,
     initialType: TransactionType? = null,
+    currentUserId: String = "",
     availableCategoriesByType: Map<TransactionType, List<StoredCategory>> = emptyMap(),
     onSave: (Transaction) -> Unit = {}
 ) {
@@ -105,9 +106,7 @@ fun AddTransactionScreen(
     AppScaffold(
         title = "New Entry",
         navigationIcon = {
-            TextButton(onClick = onBack) {
-                Text("Back")
-            }
+            BackNavigationButton(onClick = onBack)
         }
     ) {
         Column(
@@ -184,6 +183,14 @@ fun AddTransactionScreen(
                     }
                 }
 
+                if (categoryOptions.isEmpty()) {
+                    Text(
+                        text = "No categories available. Create categories first.",
+                        style = MaterialTheme.typography.bodySmall,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant
+                    )
+                }
+
                 if (isSubmitAttempted && !isCategoryValid) {
                     Text(
                         text = validation.categoryError,
@@ -223,12 +230,12 @@ fun AddTransactionScreen(
                     onSave(
                         validInput.toTransaction(
                             id = UUID.randomUUID().toString(),
-                            userId = "user_1"
+                            userId = currentUserId
                         )
                     )
                     onBack()
                 },
-                enabled = isFormValid
+                enabled = isFormValid && currentUserId.isNotBlank()
             )
 
             SecondaryButton(
@@ -249,26 +256,7 @@ private fun categoryTilesForType(
     type: TransactionType?,
     availableCategories: List<StoredCategory>
 ): List<CategoryTile> {
-    val categories = if (availableCategories.isNotEmpty()) {
-        availableCategories
-    } else {
-        when (type) {
-            TransactionType.INCOME -> listOf(
-                StoredCategory("c_salary", "Salary", "SL", TransactionType.INCOME, false, "", "$0.00", 0f, false),
-                StoredCategory("c_bonus", "Bonus", "BN", TransactionType.INCOME, false, "", "$0.00", 0f, false),
-                StoredCategory("c_gift", "Gift", "GF", TransactionType.INCOME, false, "", "$0.00", 0f, false),
-                StoredCategory("c_other_income", "Other", "OT", TransactionType.INCOME, false, "", "$0.00", 0f, false)
-            )
-            TransactionType.EXPENSE, null -> listOf(
-                StoredCategory("c_food", "Dining Out", "FD", TransactionType.EXPENSE, false, "", "$0.00", 0f, false),
-                StoredCategory("c_grocery", "Groceries", "GR", TransactionType.EXPENSE, false, "", "$0.00", 0f, false),
-                StoredCategory("c_transit", "Transit", "TR", TransactionType.EXPENSE, false, "", "$0.00", 0f, false),
-                StoredCategory("c_fun", "Entertainment", "EN", TransactionType.EXPENSE, false, "", "$0.00", 0f, false)
-            )
-        }
-    }
-
-    return categories.map { category ->
+    return availableCategories.map { category ->
         CategoryTile(id = category.id, name = category.name, iconCode = category.icon)
     }
 }
@@ -287,7 +275,7 @@ private fun AmountInputBlock(
             horizontalArrangement = Arrangement.spacedBy(AppDimens.spaceSm)
         ) {
             Text(
-                text = "$",
+                text = "VND",
                 style = MaterialTheme.typography.displaySmall,
                 color = MaterialTheme.colorScheme.outline
             )

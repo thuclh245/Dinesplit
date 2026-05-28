@@ -35,6 +35,33 @@ class FirebaseProfileRepository private constructor(
         }
     }
 
+    override suspend fun searchProfiles(query: String, limit: Long): Result<List<UserProfile>> {
+        return runCatching {
+            val normalizedQuery = normalizeUsername(query)
+            val usersRef = firestore.collection(COLLECTION_USERS)
+
+            val snapshot = if (normalizedQuery.isBlank()) {
+                usersRef
+                    .orderBy(FIELD_UPDATED_AT, com.google.firebase.firestore.Query.Direction.DESCENDING)
+                    .limit(limit)
+                    .get()
+                    .awaitFirebase()
+            } else {
+                usersRef
+                    .orderBy(FIELD_USERNAME_LOWER)
+                    .startAt(normalizedQuery)
+                    .endAt(normalizedQuery + "\uf8ff")
+                    .limit(limit)
+                    .get()
+                    .awaitFirebase()
+            }
+
+            snapshot.documents.mapNotNull { document ->
+                document.toUserProfile(document.id)
+            }
+        }
+    }
+
     override suspend fun upsertProfile(profile: UserProfile): Result<Unit> {
         return runCatching {
             val normalizedUsername = normalizeUsername(profile.username)
@@ -51,22 +78,25 @@ class FirebaseProfileRepository private constructor(
             val currentProfileSnapshot = profileRef.get().awaitFirebase()
             val oldUsernameLower = currentProfileSnapshot.profileUsernameLower()
 
-            // 3. Update Profile Document
-            profileRef.set(
+            // Profile and username claim must become visible together for security rules.
+            val batch = firestore.batch()
+            batch.set(
+                profileRef,
                 profile.toFirestoreMap(normalizedUsername),
                 SetOptions.merge()
-            ).awaitFirebase()
-
-            // 4. Update Username Claim
-            claimRef.set(
+            )
+            batch.set(
+                claimRef,
                 profile.toUsernameClaimMap(normalizedUsername),
                 SetOptions.merge()
-            ).awaitFirebase()
+            )
 
-            // 5. Release old username if it changed
+            // Release the previous username in the same atomic write.
             if (oldUsernameLower != null && oldUsernameLower != normalizedUsername) {
-                usernameClaimDocument(oldUsernameLower).delete().awaitFirebase()
+                batch.delete(usernameClaimDocument(oldUsernameLower))
             }
+
+            batch.commit().awaitFirebase()
         }
     }
 

@@ -11,12 +11,11 @@ import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.lazy.LazyColumn
-import androidx.compose.foundation.lazy.items
+import androidx.compose.material3.FilterChip
 import androidx.compose.material3.HorizontalDivider
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.Text
-import androidx.compose.material3.TextButton
 import androidx.compose.material3.TextFieldDefaults
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
@@ -32,9 +31,12 @@ import androidx.compose.ui.unit.dp
 import com.example.dinesplit.core.ui.AppCard
 import com.example.dinesplit.core.ui.AppDimens
 import com.example.dinesplit.core.ui.AppScaffold
+import com.example.dinesplit.core.ui.BackNavigationButton
 import com.example.dinesplit.core.ui.EmptyStateBlock
 import com.example.dinesplit.domain.model.TransactionType
 import com.example.dinesplit.ui.theme.DineSplitTheme
+import java.text.NumberFormat
+import java.util.Locale
 
 data class HistoryTransactionItem(
     val id: String,
@@ -50,14 +52,15 @@ data class HistoryTransactionItem(
 @Composable
 fun HistoryScreen(
     onBack: () -> Unit,
-    transactions: List<HistoryTransactionItem> = defaultHistoryTransactions(),
+    transactions: List<HistoryTransactionItem> = emptyList(),
     onTransactionClick: (HistoryTransactionItem) -> Unit = {}
 ) {
     var query by rememberSaveable { mutableStateOf("") }
+    var selectedTypeFilter by rememberSaveable { mutableStateOf<TransactionType?>(null) }
 
-    val filteredTransactions = remember(transactions, query) {
+    val filteredTransactions = remember(transactions, query, selectedTypeFilter) {
         transactions.filter { item ->
-            if (query.isBlank()) {
+            val matchesQuery = if (query.isBlank()) {
                 true
             } else {
                 val needle = query.trim().lowercase()
@@ -70,6 +73,10 @@ fun HistoryScreen(
                     item.type.name
                 ).any { value -> value.lowercase().contains(needle) }
             }
+
+            val matchesType = selectedTypeFilter == null || item.type == selectedTypeFilter
+
+            matchesQuery && matchesType
         }
     }
 
@@ -77,12 +84,16 @@ fun HistoryScreen(
         filteredTransactions.groupBy { historyGroupLabel(it) }
     }
 
+    val summaryStats = remember(filteredTransactions) {
+        val income = filteredTransactions.filter { it.type == TransactionType.INCOME }.sumOf { parseAmount(it.amount) }
+        val expense = filteredTransactions.filter { it.type == TransactionType.EXPENSE }.sumOf { parseAmount(it.amount) }
+        Pair(income, expense)
+    }
+
     AppScaffold(
         title = "Ledger",
         navigationIcon = {
-            TextButton(onClick = onBack) {
-                Text("Back")
-            }
+            BackNavigationButton(onClick = onBack)
         }
     ) {
         Column(
@@ -96,6 +107,42 @@ fun HistoryScreen(
                 color = MaterialTheme.colorScheme.primary
             )
 
+            // Summary card
+            AppCard {
+                Column(verticalArrangement = Arrangement.spacedBy(AppDimens.spaceMd)) {
+                    Row(
+                        modifier = Modifier.fillMaxWidth(),
+                        horizontalArrangement = Arrangement.SpaceBetween
+                    ) {
+                        Column {
+                            Text("Income", style = MaterialTheme.typography.labelSmall)
+                            Text(
+                                "+${formatHistoryMoney(summaryStats.first)}",
+                                style = MaterialTheme.typography.titleMedium,
+                                color = MaterialTheme.colorScheme.primary
+                            )
+                        }
+                        Column(horizontalAlignment = Alignment.End) {
+                            Text("Expense", style = MaterialTheme.typography.labelSmall)
+                            Text(
+                                "-${formatHistoryMoney(summaryStats.second)}",
+                                style = MaterialTheme.typography.titleMedium,
+                                color = MaterialTheme.colorScheme.error
+                            )
+                        }
+                    }
+                    HorizontalDivider()
+                    Row(horizontalArrangement = Arrangement.spacedBy(AppDimens.spaceSm)) {
+                        Text("Net:", style = MaterialTheme.typography.labelSmall)
+                        Text(
+                            formatHistoryMoney(summaryStats.first - summaryStats.second),
+                            style = MaterialTheme.typography.titleSmall,
+                            fontWeight = FontWeight.Bold
+                        )
+                    }
+                }
+            }
+
             OutlinedTextField(
                 value = query,
                 onValueChange = { query = it },
@@ -108,10 +155,36 @@ fun HistoryScreen(
                 )
             )
 
+            // Type filter buttons
+            Row(
+                modifier = Modifier.fillMaxWidth(),
+                horizontalArrangement = Arrangement.spacedBy(AppDimens.spaceSm)
+            ) {
+                FilterChip(
+                    selected = selectedTypeFilter == null,
+                    onClick = { selectedTypeFilter = null },
+                    label = { Text("All") }
+                )
+                FilterChip(
+                    selected = selectedTypeFilter == TransactionType.INCOME,
+                    onClick = { selectedTypeFilter = TransactionType.INCOME },
+                    label = { Text("Income") }
+                )
+                FilterChip(
+                    selected = selectedTypeFilter == TransactionType.EXPENSE,
+                    onClick = { selectedTypeFilter = TransactionType.EXPENSE },
+                    label = { Text("Expense") }
+                )
+            }
+
             if (groupedTransactions.isEmpty()) {
                 EmptyStateBlock(
                     title = "No transactions found",
-                    subtitle = "Try a different keyword."
+                    subtitle = if (transactions.isEmpty()) {
+                        "Add a transaction to build your Firebase ledger."
+                    } else {
+                        "Try a different keyword."
+                    }
                 )
             } else {
                 LazyColumn(
@@ -157,6 +230,15 @@ private fun historyGroupLabel(item: HistoryTransactionItem): String {
         dateLower.contains("yesterday") -> "YESTERDAY"
         else -> item.month.uppercase()
     }
+}
+
+private fun parseAmount(amountStr: String): Double {
+    return amountStr.replace(Regex("[^\\d.-]"), "").toDoubleOrNull() ?: 0.0
+}
+
+private fun formatHistoryMoney(amount: Double): String {
+    val formatter = NumberFormat.getNumberInstance(Locale("vi", "VN"))
+    return "${formatter.format(amount.toLong())} VND"
 }
 
 @Composable
@@ -225,61 +307,6 @@ private fun HistoryTransactionRow(
             )
         }
     }
-}
-
-private fun defaultHistoryTransactions(): List<HistoryTransactionItem> {
-    return listOf(
-        HistoryTransactionItem(
-            id = "tx_1",
-            categoryIcon = "FD",
-            category = "The Continental",
-            amount = "-84.50",
-            date = "Today, 8:30 PM",
-            month = "Apr 2026",
-            type = TransactionType.EXPENSE,
-            note = "Dinner with Sarah"
-        ),
-        HistoryTransactionItem(
-            id = "tx_2",
-            categoryIcon = "PM",
-            category = "Sarah M.",
-            amount = "+42.25",
-            date = "Today, 9:00 PM",
-            month = "Apr 2026",
-            type = TransactionType.INCOME,
-            note = "Venmo transfer"
-        ),
-        HistoryTransactionItem(
-            id = "tx_3",
-            categoryIcon = "CF",
-            category = "Blue Bottle",
-            amount = "-6.80",
-            date = "Today, 7:45 AM",
-            month = "Apr 2026",
-            type = TransactionType.EXPENSE,
-            note = "Morning coffee"
-        ),
-        HistoryTransactionItem(
-            id = "tx_4",
-            categoryIcon = "SP",
-            category = "Whole Foods Market",
-            amount = "-142.90",
-            date = "Yesterday, 2:15 PM",
-            month = "Apr 2026",
-            type = TransactionType.EXPENSE,
-            note = "Groceries"
-        ),
-        HistoryTransactionItem(
-            id = "tx_5",
-            categoryIcon = "TR",
-            category = "Uber",
-            amount = "-38.50",
-            date = "Yesterday, 10:00 AM",
-            month = "Apr 2026",
-            type = TransactionType.EXPENSE,
-            note = "Ride to airport"
-        )
-    )
 }
 
 @Preview(showBackground = true, showSystemUi = true)

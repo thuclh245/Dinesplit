@@ -5,16 +5,17 @@ import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
-import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.tooling.preview.Preview
 import com.example.dinesplit.core.ui.AppCard
 import com.example.dinesplit.core.ui.AppDimens
 import com.example.dinesplit.core.ui.AppScaffold
+import com.example.dinesplit.core.ui.BackNavigationButton
 import com.example.dinesplit.domain.model.Transaction
 import com.example.dinesplit.domain.model.TransactionType
 import com.example.dinesplit.ui.theme.DineSplitTheme
+import java.text.NumberFormat
 import java.text.SimpleDateFormat
 import java.util.Date
 import java.util.Locale
@@ -28,9 +29,7 @@ fun TransactionDetailScreen(
     AppScaffold(
         title = "Transaction Detail",
         navigationIcon = {
-            TextButton(onClick = onBack) {
-                Text("Back")
-            }
+            BackNavigationButton(onClick = onBack)
         }
     ) {
         Column(
@@ -90,7 +89,8 @@ fun TransactionDetailScreen(
 
 private fun formatDetailAmount(transaction: Transaction): String {
     val sign = if (transaction.type == TransactionType.INCOME) "+" else "-"
-    return "$sign${String.format(Locale.US, "%,.0f", transaction.amount).replace(',', '.')}đ"
+    val formatter = NumberFormat.getNumberInstance(Locale("vi", "VN"))
+    return "$sign${formatter.format(transaction.amount.toLong())} VND"
 }
 
 private fun formatDateTime(epochMillis: Long): String {

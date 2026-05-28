@@ -16,7 +16,11 @@ object AppContainer {
     }
 
     fun personalRepository(context: Context): PersonalRepository {
-        return LocalPersonalRepository.getInstance(context)
+        return FirebasePersonalRepository.getInstance(context)
+    }
+
+    fun notificationRepository(context: Context): com.example.dinesplit.domain.repository.NotificationRepository {
+        return com.example.dinesplit.data.repository.FirebaseNotificationRepository.getInstance(context)
     }
 
     fun feedRepository(): FeedRepository {
@@ -68,6 +72,10 @@ object AppContainer {
             observeSessionUseCase = observeSessionUseCase(context),
             getCurrentUserProfileUseCase = getCurrentUserProfileUseCase(context)
         )
+    }
+
+    fun splitRepository(context: Context): SplitRepository {
+        return FirebaseSplitRepository.getInstance(context)
     }
 }
 

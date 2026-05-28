@@ -1,17 +1,5 @@
 package com.example.dinesplit.presentation.personal
 
-import androidx.compose.runtime.Composable
+// Deprecated: Use PersonalScreen directly from MainContainerScreen instead
+// PersonalRoute was used for standalone testing but is no longer needed
 
-@Composable
-fun PersonalRoute(
-    userAvatarUrl: String?,
-    onOpenSearch: () -> Unit = {},
-    onAddTransaction: () -> Unit = {}
-) {
-    // Simplified route to match redesigned PersonalScreen
-    PersonalScreen(
-        userAvatarUrl = userAvatarUrl,
-        onOpenSearch = onOpenSearch,
-        onAddTransaction = onAddTransaction
-    )
-}
