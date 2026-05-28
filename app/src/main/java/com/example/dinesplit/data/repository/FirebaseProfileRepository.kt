@@ -3,9 +3,11 @@ package com.example.dinesplit.data.repository
 import android.content.Context
 import android.net.Uri
 import com.example.dinesplit.core.firebase.FirebaseProviders
+import com.example.dinesplit.core.firebase.FirestoreCollections
 import com.example.dinesplit.domain.exception.UsernameAlreadyExistsException
 import com.example.dinesplit.domain.model.UserProfile
 import com.example.dinesplit.domain.repository.ProfileRepository
+import java.util.Date
 import com.google.android.gms.tasks.Task
 import com.google.firebase.firestore.DocumentSnapshot
 import com.google.firebase.firestore.SetOptions
@@ -125,8 +127,8 @@ class FirebaseProfileRepository private constructor(
             FIELD_EMAIL to email,
             FIELD_AVATAR_URL to avatarUrl,
             FIELD_BIO to bio,
-            FIELD_CREATED_AT to createdAt,
-            FIELD_UPDATED_AT to updatedAt
+            FIELD_CREATED_AT to (createdAt?.time ?: 0L),
+            FIELD_UPDATED_AT to (updatedAt?.time ?: System.currentTimeMillis())
         )
     }
 
@@ -153,8 +155,8 @@ class FirebaseProfileRepository private constructor(
         val email = getString(FIELD_EMAIL) ?: return null
         val avatarUrl = getString(FIELD_AVATAR_URL).orEmpty()
         val bio = getString(FIELD_BIO).orEmpty()
-        val createdAt = getLong(FIELD_CREATED_AT) ?: 0L
-        val updatedAt = getLong(FIELD_UPDATED_AT) ?: createdAt
+        val createdAt = getLong(FIELD_CREATED_AT)?.let { Date(it) }
+        val updatedAt = getLong(FIELD_UPDATED_AT)?.let { Date(it) } ?: createdAt
 
         return UserProfile(
             uid = uid,
@@ -192,8 +194,8 @@ class FirebaseProfileRepository private constructor(
     }
 
     companion object {
-        private const val COLLECTION_USERS = "user_profiles"
-        private const val COLLECTION_USERNAME_CLAIMS = "username_claims"
+        private const val COLLECTION_USERS = FirestoreCollections.USERS
+        private const val COLLECTION_USERNAME_CLAIMS = FirestoreCollections.USERNAMES
         private const val FIELD_UID = "uid"
         private const val FIELD_DISPLAY_NAME = "displayName"
         private const val FIELD_USERNAME = "username"

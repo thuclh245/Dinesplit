@@ -8,6 +8,7 @@ import com.example.dinesplit.core.common.AppContainer
 import com.example.dinesplit.core.firebase.FirebaseErrorMapper
 import com.example.dinesplit.domain.exception.UsernameAlreadyExistsException
 import com.example.dinesplit.domain.model.UserProfile
+import java.util.Date
 import com.example.dinesplit.domain.validation.ProfileInputValidator
 import kotlinx.coroutines.flow.MutableSharedFlow
 import kotlinx.coroutines.flow.MutableStateFlow
@@ -113,8 +114,8 @@ class CompleteProfileViewModel(application: Application) : AndroidViewModel(appl
                 email = session.email,
                 avatarUrl = finalAvatarUrl,
                 bio = current.bio.trim(),
-                createdAt = now,
-                updatedAt = now
+                createdAt = Date(now),
+                updatedAt = Date(now)
             )
 
             updateProfileUseCase(profile)

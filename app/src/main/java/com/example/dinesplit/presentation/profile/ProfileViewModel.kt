@@ -8,6 +8,7 @@ import com.example.dinesplit.core.common.AppContainer
 import com.example.dinesplit.core.firebase.FirebaseErrorMapper
 import com.example.dinesplit.domain.exception.UsernameAlreadyExistsException
 import com.example.dinesplit.domain.model.UserProfile
+import java.util.Date
 import com.example.dinesplit.domain.usecase.GetCurrentUserProfileUseCase
 import com.example.dinesplit.domain.usecase.LogoutUseCase
 import com.example.dinesplit.domain.usecase.ObserveSessionUseCase
@@ -163,7 +164,7 @@ class ProfileViewModel(application: Application) : AndroidViewModel(application)
                 username = current.username.trim(),
                 avatarUrl = finalAvatarUrl,
                 bio = current.bio.trim(),
-                updatedAt = System.currentTimeMillis()
+                updatedAt = Date()
             )
 
             updateProfileUseCase(updatedProfile)

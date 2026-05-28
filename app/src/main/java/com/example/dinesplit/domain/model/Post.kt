@@ -1,16 +1,21 @@
 package com.example.dinesplit.domain.model
 
+import java.util.Date
+
 data class Post(
-    val id: String,
-    val userId: String,
-    val userName: String,
-    val userAvatarUrl: String?,
-    val location: String?,
-    val mainImageUrl: String,
-    val dinersCount: Int,
-    val likesCount: Int,
-    val commentsCount: Int,
-    val caption: String,
-    val shareAmount: Double,
-    val createdAt: Long
+    val id: String = "",
+    val authorUid: String = "",
+    val authorName: String = "",
+    val authorAvatar: String = "",
+    val caption: String = "",
+    val imageUrls: List<String> = emptyList(),
+    val location: String? = null,
+    val linkedGroupId: String? = null,
+    val linkedBillId: String? = null,
+    val likesCount: Int = 0,
+    val commentsCount: Int = 0,
+    val visibility: String = "public", // "public" | "followers_only"
+    val tags: List<String> = emptyList(),
+    val createdAt: Date? = null,
+    val updatedAt: Date? = null
 )

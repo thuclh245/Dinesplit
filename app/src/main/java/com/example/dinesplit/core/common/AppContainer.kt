@@ -63,6 +63,14 @@ object AppContainer {
         return GetFeedUseCase(feedRepository())
     }
 
+    fun likePostUseCase(): LikePostUseCase {
+        return LikePostUseCase(feedRepository())
+    }
+
+    fun unlikePostUseCase(): UnlikePostUseCase {
+        return UnlikePostUseCase(feedRepository())
+    }
+
     fun getGroupsUseCase(): GetGroupsUseCase {
         return GetGroupsUseCase(splitRepository())
     }

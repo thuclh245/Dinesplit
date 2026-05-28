@@ -140,7 +140,6 @@ fun MainContainerScreen(
         ) {
             composable(AppRoute.Feed.route) {
                 FeedScreen(
-                    userAvatarUrl = profileUiState.profile?.avatarUrl,
                     onOpenNotifications = onOpenNotifications,
                     onOpenSearch = { mainNavController.navigate(AppRoute.Search.route) },
                     onSettleUp = { /* Handle settle up */ }

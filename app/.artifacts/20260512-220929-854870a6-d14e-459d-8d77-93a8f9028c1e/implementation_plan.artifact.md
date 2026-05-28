@@ -1,63 +1,50 @@
-# Implementation Plan - Database Models Implementation
+# Implementation Plan - Comprehensive Database Infrastructure
 
-This plan outlines the steps to implement the Firestore database schema into Kotlin Data Classes within the Android project. This includes updating existing models and creating new ones to support the "Split", "Social", and "Personal" features of DineSplit.
-
-## User Review Required
-
-- **Timestamp Handling**: I will use `java.util.Date` for fields marked as `timestamp` in the schema. This maps naturally to Firestore and is easy to use in Kotlin. Does this align with your preference, or would you prefer `Long` (milliseconds)?
-- **Field Naming**: I will use `camelCase` for Kotlin property names, but I can use `@get:PropertyName` or similar if the Firestore keys must stay exactly as defined (e.g., `author_uid` vs `authorUid`). I'll assume `camelCase` is preferred for both unless specified otherwise.
+This plan outlines the steps to build a robust database infrastructure (Repositories) for all entities defined in the Firestore schema.
 
 ## Proposed Changes
 
-### [Domain Models] (E:/PKI/DineSplit/app/src/main/java/com/example/dinesplit/domain/model)
+### [Domain Layer] (E:/PKI/DineSplit/app/src/main/java/com/example/dinesplit/domain/repository)
 
-Updating and creating models to match the `database-schema.md`.
+#### [SplitRepository.kt](file:///E:/PKI/DineSplit/app/src/main/java/com/example/dinesplit/domain/repository/SplitRepository.kt)
+- Expand to include `Bill` management and `Settlement` operations.
+- Add `getBills(groupId)`, `createBill(bill, splits)`, `getSettlements(groupId)`.
 
-#### [UserProfile.kt](file:///E:/PKI/DineSplit/app/src/main/java/com/example/dinesplit/domain/model/UserProfile.kt)
-- Add `diningStyles`, `followersCount`, `followingCount`, `postsCount`, `fcmToken`.
-- Change `createdAt` and `updatedAt` to `Date`.
+#### [NEW] [NotificationRepository.kt](file:///E:/PKI/DineSplit/app/src/main/java/com/example/dinesplit/domain/repository/NotificationRepository.kt)
+- Interface for fetching and marking notifications as read.
 
-#### [Group.kt](file:///E:/PKI/DineSplit/app/src/main/java/com/example/dinesplit/domain/model/Group.kt)
-- Align with schema: `id`, `name`, `avatarUrl`, `category`, `createdBy`, `admins`, `members`, `memberCount`, `totalSpent`, `isSettled`, `qrPaymentEnabled`, `qrBankAccount`, `qrBankName`, `qrAccountHolder`, `createdAt`, `updatedAt`.
-
-#### [Post.kt](file:///E:/PKI/DineSplit/app/src/main/java/com/example/dinesplit/domain/model/Post.kt)
-- Align with schema: `id`, `authorUid`, `authorName`, `authorAvatar`, `caption`, `imageUrls`, `location`, `linkedGroupId`, `linkedBillId`, `likesCount`, `commentsCount`, `visibility`, `tags`, `createdAt`, `updatedAt`.
-
-#### [NEW] [Bill.kt](file:///E:/PKI/DineSplit/app/src/main/java/com/example/dinesplit/domain/model/Bill.kt)
-- Model for `/bills/{billId}`.
-
-#### [NEW] [BillSplit.kt](file:///E:/PKI/DineSplit/app/src/main/java/com/example/dinesplit/domain/model/BillSplit.kt)
-- Model for `/bills/{billId}/splits/{uid}`.
-
-#### [NEW] [Settlement.kt](file:///E:/PKI/DineSplit/app/src/main/java/com/example/dinesplit/domain/model/Settlement.kt)
-- Model for `/settlements/{settlementId}`.
-
-#### [NEW] [QrPayment.kt](file:///E:/PKI/DineSplit/app/src/main/java/com/example/dinesplit/domain/model/QrPayment.kt)
-- Model for `/qr_payments/{paymentId}`.
-
-#### [NEW] [Notification.kt](file:///E:/PKI/DineSplit/app/src/main/java/com/example/dinesplit/domain/model/Notification.kt)
-- Model for `/notifications/{notificationId}`.
-
-#### [NEW] [Comment.kt](file:///E:/PKI/DineSplit/app/src/main/java/com/example/dinesplit/domain/model/Comment.kt)
-- Model for `/posts/{postId}/comments/{commentId}`.
-
-#### [NEW] [MemberDetail.kt](file:///E:/PKI/DineSplit/app/src/main/java/com/example/dinesplit/domain/model/MemberDetail.kt)
-- Model for `/groups/{groupId}/members_detail/{uid}`.
+#### [FeedRepository.kt](file:///E:/PKI/DineSplit/app/src/main/java/com/example/dinesplit/domain/repository/FeedRepository.kt)
+- Expand to include `Comment` management and `Like` functionality.
 
 ---
 
-### [Personal Finance Models]
+### [Data Layer] (E:/PKI/DineSplit/app/src/main/java/com/example/dinesplit/data/repository)
 
-#### [Transaction.kt](file:///E:/PKI/DineSplit/app/src/main/java/com/example/dinesplit/domain/model/Transaction.kt)
-- Ensure it aligns with potential personal finance storage needs (though not explicitly in `database-schema.md`, it's part of the app).
+#### [FirebaseSplitRepository.kt](file:///E:/PKI/DineSplit/app/src/main/java/com/example/dinesplit/data/repository/FirebaseSplitRepository.kt)
+- Implement full Bill/Split logic using Firestore Transactions or Batched Writes to ensure consistency between `bills`, `bills/splits`, and group `totalSpent`.
+
+#### [FirebaseFeedRepository.kt](file:///E:/PKI/DineSplit/app/src/main/java/com/example/dinesplit/data/repository/FirebaseFeedRepository.kt)
+- Implement `comments` sub-collection access and real-time feed updates.
+
+#### [NEW] [FirebaseNotificationRepository.kt](file:///E:/PKI/DineSplit/app/src/main/java/com/example/dinesplit/data/repository/FirebaseNotificationRepository.kt)
+- Implement notification fetching for specific users.
+
+---
+
+### [Utility/Core]
+
+#### [NEW] [FirestoreCollections.kt](file:///E:/PKI/DineSplit/app/src/main/java/com/example/dinesplit/core/firebase/FirestoreCollections.kt)
+- Centralized constants for collection names to avoid typos.
 
 ## Verification Plan
 
 ### Automated Tests
-- Since these are mainly Data Classes, verification will involve:
-    - Ensuring they compile.
-    - Creating a small test to verify Firestore serialization/deserialization if possible (using a Mock or simple unit test).
+- Unit tests for Repository logic using Mockk for Firestore (if setup allows).
+- Verification of data mapping using small unit tests for each Model.
 
 ### Manual Verification
-- I will check each class against the `database-schema.md` to ensure all fields are present and correctly typed.
-- I will run `gradle assembleDebug` to ensure no compilation errors are introduced in the UI layers that use these models.
+- I will perform a "Dry Run" by writing a temporary verification script/test that simulates:
+    1. Creating a Group.
+    2. Adding a Bill.
+    3. Checking if the sub-collections are structured correctly in the code logic.
+- Verify that `Date` objects are correctly handled in the mapping logic.

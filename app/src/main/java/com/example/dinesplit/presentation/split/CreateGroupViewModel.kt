@@ -189,7 +189,7 @@ class CreateGroupViewModel(
     }
 
     private fun fallbackCurrentProfile(uid: String): UserProfile {
-        val now = System.currentTimeMillis()
+        val now = java.util.Date()
         return UserProfile(
             uid = uid,
             displayName = "Bạn",

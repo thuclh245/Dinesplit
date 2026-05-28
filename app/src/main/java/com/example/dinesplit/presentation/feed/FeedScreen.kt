@@ -9,12 +9,17 @@ import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.*
+import androidx.compose.material.icons.automirrored.filled.ReceiptLong
 import androidx.compose.material.icons.outlined.BookmarkBorder
 import androidx.compose.material.icons.outlined.ChatBubbleOutline
 import androidx.compose.material.icons.outlined.FavoriteBorder
 import androidx.compose.material.icons.outlined.Share
 import androidx.compose.material3.*
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.collectAsState
+import androidx.compose.runtime.getValue
+import androidx.lifecycle.viewmodel.compose.viewModel
+import com.example.dinesplit.domain.model.Post
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.alpha
@@ -38,16 +43,18 @@ import com.example.dinesplit.core.ui.HomeTopBar
 
 @Composable
 fun FeedScreen(
-    userAvatarUrl: String?,
+    viewModel: FeedViewModel = viewModel(),
     onOpenNotifications: () -> Unit,
     onOpenSearch: () -> Unit,
     onSettleUp: (String) -> Unit
 ) {
+    val uiState by viewModel.uiState.collectAsState()
+
     Scaffold(
         contentWindowInsets = WindowInsets(0, 0, 0, 0),
         topBar = {
             HomeTopBar(
-                userAvatarUrl = userAvatarUrl,
+                userAvatarUrl = uiState.currentUser?.avatarUrl,
                 onOpenNotifications = onOpenNotifications,
                 onOpenSearch = onOpenSearch
             )
@@ -70,7 +77,7 @@ fun FeedScreen(
                         horizontalArrangement = Arrangement.spacedBy(8.dp)
                     ) {
                         Icon(Icons.Default.Group, contentDescription = null, modifier = Modifier.size(14.dp), tint = MaterialTheme.colorScheme.primary)
-                        Text("4 DINERS", style = MaterialTheme.typography.labelSmall.copy(fontSize = 10.sp, fontWeight = FontWeight.Black))
+                        Text("${uiState.posts.size} POSTS", style = MaterialTheme.typography.labelSmall.copy(fontSize = 10.sp, fontWeight = FontWeight.Black))
                     }
                 }
 
@@ -83,64 +90,35 @@ fun FeedScreen(
                         .size(60.dp) // Đồng bộ 60dp
                         .shadow(12.dp, CircleShape, spotColor = MaterialTheme.colorScheme.primary.copy(alpha = 0.4f))
                 ) {
-                    Icon(Icons.Default.ReceiptLong, contentDescription = "New Bill", modifier = Modifier.size(28.dp))
+                    Icon(Icons.AutoMirrored.Filled.ReceiptLong, contentDescription = "New Bill", modifier = Modifier.size(28.dp))
                 }
             }
         }
     ) { padding ->
-        LazyColumn(
-            modifier = Modifier
-                .fillMaxSize()
-                .background(MaterialTheme.colorScheme.background)
-                .padding(padding),
-            contentPadding = PaddingValues(bottom = 16.dp)
-        ) {
-            item {
-                RecentGroupVibes()
+        if (uiState.isLoading) {
+            Box(modifier = Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
+                CircularProgressIndicator()
             }
-            
-            item {
-                // Feed Card 1: Social Split
-                SocialSplitCard(
-                    userAvatar = "https://lh3.googleusercontent.com/aida-public/AB6AXuBtQH5RavTPzxY97sjOC1_C-5WWFTL32DxKbz_Z-tv9KUx1yxfISftiAJMjQ8QrgswscZTP1C0VYI1aNuaN0P-Rz1hQL6RWl88SNERhUBockH6Dkv1TaAvgSoGtZ4SITU_hD9RZboENDjETcmI8SkeF6dLxP9Q_GtBCWyAiVOFvflYFAM_IfEUl0es2g-2GCb-4s6GTwPyJ0HkmfqTsKmibwmCfdA1oOmrsmJQqAxGnkob4-ADWYTgEN_2y1BPjCqTiiCWEX6H2GWo",
-                    userName = "Thanh Hằng",
-                    location = "Bún Chả Hương Liên, Hà Nội",
-                    mainImage = "https://lh3.googleusercontent.com/aida-public/AB6AXuDHwYXQfykJqzR1lK0J5v5yyPuixb1f3F8YgsbEvojUnJWloP0p-C53mROG_VFOdHsMReMytjIl6hgaGyMXNBBrL_W0NY__48UgZ_3UZ7nYLu4YJCgfmlo9MBaXx-JKmkGxkLnT0tfV1WCqC_7gqevnYNaHuQIaP4-zyR39-QKrMPu_WkuvjMZYEIUB9-Q-gahPawmuJ4zh_gXlUVGc3366-tdv9lvlhYtrCLs-VrIBqaB_FXkJJ_KdNs1JW0iikIEdrsl5ZwosXF8",
-                    dinersCount = 4,
-                    likes = 124,
-                    comments = 18,
-                    caption = "Finally checked out Obama's favorite spot! The smoky pork is unmatched. 🍜✨",
-                    shareAmount = "85.000 ₫",
-                    onSettleUp = { onSettleUp("bill_1") }
-                )
-            }
+        } else {
+            LazyColumn(
+                modifier = Modifier
+                    .fillMaxSize()
+                    .background(MaterialTheme.colorScheme.background)
+                    .padding(padding),
+                contentPadding = PaddingValues(bottom = 16.dp)
+            ) {
+                item {
+                    RecentGroupVibes()
+                }
 
-            item {
-                // Feed Card 2: Asymmetric Layout
-                AsymmetricSplitCard(
-                    image = "https://lh3.googleusercontent.com/aida-public/AB6AXuAj9XK9B0XwL6NiRTf3VdPHqESts0TT-GmGiMxMa4FTS_lFBTxyiYDh9BCJQhbFMU9ZtptxHJsp91d37oG9c_8ovmXnCyURNp1iwca1H-6pWLmxeoqNw3yE9v85y0SRnE-T-_1A9ekQ8oq1XO52ON8Mih6a8urFZppTZrtp88qHj95Ou0ymxg58hJBRwhsJk05PpFL2y14KcH64XJtBwHZPCi19rA6nAbVTXgpIi9nRRF3vhOz5-h0_auOA8yKy9Lyr2XA5LepGjzw",
-                    userName = "An Trần",
-                    userAvatar = "https://lh3.googleusercontent.com/aida-public/AB6AXuBSbMAuuUDIimrLxCbv23Ulz0K4Mufh7SmxZWxCDgVKbMUUDv28qxOHAOcolcVL1383bKxSGj1k_hiU1gBAtun1oQB8q2dG5GVWoOGYkr9ugpwrUQq3v9VPJ6xLR3H6eiV38V5_DJto-1Mk43CmVZYmByzKYj6TNOk0xuva9tJDZ77z2WZ7hYSRLZh0Pcxc5YZ4XKpA793nqBoIEU_muAFKAiY6sJXz46IzIcbJOLHvIpWVdsBa9i37qtOyLihPyhbPDRGVwR4or8c",
-                    title = "Weekend Dim Sum at Chợ Lớn",
-                    quote = "Best shrimp dumplings in District 5.",
-                    totalBill = "1.240.000 ₫",
-                    timeAgo = "2H AGO",
-                    participantsAvatars = listOf(
-                        "https://lh3.googleusercontent.com/aida-public/AB6AXuD8PGjMT8_k2pIk0pNhPlZyn95_UaNPVme5g4RRyDL65owDT3X4RgLwFMiKsV0KpmDBp9prt9W5NuZgIshHFxcWeW4gZ2a6XaVAIRLAzq7lEWa_-W83ypVHDuMW0-w04F9Xp8cN7TfJRnQwQahRW7y-Y9OBTcln61z943LhnZtdMGD3DU7PvHuFr25oAQsssO6eYD43H8C-Zp2-ikrk23HM7Kbe95CNPfFWjOzQ-7Fw4rRgFLl-CMI_v_DcrfjIR9X5gxtpogvJlRw",
-                        "https://lh3.googleusercontent.com/aida-public/AB6AXuDAMaMSVkZY1n0pCd-1dM7QExKadcAMxlbrJZ9vvzaUqPAWEb6X164HPG2k_yi-9xSoC0MGIiZnvgU0YTWriXF8fNKo7zTdu8Z8-S6p3aRxMAWGLoZiWPNJos31SEqLHSPeZtru5FjaLN9thAnty8_o6FPR1Aj645XdNpuv4TArYOPbRMTVzQPBzJkdQf0VgKY1QE1C9cl4u1ED2zSm0H0oFqpX1pt62tkjY8Pl4U7Ydd7l1PyQdfuO91HqJnd57-Bcorp-9r6urvg",
-                        "https://lh3.googleusercontent.com/aida-public/AB6AXuDE1N5a32jARp5WKVmPlLPtF3vYXXet7x0PcDxLt6tzVv4otuztefwepxQu76Rnli9zGjI52x7Co017qFdxuDEjnHUsC5i9h6j_1cIwEDLWSx8ErOabo4N2RZctC0HJphqa2axTJeCaaRFyd_IdQItFwGNWRH2Xu6f313gMboETg6EkpgLFiIBCg_WB0_IugteaqCTq9Fp9RGMH6CfwszDf7zsV2M4wHCI8hr_7lJqD7ou3htpy9C7Mybby-uV6yNZC7hmB9YfQygQ"
-                    ),
-                    extraParticipants = 2
-                )
-            }
-
-            item {
-                // Feed Card 3: Large Editorial Image
-                EditorialMomentCard(
-                    image = "https://lh3.googleusercontent.com/aida-public/AB6AXuCGV9c01v4w81VRtAWFcQUHRBEziHthGF_vOyP3Tv6qCvE9pKkUTjCG8tza6TIwRalxo4Q39RK5w3NUB8FFeyQ0cE-qcBVWYPjcwjOiO3yBgr4OW2NY5kMmgoW8T2X1vDeQdosHnfv6IgzLCb2I4lyxbc878QsQ3be9HDCH2sjsob3-Y_rUncWD0RV4HlzFyyEYIHv3JBIVHsdJfhaag7LVOzDq7XcMwSJtwdidm4J5d7E6_TGbUw2u6nW1nt8YNYql_YJLCLvAFv4",
-                    title = "Midnight Snacking in Sài Gòn",
-                    status = "HAPPENING NOW"
-                )
+                items(uiState.posts) { post ->
+                    SocialSplitCard(
+                        post = post,
+                        onLike = { viewModel.onLikePost(post.id) },
+                        onUnlike = { viewModel.onUnlikePost(post.id) },
+                        onSettleUp = { post.linkedBillId?.let { onSettleUp(it) } }
+                    )
+                }
             }
         }
     }
@@ -232,15 +210,9 @@ private fun RecentGroupVibes() {
 
 @Composable
 private fun SocialSplitCard(
-    userAvatar: String,
-    userName: String,
-    location: String,
-    mainImage: String,
-    dinersCount: Int,
-    likes: Int,
-    comments: Int,
-    caption: String,
-    shareAmount: String,
+    post: Post,
+    onLike: () -> Unit,
+    onUnlike: () -> Unit,
     onSettleUp: () -> Unit
 ) {
     Card(
@@ -260,16 +232,16 @@ private fun SocialSplitCard(
             ) {
                 Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(12.dp)) {
                     AsyncImage(
-                        model = userAvatar,
+                        model = post.authorAvatar,
                         contentDescription = null,
                         modifier = Modifier.size(40.dp).clip(CircleShape),
                         contentScale = ContentScale.Crop
                     )
                     Column {
-                        Text(userName, style = MaterialTheme.typography.labelLarge.copy(fontWeight = FontWeight.Bold))
+                        Text(post.authorName, style = MaterialTheme.typography.labelLarge.copy(fontWeight = FontWeight.Bold))
                         Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(4.dp)) {
                             Icon(Icons.Default.LocationOn, contentDescription = null, modifier = Modifier.size(12.dp), tint = MaterialTheme.colorScheme.outline)
-                            Text(location, style = MaterialTheme.typography.labelSmall.copy(fontSize = 10.sp), color = MaterialTheme.colorScheme.outline)
+                            Text(post.location ?: "Unknown Location", style = MaterialTheme.typography.labelSmall.copy(fontSize = 10.sp), color = MaterialTheme.colorScheme.outline)
                         }
                     }
                 }
@@ -282,11 +254,11 @@ private fun SocialSplitCard(
             Box(
                 modifier = Modifier
                     .padding(horizontal = 8.dp)
-                    .aspectRatio(0.8f)
+                    .aspectRatio(1f)
                     .clip(RoundedCornerShape(16.dp))
             ) {
                 AsyncImage(
-                    model = mainImage,
+                    model = post.imageUrls.firstOrNull(),
                     contentDescription = null,
                     modifier = Modifier.fillMaxSize(),
                     contentScale = ContentScale.Crop
@@ -301,12 +273,14 @@ private fun SocialSplitCard(
             ) {
                 Row(horizontalArrangement = Arrangement.spacedBy(20.dp)) {
                     Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(4.dp)) {
-                        Icon(Icons.Outlined.FavoriteBorder, contentDescription = null, modifier = Modifier.size(20.dp))
-                        Text(likes.toString(), style = MaterialTheme.typography.labelSmall.copy(fontWeight = FontWeight.Bold))
+                        IconButton(onClick = onLike) {
+                            Icon(Icons.Outlined.FavoriteBorder, contentDescription = null, modifier = Modifier.size(20.dp))
+                        }
+                        Text(post.likesCount.toString(), style = MaterialTheme.typography.labelSmall.copy(fontWeight = FontWeight.Bold))
                     }
                     Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(4.dp)) {
                         Icon(Icons.Outlined.ChatBubbleOutline, contentDescription = null, modifier = Modifier.size(20.dp))
-                        Text(comments.toString(), style = MaterialTheme.typography.labelSmall.copy(fontWeight = FontWeight.Bold))
+                        Text(post.commentsCount.toString(), style = MaterialTheme.typography.labelSmall.copy(fontWeight = FontWeight.Bold))
                     }
                     Icon(Icons.Outlined.Share, contentDescription = null, modifier = Modifier.size(20.dp))
                 }
@@ -316,8 +290,8 @@ private fun SocialSplitCard(
             // Caption
             Text(
                 text = buildAnnotatedString {
-                    withStyle(SpanStyle(fontWeight = FontWeight.Bold)) { append("$userName ") }
-                    append(caption)
+                    withStyle(SpanStyle(fontWeight = FontWeight.Bold)) { append("${post.authorName} ") }
+                    append(post.caption)
                 },
                 style = MaterialTheme.typography.bodySmall,
                 modifier = Modifier.padding(horizontal = 16.dp).padding(bottom = 16.dp),
@@ -325,33 +299,35 @@ private fun SocialSplitCard(
                 overflow = TextOverflow.Ellipsis
             )
 
-            // Split Bill Section
-            Surface(
-                modifier = Modifier.padding(16.dp).fillMaxWidth(),
-                shape = RoundedCornerShape(16.dp),
-                color = MaterialTheme.colorScheme.surfaceContainerLow
-            ) {
-                Row(
-                    modifier = Modifier.padding(16.dp),
-                    verticalAlignment = Alignment.CenterVertically,
-                    horizontalArrangement = Arrangement.SpaceBetween
+            // Split Bill Section (Only show if linked to a bill)
+            if (post.linkedBillId != null) {
+                Surface(
+                    modifier = Modifier.padding(16.dp).fillMaxWidth(),
+                    shape = RoundedCornerShape(16.dp),
+                    color = MaterialTheme.colorScheme.surfaceContainerLow
                 ) {
-                    Column {
-                        Text("YOUR SHARE", style = MaterialTheme.typography.labelSmall.copy(fontSize = 9.sp, fontWeight = FontWeight.Bold, letterSpacing = 1.sp), color = MaterialTheme.colorScheme.outline)
-                        Text(shareAmount, style = MaterialTheme.typography.titleLarge.copy(fontWeight = FontWeight.Black), color = MaterialTheme.colorScheme.primary)
-                    }
-                    Button(
-                        onClick = onSettleUp,
-                        shape = CircleShape,
-                        colors = ButtonDefaults.buttonColors(containerColor = Color.Transparent),
-                        contentPadding = PaddingValues(0.dp)
+                    Row(
+                        modifier = Modifier.padding(16.dp),
+                        verticalAlignment = Alignment.CenterVertically,
+                        horizontalArrangement = Arrangement.SpaceBetween
                     ) {
-                        Box(
-                            modifier = Modifier
-                                .background(Brush.linearGradient(listOf(MaterialTheme.colorScheme.primary, MaterialTheme.colorScheme.primaryContainer)))
-                                .padding(horizontal = 24.dp, vertical = 10.dp)
+                        Column {
+                            Text("LINKED BILL", style = MaterialTheme.typography.labelSmall.copy(fontSize = 9.sp, fontWeight = FontWeight.Bold, letterSpacing = 1.sp), color = MaterialTheme.colorScheme.outline)
+                            Text("View Details", style = MaterialTheme.typography.titleMedium.copy(fontWeight = FontWeight.Black), color = MaterialTheme.colorScheme.primary)
+                        }
+                        Button(
+                            onClick = onSettleUp,
+                            shape = CircleShape,
+                            colors = ButtonDefaults.buttonColors(containerColor = Color.Transparent),
+                            contentPadding = PaddingValues(0.dp)
                         ) {
-                            Text("SETTLE UP", style = MaterialTheme.typography.labelSmall.copy(fontWeight = FontWeight.Bold), color = Color.White)
+                            Box(
+                                modifier = Modifier
+                                    .background(Brush.linearGradient(listOf(MaterialTheme.colorScheme.primary, MaterialTheme.colorScheme.primaryContainer)))
+                                    .padding(horizontal = 24.dp, vertical = 10.dp)
+                            ) {
+                                Text("GO TO BILL", style = MaterialTheme.typography.labelSmall.copy(fontWeight = FontWeight.Bold), color = Color.White)
+                            }
                         }
                     }
                 }
@@ -475,11 +451,6 @@ private val vibes = listOf(
 @Composable
 fun FeedScreenPreview() {
     DineSplitTheme(darkTheme = false) {
-        FeedScreen(
-            userAvatarUrl = null,
-            onOpenNotifications = {},
-            onOpenSearch = {},
-            onSettleUp = {}
-        )
+        // Mock UI or just empty for preview
     }
 }
