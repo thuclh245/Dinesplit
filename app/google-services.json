@@ -1,0 +1,30 @@
+{
+  "project_info": {
+    "project_number": "59006843188",
+    "project_id": "dinesplit-aff8d",
+    "storage_bucket": "dinesplit-aff8d.firebasestorage.app"
+  },
+  "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:59006843188:android:d5326041ae09d48e1a8d61",
+        "android_client_info": {
+          "package_name": "com.example.dinesplit"
+        }
+      },
+      "oauth_client": [],
+      "api_key": [
+        {
+          "current_key": "AIzaSyBVgv-CsLb4GHizsBbbWwc6SJUn66cvkQI"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": []
+        }
+      }
+    }
+  ],
+  "configuration_version": "1"
+}
+

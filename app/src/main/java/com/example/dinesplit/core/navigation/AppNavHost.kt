@@ -84,6 +84,9 @@ fun AppNavHost(
 
             composable(AppRoute.CompleteProfile.route) {
                 CompleteProfileScreen(
+                    onBack = {
+                        navController.navigateUp()
+                    },
                     onCompleteProfileSuccess = {
                         navController.navigate(NavGraph.MAIN) {
                             popUpTo(NavGraph.AUTH) { inclusive = true }
@@ -96,7 +99,7 @@ fun AppNavHost(
 
         navigation(
             route = NavGraph.MAIN,
-            startDestination = AppRoute.MainContainer.route
+            startDestination = AppRoute.MainContainer.routeWithArgs
         ) {
             composable(
                 route = AppRoute.MainContainer.routeWithArgs,

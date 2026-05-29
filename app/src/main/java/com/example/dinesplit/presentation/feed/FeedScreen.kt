@@ -46,7 +46,8 @@ fun FeedScreen(
     viewModel: FeedViewModel = viewModel(),
     onOpenNotifications: () -> Unit,
     onOpenSearch: () -> Unit,
-    onSettleUp: (String) -> Unit
+    onCreatePost: () -> Unit = {},
+    onSettleUp: (String, String) -> Unit
 ) {
     val uiState by viewModel.uiState.collectAsState()
 
@@ -81,6 +82,20 @@ fun FeedScreen(
                     }
                 }
 
+                // New Post Button
+                FloatingActionButton(
+                    onClick = onCreatePost,
+                    containerColor = MaterialTheme.colorScheme.secondary,
+                    contentColor = Color.White,
+                    shape = CircleShape,
+                    modifier = Modifier
+                        .size(52.dp)
+                        .shadow(12.dp, CircleShape, spotColor = MaterialTheme.colorScheme.secondary.copy(alpha = 0.4f))
+                ) {
+                    Icon(Icons.Default.AddAPhoto, contentDescription = "New Post", modifier = Modifier.size(22.dp))
+                }
+
+                // New Bill Button
                 FloatingActionButton(
                     onClick = { /* New Bill */ },
                     containerColor = MaterialTheme.colorScheme.primary,
@@ -116,7 +131,13 @@ fun FeedScreen(
                         post = post,
                         onLike = { viewModel.onLikePost(post.id) },
                         onUnlike = { viewModel.onUnlikePost(post.id) },
-                        onSettleUp = { post.linkedBillId?.let { onSettleUp(it) } }
+                        onSettleUp = {
+                            val gId = post.linkedGroupId
+                            val bId = post.linkedBillId
+                            if (gId != null && bId != null) {
+                                onSettleUp(gId, bId)
+                            }
+                        }
                     )
                 }
             }
@@ -298,40 +319,6 @@ private fun SocialSplitCard(
                 maxLines = 2,
                 overflow = TextOverflow.Ellipsis
             )
-
-            // Split Bill Section (Only show if linked to a bill)
-            if (post.linkedBillId != null) {
-                Surface(
-                    modifier = Modifier.padding(16.dp).fillMaxWidth(),
-                    shape = RoundedCornerShape(16.dp),
-                    color = MaterialTheme.colorScheme.surfaceContainerLow
-                ) {
-                    Row(
-                        modifier = Modifier.padding(16.dp),
-                        verticalAlignment = Alignment.CenterVertically,
-                        horizontalArrangement = Arrangement.SpaceBetween
-                    ) {
-                        Column {
-                            Text("LINKED BILL", style = MaterialTheme.typography.labelSmall.copy(fontSize = 9.sp, fontWeight = FontWeight.Bold, letterSpacing = 1.sp), color = MaterialTheme.colorScheme.outline)
-                            Text("View Details", style = MaterialTheme.typography.titleMedium.copy(fontWeight = FontWeight.Black), color = MaterialTheme.colorScheme.primary)
-                        }
-                        Button(
-                            onClick = onSettleUp,
-                            shape = CircleShape,
-                            colors = ButtonDefaults.buttonColors(containerColor = Color.Transparent),
-                            contentPadding = PaddingValues(0.dp)
-                        ) {
-                            Box(
-                                modifier = Modifier
-                                    .background(Brush.linearGradient(listOf(MaterialTheme.colorScheme.primary, MaterialTheme.colorScheme.primaryContainer)))
-                                    .padding(horizontal = 24.dp, vertical = 10.dp)
-                            ) {
-                                Text("GO TO BILL", style = MaterialTheme.typography.labelSmall.copy(fontWeight = FontWeight.Bold), color = Color.White)
-                            }
-                        }
-                    }
-                }
-            }
         }
     }
 }

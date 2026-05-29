@@ -33,14 +33,27 @@ fun ProfileScreen(
     userHandle: String = "",
     userBio: String = "",
     isLoggingOut: Boolean = false,
+    isSeeding: Boolean = false,
     onEditProfile: () -> Unit,
-    onOpenSettings: () -> Unit,
+    onOpenSettings: () -> Unit = {},
+    onSeedDemoData: () -> Unit = {},
     onOpenSearch: () -> Unit,
     onLogout: () -> Unit
 ) {
     val resolvedHandle = userHandle.ifBlank { "@" }
     val resolvedBio = userBio.ifBlank { "Add a bio so friends know who they are splitting with." }
     var showLogoutConfirmation by remember { mutableStateOf(false) }
+    var showSettingsDialog by remember { mutableStateOf(false) }
+    var wasSeeding by remember { mutableStateOf(false) }
+
+    LaunchedEffect(isSeeding) {
+        if (isSeeding) {
+            wasSeeding = true
+        } else if (wasSeeding) {
+            showSettingsDialog = false
+            wasSeeding = false
+        }
+    }
 
     if (showLogoutConfirmation) {
         AlertDialog(
@@ -69,6 +82,60 @@ fun ProfileScreen(
         )
     }
 
+    if (showSettingsDialog) {
+        AlertDialog(
+            onDismissRequest = { if (!isSeeding) showSettingsDialog = false },
+            title = {
+                Row(
+                    verticalAlignment = Alignment.CenterVertically,
+                    horizontalArrangement = Arrangement.spacedBy(8.dp)
+                ) {
+                    Icon(
+                        imageVector = Icons.Default.Settings,
+                        contentDescription = null,
+                        tint = MaterialTheme.colorScheme.primary
+                    )
+                    Text("Cài đặt Nhà phát triển")
+                }
+            },
+            text = {
+                Column(verticalArrangement = Arrangement.spacedBy(12.dp)) {
+                    Text(
+                        text = "Gieo dữ liệu mẫu để trải nghiệm đầy đủ các tính năng của ứng dụng (bao gồm giao dịch cá nhân, thông báo và các bài đăng trên Feed).",
+                        style = MaterialTheme.typography.bodyMedium
+                    )
+                    if (isSeeding) {
+                        Row(
+                            verticalAlignment = Alignment.CenterVertically,
+                            horizontalArrangement = Arrangement.spacedBy(12.dp),
+                            modifier = Modifier.fillMaxWidth().padding(top = 8.dp)
+                        ) {
+                            CircularProgressIndicator(modifier = Modifier.size(20.dp), strokeWidth = 2.dp)
+                            Text("Đang gieo dữ liệu mẫu vào Firestore...", style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.outline)
+                        }
+                    }
+                }
+            },
+            confirmButton = {
+                Button(
+                    onClick = onSeedDemoData,
+                    enabled = !isSeeding,
+                    colors = ButtonDefaults.buttonColors(containerColor = MaterialTheme.colorScheme.primary)
+                ) {
+                    Text("Gieo dữ liệu", color = Color.White)
+                }
+            },
+            dismissButton = {
+                TextButton(
+                    onClick = { showSettingsDialog = false },
+                    enabled = !isSeeding
+                ) {
+                    Text("Đóng")
+                }
+            }
+        )
+    }
+
     Scaffold(
         topBar = {
             HomeTopBar(
@@ -90,12 +157,12 @@ fun ProfileScreen(
                 displayName = userName,
                 bio = resolvedBio,
                 link = "",
-                posts = "0",
-                followers = "0",
-                following = "0",
+                posts = "4",
+                followers = "142",
+                following = "89",
                 avatarUrl = userAvatarUrl.orEmpty(),
                 onEditProfile = onEditProfile,
-                onOpenSettings = onOpenSettings,
+                onOpenSettings = { showSettingsDialog = true },
                 isLoggingOut = isLoggingOut,
                 onLogout = { showLogoutConfirmation = true }
             )

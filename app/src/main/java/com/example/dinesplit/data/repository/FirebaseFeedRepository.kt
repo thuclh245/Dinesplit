@@ -26,7 +26,9 @@ class FirebaseFeedRepository(
                     return@addSnapshotListener
                 }
                 val posts = snapshot?.documents?.mapNotNull { doc ->
-                    doc.toObject(Post::class.java)?.copy(id = doc.id)
+                    runCatching {
+                        doc.toObject(Post::class.java)?.copy(id = doc.id)
+                    }.getOrNull()
                 } ?: emptyList()
                 trySend(posts)
             }
@@ -43,7 +45,9 @@ class FirebaseFeedRepository(
                     return@addSnapshotListener
                 }
                 val posts = snapshot?.documents?.mapNotNull { doc ->
-                    doc.toObject(Post::class.java)?.copy(id = doc.id)
+                    runCatching {
+                        doc.toObject(Post::class.java)?.copy(id = doc.id)
+                    }.getOrNull()
                 } ?: emptyList()
                 trySend(posts)
             }
@@ -84,7 +88,9 @@ class FirebaseFeedRepository(
                     return@addSnapshotListener
                 }
                 val comments = snapshot?.documents?.mapNotNull { doc ->
-                    doc.toObject(Comment::class.java)?.copy(id = doc.id)
+                    runCatching {
+                        doc.toObject(Comment::class.java)?.copy(id = doc.id)
+                    }.getOrNull()
                 } ?: emptyList()
                 trySend(comments)
             }

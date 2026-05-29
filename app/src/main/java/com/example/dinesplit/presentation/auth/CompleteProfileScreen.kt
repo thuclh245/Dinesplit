@@ -33,6 +33,7 @@ import com.example.dinesplit.ui.theme.DineSplitTheme
 
 @Composable
 fun CompleteProfileScreen(
+    onBack: () -> Unit,
     onCompleteProfileSuccess: () -> Unit,
     viewModel: CompleteProfileViewModel = viewModel()
 ) {
@@ -52,7 +53,8 @@ fun CompleteProfileScreen(
         onUsernameChange = viewModel::onUsernameChange,
         onBioChange = viewModel::onBioChange,
         onAvatarSelected = viewModel::onAvatarSelected,
-        onSubmit = viewModel::submit
+        onSubmit = viewModel::submit,
+        onBack = onBack
     )
 }
 
@@ -63,7 +65,8 @@ private fun CompleteProfileContent(
     onUsernameChange: (String) -> Unit,
     onBioChange: (String) -> Unit,
     onAvatarSelected: (Uri) -> Unit,
-    onSubmit: () -> Unit
+    onSubmit: () -> Unit,
+    onBack: () -> Unit
 ) {
     val launcher = rememberLauncherForActivityResult(
         contract = ActivityResultContracts.GetContent()
@@ -84,7 +87,7 @@ private fun CompleteProfileContent(
                 horizontalArrangement = Arrangement.SpaceBetween
             ) {
                 Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(16.dp)) {
-                    IconButton(onClick = { /* Back */ }) {
+                    IconButton(onClick = onBack) {
                         Icon(
                             imageVector = Icons.Default.ArrowBack,
                             contentDescription = "Back",
@@ -424,7 +427,8 @@ fun CompleteProfileScreenPreview() {
             onUsernameChange = {},
             onBioChange = {},
             onAvatarSelected = {},
-            onSubmit = {}
+            onSubmit = {},
+            onBack = {}
         )
     }
 }

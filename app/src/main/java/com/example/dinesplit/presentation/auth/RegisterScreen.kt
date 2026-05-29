@@ -37,6 +37,7 @@ import androidx.compose.ui.unit.sp
 import androidx.lifecycle.viewmodel.compose.viewModel
 import coil.compose.AsyncImage
 import com.example.dinesplit.ui.theme.DineSplitTheme
+import kotlinx.coroutines.flow.collectLatest
 
 @Composable
 fun RegisterScreen(
@@ -45,6 +46,14 @@ fun RegisterScreen(
     viewModel: RegisterViewModel = viewModel()
 ) {
     val uiState by viewModel.uiState.collectAsState()
+
+    LaunchedEffect(viewModel) {
+        viewModel.effect.collectLatest { effect ->
+            if (effect is RegisterUiEffect.NavigateToCompleteProfile) {
+                onRegisterSuccess()
+            }
+        }
+    }
 
     RegisterContent(
         uiState = uiState,
@@ -239,6 +248,16 @@ private fun RegisterContent(
                 }
 
                 // Primary Action
+                if (uiState.submitError != null) {
+                    Text(
+                        text = uiState.submitError,
+                        style = MaterialTheme.typography.bodySmall,
+                        color = MaterialTheme.colorScheme.error,
+                        textAlign = androidx.compose.ui.text.style.TextAlign.Center,
+                        modifier = Modifier.fillMaxWidth().padding(bottom = 8.dp)
+                    )
+                }
+
                 Button(
                     onClick = onSubmit,
                     modifier = Modifier
@@ -247,7 +266,8 @@ private fun RegisterContent(
                         .shadow(16.dp, RoundedCornerShape(32.dp), spotColor = MaterialTheme.colorScheme.primary.copy(alpha = 0.3f)),
                     shape = RoundedCornerShape(32.dp),
                     colors = ButtonDefaults.buttonColors(containerColor = Color.Transparent),
-                    contentPadding = PaddingValues(0.dp)
+                    contentPadding = PaddingValues(0.dp),
+                    enabled = !uiState.isSubmitting
                 ) {
                     Box(
                         modifier = Modifier
@@ -260,7 +280,7 @@ private fun RegisterContent(
                         contentAlignment = Alignment.Center
                     ) {
                         Text(
-                            text = "Create Account",
+                            text = if (uiState.isSubmitting) "Creating Account..." else "Create Account",
                             style = MaterialTheme.typography.titleMedium.copy(fontWeight = FontWeight.Bold),
                             color = MaterialTheme.colorScheme.onPrimary
                         )

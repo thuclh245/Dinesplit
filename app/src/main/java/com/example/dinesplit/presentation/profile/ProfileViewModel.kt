@@ -15,6 +15,8 @@ import com.example.dinesplit.domain.usecase.ObserveSessionUseCase
 import com.example.dinesplit.domain.usecase.UpdateProfileUseCase
 import com.example.dinesplit.domain.usecase.UploadAvatarUseCase
 import com.example.dinesplit.domain.validation.ProfileInputValidator
+import com.example.dinesplit.data.seeder.DemoDataSeeder
+import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.flow.MutableSharedFlow
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.SharedFlow
@@ -22,12 +24,14 @@ import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asSharedFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.launch
+import kotlinx.coroutines.withContext
 
 data class ProfileUiState(
     val isLoading: Boolean = true,
     val profile: UserProfile? = null,
     val errorMessage: String? = null,
-    val isLoggingOut: Boolean = false
+    val isLoggingOut: Boolean = false,
+    val isSeeding: Boolean = false
 )
 
 data class EditProfileUiState(
@@ -47,6 +51,8 @@ data class EditProfileUiState(
 sealed interface ProfileUiEffect {
     data object LogoutSuccess : ProfileUiEffect
     data object SaveSuccess : ProfileUiEffect
+    data object SeedSuccess : ProfileUiEffect
+    data class SeedError(val message: String) : ProfileUiEffect
 }
 
 class ProfileViewModel(application: Application) : AndroidViewModel(application) {
@@ -229,6 +235,34 @@ class ProfileViewModel(application: Application) : AndroidViewModel(application)
             logoutUseCase()
             _profileUiState.value = _profileUiState.value.copy(isLoggingOut = false)
             _effect.emit(ProfileUiEffect.LogoutSuccess)
+        }
+    }
+
+    fun seedDemoData() {
+        val profile = _profileUiState.value.profile ?: return
+        if (_profileUiState.value.isSeeding) return
+
+        viewModelScope.launch {
+            _profileUiState.value = _profileUiState.value.copy(isSeeding = true)
+            try {
+                withContext(Dispatchers.IO) {
+                    val context = getApplication<Application>()
+                    val personalRepo = AppContainer.personalRepository(context)
+                    val notificationRepo = AppContainer.notificationRepository(context)
+                    val feedRepo = AppContainer.feedRepository()
+                    val splitRepo = AppContainer.splitRepository()
+                    
+                    DemoDataSeeder.seedDemoTransactions(personalRepo, profile.uid)
+                    DemoDataSeeder.seedDemoNotifications(notificationRepo, profile.uid)
+                    DemoDataSeeder.seedDemoSplit(splitRepo, profile.uid)
+                    DemoDataSeeder.seedDemoPosts(feedRepo, profile)
+                }
+                _effect.emit(ProfileUiEffect.SeedSuccess)
+            } catch (e: Exception) {
+                _effect.emit(ProfileUiEffect.SeedError(e.message ?: "Failed to seed demo data"))
+            } finally {
+                _profileUiState.value = _profileUiState.value.copy(isSeeding = false)
+            }
         }
     }
 }

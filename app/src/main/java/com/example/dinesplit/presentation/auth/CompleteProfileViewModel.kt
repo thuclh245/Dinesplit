@@ -17,6 +17,8 @@ import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asSharedFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.launch
+import kotlinx.coroutines.Dispatchers
+import com.example.dinesplit.data.seeder.DemoDataSeeder
 
 data class CompleteProfileUiState(
     val displayName: String = "",
@@ -120,6 +122,23 @@ class CompleteProfileViewModel(application: Application) : AndroidViewModel(appl
 
             updateProfileUseCase(profile)
                 .onSuccess {
+                    // Auto-seed demo data on complete profile so feed/split/personal is populated immediately!
+                    viewModelScope.launch(Dispatchers.IO) {
+                        try {
+                            val personalRepo = AppContainer.personalRepository(getApplication())
+                            val notificationRepo = AppContainer.notificationRepository(getApplication())
+                            val feedRepo = AppContainer.feedRepository()
+                            val splitRepo = AppContainer.splitRepository()
+                            
+                            DemoDataSeeder.seedDemoTransactions(personalRepo, profile.uid)
+                            DemoDataSeeder.seedDemoNotifications(notificationRepo, profile.uid)
+                            DemoDataSeeder.seedDemoSplit(splitRepo, profile.uid)
+                            DemoDataSeeder.seedDemoPosts(feedRepo, profile)
+                        } catch (e: Exception) {
+                            e.printStackTrace()
+                        }
+                    }
+
                     _uiState.value = _uiState.value.copy(
                         isSubmitting = false,
                         isAvatarUploading = false,

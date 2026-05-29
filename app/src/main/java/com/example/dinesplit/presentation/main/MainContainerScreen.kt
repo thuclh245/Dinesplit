@@ -83,11 +83,18 @@ fun MainContainerScreen(
             ?.any { it.route == tab.route } == true
     }
 
+    val context = androidx.compose.ui.platform.LocalContext.current
     LaunchedEffect(profileViewModel) {
         profileViewModel.effect.collectLatest { effect ->
             when (effect) {
                 ProfileUiEffect.LogoutSuccess -> onLogout()
                 ProfileUiEffect.SaveSuccess -> mainNavController.navigateUp()
+                ProfileUiEffect.SeedSuccess -> {
+                    android.widget.Toast.makeText(context, "Gieo dữ liệu mẫu thành công! Hãy kiểm tra trang chủ và ví của bạn.", android.widget.Toast.LENGTH_LONG).show()
+                }
+                is ProfileUiEffect.SeedError -> {
+                    android.widget.Toast.makeText(context, "Lỗi gieo dữ liệu mẫu: ${effect.message}", android.widget.Toast.LENGTH_LONG).show()
+                }
             }
         }
     }
@@ -142,7 +149,10 @@ fun MainContainerScreen(
                 FeedScreen(
                     onOpenNotifications = onOpenNotifications,
                     onOpenSearch = { mainNavController.navigate(AppRoute.Search.route) },
-                    onSettleUp = { /* Handle settle up */ }
+                    onCreatePost = { mainNavController.navigate(AppRoute.CreatePost.route) },
+                    onSettleUp = { groupId, billId ->
+                        mainNavController.navigate(AppRoute.BillDetail.createRoute(groupId, billId))
+                    }
                 )
             }
             composable(AppRoute.Split.route) {
@@ -350,8 +360,9 @@ fun MainContainerScreen(
                     userHandle = profileUiState.profile?.username?.let { "@$it" }.orEmpty(),
                     userBio = profileUiState.profile?.bio.orEmpty(),
                     isLoggingOut = profileUiState.isLoggingOut,
+                    isSeeding = profileUiState.isSeeding,
                     onEditProfile = { mainNavController.navigate(AppRoute.EditProfile.route) },
-                    onOpenSettings = { /* TODO: Implement settings */ },
+                    onSeedDemoData = profileViewModel::seedDemoData,
                     onOpenSearch = { mainNavController.navigate(AppRoute.Search.route) },
                     onLogout = profileViewModel::logout
                 )

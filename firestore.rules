@@ -37,7 +37,7 @@ service cloud.firestore {
     }
 
     function usernameClaimPath(usernameLower) {
-      return /databases/$(database)/documents/username_claims/$(usernameLower);
+      return /databases/$(database)/documents/usernames/$(usernameLower);
     }
 
     function validUsernameClaim(data, usernameLower) {
@@ -373,14 +373,14 @@ service cloud.firestore {
         && data.date is int;
     }
 
-    match /user_profiles/{uid} {
+    match /users/{uid} {
       allow get, list: if signedIn();
       allow create: if isOwner(uid) && validUserProfile(request.resource.data);
       allow update: if isOwner(uid) && validUserProfile(request.resource.data);
       allow delete: if isOwner(uid);
     }
 
-    match /username_claims/{usernameLower} {
+    match /usernames/{usernameLower} {
       allow get: if signedIn();
       allow list: if false;
       allow create: if signedIn() && validUsernameClaim(request.resource.data, usernameLower);
