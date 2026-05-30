@@ -61,6 +61,7 @@ fun RegisterScreen(
         onEmailChange = viewModel::onEmailChange,
         onPasswordChange = viewModel::onPasswordChange,
         onConfirmPasswordChange = viewModel::onConfirmPasswordChange,
+        onTermsAcceptedChange = viewModel::onTermsAcceptedChange,
         onSubmit = viewModel::submit,
         onGoToLogin = onGoToLogin
     )
@@ -73,6 +74,7 @@ private fun RegisterContent(
     onEmailChange: (String) -> Unit,
     onPasswordChange: (String) -> Unit,
     onConfirmPasswordChange: (String) -> Unit,
+    onTermsAcceptedChange: (Boolean) -> Unit,
     onSubmit: () -> Unit,
     onGoToLogin: () -> Unit
 ) {
@@ -222,28 +224,46 @@ private fun RegisterContent(
                     horizontalArrangement = Arrangement.spacedBy(12.dp)
                 ) {
                     Checkbox(
-                        checked = true, // Simplified for now
-                        onCheckedChange = { },
+                        checked = uiState.isTermsAccepted,
+                        onCheckedChange = onTermsAcceptedChange,
                         colors = CheckboxDefaults.colors(
                             checkedColor = MaterialTheme.colorScheme.primary,
                             uncheckedColor = MaterialTheme.colorScheme.outlineVariant
                         ),
                         modifier = Modifier.offset(y = (-8).dp)
                     )
-                    Text(
-                        text = buildAnnotatedString {
-                            append("By registering, you agree to our ")
-                            withStyle(SpanStyle(color = MaterialTheme.colorScheme.primary, fontWeight = FontWeight.Bold)) {
-                                append("Terms of Service")
-                            }
-                            append(" and ")
-                            withStyle(SpanStyle(color = MaterialTheme.colorScheme.primary, fontWeight = FontWeight.Bold)) {
-                                append("Privacy Policy")
-                            }
-                            append(". We handle your data with care.")
-                        },
-                        style = MaterialTheme.typography.bodySmall.copy(lineHeight = 16.sp),
-                        color = MaterialTheme.colorScheme.onSurfaceVariant
+                    val uriHandler = androidx.compose.ui.platform.LocalUriHandler.current
+                    val annotatedText = buildAnnotatedString {
+                        append("By registering, you agree to our ")
+                        pushStringAnnotation(tag = "TERMS", annotation = "https://dinesplit.com/terms")
+                        withStyle(SpanStyle(color = MaterialTheme.colorScheme.primary, fontWeight = FontWeight.Bold, textDecoration = androidx.compose.ui.text.style.TextDecoration.Underline)) {
+                            append("Terms of Service")
+                        }
+                        pop()
+                        append(" and ")
+                        pushStringAnnotation(tag = "PRIVACY", annotation = "https://dinesplit.com/privacy")
+                        withStyle(SpanStyle(color = MaterialTheme.colorScheme.primary, fontWeight = FontWeight.Bold, textDecoration = androidx.compose.ui.text.style.TextDecoration.Underline)) {
+                            append("Privacy Policy")
+                        }
+                        pop()
+                        append(". We handle your data with care.")
+                    }
+                    androidx.compose.foundation.text.ClickableText(
+                        text = annotatedText,
+                        style = MaterialTheme.typography.bodySmall.copy(
+                            lineHeight = 16.sp,
+                            color = MaterialTheme.colorScheme.onSurfaceVariant
+                        ),
+                        onClick = { offset ->
+                            annotatedText.getStringAnnotations(tag = "TERMS", start = offset, end = offset)
+                                .firstOrNull()?.let { annotation ->
+                                    uriHandler.openUri(annotation.item)
+                                }
+                            annotatedText.getStringAnnotations(tag = "PRIVACY", start = offset, end = offset)
+                                .firstOrNull()?.let { annotation ->
+                                    uriHandler.openUri(annotation.item)
+                                }
+                        }
                     )
                 }
 
@@ -447,6 +467,7 @@ fun RegisterScreenPreview() {
             onEmailChange = {},
             onPasswordChange = {},
             onConfirmPasswordChange = {},
+            onTermsAcceptedChange = {},
             onSubmit = {},
             onGoToLogin = {}
         )

@@ -31,7 +31,8 @@ data class CompleteProfileUiState(
     val displayNameError: String? = null,
     val usernameError: String? = null,
     val isSubmitting: Boolean = false,
-    val submitError: String? = null
+    val submitError: String? = null,
+    val selectedStyles: List<String> = emptyList()
 )
 
 sealed interface CompleteProfileUiEffect {
@@ -80,6 +81,16 @@ class CompleteProfileViewModel(application: Application) : AndroidViewModel(appl
         )
     }
 
+    fun toggleDiningStyle(style: String) {
+        val currentSelected = _uiState.value.selectedStyles
+        val updated = if (currentSelected.contains(style)) {
+            currentSelected - style
+        } else {
+            currentSelected + style
+        }
+        _uiState.value = _uiState.value.copy(selectedStyles = updated)
+    }
+
     fun submit() {
         val current = _uiState.value
         if (current.isSubmitting) return
@@ -116,6 +127,7 @@ class CompleteProfileViewModel(application: Application) : AndroidViewModel(appl
                 email = session.email,
                 avatarUrl = finalAvatarUrl,
                 bio = current.bio.trim(),
+                diningStyles = current.selectedStyles,
                 createdAt = Date(now),
                 updatedAt = Date(now)
             )

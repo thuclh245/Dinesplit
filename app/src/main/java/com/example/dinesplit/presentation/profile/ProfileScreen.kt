@@ -45,6 +45,7 @@ fun ProfileScreen(
     var showLogoutConfirmation by remember { mutableStateOf(false) }
     var showSettingsDialog by remember { mutableStateOf(false) }
     var wasSeeding by remember { mutableStateOf(false) }
+    var selectedTab by remember { mutableStateOf(0) }
 
     LaunchedEffect(isSeeding) {
         if (isSeeding) {
@@ -167,9 +168,26 @@ fun ProfileScreen(
                 onLogout = { showLogoutConfirmation = true }
             )
 
-            ProfileTabs()
+            ProfileTabs(selectedTab = selectedTab, onTabSelected = { selectedTab = it })
 
-            ProfileOverview()
+            when (selectedTab) {
+                0 -> PhotoGrid(photos = samplePhotos)
+                1 -> ProfileOverview()
+                2 -> {
+                    Box(
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .padding(vertical = 32.dp),
+                        contentAlignment = Alignment.Center
+                    ) {
+                        Text(
+                            text = "Không có hoạt động được gắn thẻ",
+                            style = MaterialTheme.typography.bodyMedium,
+                            color = MaterialTheme.colorScheme.outline
+                        )
+                    }
+                }
+            }
             
             Spacer(modifier = Modifier.height(120.dp))
         }
@@ -306,8 +324,10 @@ private fun ProfileOverview() {
 }
 
 @Composable
-private fun ProfileTabs() {
-    var selectedTab by remember { mutableStateOf(0) }
+private fun ProfileTabs(
+    selectedTab: Int,
+    onTabSelected: (Int) -> Unit
+) {
     val tabs = listOf(
         TabInfo("Grid", Icons.Default.GridView),
         TabInfo("Saved", Icons.Default.BookmarkBorder),
@@ -322,7 +342,7 @@ private fun ProfileTabs() {
                     modifier = Modifier
                         .weight(1f)
                         .fillMaxHeight()
-                        .clickable { selectedTab = index }
+                        .clickable { onTabSelected(index) }
                         .drawBehind {
                             if (isSelected) {
                                 drawLine(

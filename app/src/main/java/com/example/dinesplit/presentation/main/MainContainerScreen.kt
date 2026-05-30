@@ -57,6 +57,9 @@ import com.example.dinesplit.presentation.split.GroupDetailScreen
 import com.example.dinesplit.presentation.split.GroupListScreen
 import com.example.dinesplit.presentation.split.SplitScreen
 import com.example.dinesplit.ui.theme.DineSplitTheme
+import com.example.dinesplit.core.ui.LoadingBlock
+import com.example.dinesplit.core.ui.ErrorStateBlock
+import com.example.dinesplit.core.ui.AppDimens
 import kotlinx.coroutines.flow.collectLatest
 
 @Composable
@@ -354,18 +357,47 @@ fun MainContainerScreen(
                 )
             }
             composable(AppRoute.Profile.route) {
-                ProfileScreen(
-                    userAvatarUrl = profileUiState.profile?.avatarUrl,
-                    userName = profileUiState.profile?.displayName ?: "User",
-                    userHandle = profileUiState.profile?.username?.let { "@$it" }.orEmpty(),
-                    userBio = profileUiState.profile?.bio.orEmpty(),
-                    isLoggingOut = profileUiState.isLoggingOut,
-                    isSeeding = profileUiState.isSeeding,
-                    onEditProfile = { mainNavController.navigate(AppRoute.EditProfile.route) },
-                    onSeedDemoData = profileViewModel::seedDemoData,
-                    onOpenSearch = { mainNavController.navigate(AppRoute.Search.route) },
-                    onLogout = profileViewModel::logout
-                )
+                when {
+                    profileUiState.isLoading -> {
+                        Box(
+                            modifier = Modifier
+                                .fillMaxSize()
+                                .padding(AppDimens.spaceLg),
+                            contentAlignment = Alignment.Center
+                        ) {
+                            LoadingBlock(message = "Loading profile...")
+                        }
+                    }
+                    profileUiState.errorMessage != null -> {
+                        Box(
+                            modifier = Modifier
+                                .fillMaxSize()
+                                .padding(AppDimens.spaceLg),
+                            contentAlignment = Alignment.Center
+                        ) {
+                            ErrorStateBlock(
+                                title = "Không thể tải hồ sơ",
+                                subtitle = profileUiState.errorMessage ?: "Vui lòng kiểm tra mạng và thử lại.",
+                                retryText = "Thử lại",
+                                onRetryClick = { profileViewModel.loadProfile() }
+                            )
+                        }
+                    }
+                    else -> {
+                        ProfileScreen(
+                            userAvatarUrl = profileUiState.profile?.avatarUrl,
+                            userName = profileUiState.profile?.displayName ?: "User",
+                            userHandle = profileUiState.profile?.username?.let { "@$it" }.orEmpty(),
+                            userBio = profileUiState.profile?.bio.orEmpty(),
+                            isLoggingOut = profileUiState.isLoggingOut,
+                            isSeeding = profileUiState.isSeeding,
+                            onEditProfile = { mainNavController.navigate(AppRoute.EditProfile.route) },
+                            onSeedDemoData = profileViewModel::seedDemoData,
+                            onOpenSearch = { mainNavController.navigate(AppRoute.Search.route) },
+                            onLogout = profileViewModel::logout
+                        )
+                    }
+                }
             }
             composable(AppRoute.EditProfile.route) {
                 EditProfileScreen(
@@ -375,6 +407,7 @@ fun MainContainerScreen(
                     onBioChange = profileViewModel::onBioChange,
                     onAvatarChange = profileViewModel::onAvatarSelected,
                     onAvatarClear = profileViewModel::onAvatarCleared,
+                    onToggleDiningStyle = profileViewModel::toggleDiningStyle,
                     onSave = profileViewModel::saveProfile,
                     onBack = { mainNavController.navigateUp() }
                 )

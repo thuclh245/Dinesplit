@@ -25,7 +25,8 @@ data class RegisterUiState(
     val passwordError: String? = null,
     val confirmPasswordError: String? = null,
     val isSubmitting: Boolean = false,
-    val submitError: String? = null
+    val submitError: String? = null,
+    val isTermsAccepted: Boolean = false
 )
 
 sealed interface RegisterUiEffect {
@@ -63,6 +64,10 @@ class RegisterViewModel(application: Application) : AndroidViewModel(application
         _uiState.value = _uiState.value.copy(confirmPassword = value, confirmPasswordError = null, submitError = null)
     }
 
+    fun onTermsAcceptedChange(value: Boolean) {
+        _uiState.value = _uiState.value.copy(isTermsAccepted = value, submitError = null)
+    }
+
     fun submit() {
         val current = _uiState.value
         if (current.isSubmitting) return
@@ -78,6 +83,13 @@ class RegisterViewModel(application: Application) : AndroidViewModel(application
                 emailError = emailError,
                 passwordError = passwordError,
                 confirmPasswordError = confirmError
+            )
+            return
+        }
+
+        if (!current.isTermsAccepted) {
+            _uiState.value = current.copy(
+                submitError = "You must accept the Terms of Service and Privacy Policy to continue."
             )
             return
         }

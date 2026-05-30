@@ -53,6 +53,7 @@ fun CompleteProfileScreen(
         onUsernameChange = viewModel::onUsernameChange,
         onBioChange = viewModel::onBioChange,
         onAvatarSelected = viewModel::onAvatarSelected,
+        onToggleDiningStyle = viewModel::toggleDiningStyle,
         onSubmit = viewModel::submit,
         onBack = onBack
     )
@@ -65,6 +66,7 @@ private fun CompleteProfileContent(
     onUsernameChange: (String) -> Unit,
     onBioChange: (String) -> Unit,
     onAvatarSelected: (Uri) -> Unit,
+    onToggleDiningStyle: (String) -> Unit,
     onSubmit: () -> Unit,
     onBack: () -> Unit
 ) {
@@ -264,9 +266,9 @@ private fun CompleteProfileContent(
                             modifier = Modifier.padding(start = 4.dp)
                         )
                         Row(horizontalArrangement = Arrangement.spacedBy(8.dp), modifier = Modifier.fillMaxWidth()) {
-                            StyleChip(label = "Fine Dining", icon = Icons.Default.Restaurant, selected = true)
-                            StyleChip(label = "Cafe Hopper", icon = Icons.Default.Coffee, selected = false)
-                            StyleChip(label = "Nightlife", icon = Icons.Default.LocalBar, selected = false)
+                            StyleChip(label = "Fine Dining", icon = Icons.Default.Restaurant, selected = uiState.selectedStyles.contains("Fine Dining"), onClick = { onToggleDiningStyle("Fine Dining") })
+                            StyleChip(label = "Cafe Hopper", icon = Icons.Default.Coffee, selected = uiState.selectedStyles.contains("Cafe Hopper"), onClick = { onToggleDiningStyle("Cafe Hopper") })
+                            StyleChip(label = "Nightlife", icon = Icons.Default.LocalBar, selected = uiState.selectedStyles.contains("Nightlife"), onClick = { onToggleDiningStyle("Nightlife") })
                         }
                     }
                 }
@@ -387,12 +389,13 @@ private fun ProfileTextField(
 private fun StyleChip(
     label: String,
     icon: ImageVector,
-    selected: Boolean
+    selected: Boolean,
+    onClick: () -> Unit
 ) {
     Surface(
         color = if (selected) MaterialTheme.colorScheme.secondaryContainer else MaterialTheme.colorScheme.surfaceContainerHighest,
         shape = CircleShape,
-        modifier = Modifier.clickable { }
+        modifier = Modifier.clickable { onClick() }
     ) {
         Row(
             modifier = Modifier.padding(horizontal = 16.dp, vertical = 8.dp),
@@ -427,6 +430,7 @@ fun CompleteProfileScreenPreview() {
             onUsernameChange = {},
             onBioChange = {},
             onAvatarSelected = {},
+            onToggleDiningStyle = {},
             onSubmit = {},
             onBack = {}
         )

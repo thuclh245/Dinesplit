@@ -45,7 +45,8 @@ data class EditProfileUiState(
     val displayNameError: String? = null,
     val usernameError: String? = null,
     val isSubmitting: Boolean = false,
-    val submitError: String? = null
+    val submitError: String? = null,
+    val selectedStyles: List<String> = emptyList()
 )
 
 sealed interface ProfileUiEffect {
@@ -107,7 +108,8 @@ class ProfileViewModel(application: Application) : AndroidViewModel(application)
                 displayName = profile.displayName,
                 username = profile.username,
                 bio = profile.bio,
-                avatarUrl = profile.avatarUrl
+                avatarUrl = profile.avatarUrl,
+                selectedStyles = profile.diningStyles
             )
         }
     }
@@ -142,6 +144,16 @@ class ProfileViewModel(application: Application) : AndroidViewModel(application)
         )
     }
 
+    fun toggleDiningStyle(style: String) {
+        val currentSelected = _editUiState.value.selectedStyles
+        val updated = if (currentSelected.contains(style)) {
+            currentSelected - style
+        } else {
+            currentSelected + style
+        }
+        _editUiState.value = _editUiState.value.copy(selectedStyles = updated)
+    }
+
     fun saveProfile() {
         val profile = _profileUiState.value.profile ?: return
         val current = _editUiState.value
@@ -170,6 +182,7 @@ class ProfileViewModel(application: Application) : AndroidViewModel(application)
                 username = current.username.trim(),
                 avatarUrl = finalAvatarUrl,
                 bio = current.bio.trim(),
+                diningStyles = current.selectedStyles,
                 updatedAt = Date()
             )
 
@@ -180,7 +193,8 @@ class ProfileViewModel(application: Application) : AndroidViewModel(application)
                         isSubmitting = false,
                         isAvatarUploading = false,
                         avatarUrl = finalAvatarUrl,
-                        avatarLocalUri = null
+                        avatarLocalUri = null,
+                        selectedStyles = updatedProfile.diningStyles
                     )
                     _effect.emit(ProfileUiEffect.SaveSuccess)
                 }
