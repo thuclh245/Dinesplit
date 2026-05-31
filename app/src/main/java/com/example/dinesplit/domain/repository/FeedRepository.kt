@@ -43,4 +43,6 @@ interface FeedRepository {
         limit: Long,
         lastPostId: String?,
     ): List<Post>
+
+    suspend fun searchPosts(query: String): List<Post>
 }

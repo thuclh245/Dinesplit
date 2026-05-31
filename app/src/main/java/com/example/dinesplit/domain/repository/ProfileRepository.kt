@@ -17,4 +17,10 @@ interface ProfileRepository {
         uid: String,
         avatarUri: Uri,
     ): Result<String>
+
+    suspend fun getRecentSearches(uid: String): Result<List<String>>
+
+    suspend fun saveRecentSearch(uid: String, query: String): Result<Unit>
+
+    suspend fun clearRecentSearches(uid: String): Result<Unit>
 }

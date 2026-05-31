@@ -489,7 +489,15 @@ fun MainContainerScreen(
                         )
                     }
                     composable(AppRoute.Search.route) {
-                        SearchScreen(onBack = { mainNavController.navigateUp() })
+                        SearchScreen(
+                            onBack = { mainNavController.navigateUp() },
+                            onOpenPostDetail = { postId ->
+                                mainNavController.navigate(AppRoute.PostDetail.createRoute(postId))
+                            },
+                            onOpenUserProfile = { userId ->
+                                mainNavController.navigate(AppRoute.OtherUserProfile.createRoute(userId))
+                            }
+                        )
                     }
                     composable(AppRoute.CreatePost.route) {
                         CreatePostScreen(onBack = { mainNavController.navigateUp() })

@@ -117,6 +117,53 @@ class FirebaseProfileRepository private constructor(
         }
     }
 
+    override suspend fun getRecentSearches(uid: String): Result<List<String>> {
+        return runCatching {
+            val snapshot = firestore.collection(COLLECTION_USERS)
+                .document(uid)
+                .collection("recentSearches")
+                .orderBy("timestamp", com.google.firebase.firestore.Query.Direction.DESCENDING)
+                .limit(10)
+                .get()
+                .awaitFirebase()
+
+            snapshot.documents.mapNotNull { it.getString("query") }
+        }
+    }
+
+    override suspend fun saveRecentSearch(uid: String, query: String): Result<Unit> {
+        return runCatching {
+            val searchId = query.trim().lowercase()
+            val data = mapOf(
+                "query" to query.trim(),
+                "timestamp" to System.currentTimeMillis()
+            )
+            firestore.collection(COLLECTION_USERS)
+                .document(uid)
+                .collection("recentSearches")
+                .document(searchId)
+                .set(data)
+                .awaitFirebase()
+            Unit
+        }
+    }
+
+    override suspend fun clearRecentSearches(uid: String): Result<Unit> {
+        return runCatching {
+            val ref = firestore.collection(COLLECTION_USERS)
+                .document(uid)
+                .collection("recentSearches")
+
+            val snapshot = ref.get().awaitFirebase()
+            val batch = firestore.batch()
+            for (doc in snapshot.documents) {
+                batch.delete(doc.reference)
+            }
+            batch.commit().awaitFirebase()
+            Unit
+        }
+    }
+
     private fun profileDocument(uid: String) = firestore.collection(COLLECTION_USERS).document(uid)
 
     private fun usernameClaimDocument(usernameLower: String) = firestore.collection(COLLECTION_USERNAME_CLAIMS).document(usernameLower)

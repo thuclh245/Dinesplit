@@ -236,6 +236,17 @@ class FirebaseFeedRepository(
         }
     }
 
+    override suspend fun searchPosts(query: String): List<Post> {
+        val lowerQuery = query.lowercase().trim()
+        val posts = getFeedPostsBatch(100, null)
+        if (lowerQuery.isEmpty()) return posts
+        return posts.filter { post ->
+            post.caption.lowercase().contains(lowerQuery) ||
+                post.location?.lowercase()?.contains(lowerQuery) == true ||
+                post.authorName.lowercase().contains(lowerQuery)
+        }
+    }
+
     private suspend fun <T> Task<T>.awaitFirebase(): T {
         return suspendCancellableCoroutine { continuation ->
             addOnCompleteListener { task ->

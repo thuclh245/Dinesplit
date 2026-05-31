@@ -1,309 +1,325 @@
 package com.example.dinesplit.presentation.feed
 
-import androidx.compose.foundation.*
+import androidx.compose.foundation.background
+import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.LazyRow
 import androidx.compose.foundation.lazy.items
-import androidx.compose.foundation.shape.CircleShape
-import androidx.compose.foundation.shape.RoundedCornerShape
-import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.automirrored.filled.ArrowBack
-import androidx.compose.material.icons.filled.*
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.draw.clip
-import androidx.compose.ui.draw.shadow
-import androidx.compose.ui.graphics.Color
-import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.text.font.FontWeight
-import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
-import coil.compose.AsyncImage
-import com.example.dinesplit.ui.theme.DineSplitTheme
+import com.example.dinesplit.core.ui.AppDimens
+import com.example.dinesplit.core.ui.EmptyStateBlock
+import com.example.dinesplit.core.ui.ErrorStateBlock
+import com.example.dinesplit.core.ui.LoadingBlock
+import com.example.dinesplit.presentation.feed.search.SearchFilter
+import com.example.dinesplit.presentation.feed.search.SearchViewModel
+import com.example.dinesplit.presentation.feed.search.components.*
 
 @Composable
-fun SearchScreen(onBack: () -> Unit) {
-    var searchQuery by remember { mutableStateOf("") }
+fun SearchScreen(
+    onBack: () -> Unit,
+    onOpenPostDetail: (String) -> Unit,
+    onOpenUserProfile: (String) -> Unit,
+    viewModel: SearchViewModel = androidx.lifecycle.viewmodel.compose.viewModel()
+) {
+    val uiState by viewModel.uiState.collectAsState()
 
     Scaffold(
         topBar = {
             SearchTopBar(
-                query = searchQuery,
-                onQueryChange = { searchQuery = it },
+                query = uiState.query,
+                onQueryChange = viewModel::onQueryChange,
                 onBack = onBack,
+                onSearchAction = viewModel::executeSearch
             )
         },
     ) { padding ->
-        LazyColumn(
-            modifier =
-                Modifier
-                    .fillMaxSize()
-                    .background(MaterialTheme.colorScheme.background)
-                    .padding(padding),
-            contentPadding = PaddingValues(bottom = 32.dp),
-            verticalArrangement = Arrangement.spacedBy(32.dp),
+        Box(
+            modifier = Modifier
+                .fillMaxSize()
+                .background(MaterialTheme.colorScheme.background)
+                .padding(padding)
         ) {
-            // Recent Searches
-            item {
-                Column(modifier = Modifier.padding(top = 20.dp)) {
-                    SectionHeader("Recent Searches")
-                    LazyRow(
-                        contentPadding = PaddingValues(horizontal = 24.dp),
-                        horizontalArrangement = Arrangement.spacedBy(12.dp),
+            when {
+                uiState.isLoading -> {
+                    LoadingBlock(
+                        message = "Đang tìm kiếm...",
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .padding(AppDimens.spaceLg)
+                    )
+                }
+
+                uiState.errorMessage != null -> {
+                    ErrorStateBlock(
+                        title = "Không thể tìm kiếm",
+                        subtitle = uiState.errorMessage!!,
+                        retryText = "Thử lại",
+                        onRetryClick = viewModel::executeSearch,
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .padding(AppDimens.spaceLg)
+                    )
+                }
+
+                uiState.hasNoResult -> {
+                    EmptyStateBlock(
+                        title = "Không tìm thấy kết quả",
+                        subtitle = "Thử tìm kiếm với từ khóa khác như món ăn, địa điểm hoặc tên người dùng.",
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .padding(AppDimens.spaceLg)
+                    )
+                }
+
+                else -> {
+                    LazyColumn(
+                        modifier = Modifier.fillMaxSize(),
+                        contentPadding = PaddingValues(bottom = 32.dp),
+                        verticalArrangement = Arrangement.spacedBy(AppDimens.spaceLg),
                     ) {
-                        items(listOf("Pizza", "Sushi", "Minh Tu", "Tacos")) { search ->
-                            RecentSearchChip(text = search)
+                        if (uiState.isExploreMode) {
+                            // EXPLORE MODE
+                            
+                            // Recent searches
+                            if (uiState.recentSearches.isNotEmpty()) {
+                                item {
+                                    Column(modifier = Modifier.padding(top = AppDimens.spaceMd)) {
+                                        Row(
+                                            modifier = Modifier
+                                                .fillMaxWidth()
+                                                .padding(horizontal = AppDimens.spaceLg, vertical = AppDimens.spaceSm),
+                                            horizontalArrangement = Arrangement.SpaceBetween,
+                                            verticalAlignment = Alignment.CenterVertically
+                                        ) {
+                                            Text(
+                                                text = "Tìm kiếm gần đây",
+                                                style = MaterialTheme.typography.titleMedium.copy(fontWeight = FontWeight.Bold),
+                                                color = MaterialTheme.colorScheme.onSurface,
+                                            )
+                                            Text(
+                                                text = "Xóa tất cả",
+                                                style = MaterialTheme.typography.labelLarge,
+                                                color = MaterialTheme.colorScheme.primary,
+                                                modifier = Modifier.clickable { viewModel.clearAllRecentSearches() }
+                                            )
+                                        }
+
+                                        LazyRow(
+                                            contentPadding = PaddingValues(horizontal = AppDimens.spaceLg),
+                                            horizontalArrangement = Arrangement.spacedBy(AppDimens.spaceSm),
+                                        ) {
+                                            items(
+                                                items = uiState.recentSearches,
+                                                key = { "recent_$it" }
+                                            ) { search ->
+                                                RecentSearchChip(
+                                                    text = search,
+                                                    onClick = { viewModel.onQueryChange(search) },
+                                                    onDeleteClick = { viewModel.deleteRecentSearch(search) }
+                                                )
+                                            }
+                                        }
+                                    }
+                                }
+                            }
+
+                            // Discover People (Gợi ý kết nối bạn bè)
+                            if (uiState.suggestedPeople.isNotEmpty()) {
+                                item {
+                                    Text(
+                                        text = "Khám phá bạn bè",
+                                        style = MaterialTheme.typography.titleMedium.copy(fontWeight = FontWeight.Bold),
+                                        color = MaterialTheme.colorScheme.onSurface,
+                                        modifier = Modifier.padding(horizontal = AppDimens.spaceLg, vertical = AppDimens.spaceSm),
+                                    )
+                                }
+
+                                items(
+                                    items = uiState.suggestedPeople,
+                                    key = { "suggested_${it.uid}" }
+                                ) { user ->
+                                    Box(modifier = Modifier.padding(horizontal = AppDimens.spaceLg)) {
+                                        SearchPersonCard(
+                                            user = user,
+                                            onClick = { onOpenUserProfile(user.uid) }
+                                        )
+                                    }
+                                }
+                            }
+
+                            // Trending Places (Địa điểm ăn uống xu hướng)
+                            if (uiState.trendingPlaces.isNotEmpty()) {
+                                item {
+                                    Text(
+                                        text = "Địa điểm nổi bật",
+                                        style = MaterialTheme.typography.titleMedium.copy(fontWeight = FontWeight.Bold),
+                                        color = MaterialTheme.colorScheme.onSurface,
+                                        modifier = Modifier.padding(horizontal = AppDimens.spaceLg, vertical = AppDimens.spaceSm),
+                                    )
+                                }
+
+                                items(
+                                    items = uiState.trendingPlaces,
+                                    key = { "trending_${it.id}" }
+                                ) { place ->
+                                    Box(modifier = Modifier.padding(horizontal = AppDimens.spaceLg)) {
+                                        SearchPlaceCard(
+                                            place = place,
+                                            onClick = { }
+                                        )
+                                    }
+                                }
+                            }
+
+                        } else {
+                            // RESULT MODE
+                            
+                            // Category chips selection
+                            item {
+                                LazyRow(
+                                    contentPadding = PaddingValues(horizontal = AppDimens.spaceLg, vertical = AppDimens.spaceSm),
+                                    horizontalArrangement = Arrangement.spacedBy(AppDimens.spaceSm)
+                                ) {
+                                    items(SearchFilter.values()) { filter ->
+                                        FilterChip(
+                                            selected = uiState.selectedFilter == filter,
+                                            onClick = { viewModel.onFilterChange(filter) },
+                                            label = { Text(filter.label) },
+                                            colors = FilterChipDefaults.filterChipColors(
+                                                selectedContainerColor = MaterialTheme.colorScheme.primaryContainer,
+                                                selectedLabelColor = MaterialTheme.colorScheme.onPrimaryContainer
+                                            )
+                                        )
+                                    }
+                                }
+                            }
+
+                            when (uiState.selectedFilter) {
+                                SearchFilter.All -> {
+                                    // 1. Users category preview
+                                    if (uiState.peopleResults.isNotEmpty()) {
+                                        item {
+                                            Text(
+                                                text = "Người dùng",
+                                                style = MaterialTheme.typography.titleMedium.copy(fontWeight = FontWeight.Bold),
+                                                modifier = Modifier.padding(horizontal = AppDimens.spaceLg, vertical = AppDimens.spaceSm)
+                                            )
+                                        }
+
+                                        items(
+                                            items = uiState.peopleResults.take(3),
+                                            key = { "result_person_all_${it.uid}" }
+                                        ) { user ->
+                                            Box(modifier = Modifier.padding(horizontal = AppDimens.spaceLg)) {
+                                                SearchPersonCard(
+                                                    user = user,
+                                                    onClick = { onOpenUserProfile(user.uid) }
+                                                )
+                                            }
+                                        }
+                                    }
+
+                                    // 2. Posts category preview
+                                    if (uiState.postResults.isNotEmpty()) {
+                                        item {
+                                            Text(
+                                                text = "Bài viết",
+                                                style = MaterialTheme.typography.titleMedium.copy(fontWeight = FontWeight.Bold),
+                                                modifier = Modifier.padding(horizontal = AppDimens.spaceLg, vertical = AppDimens.spaceSm)
+                                            )
+                                        }
+
+                                        items(
+                                            items = uiState.postResults.take(5),
+                                            key = { "result_post_all_${it.id}" }
+                                        ) { post ->
+                                            Box(modifier = Modifier.padding(horizontal = AppDimens.spaceLg)) {
+                                                SearchPostCard(
+                                                    post = post,
+                                                    onClick = { onOpenPostDetail(post.id) },
+                                                    onAuthorClick = { onOpenUserProfile(post.authorUid) }
+                                                )
+                                            }
+                                        }
+                                    }
+
+                                    // 3. Places category preview
+                                    if (uiState.placeResults.isNotEmpty()) {
+                                        item {
+                                            Text(
+                                                text = "Địa điểm",
+                                                style = MaterialTheme.typography.titleMedium.copy(fontWeight = FontWeight.Bold),
+                                                modifier = Modifier.padding(horizontal = AppDimens.spaceLg, vertical = AppDimens.spaceSm)
+                                            )
+                                        }
+
+                                        items(
+                                            items = uiState.placeResults.take(3),
+                                            key = { "result_place_all_${it.id}" }
+                                        ) { place ->
+                                            Box(modifier = Modifier.padding(horizontal = AppDimens.spaceLg)) {
+                                                SearchPlaceCard(
+                                                    place = place,
+                                                    onClick = { }
+                                                )
+                                            }
+                                        }
+                                    }
+                                }
+
+                                SearchFilter.Posts -> {
+                                    items(
+                                        items = uiState.postResults,
+                                        key = { "result_post_only_${it.id}" }
+                                    ) { post ->
+                                        Box(modifier = Modifier.padding(horizontal = AppDimens.spaceLg)) {
+                                            SearchPostCard(
+                                                post = post,
+                                                onClick = { onOpenPostDetail(post.id) },
+                                                onAuthorClick = { onOpenUserProfile(post.authorUid) }
+                                            )
+                                        }
+                                    }
+                                }
+
+                                SearchFilter.People -> {
+                                    items(
+                                        items = uiState.peopleResults,
+                                        key = { "result_person_only_${it.uid}" }
+                                    ) { user ->
+                                        Box(modifier = Modifier.padding(horizontal = AppDimens.spaceLg)) {
+                                            SearchPersonCard(
+                                                user = user,
+                                                onClick = { onOpenUserProfile(user.uid) }
+                                            )
+                                        }
+                                    }
+                                }
+
+                                SearchFilter.Places -> {
+                                    items(
+                                        items = uiState.placeResults,
+                                        key = { "result_place_only_${it.id}" }
+                                    ) { place ->
+                                        Box(modifier = Modifier.padding(horizontal = AppDimens.spaceLg)) {
+                                            SearchPlaceCard(
+                                                place = place,
+                                                onClick = { }
+                                            )
+                                        }
+                                    }
+                                }
+                            }
                         }
                     }
                 }
             }
-
-            // Discover People
-            item {
-                Column {
-                    SectionHeader("Discover People")
-                    Column(
-                        modifier = Modifier.padding(horizontal = 24.dp),
-                        verticalArrangement = Arrangement.spacedBy(12.dp),
-                    ) {
-                        PersonCard(
-                            name = "Alex Rivera",
-                            username = "@arivera",
-                            avatar = "https://lh3.googleusercontent.com/aida-public/AB6AXuDwxJnHovEA4MZZn9_eD7i7DfH26b0g9SmrcAMRkO3PQvhUxRiuLYUSwSdrzF5tI15Tf5_QjCIsK3-zmmXq85-hjWR7JDv0nL46Gxzjtol8bTEDtcNtce1HTbUzG9Tl0B7IUz8v582Q8bnm3-QeQE8kR2c3b0sjBTj0qbAHIie7WPaU1c3Rak4lgJYQEkvUgX69rYbBO2cHdasU-aUybsRDmgAz4buZSO10y2Y_c5JiQdFD8386aat4eQnqfF9AZRBy3KNm4h31sQ",
-                        )
-                        PersonCard(
-                            name = "Sarah Chen",
-                            username = "@schen_eats",
-                            avatar = "https://lh3.googleusercontent.com/aida-public/AB6AXuADofLptzzae-aLxMe7sdKsfW_WuKzC2SA61NgiVHocSdFixcvw3Z-zOXpYMATh-994KFD43AJIKO60mpimtqsxdh2rBKrwhpyvL62G9vfr4qV7c0nVCgSRa0CIFM-dY62ELfBq-5ssnWNecSo6fZF8_3Z-2izT1eoEhsdEym5ZRnJtQ1p5vFh4GF8d4ts0MHERtAd8Rv6XjOseuOUk5tE_hxI7E6evpiPfPE_11sJSh0AsQx6a6Ur9Llm8fXWNiflnQYzhJlZzJg",
-                        )
-                    }
-                }
-            }
-
-            // Trending Places
-            item {
-                Column {
-                    SectionHeader("Trending Places")
-                    Column(
-                        modifier = Modifier.padding(horizontal = 24.dp),
-                        verticalArrangement = Arrangement.spacedBy(24.dp),
-                    ) {
-                        PlaceCard(
-                            name = "The Rustic Spoons",
-                            category = "Artisanal Italian",
-                            rating = "4.8",
-                            distance = "1.2 mi",
-                            priceRange = "$$$",
-                            image = "https://lh3.googleusercontent.com/aida-public/AB6AXuAnKvQKCCduaFahO55imH8Cl_EDOrKzD3axmpQl65HQdBlT-AvIAYxjxe-Iq2cLOXN_QBN51DrnEjhtaPAWPe2pT7QCSXolQ6eQIQfn0KozsJ7NprB-f8mJStrrAmYHt6Ifz9821HotOldGO8chnQ9MDmdEPqu4pFmpzKUh1zLllrrHhJIBDC0hTE8erOZBXMsqYcqXhnycvovS241S6TCDAym__w04HbAcz2mnktnxKVfuWgKkmgy2lSRvRh6lHSLGA17PyB6W-Q",
-                        )
-                        PlaceCard(
-                            name = "Urban Greens",
-                            category = "Healthy Bowls",
-                            rating = "4.6",
-                            distance = "0.8 mi",
-                            priceRange = "$$",
-                            image = "https://lh3.googleusercontent.com/aida-public/AB6AXuCkxScXIbLdu6IiOy23I0nbl2-tb8Zhwv5q6IOHlBqhaI2piPVrmIp0iMOuGCPZfmQDg5OkvifWKNUMCEKZ0h0a09Qa-OdIzFKMjHGqjbOv_ri4hEO1W_ofZ6RZxhjH2ey-gZ8jBqTOc1ErG-cGKZPNsxALDyFAM6xHYP_SYCrz-7gdSTyMWUv50ARCoL_Bvlfg9uwEHrWaKpCgHqR7QGFApntACPfJMHNoW1Q1PGfbIZyxPiQs2p1ksTVn6_v_uIGlBbDuhvVBpQ",
-                        )
-                    }
-                }
-            }
         }
-    }
-}
-
-@Composable
-private fun SearchTopBar(
-    query: String,
-    onQueryChange: (String) -> Unit,
-    onBack: () -> Unit,
-) {
-    Surface(
-        color = MaterialTheme.colorScheme.background,
-        modifier = Modifier.fillMaxWidth(),
-    ) {
-        Row(
-            modifier =
-                Modifier
-                    .statusBarsPadding()
-                    .fillMaxWidth()
-                    .height(72.dp)
-                    .padding(horizontal = 16.dp),
-            verticalAlignment = Alignment.CenterVertically,
-            horizontalArrangement = Arrangement.spacedBy(8.dp),
-        ) {
-            IconButton(onClick = onBack) {
-                Icon(Icons.AutoMirrored.Filled.ArrowBack, contentDescription = "Back", tint = MaterialTheme.colorScheme.onSurfaceVariant)
-            }
-
-            TextField(
-                value = query,
-                onValueChange = onQueryChange,
-                modifier =
-                    Modifier
-                        .weight(1f)
-                        .height(48.dp),
-                placeholder = {
-                    Text(
-                        "Search...",
-                        style = MaterialTheme.typography.bodyMedium,
-                        color = MaterialTheme.colorScheme.outlineVariant,
-                    )
-                },
-                shape = CircleShape,
-                colors =
-                    TextFieldDefaults.colors(
-                        unfocusedContainerColor = MaterialTheme.colorScheme.surfaceContainerLow,
-                        focusedContainerColor = MaterialTheme.colorScheme.surfaceContainerLow,
-                        focusedIndicatorColor = Color.Transparent,
-                        unfocusedIndicatorColor = Color.Transparent,
-                        cursorColor = MaterialTheme.colorScheme.primary,
-                    ),
-                singleLine = true,
-            )
-        }
-    }
-}
-
-@Composable
-private fun SectionHeader(text: String) {
-    Text(
-        text = text,
-        style = MaterialTheme.typography.titleMedium.copy(fontWeight = FontWeight.Bold),
-        color = MaterialTheme.colorScheme.onSurface,
-        modifier = Modifier.padding(horizontal = 28.dp, vertical = 16.dp),
-    )
-}
-
-@Composable
-private fun RecentSearchChip(text: String) {
-    Surface(
-        onClick = { },
-        shape = CircleShape,
-        color = MaterialTheme.colorScheme.surfaceContainerHigh,
-    ) {
-        Row(
-            modifier = Modifier.padding(horizontal = 20.dp, vertical = 10.dp),
-            verticalAlignment = Alignment.CenterVertically,
-            horizontalArrangement = Arrangement.spacedBy(8.dp),
-        ) {
-            Icon(
-                Icons.Default.History,
-                contentDescription = null,
-                modifier = Modifier.size(18.dp),
-                tint = MaterialTheme.colorScheme.outlineVariant,
-            )
-            Text(
-                text,
-                style = MaterialTheme.typography.labelMedium.copy(fontWeight = FontWeight.Medium),
-                color = MaterialTheme.colorScheme.onSurface,
-            )
-        }
-    }
-}
-
-@Composable
-private fun PersonCard(
-    name: String,
-    username: String,
-    avatar: String,
-) {
-    Surface(
-        modifier = Modifier.fillMaxWidth().shadow(4.dp, RoundedCornerShape(16.dp), spotColor = Color.Black.copy(alpha = 0.04f)),
-        shape = RoundedCornerShape(16.dp),
-        color = MaterialTheme.colorScheme.surfaceContainerLowest,
-    ) {
-        Row(
-            modifier = Modifier.padding(16.dp),
-            verticalAlignment = Alignment.CenterVertically,
-            horizontalArrangement = Arrangement.SpaceBetween,
-        ) {
-            Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(16.dp)) {
-                AsyncImage(
-                    model = avatar,
-                    contentDescription = name,
-                    modifier = Modifier.size(48.dp).clip(CircleShape).background(MaterialTheme.colorScheme.surfaceContainer),
-                    contentScale = ContentScale.Crop,
-                )
-                Column {
-                    Text(name, style = MaterialTheme.typography.bodyLarge.copy(fontWeight = FontWeight.SemiBold))
-                    Text(username, style = MaterialTheme.typography.labelMedium, color = MaterialTheme.colorScheme.onSurfaceVariant)
-                }
-            }
-            Button(
-                onClick = { },
-                shape = CircleShape,
-                colors =
-                    ButtonDefaults.buttonColors(
-                        containerColor = MaterialTheme.colorScheme.primary.copy(alpha = 0.1f),
-                        contentColor = MaterialTheme.colorScheme.primary,
-                    ),
-                contentPadding = PaddingValues(horizontal = 16.dp, vertical = 6.dp),
-                modifier = Modifier.height(36.dp),
-            ) {
-                Text("Follow", style = MaterialTheme.typography.labelMedium.copy(fontWeight = FontWeight.Bold))
-            }
-        }
-    }
-}
-
-@Composable
-private fun PlaceCard(
-    name: String,
-    category: String,
-    rating: String,
-    distance: String,
-    priceRange: String,
-    image: String,
-) {
-    Card(
-        modifier = Modifier.fillMaxWidth().shadow(8.dp, RoundedCornerShape(20.dp), spotColor = Color.Black.copy(alpha = 0.06f)),
-        shape = RoundedCornerShape(20.dp),
-        colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surfaceContainerLowest),
-    ) {
-        Column {
-            Box(modifier = Modifier.fillMaxWidth().height(160.dp)) {
-                AsyncImage(model = image, contentDescription = name, modifier = Modifier.fillMaxSize(), contentScale = ContentScale.Crop)
-                Box(modifier = Modifier.fillMaxSize().background(MaterialTheme.colorScheme.surfaceTint.copy(alpha = 0.1f)))
-                Surface(
-                    modifier = Modifier.align(Alignment.TopEnd).padding(16.dp),
-                    shape = CircleShape,
-                    color = Color.White.copy(alpha = 0.9f),
-                    shadowElevation = 2.dp,
-                ) {
-                    Row(
-                        modifier = Modifier.padding(horizontal = 12.dp, vertical = 4.dp),
-                        verticalAlignment = Alignment.CenterVertically,
-                        horizontalArrangement = Arrangement.spacedBy(4.dp),
-                    ) {
-                        Icon(
-                            Icons.Default.Star,
-                            contentDescription = null,
-                            tint = MaterialTheme.colorScheme.tertiary,
-                            modifier = Modifier.size(16.dp),
-                        )
-                        Text(rating, style = MaterialTheme.typography.labelSmall.copy(fontWeight = FontWeight.Bold))
-                    }
-                }
-            }
-            Column(modifier = Modifier.padding(20.dp)) {
-                Text(name, style = MaterialTheme.typography.titleMedium.copy(fontWeight = FontWeight.Bold))
-                Text(
-                    "$category • $priceRange • $distance",
-                    style = MaterialTheme.typography.bodySmall,
-                    color = MaterialTheme.colorScheme.onSurfaceVariant,
-                )
-            }
-        }
-    }
-}
-
-@Preview(showBackground = true)
-@Composable
-fun SearchScreenPreview() {
-    DineSplitTheme(darkTheme = false) {
-        SearchScreen(onBack = {})
     }
 }
