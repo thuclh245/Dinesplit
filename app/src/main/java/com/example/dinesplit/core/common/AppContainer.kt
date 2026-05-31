@@ -75,6 +75,10 @@ object AppContainer {
         return GetGroupsUseCase(splitRepository())
     }
 
+    fun getLinkedBillSummaryUseCase(): GetLinkedBillSummaryUseCase {
+        return GetLinkedBillSummaryUseCase(splitRepository())
+    }
+
     fun resolveStartDestinationUseCase(context: Context): ResolveStartDestinationUseCase {
         return ResolveStartDestinationUseCase(
             observeSessionUseCase = observeSessionUseCase(context),

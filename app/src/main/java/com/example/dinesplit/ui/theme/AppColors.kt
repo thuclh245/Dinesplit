@@ -31,6 +31,7 @@ import androidx.compose.ui.graphics.Color
  */
 object AppColors {
     // ─── Gradient for Primary CTA (Design System "Signature Texture") ────────
+
     /** 135° gradient from primary → primaryContainer for main CTAs */
     val primaryGradient: Brush
         get() =

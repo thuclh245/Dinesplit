@@ -30,7 +30,12 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import coil.compose.AsyncImage
 import com.example.dinesplit.core.common.AppContainer
+import com.example.dinesplit.core.ui.AppDimens
+import com.example.dinesplit.core.ui.AppShapes
+import com.example.dinesplit.core.ui.DinePostImage
+import com.example.dinesplit.core.ui.LoadingBlock
 import com.example.dinesplit.domain.model.Post
+import com.example.dinesplit.ui.theme.AppColors
 import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.launch
 import java.util.Date
@@ -126,7 +131,10 @@ fun CreatePostScreen(
                         .padding(padding),
                 contentAlignment = Alignment.Center,
             ) {
-                CircularProgressIndicator()
+                LoadingBlock(
+                    message = "Đang tải bài viết...",
+                    modifier = Modifier.padding(AppDimens.spaceLg),
+                )
             }
         } else {
             Column(
@@ -157,46 +165,46 @@ fun CreatePostScreen(
                 ) {
                     if (selectedImageUri != null) {
                         // Show custom chosen image from gallery or Firestore
-                        AsyncImage(
-                            model = selectedImageUri,
+                        DinePostImage(
+                            imageUrl = selectedImageUri?.toString(),
                             contentDescription = "Selected image",
                             modifier = Modifier.fillMaxSize(),
-                            contentScale = ContentScale.Crop,
+                            shape = AppShapes.xLarge,
                         )
                         // Glassmorphic change indicator pill at top right
                         Surface(
                             color = Color.Black.copy(alpha = 0.55f),
-                            shape = RoundedCornerShape(12.dp),
+                            shape = AppShapes.medium,
                             modifier =
                                 Modifier
                                     .align(Alignment.BottomEnd)
-                                    .padding(12.dp),
+                                    .padding(AppDimens.spaceMd),
                         ) {
                             Row(
                                 modifier = Modifier.padding(horizontal = 10.dp, vertical = 6.dp),
                                 verticalAlignment = Alignment.CenterVertically,
-                                horizontalArrangement = Arrangement.spacedBy(4.dp),
+                                horizontalArrangement = Arrangement.spacedBy(AppDimens.spaceXs),
                             ) {
                                 Icon(
                                     Icons.Default.PhotoLibrary,
                                     contentDescription = null,
-                                    tint = Color.White,
+                                    tint = AppColors.surfaceWhite,
                                     modifier = Modifier.size(12.dp),
                                 )
                                 Text(
                                     "Đổi ảnh thư viện",
-                                    color = Color.White,
-                                    style = MaterialTheme.typography.labelSmall.copy(fontSize = 10.sp, fontWeight = FontWeight.Bold),
+                                    color = AppColors.surfaceWhite,
+                                    style = MaterialTheme.typography.labelSmall.copy(fontWeight = FontWeight.Bold),
                                 )
                             }
                         }
                     } else {
                         // Fallback to visual preview of default random food image but styled to encourage changing
-                        AsyncImage(
-                            model = mockImage,
+                        DinePostImage(
+                            imageUrl = mockImage,
                             contentDescription = "Mock image",
                             modifier = Modifier.fillMaxSize(),
-                            contentScale = ContentScale.Crop,
+                            shape = AppShapes.xLarge,
                         )
                         // Overlay tint
                         Box(modifier = Modifier.fillMaxSize().background(Color.Black.copy(alpha = 0.4f)))
@@ -204,33 +212,33 @@ fun CreatePostScreen(
                         // Call to Action
                         Column(
                             horizontalAlignment = Alignment.CenterHorizontally,
-                            verticalArrangement = Arrangement.spacedBy(8.dp),
-                            modifier = Modifier.padding(16.dp),
+                            verticalArrangement = Arrangement.spacedBy(AppDimens.spaceSm),
+                            modifier = Modifier.padding(AppDimens.spaceLg),
                         ) {
                             Box(
                                 modifier =
                                     Modifier
                                         .size(48.dp)
-                                        .background(Color.White.copy(0.2f), CircleShape)
-                                        .border(1.5.dp, Color.White, CircleShape),
+                                        .background(AppColors.surfaceWhite.copy(0.2f), CircleShape)
+                                        .border(1.5.dp, AppColors.surfaceWhite, CircleShape),
                                 contentAlignment = Alignment.Center,
                             ) {
                                 Icon(
                                     Icons.Default.AddPhotoAlternate,
                                     contentDescription = null,
-                                    tint = Color.White,
+                                    tint = AppColors.surfaceWhite,
                                     modifier = Modifier.size(24.dp),
                                 )
                             }
                             Text(
                                 text = "Nhấp để chọn ảnh từ gallery của bạn 📸",
-                                color = Color.White,
+                                color = AppColors.surfaceWhite,
                                 style = MaterialTheme.typography.labelLarge.copy(fontWeight = FontWeight.Bold),
                                 textAlign = TextAlign.Center,
                             )
                             Text(
                                 text = "Hoặc sử dụng ảnh món ăn ngẫu nhiên có sẵn",
-                                color = Color.White.copy(0.7f),
+                                color = AppColors.surfaceWhite.copy(0.7f),
                                 style = MaterialTheme.typography.labelSmall,
                                 textAlign = TextAlign.Center,
                             )
@@ -353,17 +361,17 @@ fun CreatePostScreen(
                     modifier =
                         Modifier
                             .fillMaxWidth()
-                            .height(52.dp),
-                    shape = RoundedCornerShape(26.dp),
+                            .height(AppDimens.buttonHeight),
+                    shape = AppShapes.full,
                     colors =
                         ButtonDefaults.buttonColors(
                             containerColor = MaterialTheme.colorScheme.primary,
-                            contentColor = Color.White,
+                            contentColor = MaterialTheme.colorScheme.onPrimary,
                         ),
                     enabled = restaurantName.isNotBlank() && caption.isNotBlank() && !isPosting,
                 ) {
                     if (isPosting) {
-                        CircularProgressIndicator(modifier = Modifier.size(24.dp), strokeWidth = 2.5.dp, color = Color.White)
+                        CircularProgressIndicator(modifier = Modifier.size(24.dp), strokeWidth = 2.5.dp, color = MaterialTheme.colorScheme.onPrimary)
                     } else {
                         Text(
                             if (existingPost != null) "Cập nhật bài viết" else "Đăng bài viết",

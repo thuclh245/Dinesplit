@@ -94,6 +94,36 @@ class FirebaseFeedRepository(
                 val newLikedBy = currentLikedBy + userId
                 val newLikesCount = newLikedBy.size.toLong()
                 transaction.update(postRef, "likesCount", newLikesCount, "likedBy", newLikedBy)
+
+                // Write notification inside transaction
+                val authorUid = snapshot.getString("authorUid")
+                if (!authorUid.isNullOrBlank() && authorUid != userId) {
+                    val userRef = firestore.collection("users").document(userId)
+                    val userSnapshot = transaction.get(userRef)
+                    val triggeredByUserName = userSnapshot.getString("displayName") ?: "Ai đó"
+                    val postTitle = snapshot.getString("caption")?.take(30) ?: "bài viết"
+
+                    val notificationId = "${System.currentTimeMillis()}_$postId"
+                    val notificationRef = firestore.collection("user_notifications")
+                        .document(authorUid)
+                        .collection("notifications")
+                        .document(notificationId)
+
+                    val notificationMap = mapOf(
+                        "id" to notificationId,
+                        "userId" to authorUid,
+                        "title" to "$triggeredByUserName đã thích bài viết của bạn",
+                        "subtitle" to postTitle,
+                        "type" to "ACTIVITY_UPDATE",
+                        "relatedId" to postId,
+                        "isRead" to false,
+                        "createdAt" to System.currentTimeMillis(),
+                        "updatedAt" to System.currentTimeMillis(),
+                        "deepLinkDestination" to "ACTIVITY_DETAIL",
+                        "deepLinkTargetId" to postId
+                    )
+                    transaction.set(notificationRef, notificationMap)
+                }
             }
         }.awaitFirebase()
     }
@@ -148,9 +178,62 @@ class FirebaseFeedRepository(
         firestore.runTransaction { transaction ->
             val snapshot = transaction.get(postRef)
             val currentComments = snapshot.getLong("commentsCount") ?: 0L
+            val authorUid = snapshot.getString("authorUid")
+
             transaction.set(commentRef, finalComment)
             transaction.update(postRef, "commentsCount", currentComments + 1)
+
+            // Write notification inside transaction
+            if (!authorUid.isNullOrBlank() && authorUid != comment.authorUid) {
+                val postTitle = snapshot.getString("caption")?.take(30) ?: "bài viết"
+                val notificationId = "${System.currentTimeMillis()}_$postId"
+                val notificationRef = firestore.collection("user_notifications")
+                    .document(authorUid)
+                    .collection("notifications")
+                    .document(notificationId)
+
+                val notificationMap = mapOf(
+                    "id" to notificationId,
+                    "userId" to authorUid,
+                    "title" to "${comment.authorName} đã bình luận về bài viết của bạn",
+                    "subtitle" to finalComment.content.take(50),
+                    "type" to "ACTIVITY_UPDATE",
+                    "relatedId" to postId,
+                    "isRead" to false,
+                    "createdAt" to System.currentTimeMillis(),
+                    "updatedAt" to System.currentTimeMillis(),
+                    "deepLinkDestination" to "ACTIVITY_DETAIL",
+                    "deepLinkTargetId" to postId
+                )
+                transaction.set(notificationRef, notificationMap)
+            }
         }.awaitFirebase()
+    }
+
+    override suspend fun getFeedPostsBatch(
+        limit: Long,
+        lastPostId: String?,
+    ): List<Post> {
+        var query = firestore.collection("posts")
+            .orderBy("createdAt", Query.Direction.DESCENDING)
+            .limit(limit)
+
+        if (!lastPostId.isNullOrBlank()) {
+            val lastDocSnapshot = firestore.collection("posts")
+                .document(lastPostId)
+                .get()
+                .awaitFirebase()
+            if (lastDocSnapshot.exists()) {
+                query = query.startAfter(lastDocSnapshot)
+            }
+        }
+
+        val snapshot = query.get().awaitFirebase()
+        return snapshot.documents.mapNotNull { doc ->
+            runCatching {
+                doc.toObject(Post::class.java)?.copy(id = doc.id)
+            }.getOrNull()
+        }
     }
 
     private suspend fun <T> Task<T>.awaitFirebase(): T {

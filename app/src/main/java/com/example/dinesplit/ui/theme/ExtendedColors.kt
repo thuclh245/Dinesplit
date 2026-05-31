@@ -59,8 +59,10 @@ val LightExtendedColors =
 
 val DarkExtendedColors =
     ExtendedColors(
-        primaryDim = BrandDarkPrimary, // in dark mode, primary itself is the "dim" variant
-        primaryFixed = BrandPrimaryFixed, // fixed colors stay the same across themes
+        // in dark mode, primary itself is the "dim" variant
+        primaryDim = BrandDarkPrimary,
+        // fixed colors stay the same across themes
+        primaryFixed = BrandPrimaryFixed,
         primaryFixedDim = BrandPrimaryFixedDim,
         onPrimaryFixed = BrandOnPrimaryFixed,
         onPrimaryFixedVariant = BrandOnPrimaryFixedVariant,

@@ -1,0 +1,24 @@
+root = true
+
+[*.{kt,kts}]
+indent_size = 4
+indent_style = space
+insert_final_newline = true
+max_line_length = off
+
+# Disable naming rules that conflict with Compose (PascalCase Composable names)
+ktlint_standard_function-naming = disabled
+ktlint_standard_property-naming = disabled
+ktlint_standard_class-naming = disabled
+
+# Allow wildcard imports (preventing errors on standard compose/material imports)
+ktlint_standard_no-wildcard-imports = disabled
+
+# Allow comments inside argument and parameter lists
+ktlint_standard_discouraged-comment-location = disabled
+ktlint_standard_if-else-wrapping = disabled
+ktlint_standard_value-argument-comment = disabled
+ktlint_standard_value-parameter-comment = disabled
+
+# Allow empty files (such as placeholder route files)
+ktlint_standard_no-empty-file = disabled

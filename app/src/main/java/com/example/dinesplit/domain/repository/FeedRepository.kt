@@ -37,4 +37,10 @@ interface FeedRepository {
         postId: String,
         comment: Comment,
     )
+
+    // Pagination
+    suspend fun getFeedPostsBatch(
+        limit: Long,
+        lastPostId: String?,
+    ): List<Post>
 }

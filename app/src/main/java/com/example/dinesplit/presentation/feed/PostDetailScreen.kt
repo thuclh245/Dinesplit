@@ -30,10 +30,14 @@ import androidx.lifecycle.ViewModelProvider
 import androidx.lifecycle.viewModelScope
 import androidx.lifecycle.viewmodel.compose.viewModel
 import com.example.dinesplit.core.common.AppContainer
+import com.example.dinesplit.core.ui.AppDimens
 import com.example.dinesplit.core.ui.DineAvatarImage
 import com.example.dinesplit.core.ui.DinePostImage
+import com.example.dinesplit.core.ui.ErrorStateBlock
+import com.example.dinesplit.core.ui.LoadingBlock
 import com.example.dinesplit.domain.model.Comment
 import com.example.dinesplit.domain.model.Post
+import com.example.dinesplit.ui.theme.AppColors
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.SharingStarted
 import kotlinx.coroutines.flow.StateFlow
@@ -52,6 +56,7 @@ data class PostDetailUiState(
     val isLikedByMe: Boolean = false,
     val isSubmittingComment: Boolean = false,
     val isLoading: Boolean = true,
+    val error: String? = null,
 )
 
 class PostDetailViewModel(
@@ -81,7 +86,8 @@ class PostDetailViewModel(
                 comments = comments,
                 isLikedByMe = isLiked,
                 isSubmittingComment = submitting,
-                isLoading = post == null,
+                isLoading = false,
+                error = if (post == null) "Bài viết không tồn tại hoặc đã bị xóa" else null,
             )
         }.stateIn(
             scope = viewModelScope,
@@ -235,12 +241,12 @@ fun PostDetailScreen(
                                 ),
                     ) {
                         if (uiState.isSubmittingComment) {
-                            CircularProgressIndicator(modifier = Modifier.size(20.dp), strokeWidth = 2.dp, color = Color.White)
+                            CircularProgressIndicator(modifier = Modifier.size(20.dp), strokeWidth = 2.dp, color = MaterialTheme.colorScheme.onPrimary)
                         } else {
                             Icon(
                                 Icons.AutoMirrored.Filled.Send,
                                 contentDescription = "Gửi",
-                                tint = if (commentText.text.isNotBlank()) Color.White else MaterialTheme.colorScheme.outline,
+                                tint = if (commentText.text.isNotBlank()) MaterialTheme.colorScheme.onPrimary else MaterialTheme.colorScheme.outline,
                                 modifier = Modifier.size(20.dp),
                             )
                         }
@@ -250,48 +256,69 @@ fun PostDetailScreen(
         },
     ) { padding ->
         val post = uiState.post
-        LazyColumn(
-            state = listState,
-            modifier =
-                Modifier
-                    .fillMaxSize()
-                    .background(MaterialTheme.colorScheme.background)
-                    .padding(padding),
-            contentPadding = PaddingValues(bottom = 16.dp),
-        ) {
-            if (post != null) {
-                item {
-                    PostContent(post = post, isLikedByMe = uiState.isLikedByMe, onLike = vm::likePost, onUnlike = vm::unlikePost)
-                }
-                item {
-                    HorizontalDivider(
-                        modifier = Modifier.padding(vertical = 8.dp),
-                        color = MaterialTheme.colorScheme.outlineVariant.copy(0.3f),
-                    )
-                    Text(
-                        text = "Bình luận (${uiState.comments.size})",
-                        style = MaterialTheme.typography.titleSmall.copy(fontWeight = FontWeight.Bold),
-                        modifier = Modifier.padding(horizontal = 16.dp, vertical = 8.dp),
+        when {
+            uiState.isLoading -> {
+                Box(
+                    modifier = Modifier.fillMaxSize().padding(padding),
+                    contentAlignment = Alignment.Center,
+                ) {
+                    LoadingBlock(
+                        message = "Đang tải chi tiết bài viết...",
+                        modifier = Modifier.padding(AppDimens.spaceLg),
                     )
                 }
-                if (uiState.comments.isEmpty()) {
+            }
+            uiState.error != null -> {
+                Box(
+                    modifier = Modifier.fillMaxSize().padding(padding),
+                    contentAlignment = Alignment.Center,
+                ) {
+                    ErrorStateBlock(
+                        title = "Không tìm thấy bài viết",
+                        subtitle = uiState.error ?: "Bài viết không tồn tại hoặc đã bị xóa.",
+                        retryText = "Quay lại",
+                        onRetryClick = onBack,
+                        modifier = Modifier.padding(AppDimens.spaceLg),
+                    )
+                }
+            }
+            post != null -> {
+                LazyColumn(
+                    state = listState,
+                    modifier =
+                        Modifier
+                            .fillMaxSize()
+                            .background(MaterialTheme.colorScheme.background)
+                            .padding(padding),
+                    contentPadding = PaddingValues(bottom = 16.dp),
+                ) {
                     item {
-                        Box(modifier = Modifier.fillMaxWidth().padding(32.dp), contentAlignment = Alignment.Center) {
-                            Text(
-                                "Chưa có bình luận nào. Hãy là người đầu tiên!",
-                                style = MaterialTheme.typography.bodySmall,
-                                color = MaterialTheme.colorScheme.outline,
-                            )
+                        PostContent(post = post, isLikedByMe = uiState.isLikedByMe, onLike = vm::likePost, onUnlike = vm::unlikePost)
+                    }
+                    item {
+                        HorizontalDivider(
+                            modifier = Modifier.padding(vertical = 8.dp),
+                            color = MaterialTheme.colorScheme.outlineVariant.copy(0.3f),
+                        )
+                        Text(
+                            text = "Bình luận (${uiState.comments.size})",
+                            style = MaterialTheme.typography.titleSmall.copy(fontWeight = FontWeight.Bold),
+                            modifier = Modifier.padding(horizontal = 16.dp, vertical = 8.dp),
+                        )
+                    }
+                    if (uiState.comments.isEmpty()) {
+                        item {
+                            Box(modifier = Modifier.fillMaxWidth().padding(32.dp), contentAlignment = Alignment.Center) {
+                                Text(
+                                    "Chưa có bình luận nào. Hãy là người đầu tiên!",
+                                    style = MaterialTheme.typography.bodySmall,
+                                    color = MaterialTheme.colorScheme.outline,
+                                )
+                            }
                         }
                     }
-                }
-                items(uiState.comments) { comment ->
-                    CommentItem(comment = comment)
-                }
-            } else if (uiState.isLoading) {
-                item {
-                    Box(modifier = Modifier.fillMaxWidth().padding(64.dp), contentAlignment = Alignment.Center) {
-                        CircularProgressIndicator()
+                    items(uiState.comments) { comment ->
+                        CommentItem(comment = comment)
                     }
                 }
             }
@@ -328,7 +355,7 @@ private fun PostContent(
                         )
                         Text(
                             post.location,
-                            style = MaterialTheme.typography.labelSmall.copy(fontSize = 11.sp),
+                            style = MaterialTheme.typography.labelSmall,
                             color = MaterialTheme.colorScheme.outline,
                         )
                     }
@@ -423,7 +450,7 @@ private fun CommentItem(comment: Comment) {
                 comment.createdAt?.let { date ->
                     Text(
                         formatPostDate(date),
-                        style = MaterialTheme.typography.labelSmall.copy(fontSize = 10.sp),
+                        style = MaterialTheme.typography.labelSmall,
                         color = MaterialTheme.colorScheme.outline,
                     )
                 }
