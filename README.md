@@ -1,3 +1,4 @@
+
 # 🍽️ DineSplit — Social Dining & Smart Expense Manager
 
 [![Kotlin Version](https://img.shields.io/badge/Kotlin-1.9.x-blue.svg?style=flat-square&logo=kotlin)](https://kotlinlang.org)

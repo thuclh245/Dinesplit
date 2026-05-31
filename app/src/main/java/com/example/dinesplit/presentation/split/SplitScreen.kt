@@ -55,6 +55,7 @@ import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import androidx.compose.ui.unit.Dp
 import com.example.dinesplit.core.common.AppContainer
 import com.example.dinesplit.core.ui.HomeTopBar
 import com.example.dinesplit.core.ui.LoadingBlock
@@ -74,6 +75,7 @@ private const val CURRENT_USER_ID = "me"
 @Composable
 fun SplitScreen(
     userAvatarUrl: String?,
+    bottomPadding: Dp = 80.dp,
     onOpenNotifications: () -> Unit,
     onOpenSearch: () -> Unit,
     onNewGroup: () -> Unit,
@@ -89,14 +91,6 @@ fun SplitScreen(
     val uiState by viewModel.uiState.collectAsState()
 
     Scaffold(
-        topBar = {
-            HomeTopBar(
-                userAvatarUrl = userAvatarUrl,
-                title = "Split Bill",
-                onOpenNotifications = onOpenNotifications,
-                onOpenSearch = onOpenSearch
-            )
-        },
         floatingActionButton = {
             FloatingActionButton(
                 onClick = if (uiState.groups.isEmpty()) onNewGroup else onNewExpense,
@@ -104,7 +98,7 @@ fun SplitScreen(
                 contentColor = Color.White,
                 shape = CircleShape,
                 modifier = Modifier
-                    .padding(bottom = 16.dp)
+                    .padding(bottom = bottomPadding)
                     .size(60.dp)
                     .shadow(24.dp, CircleShape, spotColor = MaterialTheme.colorScheme.primary.copy(alpha = 0.4f))
             ) {
@@ -117,7 +111,7 @@ fun SplitScreen(
                 .fillMaxSize()
                 .background(MaterialTheme.colorScheme.background)
                 .padding(padding),
-            contentPadding = PaddingValues(top = 16.dp, bottom = 120.dp),
+            contentPadding = PaddingValues(top = 72.dp, bottom = 120.dp),
             verticalArrangement = Arrangement.spacedBy(32.dp)
         ) {
             item {

@@ -50,6 +50,7 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
+import androidx.compose.ui.unit.Dp
 import com.example.dinesplit.core.ui.AppCard
 import com.example.dinesplit.core.ui.AppDimens
 import com.example.dinesplit.core.ui.AppShapes
@@ -73,6 +74,7 @@ fun PersonalScreen(
     uiState: PersonalUiState = PersonalUiState(isLoading = false),
     chartState: PersonalChartState = PersonalChartState(),
     reminderCount: Int = 0,
+    bottomPadding: Dp = 80.dp,
     onOpenSearch: () -> Unit,
     onAddTransaction: () -> Unit,
     onOpenHistory: () -> Unit = {},
@@ -144,19 +146,13 @@ fun PersonalScreen(
     }
 
     Scaffold(
-        topBar = {
-            HomeTopBar(
-                userAvatarUrl = userAvatarUrl,
-                title = "Personal",
-                onOpenSearch = onOpenSearch
-            )
-        },
         floatingActionButton = {
             FloatingActionButton(
                 onClick = onAddTransaction,
                 containerColor = MaterialTheme.colorScheme.primary,
                 contentColor = MaterialTheme.colorScheme.onPrimary,
-                shape = CircleShape
+                shape = CircleShape,
+                modifier = Modifier.padding(bottom = bottomPadding)
             ) {
                 Icon(Icons.Default.Add, contentDescription = "Add transaction")
             }
@@ -170,7 +166,7 @@ fun PersonalScreen(
             contentPadding = PaddingValues(
                 start = AppDimens.screenHorizontal,
                 end = AppDimens.screenHorizontal,
-                top = AppDimens.screenVertical,
+                top = 72.dp,
                 bottom = 120.dp
             ),
             verticalArrangement = Arrangement.spacedBy(AppDimens.spaceLg)

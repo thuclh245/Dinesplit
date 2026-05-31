@@ -37,6 +37,7 @@ import androidx.compose.ui.text.withStyle
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import androidx.compose.ui.unit.Dp
 import coil.compose.AsyncImage
 import com.example.dinesplit.ui.theme.DineSplitTheme
 import com.example.dinesplit.core.ui.HomeTopBar
@@ -50,6 +51,7 @@ import com.example.dinesplit.core.ui.DinePostImage
 @Composable
 fun FeedScreen(
     viewModel: FeedViewModel = viewModel(),
+    bottomPadding: Dp = 80.dp,
     onOpenNotifications: () -> Unit,
     onOpenSearch: () -> Unit,
     onCreatePost: () -> Unit = {},
@@ -59,18 +61,11 @@ fun FeedScreen(
 
     Scaffold(
         contentWindowInsets = WindowInsets(0, 0, 0, 0),
-        topBar = {
-            HomeTopBar(
-                userAvatarUrl = uiState.currentUser?.avatarUrl,
-                onOpenNotifications = onOpenNotifications,
-                onOpenSearch = onOpenSearch
-            )
-        },
         floatingActionButton = {
             Column(
                 horizontalAlignment = Alignment.End,
                 verticalArrangement = Arrangement.spacedBy(12.dp),
-                modifier = Modifier.padding(bottom = 6.dp)
+                modifier = Modifier.padding(bottom = bottomPadding)
             ) {
                 // DINERS Badge (Floating at the bottom right, above navbar)
                 Surface(
@@ -105,7 +100,7 @@ fun FeedScreen(
     ) { padding ->
         when {
             uiState.isLoading -> {
-                Box(modifier = Modifier.fillMaxSize().padding(padding), contentAlignment = Alignment.Center) {
+                Box(modifier = Modifier.fillMaxSize().padding(padding).padding(top = 64.dp), contentAlignment = Alignment.Center) {
                     LoadingBlock(
                         message = "Đang tải bài viết...",
                         modifier = Modifier.padding(AppDimens.spaceLg)
@@ -113,7 +108,7 @@ fun FeedScreen(
                 }
             }
             uiState.error != null -> {
-                Box(modifier = Modifier.fillMaxSize().padding(padding), contentAlignment = Alignment.Center) {
+                Box(modifier = Modifier.fillMaxSize().padding(padding).padding(top = 64.dp), contentAlignment = Alignment.Center) {
                     ErrorStateBlock(
                         title = "Không thể tải bài viết",
                         subtitle = uiState.error.orEmpty(),
@@ -124,7 +119,7 @@ fun FeedScreen(
                 }
             }
             uiState.posts.isEmpty() -> {
-                Box(modifier = Modifier.fillMaxSize().padding(padding), contentAlignment = Alignment.Center) {
+                Box(modifier = Modifier.fillMaxSize().padding(padding).padding(top = 64.dp), contentAlignment = Alignment.Center) {
                     EmptyStateBlock(
                         title = "Chưa có bài viết nào",
                         subtitle = "Hãy là người đầu tiên chia sẻ khoảnh khắc ẩm thực!",
@@ -140,7 +135,7 @@ fun FeedScreen(
                         .fillMaxSize()
                         .background(MaterialTheme.colorScheme.background)
                         .padding(padding),
-                    contentPadding = PaddingValues(bottom = 16.dp)
+                    contentPadding = PaddingValues(top = 64.dp, bottom = 96.dp)
                 ) {
                     item {
                         RecentGroupVibes()

@@ -20,6 +20,7 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import androidx.compose.ui.unit.Dp
 import coil.compose.AsyncImage
 import com.example.dinesplit.core.ui.AppCard
 import com.example.dinesplit.core.ui.AppDimens
@@ -37,6 +38,7 @@ fun ProfileScreen(
     userBio: String = "",
     isLoggingOut: Boolean = false,
     isSeeding: Boolean = false,
+    bottomPadding: Dp = 80.dp,
     onEditProfile: () -> Unit,
     onOpenSettings: () -> Unit = {},
     onSeedDemoData: () -> Unit = {},
@@ -141,13 +143,6 @@ fun ProfileScreen(
     }
 
     Scaffold(
-        topBar = {
-            HomeTopBar(
-                userAvatarUrl = userAvatarUrl,
-                title = userName,
-                onOpenSearch = onOpenSearch
-            )
-        }
     ) { padding ->
         Column(
             modifier = Modifier
@@ -156,6 +151,7 @@ fun ProfileScreen(
                 .padding(padding)
                 .verticalScroll(rememberScrollState())
         ) {
+            Spacer(modifier = Modifier.height(64.dp))
             ProfileHeader(
                 userName = resolvedHandle,
                 displayName = userName,
@@ -192,7 +188,7 @@ fun ProfileScreen(
                 }
             }
             
-            Spacer(modifier = Modifier.height(120.dp))
+            Spacer(modifier = Modifier.height(bottomPadding + 40.dp))
         }
     }
 }

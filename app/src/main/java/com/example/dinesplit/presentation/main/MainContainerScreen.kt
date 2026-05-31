@@ -60,7 +60,16 @@ import com.example.dinesplit.ui.theme.DineSplitTheme
 import com.example.dinesplit.core.ui.LoadingBlock
 import com.example.dinesplit.core.ui.ErrorStateBlock
 import com.example.dinesplit.core.ui.AppDimens
+import com.example.dinesplit.core.ui.HomeTopBar
 import kotlinx.coroutines.flow.collectLatest
+import androidx.compose.ui.input.nestedscroll.NestedScrollConnection
+import androidx.compose.ui.input.nestedscroll.NestedScrollSource
+import androidx.compose.ui.input.nestedscroll.nestedScroll
+import androidx.compose.ui.geometry.Offset
+import androidx.compose.ui.unit.IntOffset
+import androidx.compose.ui.platform.LocalDensity
+import androidx.compose.ui.unit.Dp
+import kotlin.math.roundToInt
 
 @Composable
 fun MainContainerScreen(
@@ -118,330 +127,432 @@ fun MainContainerScreen(
         }
     }
 
-    Scaffold(
-        contentWindowInsets = WindowInsets(0, 0, 0, 0),
-        bottomBar = {
-            if (showBottomBar) {
-                MainBottomBar(
-                    isTabSelected = { tab ->
-                        currentDestination
-                            ?.hierarchy
-                            ?.any { it.route == tab.route } == true
-                    },
-                    onTabSelected = { tab ->
-                        mainNavController.navigate(tab.route) {
-                            popUpTo(mainNavController.graph.startDestinationId) {
-                                saveState = true
-                            }
-                            launchSingleTop = true
-                            restoreState = true
-                        }
-                    }
-                )
+    // Scroll coordination variables using exact measured pixel insets
+    val density = LocalDensity.current
+    val statusBarHeightPx = WindowInsets.statusBars.getTop(density)
+    val navigationBarHeightPx = WindowInsets.navigationBars.getBottom(density)
+
+    val topBarHeightPx = remember(statusBarHeightPx) {
+        with(density) { 64.dp.toPx() } + statusBarHeightPx
+    }
+    val bottomBarHeightPx = remember(navigationBarHeightPx) {
+        with(density) { 72.dp.toPx() } + navigationBarHeightPx
+    }
+
+    var topBarOffsetHeightPx by remember { mutableStateOf(0f) }
+    var bottomBarOffsetHeightPx by remember { mutableStateOf(0f) }
+
+    val currentRoute = currentDestination?.route
+    val isFeedScreen = currentRoute == AppRoute.Feed.route
+
+    val nestedScrollConnection = remember(currentRoute, topBarHeightPx, bottomBarHeightPx) {
+        object : NestedScrollConnection {
+            override fun onPreScroll(available: Offset, source: NestedScrollSource): Offset {
+                if (!showBottomBar || !isFeedScreen) {
+                    topBarOffsetHeightPx = 0f
+                    bottomBarOffsetHeightPx = 0f
+                    return Offset.Zero
+                }
+                val delta = available.y
+                val newTopOffset = topBarOffsetHeightPx + delta
+                topBarOffsetHeightPx = newTopOffset.coerceIn(-topBarHeightPx, 0f)
+
+                val newBottomOffset = bottomBarOffsetHeightPx + delta
+                bottomBarOffsetHeightPx = newBottomOffset.coerceIn(0f, bottomBarHeightPx)
+
+                return Offset.Zero
             }
         }
+    }
+
+    LaunchedEffect(currentRoute) {
+        topBarOffsetHeightPx = 0f
+        bottomBarOffsetHeightPx = 0f
+    }
+
+    val bottomBarOffsetHeightDp = with(density) { bottomBarOffsetHeightPx.toDp() }
+    val dynamicBottomPadding = remember(bottomBarOffsetHeightDp) {
+        maxOf(0.dp, 80.dp - bottomBarOffsetHeightDp)
+    }
+
+    Scaffold(
+        contentWindowInsets = WindowInsets(0, 0, 0, 0),
+        modifier = Modifier
+            .fillMaxSize()
+            .nestedScroll(nestedScrollConnection)
     ) { innerPadding ->
-        NavHost(
-            navController = mainNavController,
-            startDestination = AppRoute.Feed.route,
+        Box(
             modifier = Modifier
                 .fillMaxSize()
-                .padding(innerPadding) // Fix lỗi lint và đảm bảo đúng layout
+                .background(MaterialTheme.colorScheme.background)
         ) {
-            composable(AppRoute.Feed.route) {
-                FeedScreen(
-                    onOpenNotifications = onOpenNotifications,
-                    onOpenSearch = { mainNavController.navigate(AppRoute.Search.route) },
-                    onCreatePost = { mainNavController.navigate(AppRoute.CreatePost.route) },
-                    onSettleUp = { groupId, billId ->
-                        mainNavController.navigate(AppRoute.BillDetail.createRoute(groupId, billId))
-                    }
-                )
-            }
-            composable(AppRoute.Split.route) {
-                SplitScreen(
-                    userAvatarUrl = profileUiState.profile?.avatarUrl,
-                    onOpenNotifications = onOpenNotifications,
-                    onOpenSearch = { mainNavController.navigate(AppRoute.Search.route) },
-                    onNewGroup = { mainNavController.navigate(AppRoute.GroupList.route) },
-                    onNewExpense = { mainNavController.navigate(AppRoute.GroupList.route) },
-                    onViewAllGroups = { mainNavController.navigate(AppRoute.GroupList.route) },
-                    onGroupClick = { groupId ->
-                        mainNavController.navigate(AppRoute.GroupDetail.createRoute(groupId))
-                    },
-                    onBillClick = { groupId, billId ->
-                        mainNavController.navigate(AppRoute.BillDetail.createRoute(groupId, billId))
-                    }
-                )
-            }
-
-            composable(AppRoute.GroupList.route) {
-                GroupListScreen(
-                    onNavigateToGroupDetail = { groupId ->
-                        mainNavController.navigate(AppRoute.GroupDetail.createRoute(groupId))
-                    },
-                    onNavigateToCreateGroup = { mainNavController.navigate(AppRoute.CreateGroup.route) },
-                    onNavigateToAllGroups = { /* already here */ }
-                )
-            }
-
-            composable(AppRoute.CreateGroup.route) {
-                CreateGroupScreen(onBack = { mainNavController.navigateUp() })
-            }
-
-            composable(AppRoute.GroupDetail.routeWithArg) { backStackEntry ->
-                val groupId = backStackEntry.arguments?.getString(AppRoute.GroupDetail.ARG_ID).orEmpty()
-                GroupDetailScreen(
-                    groupId = groupId,
-                    onBack = { mainNavController.navigateUp() },
-                    onNavigateToCreateBill = {
-                        mainNavController.navigate(AppRoute.CreateBill.createRoute(groupId))
-                    },
-                    onNavigateToBillDetail = { billId ->
-                        mainNavController.navigate(AppRoute.BillDetail.createRoute(groupId, billId))
-                    }
-                )
-            }
-            composable(AppRoute.Personal.route) {
-                PersonalScreen(
-                    userAvatarUrl = profileUiState.profile?.avatarUrl,
-                    uiState = personalUiState,
-                    chartState = personalChartState,
-                    reminderCount = personalReminders.size,
-                    onOpenSearch = { mainNavController.navigate(AppRoute.Search.route) },
-                    onAddTransaction = { mainNavController.navigate(AppRoute.AddTransaction.route) },
-                    onOpenHistory = { mainNavController.navigate(AppRoute.TransactionHistory.route) },
-                    onOpenMonthlySummary = { mainNavController.navigate(AppRoute.MonthlySummary.route) },
-                    onOpenCategories = { mainNavController.navigate(AppRoute.CategoryManagement.route) },
-                    onOpenReminders = { mainNavController.navigate(AppRoute.SpendingReminders.route) },
-                    onOpenInsights = { mainNavController.navigate(AppRoute.PersonalInsights.route) },
-                    onOpenPlans = { mainNavController.navigate(AppRoute.PersonalPlans.route) },
-                    onOpenRecurringPlans = {
-                        mainNavController.navigate(
-                            AppRoute.PersonalPlans.createRoute(AppRoute.PersonalPlans.FOCUS_RECURRING)
-                        )
-                    },
-                    onOpenGoalPlans = {
-                        mainNavController.navigate(
-                            AppRoute.PersonalPlans.createRoute(AppRoute.PersonalPlans.FOCUS_GOALS)
-                        )
-                    },
-                    onOpenWalletPlans = {
-                        mainNavController.navigate(
-                            AppRoute.PersonalPlans.createRoute(AppRoute.PersonalPlans.FOCUS_WALLETS)
-                        )
-                    },
-                    onRefresh = personalViewModel::refreshState
-                )
-            }
-            composable(AppRoute.AddTransaction.route) {
-                AddEditTransactionScreen(
-                    onBack = { mainNavController.navigateUp() },
-                    transactionId = null,
-                    initialTransaction = null,
-                    availableCategories = personalUiState.categories,
-                    onSave = { transaction ->
-                        personalViewModel.addTransaction(transaction)
-                        mainNavController.navigateUp()
-                    }
-                )
-            }
-            composable(AppRoute.TransactionHistory.route) {
-                HistoryScreen(
-                    onBack = { mainNavController.navigateUp() },
-                    transactions = personalUiState.transactions.toHistoryItems(personalUiState.categories),
-                    onTransactionClick = { item ->
-                        mainNavController.navigate(AppRoute.TransactionDetail.createRoute(item.id))
-                    }
-                )
-            }
-            composable(AppRoute.MonthlySummary.route) {
-                MonthlySummaryScreen(
-                    onBack = { mainNavController.navigateUp() },
-                    summary = personalChartState.monthlySummary,
-                    categorySpending = personalChartState.pieSlices
-                )
-            }
-            composable(AppRoute.TransactionDetail.routeWithArg) { backStackEntry ->
-                val transactionId = backStackEntry.arguments
-                    ?.getString(AppRoute.TransactionDetail.ARG_ID)
-                    .orEmpty()
-                TransactionDetailScreen(
-                    transactionId = transactionId,
-                    transaction = personalUiState.transactions.firstOrNull { it.id == transactionId },
-                    onBack = { mainNavController.navigateUp() }
-                )
-            }
-            composable(AppRoute.CategoryManagement.route) {
-                CategoryManagementScreen(
-                    categories = personalUiState.categories.toManagedCategories(personalUiState.transactions),
-                    usedCategoryIds = personalUiState.transactions.map { it.categoryId }.toSet(),
-                    onAddCategory = { input ->
-                        personalViewModel.addCategory(
-                            name = input.name,
-                            description = input.description,
-                            type = input.type.toTransactionType(),
-                            isCustom = input.isCustom
-                        )
-                    },
-                    onUpdateCategory = { category, input ->
-                        personalViewModel.updateCategory(
-                            categoryId = category.id,
-                            name = input.name,
-                            description = input.description,
-                            type = input.type.toTransactionType(),
-                            isCustom = input.isCustom,
-                            isActive = category.isActive
-                        )
-                    },
-                    onDeleteCategory = { category ->
-                        personalViewModel.deleteCategory(category.id)
-                    },
-                    onBack = { mainNavController.navigateUp() }
-                )
-            }
-            composable(AppRoute.SpendingReminders.route) {
-                SpendingReminderScreen(
-                    onBack = { mainNavController.navigateUp() },
-                    reminders = personalReminders,
-                    categories = personalUiState.categories,
-                    errorMessage = personalUiState.errorMessage,
-                    onCreateReminder = { categoryId, categoryName, budget, threshold, type ->
-                        personalViewModel.addSpendingReminder(
-                            categoryId = categoryId,
-                            categoryName = categoryName,
-                            budgetAmount = budget,
-                            threshold = threshold,
-                            reminderType = type
-                        )
-                    },
-                    onDeleteReminder = personalViewModel::deleteSpendingReminder
-                )
-            }
-            composable(AppRoute.PersonalInsights.route) {
-                PersonalIntelligenceScreen(
-                    onBack = { mainNavController.navigateUp() },
-                    uiState = personalUiState,
-                    chartState = personalChartState,
-                    reminderCount = personalReminders.size,
-                    onOpenHistory = { mainNavController.navigate(AppRoute.TransactionHistory.route) },
-                    onOpenReminders = { mainNavController.navigate(AppRoute.SpendingReminders.route) },
-                    onOpenPlans = { mainNavController.navigate(AppRoute.PersonalPlans.route) }
-                )
-            }
-            composable(
-                route = AppRoute.PersonalPlans.routeWithFocus,
-                arguments = listOf(
-                    navArgument(AppRoute.PersonalPlans.ARG_FOCUS) {
-                        type = NavType.StringType
-                        nullable = true
-                        defaultValue = null
-                    }
-                )
-            ) { backStackEntry ->
-                PersonalPlansScreen(
-                    onBack = { mainNavController.navigateUp() },
-                    initialFocus = PersonalPlanFocus.fromRouteValue(
-                        backStackEntry.arguments?.getString(AppRoute.PersonalPlans.ARG_FOCUS)
-                    ),
-                    categories = personalUiState.categories,
-                    recurringRules = personalUiState.recurringRules,
-                    goals = personalUiState.goals,
-                    wallets = personalUiState.wallets,
-                    onAddRecurring = personalViewModel::addRecurringRule,
-                    onDeleteRecurring = personalViewModel::deleteRecurringRule,
-                    onAddGoal = personalViewModel::addGoal,
-                    onDeleteGoal = personalViewModel::deleteGoal,
-                    onAddWallet = personalViewModel::addWallet,
-                    onDeleteWallet = personalViewModel::deleteWallet
-                )
-            }
-            composable(AppRoute.Profile.route) {
-                when {
-                    profileUiState.isLoading -> {
-                        Box(
-                            modifier = Modifier
-                                .fillMaxSize()
-                                .padding(AppDimens.spaceLg),
-                            contentAlignment = Alignment.Center
-                        ) {
-                            LoadingBlock(message = "Loading profile...")
-                        }
-                    }
-                    profileUiState.errorMessage != null -> {
-                        Box(
-                            modifier = Modifier
-                                .fillMaxSize()
-                                .padding(AppDimens.spaceLg),
-                            contentAlignment = Alignment.Center
-                        ) {
-                            ErrorStateBlock(
-                                title = "Không thể tải hồ sơ",
-                                subtitle = profileUiState.errorMessage ?: "Vui lòng kiểm tra mạng và thử lại.",
-                                retryText = "Thử lại",
-                                onRetryClick = { profileViewModel.loadProfile() }
-                            )
-                        }
-                    }
-                    else -> {
-                        ProfileScreen(
-                            userAvatarUrl = profileUiState.profile?.avatarUrl,
-                            userName = profileUiState.profile?.displayName ?: "User",
-                            userHandle = profileUiState.profile?.username?.let { "@$it" }.orEmpty(),
-                            userBio = profileUiState.profile?.bio.orEmpty(),
-                            isLoggingOut = profileUiState.isLoggingOut,
-                            isSeeding = profileUiState.isSeeding,
-                            onEditProfile = { mainNavController.navigate(AppRoute.EditProfile.route) },
-                            onSeedDemoData = profileViewModel::seedDemoData,
+            // Main content (NavHost)
+            Box(
+                modifier = Modifier.fillMaxSize()
+            ) {
+                NavHost(
+                    navController = mainNavController,
+                    startDestination = AppRoute.Feed.route,
+                    modifier = Modifier.fillMaxSize()
+                ) {
+                    composable(AppRoute.Feed.route) {
+                        FeedScreen(
+                            bottomPadding = dynamicBottomPadding,
+                            onOpenNotifications = onOpenNotifications,
                             onOpenSearch = { mainNavController.navigate(AppRoute.Search.route) },
-                            onLogout = profileViewModel::logout
+                            onCreatePost = { mainNavController.navigate(AppRoute.CreatePost.route) },
+                            onSettleUp = { groupId, billId ->
+                                mainNavController.navigate(AppRoute.BillDetail.createRoute(groupId, billId))
+                            }
                         )
+                    }
+                    composable(AppRoute.Split.route) {
+                        SplitScreen(
+                            userAvatarUrl = profileUiState.profile?.avatarUrl,
+                            bottomPadding = dynamicBottomPadding,
+                            onOpenNotifications = onOpenNotifications,
+                            onOpenSearch = { mainNavController.navigate(AppRoute.Search.route) },
+                            onNewGroup = { mainNavController.navigate(AppRoute.GroupList.route) },
+                            onNewExpense = { mainNavController.navigate(AppRoute.GroupList.route) },
+                            onViewAllGroups = { mainNavController.navigate(AppRoute.GroupList.route) },
+                            onGroupClick = { groupId ->
+                                mainNavController.navigate(AppRoute.GroupDetail.createRoute(groupId))
+                            },
+                            onBillClick = { groupId, billId ->
+                                mainNavController.navigate(AppRoute.BillDetail.createRoute(groupId, billId))
+                            }
+                        )
+                    }
+
+                    composable(AppRoute.GroupList.route) {
+                        GroupListScreen(
+                            onNavigateToGroupDetail = { groupId ->
+                                mainNavController.navigate(AppRoute.GroupDetail.createRoute(groupId))
+                            },
+                            onNavigateToCreateGroup = { mainNavController.navigate(AppRoute.CreateGroup.route) },
+                            onNavigateToAllGroups = { /* already here */ }
+                        )
+                    }
+
+                    composable(AppRoute.CreateGroup.route) {
+                        CreateGroupScreen(onBack = { mainNavController.navigateUp() })
+                    }
+
+                    composable(AppRoute.GroupDetail.routeWithArg) { backStackEntry ->
+                        val groupId = backStackEntry.arguments?.getString(AppRoute.GroupDetail.ARG_ID).orEmpty()
+                        GroupDetailScreen(
+                            groupId = groupId,
+                            onBack = { mainNavController.navigateUp() },
+                            onNavigateToCreateBill = {
+                                mainNavController.navigate(AppRoute.CreateBill.createRoute(groupId))
+                            },
+                            onNavigateToBillDetail = { billId ->
+                                mainNavController.navigate(AppRoute.BillDetail.createRoute(groupId, billId))
+                            }
+                        )
+                    }
+                    composable(AppRoute.Personal.route) {
+                        PersonalScreen(
+                            userAvatarUrl = profileUiState.profile?.avatarUrl,
+                            uiState = personalUiState,
+                            chartState = personalChartState,
+                            reminderCount = personalReminders.size,
+                            bottomPadding = dynamicBottomPadding,
+                            onOpenSearch = { mainNavController.navigate(AppRoute.Search.route) },
+                            onAddTransaction = { mainNavController.navigate(AppRoute.AddTransaction.route) },
+                            onOpenHistory = { mainNavController.navigate(AppRoute.TransactionHistory.route) },
+                            onOpenMonthlySummary = { mainNavController.navigate(AppRoute.MonthlySummary.route) },
+                            onOpenCategories = { mainNavController.navigate(AppRoute.CategoryManagement.route) },
+                            onOpenReminders = { mainNavController.navigate(AppRoute.SpendingReminders.route) },
+                            onOpenInsights = { mainNavController.navigate(AppRoute.PersonalInsights.route) },
+                            onOpenPlans = { mainNavController.navigate(AppRoute.PersonalPlans.route) },
+                            onOpenRecurringPlans = {
+                                mainNavController.navigate(
+                                    AppRoute.PersonalPlans.createRoute(AppRoute.PersonalPlans.FOCUS_RECURRING)
+                                )
+                            },
+                            onOpenGoalPlans = {
+                                mainNavController.navigate(
+                                    AppRoute.PersonalPlans.createRoute(AppRoute.PersonalPlans.FOCUS_GOALS)
+                                )
+                            },
+                            onOpenWalletPlans = {
+                                mainNavController.navigate(
+                                    AppRoute.PersonalPlans.createRoute(AppRoute.PersonalPlans.FOCUS_WALLETS)
+                                )
+                            },
+                            onRefresh = personalViewModel::refreshState
+                        )
+                    }
+                    composable(AppRoute.AddTransaction.route) {
+                        AddEditTransactionScreen(
+                            onBack = { mainNavController.navigateUp() },
+                            transactionId = null,
+                            initialTransaction = null,
+                            availableCategories = personalUiState.categories,
+                            onSave = { transaction ->
+                                personalViewModel.addTransaction(transaction)
+                                mainNavController.navigateUp()
+                            }
+                        )
+                    }
+                    composable(AppRoute.TransactionHistory.route) {
+                        HistoryScreen(
+                            onBack = { mainNavController.navigateUp() },
+                            transactions = personalUiState.transactions.toHistoryItems(personalUiState.categories),
+                            onTransactionClick = { item ->
+                                mainNavController.navigate(AppRoute.TransactionDetail.createRoute(item.id))
+                            }
+                        )
+                    }
+                    composable(AppRoute.MonthlySummary.route) {
+                        MonthlySummaryScreen(
+                            onBack = { mainNavController.navigateUp() },
+                            summary = personalChartState.monthlySummary,
+                            categorySpending = personalChartState.pieSlices
+                        )
+                    }
+                    composable(AppRoute.TransactionDetail.routeWithArg) { backStackEntry ->
+                        val transactionId = backStackEntry.arguments
+                            ?.getString(AppRoute.TransactionDetail.ARG_ID)
+                            .orEmpty()
+                        TransactionDetailScreen(
+                            transactionId = transactionId,
+                            transaction = personalUiState.transactions.firstOrNull { it.id == transactionId },
+                            onBack = { mainNavController.navigateUp() }
+                        )
+                    }
+                    composable(AppRoute.CategoryManagement.route) {
+                        CategoryManagementScreen(
+                            categories = personalUiState.categories.toManagedCategories(personalUiState.transactions),
+                            usedCategoryIds = personalUiState.transactions.map { it.categoryId }.toSet(),
+                            onAddCategory = { input ->
+                                personalViewModel.addCategory(
+                                    name = input.name,
+                                    description = input.description,
+                                    type = input.type.toTransactionType(),
+                                    isCustom = input.isCustom
+                                )
+                            },
+                            onUpdateCategory = { category, input ->
+                                personalViewModel.updateCategory(
+                                    categoryId = category.id,
+                                    name = input.name,
+                                    description = input.description,
+                                    type = input.type.toTransactionType(),
+                                    isCustom = input.isCustom,
+                                    isActive = category.isActive
+                                )
+                            },
+                            onDeleteCategory = { category ->
+                                personalViewModel.deleteCategory(category.id)
+                            },
+                            onBack = { mainNavController.navigateUp() }
+                        )
+                    }
+                    composable(AppRoute.SpendingReminders.route) {
+                        SpendingReminderScreen(
+                            onBack = { mainNavController.navigateUp() },
+                            reminders = personalReminders,
+                            categories = personalUiState.categories,
+                            errorMessage = personalUiState.errorMessage,
+                            onCreateReminder = { categoryId, categoryName, budget, threshold, type ->
+                                personalViewModel.addSpendingReminder(
+                                    categoryId = categoryId,
+                                    categoryName = categoryName,
+                                    budgetAmount = budget,
+                                    threshold = threshold,
+                                    reminderType = type
+                                )
+                            },
+                            onDeleteReminder = personalViewModel::deleteSpendingReminder
+                        )
+                    }
+                    composable(AppRoute.PersonalInsights.route) {
+                        PersonalIntelligenceScreen(
+                            onBack = { mainNavController.navigateUp() },
+                            uiState = personalUiState,
+                            chartState = personalChartState,
+                            reminderCount = personalReminders.size,
+                            onOpenHistory = { mainNavController.navigate(AppRoute.TransactionHistory.route) },
+                            onOpenReminders = { mainNavController.navigate(AppRoute.SpendingReminders.route) },
+                            onOpenPlans = { mainNavController.navigate(AppRoute.PersonalPlans.route) }
+                        )
+                    }
+                    composable(
+                        route = AppRoute.PersonalPlans.routeWithFocus,
+                        arguments = listOf(
+                            navArgument(AppRoute.PersonalPlans.ARG_FOCUS) {
+                                type = NavType.StringType
+                                nullable = true
+                                defaultValue = null
+                            }
+                        )
+                    ) { backStackEntry ->
+                        PersonalPlansScreen(
+                            onBack = { mainNavController.navigateUp() },
+                            initialFocus = PersonalPlanFocus.fromRouteValue(
+                                backStackEntry.arguments?.getString(AppRoute.PersonalPlans.ARG_FOCUS)
+                            ),
+                            categories = personalUiState.categories,
+                            recurringRules = personalUiState.recurringRules,
+                            goals = personalUiState.goals,
+                            wallets = personalUiState.wallets,
+                            onAddRecurring = personalViewModel::addRecurringRule,
+                            onDeleteRecurring = personalViewModel::deleteRecurringRule,
+                            onAddGoal = personalViewModel::addGoal,
+                            onDeleteGoal = personalViewModel::deleteGoal,
+                            onAddWallet = personalViewModel::addWallet,
+                            onDeleteWallet = personalViewModel::deleteWallet
+                        )
+                    }
+                    composable(AppRoute.Profile.route) {
+                        when {
+                            profileUiState.isLoading -> {
+                                Box(
+                                    modifier = Modifier
+                                        .fillMaxSize()
+                                        .padding(AppDimens.spaceLg),
+                                    contentAlignment = Alignment.Center
+                                ) {
+                                    LoadingBlock(message = "Loading profile...")
+                                }
+                            }
+                            profileUiState.errorMessage != null -> {
+                                Box(
+                                    modifier = Modifier
+                                        .fillMaxSize()
+                                        .padding(AppDimens.spaceLg),
+                                    contentAlignment = Alignment.Center
+                                ) {
+                                    ErrorStateBlock(
+                                        title = "Không thể tải hồ sơ",
+                                        subtitle = profileUiState.errorMessage ?: "Vui lòng kiểm tra mạng và thử lại.",
+                                        retryText = "Thử lại",
+                                        onRetryClick = { profileViewModel.loadProfile() }
+                                    )
+                                }
+                            }
+                            else -> {
+                                ProfileScreen(
+                                    userAvatarUrl = profileUiState.profile?.avatarUrl,
+                                    userName = profileUiState.profile?.displayName ?: "User",
+                                    userHandle = profileUiState.profile?.username?.let { "@$it" }.orEmpty(),
+                                    userBio = profileUiState.profile?.bio.orEmpty(),
+                                    isLoggingOut = profileUiState.isLoggingOut,
+                                    isSeeding = profileUiState.isSeeding,
+                                    bottomPadding = dynamicBottomPadding,
+                                    onEditProfile = { mainNavController.navigate(AppRoute.EditProfile.route) },
+                                    onSeedDemoData = profileViewModel::seedDemoData,
+                                    onOpenSearch = { mainNavController.navigate(AppRoute.Search.route) },
+                                    onLogout = profileViewModel::logout
+                                )
+                            }
+                        }
+                    }
+                    composable(AppRoute.EditProfile.route) {
+                        EditProfileScreen(
+                            uiState = editProfileUiState,
+                            onDisplayNameChange = profileViewModel::onDisplayNameChange,
+                            onUsernameChange = profileViewModel::onUsernameChange,
+                            onBioChange = profileViewModel::onBioChange,
+                            onAvatarChange = profileViewModel::onAvatarSelected,
+                            onAvatarClear = profileViewModel::onAvatarCleared,
+                            onToggleDiningStyle = profileViewModel::toggleDiningStyle,
+                            onSave = profileViewModel::saveProfile,
+                            onBack = { mainNavController.navigateUp() }
+                        )
+                    }
+                    composable(AppRoute.Search.route) {
+                        SearchScreen(onBack = { mainNavController.navigateUp() })
+                    }
+                    composable(AppRoute.CreatePost.route) {
+                        CreatePostScreen(onBack = { mainNavController.navigateUp() })
+                    }
+                    composable(AppRoute.CreateBill.routeWithArg) { backStackEntry ->
+                        val groupId = backStackEntry.arguments?.getString(AppRoute.CreateBill.ARG_GROUP_ID).orEmpty()
+                        CreateBillScreen(
+                            groupId = groupId,
+                            onBack = { mainNavController.navigateUp() },
+                            onBillSavedForPersonal = personalViewModel::addSplitBillTransaction
+                        )
+                    }
+                    composable(AppRoute.BillDetail.routeWithArg) { backStackEntry ->
+                        val groupId = backStackEntry.arguments?.getString(AppRoute.BillDetail.ARG_GROUP_ID).orEmpty()
+                        val billId = backStackEntry.arguments?.getString(AppRoute.BillDetail.ARG_BILL_ID).orEmpty()
+                        BillDetailScreen(
+                            groupId = groupId,
+                            billId = billId,
+                            onBack = { mainNavController.navigateUp() }
+                        )
+                    }
+                    composable(AppRoute.PostDetail.routeWithArg) { backStackEntry ->
+                        val postId = backStackEntry.arguments?.getString(AppRoute.PostDetail.ARG_ID) ?: ""
+                        PostDetailScreen(postId = postId, onBack = { mainNavController.navigateUp() })
+                    }
+                    composable(AppRoute.OtherUserProfile.routeWithArg) { backStackEntry ->
+                        val userName = backStackEntry.arguments?.getString(AppRoute.OtherUserProfile.ARG_USER) ?: ""
+                        OtherUserProfileScreen(userName = userName, onBack = { mainNavController.navigateUp() })
                     }
                 }
             }
-            composable(AppRoute.EditProfile.route) {
-                EditProfileScreen(
-                    uiState = editProfileUiState,
-                    onDisplayNameChange = profileViewModel::onDisplayNameChange,
-                    onUsernameChange = profileViewModel::onUsernameChange,
-                    onBioChange = profileViewModel::onBioChange,
-                    onAvatarChange = profileViewModel::onAvatarSelected,
-                    onAvatarClear = profileViewModel::onAvatarCleared,
-                    onToggleDiningStyle = profileViewModel::toggleDiningStyle,
-                    onSave = profileViewModel::saveProfile,
-                    onBack = { mainNavController.navigateUp() }
-                )
-            }
-            composable(AppRoute.Search.route) {
-                SearchScreen(onBack = { mainNavController.navigateUp() })
-            }
-            composable(AppRoute.CreatePost.route) {
-                CreatePostScreen(onBack = { mainNavController.navigateUp() })
-            }
-            composable(AppRoute.CreateBill.routeWithArg) { backStackEntry ->
-                val groupId = backStackEntry.arguments?.getString(AppRoute.CreateBill.ARG_GROUP_ID).orEmpty()
-                CreateBillScreen(
-                    groupId = groupId,
-                    onBack = { mainNavController.navigateUp() },
-                    onBillSavedForPersonal = personalViewModel::addSplitBillTransaction
-                )
-            }
-            composable(AppRoute.BillDetail.routeWithArg) { backStackEntry ->
-                val groupId = backStackEntry.arguments?.getString(AppRoute.BillDetail.ARG_GROUP_ID).orEmpty()
-                val billId = backStackEntry.arguments?.getString(AppRoute.BillDetail.ARG_BILL_ID).orEmpty()
-                BillDetailScreen(
-                    groupId = groupId,
-                    billId = billId,
-                    onBack = { mainNavController.navigateUp() }
-                )
-            }
-            composable(AppRoute.PostDetail.routeWithArg) { backStackEntry ->
-                val postId = backStackEntry.arguments?.getString(AppRoute.PostDetail.ARG_ID) ?: ""
-                PostDetailScreen(postId = postId, onBack = { mainNavController.navigateUp() })
-            }
-            composable(AppRoute.OtherUserProfile.routeWithArg) { backStackEntry ->
-                val userName = backStackEntry.arguments?.getString(AppRoute.OtherUserProfile.ARG_USER) ?: ""
-                OtherUserProfileScreen(userName = userName, onBack = { mainNavController.navigateUp() })
+
+            // Global HomeTopBar Overlay
+            if (showBottomBar) {
+                val title = when {
+                    currentRoute?.contains(AppRoute.Feed.route) == true -> "DineSplit"
+                    currentRoute?.contains(AppRoute.Split.route) == true -> "Split Bill"
+                    currentRoute?.contains(AppRoute.Personal.route) == true -> "Ví cá nhân"
+                    currentRoute?.contains(AppRoute.Profile.route) == true -> profileUiState.profile?.displayName ?: "Profile"
+                    else -> "DineSplit"
+                }
+
+                Box(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .wrapContentHeight()
+                        .offset { IntOffset(0, topBarOffsetHeightPx.roundToInt()) }
+                ) {
+                    HomeTopBar(
+                        userAvatarUrl = profileUiState.profile?.avatarUrl,
+                        title = title,
+                        onAvatarClick = {
+                            mainNavController.navigate(AppRoute.Profile.route) {
+                                popUpTo(mainNavController.graph.startDestinationId) { saveState = true }
+                                launchSingleTop = true
+                                restoreState = true
+                            }
+                        },
+                        onOpenSearch = { mainNavController.navigate(AppRoute.Search.route) },
+                        onOpenNotifications = onOpenNotifications
+                    )
+                }
+
+                // Global MainBottomBar Overlay
+                Box(
+                    modifier = Modifier
+                        .align(Alignment.BottomCenter)
+                        .fillMaxWidth()
+                        .wrapContentHeight()
+                        .offset { IntOffset(0, bottomBarOffsetHeightPx.roundToInt()) }
+                ) {
+                    MainBottomBar(
+                        isTabSelected = { tab ->
+                            currentDestination
+                                ?.hierarchy
+                                ?.any { it.route == tab.route } == true
+                        },
+                        onTabSelected = { tab ->
+                            mainNavController.navigate(tab.route) {
+                                popUpTo(mainNavController.graph.startDestinationId) {
+                                    saveState = true
+                                }
+                                launchSingleTop = true
+                                restoreState = true
+                            }
+                        }
+                    )
+                }
             }
         }
     }
@@ -450,11 +561,12 @@ fun MainContainerScreen(
 @Composable
 private fun MainBottomBar(
     isTabSelected: (BottomTab) -> Boolean,
-    onTabSelected: (BottomTab) -> Unit
+    onTabSelected: (BottomTab) -> Unit,
+    modifier: Modifier = Modifier
 ) {
     val colorScheme = MaterialTheme.colorScheme
     Surface(
-        modifier = Modifier
+        modifier = modifier
             .fillMaxWidth()
             .windowInsetsPadding(WindowInsets.navigationBars),
         color = colorScheme.surfaceContainerLowest,
