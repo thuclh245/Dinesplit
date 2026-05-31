@@ -157,7 +157,7 @@ fun MainContainerScreen(
                 val newTopOffset = topBarOffsetHeightPx + delta
                 topBarOffsetHeightPx = newTopOffset.coerceIn(-topBarHeightPx, 0f)
 
-                val newBottomOffset = bottomBarOffsetHeightPx + delta
+                val newBottomOffset = bottomBarOffsetHeightPx - delta
                 bottomBarOffsetHeightPx = newBottomOffset.coerceIn(0f, bottomBarHeightPx)
 
                 return Offset.Zero

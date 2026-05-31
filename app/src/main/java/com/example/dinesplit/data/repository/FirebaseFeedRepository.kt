@@ -62,8 +62,12 @@ class FirebaseFeedRepository(
         val postRef = firestore.collection("posts").document(postId)
         firestore.runTransaction { transaction ->
             val snapshot = transaction.get(postRef)
-            val currentLikes = snapshot.getLong("likesCount") ?: 0L
-            transaction.update(postRef, "likesCount", currentLikes + 1)
+            val currentLikedBy = (snapshot.get("likedBy") as? List<String>) ?: emptyList()
+            if (!currentLikedBy.contains(userId)) {
+                val newLikedBy = currentLikedBy + userId
+                val newLikesCount = newLikedBy.size.toLong()
+                transaction.update(postRef, "likesCount", newLikesCount, "likedBy", newLikedBy)
+            }
         }.awaitFirebase()
     }
 
@@ -71,9 +75,12 @@ class FirebaseFeedRepository(
         val postRef = firestore.collection("posts").document(postId)
         firestore.runTransaction { transaction ->
             val snapshot = transaction.get(postRef)
-            val currentLikes = snapshot.getLong("likesCount") ?: 0L
-            val newLikes = if (currentLikes > 0) currentLikes - 1 else 0L
-            transaction.update(postRef, "likesCount", newLikes)
+            val currentLikedBy = (snapshot.get("likedBy") as? List<String>) ?: emptyList()
+            if (currentLikedBy.contains(userId)) {
+                val newLikedBy = currentLikedBy - userId
+                val newLikesCount = newLikedBy.size.toLong()
+                transaction.update(postRef, "likesCount", newLikesCount, "likedBy", newLikedBy)
+            }
         }.awaitFirebase()
     }
 

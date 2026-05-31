@@ -142,8 +142,10 @@ fun FeedScreen(
                     }
 
                     items(uiState.posts) { post ->
+                        val isLikedByMe = uiState.currentUser?.uid?.let { post.likedBy.contains(it) } ?: false
                         SocialSplitCard(
                             post = post,
+                            isLikedByMe = isLikedByMe,
                             onLike = { viewModel.onLikePost(post.id) },
                             onUnlike = { viewModel.onUnlikePost(post.id) },
                             onSettleUp = {
@@ -247,8 +249,12 @@ private fun RecentGroupVibes() {
 @Composable
 private fun SocialSplitCard(
     post: Post,
+    isLikedByMe: Boolean,
     onLike: () -> Unit,
     onUnlike: () -> Unit,
+    onComment: () -> Unit = {},
+    onShare: () -> Unit = {},
+    onBookmark: () -> Unit = {},
     onSettleUp: () -> Unit
 ) {
     Card(
@@ -302,24 +308,47 @@ private fun SocialSplitCard(
 
             // Stats
             Row(
-                modifier = Modifier.padding(horizontal = 16.dp, vertical = 12.dp).fillMaxWidth(),
+                modifier = Modifier.padding(horizontal = 16.dp, vertical = 8.dp).fillMaxWidth(),
                 verticalAlignment = Alignment.CenterVertically,
                 horizontalArrangement = Arrangement.SpaceBetween
             ) {
-                Row(horizontalArrangement = Arrangement.spacedBy(20.dp)) {
-                    Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(4.dp)) {
-                        IconButton(onClick = onLike) {
-                            Icon(Icons.Outlined.FavoriteBorder, contentDescription = null, modifier = Modifier.size(20.dp))
+                Row(horizontalArrangement = Arrangement.spacedBy(8.dp), verticalAlignment = Alignment.CenterVertically) {
+                    Row(verticalAlignment = Alignment.CenterVertically) {
+                        IconButton(
+                            onClick = if (isLikedByMe) onUnlike else onLike,
+                            modifier = Modifier.size(40.dp)
+                        ) {
+                            Icon(
+                                imageVector = if (isLikedByMe) Icons.Filled.Favorite else Icons.Outlined.FavoriteBorder,
+                                contentDescription = if (isLikedByMe) "Unlike" else "Like",
+                                tint = if (isLikedByMe) MaterialTheme.colorScheme.error else MaterialTheme.colorScheme.onSurface,
+                                modifier = Modifier.size(24.dp)
+                            )
                         }
-                        Text(post.likesCount.toString(), style = MaterialTheme.typography.labelSmall.copy(fontWeight = FontWeight.Bold))
+                        if (post.likesCount > 0) {
+                            Text(post.likesCount.toString(), style = MaterialTheme.typography.labelMedium.copy(fontWeight = FontWeight.Bold))
+                        }
                     }
-                    Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(4.dp)) {
-                        Icon(Icons.Outlined.ChatBubbleOutline, contentDescription = null, modifier = Modifier.size(20.dp))
-                        Text(post.commentsCount.toString(), style = MaterialTheme.typography.labelSmall.copy(fontWeight = FontWeight.Bold))
+                    Row(verticalAlignment = Alignment.CenterVertically) {
+                        IconButton(onClick = onComment, modifier = Modifier.size(40.dp)) {
+                            Icon(Icons.Outlined.ChatBubbleOutline, contentDescription = "Comment", modifier = Modifier.size(22.dp))
+                        }
+                        if (post.commentsCount > 0) {
+                            Text(post.commentsCount.toString(), style = MaterialTheme.typography.labelMedium.copy(fontWeight = FontWeight.Bold))
+                        }
                     }
-                    Icon(Icons.Outlined.Share, contentDescription = null, modifier = Modifier.size(20.dp))
+                    Row(verticalAlignment = Alignment.CenterVertically) {
+                        IconButton(onClick = onShare, modifier = Modifier.size(40.dp)) {
+                            Icon(Icons.Outlined.Share, contentDescription = "Share", modifier = Modifier.size(22.dp))
+                        }
+                        if (post.sharesCount > 0) {
+                            Text(post.sharesCount.toString(), style = MaterialTheme.typography.labelMedium.copy(fontWeight = FontWeight.Bold))
+                        }
+                    }
                 }
-                Icon(Icons.Outlined.BookmarkBorder, contentDescription = null, modifier = Modifier.size(20.dp))
+                IconButton(onClick = onBookmark, modifier = Modifier.size(40.dp)) {
+                    Icon(Icons.Outlined.BookmarkBorder, contentDescription = "Bookmark", modifier = Modifier.size(24.dp))
+                }
             }
 
             // Caption
