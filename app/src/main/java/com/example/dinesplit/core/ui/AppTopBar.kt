@@ -8,6 +8,7 @@ import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
+import androidx.compose.material.icons.filled.Add
 import androidx.compose.material.icons.filled.Notifications
 import androidx.compose.material.icons.filled.Search
 import androidx.compose.material3.*
@@ -84,7 +85,7 @@ fun HomeTopBar(
                 .statusBarsPadding()
                 .fillMaxWidth()
                 .height(64.dp)
-                .padding(horizontal = 24.dp),
+                .padding(start = 24.dp, end = 8.dp),
             verticalAlignment = Alignment.CenterVertically,
             horizontalArrangement = Arrangement.SpaceBetween
         ) {
@@ -124,26 +125,13 @@ fun HomeTopBar(
                                 .border(1.5.dp, MaterialTheme.colorScheme.background, CircleShape),
                             contentAlignment = Alignment.Center
                         ) {
-                            Text(
-                                text = "+",
-                                color = Color.White,
-                                fontSize = 11.sp,
-                                fontWeight = FontWeight.Bold,
-                                modifier = Modifier.offset(y = (-1).dp)
+                            Icon(
+                                imageVector = Icons.Default.Add,
+                                contentDescription = null,
+                                tint = Color.White,
+                                modifier = Modifier.size(10.dp)
                             )
                         }
-                    }
-                    Column {
-                        Text(
-                            text = "Hôm nay ăn gì? 🍕",
-                            style = MaterialTheme.typography.titleMedium.copy(fontWeight = FontWeight.ExtraBold),
-                            color = MaterialTheme.colorScheme.onSurface
-                        )
-                        Text(
-                            text = "Chia sẻ khoảnh khắc...",
-                            style = MaterialTheme.typography.labelSmall.copy(fontSize = 10.sp),
-                            color = MaterialTheme.colorScheme.outline
-                        )
                     }
                 }
             } else {
@@ -176,7 +164,7 @@ fun HomeTopBar(
                     )
                 }
             }
-            Row(horizontalArrangement = Arrangement.spacedBy(16.dp)) {
+            Row(horizontalArrangement = Arrangement.spacedBy(4.dp)) {
                 if (onOpenSearch != null) {
                     IconButton(onClick = onOpenSearch) {
                         Icon(

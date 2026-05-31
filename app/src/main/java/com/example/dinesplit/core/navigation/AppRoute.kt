@@ -28,6 +28,14 @@ sealed class AppRoute(val route: String) {
 
     data object Feed : AppRoute("feed")
     data object CreatePost : AppRoute("create_post")
+    data object EditPost : AppRoute("edit_post") {
+        const val ARG_ID = "postId"
+        val routeWithArg = "$route/{$ARG_ID}"
+
+        fun createRoute(postId: String): String {
+            return "$route/$postId"
+        }
+    }
     data object CreateBill : AppRoute("create_bill") {
         const val ARG_GROUP_ID = "groupId"
         val routeWithArg = "$route/{$ARG_GROUP_ID}"

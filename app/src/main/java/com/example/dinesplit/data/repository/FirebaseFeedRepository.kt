@@ -3,6 +3,8 @@ package com.example.dinesplit.data.repository
 import com.example.dinesplit.domain.model.Comment
 import com.example.dinesplit.domain.model.Post
 import com.example.dinesplit.domain.repository.FeedRepository
+import android.net.Uri
+import com.example.dinesplit.core.firebase.FirebaseProviders
 import com.google.android.gms.tasks.Task
 import com.google.firebase.firestore.FirebaseFirestore
 import com.google.firebase.firestore.Query
@@ -56,6 +58,20 @@ class FirebaseFeedRepository(
 
     override suspend fun createPost(post: Post) {
         firestore.collection("posts").document(post.id).set(post).awaitFirebase()
+    }
+
+    override suspend fun updatePost(post: Post) {
+        firestore.collection("posts").document(post.id).set(post).awaitFirebase()
+    }
+
+    override suspend fun deletePost(postId: String) {
+        firestore.collection("posts").document(postId).delete().awaitFirebase()
+    }
+
+    override suspend fun uploadPostImage(postId: String, imageUri: Uri): String {
+        val storageRef = FirebaseProviders.storage.reference.child("posts/$postId/post_image.jpg")
+        storageRef.putFile(imageUri).awaitFirebase()
+        return storageRef.downloadUrl.awaitFirebase().toString()
     }
 
     override suspend fun likePost(postId: String, userId: String) {

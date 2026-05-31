@@ -9,6 +9,7 @@ data class Post(
     val authorAvatar: String = "",
     val caption: String = "",
     val imageUrls: List<String> = emptyList(),
+    val videoUrls: List<String> = emptyList(), // Thêm trường dữ liệu video để lưu trên database
     val location: String? = null,
     val linkedGroupId: String? = null,
     val linkedBillId: String? = null,
