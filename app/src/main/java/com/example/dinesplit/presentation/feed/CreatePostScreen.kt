@@ -1,49 +1,41 @@
 package com.example.dinesplit.presentation.feed
 
 import android.app.Application
+import android.net.Uri
+import androidx.activity.compose.rememberLauncherForActivityResult
+import androidx.activity.result.contract.ActivityResultContracts
 import androidx.compose.foundation.background
-import androidx.compose.foundation.layout.Arrangement
-import androidx.compose.foundation.layout.Box
-import androidx.compose.foundation.layout.Column
-import androidx.compose.foundation.layout.Spacer
-import androidx.compose.foundation.layout.aspectRatio
-import androidx.compose.foundation.layout.fillMaxSize
-import androidx.compose.foundation.layout.fillMaxWidth
-import androidx.compose.foundation.layout.height
-import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.border
+import androidx.compose.foundation.clickable
+import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.verticalScroll
-import androidx.compose.material3.MaterialTheme
-import androidx.compose.material3.Text
-import androidx.compose.material3.TextButton
-import androidx.compose.runtime.Composable
-import androidx.compose.runtime.getValue
-import androidx.compose.runtime.mutableStateOf
-import androidx.compose.runtime.remember
-import androidx.compose.runtime.rememberCoroutineScope
-import androidx.compose.runtime.setValue
+import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.automirrored.filled.ArrowBack
+import androidx.compose.material.icons.filled.AddPhotoAlternate
+import androidx.compose.material.icons.filled.PhotoLibrary
+import androidx.compose.material3.*
+import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import coil.compose.AsyncImage
 import com.example.dinesplit.core.common.AppContainer
-import com.example.dinesplit.core.ui.AppButton
-import com.example.dinesplit.core.ui.AppCard
-import com.example.dinesplit.core.ui.AppDimens
-import com.example.dinesplit.core.ui.AppScaffold
-import com.example.dinesplit.core.ui.AppTextField
 import com.example.dinesplit.domain.model.Post
 import kotlinx.coroutines.launch
 import java.util.Date
 import java.util.UUID
 
+@OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun CreatePostScreen(
     onBack: () -> Unit = {}
@@ -56,7 +48,7 @@ fun CreatePostScreen(
     val context = LocalContext.current
     val application = context.applicationContext as Application
 
-    // Select a beautiful random placeholder food photo
+    // Select a beautiful random placeholder food photo as initial fallback
     val mockImage = remember {
         listOf(
             "https://images.unsplash.com/photo-1565299624946-b28f40a0ae38?w=800&auto=format&fit=crop",
@@ -67,68 +59,168 @@ fun CreatePostScreen(
         ).random()
     }
 
-    AppScaffold(
-        title = "Tạo Bài Viết",
-        navigationIcon = {
-            TextButton(onClick = onBack) {
-                Text("Quay lại", color = MaterialTheme.colorScheme.primary, fontWeight = FontWeight.Bold)
-            }
+    var selectedImageUri by remember { mutableStateOf<Uri?>(null) }
+    val galleryLauncher = rememberLauncherForActivityResult(
+        contract = ActivityResultContracts.GetContent()
+    ) { uri: Uri? ->
+        if (uri != null) {
+            selectedImageUri = uri
         }
-    ) {
+    }
+
+    Scaffold(
+        topBar = {
+            CenterAlignedTopAppBar(
+                title = { 
+                    Text(
+                        "Đăng bài viết mới", 
+                        style = MaterialTheme.typography.titleMedium.copy(fontWeight = FontWeight.Bold)
+                    ) 
+                },
+                navigationIcon = {
+                    IconButton(onClick = onBack) {
+                        Icon(Icons.AutoMirrored.Filled.ArrowBack, contentDescription = "Quay lại")
+                    }
+                },
+                colors = TopAppBarDefaults.centerAlignedTopAppBarColors(
+                    containerColor = MaterialTheme.colorScheme.background
+                )
+            )
+        }
+    ) { padding ->
         Column(
             modifier = Modifier
                 .fillMaxSize()
+                .background(MaterialTheme.colorScheme.background)
                 .verticalScroll(rememberScrollState())
-                .padding(horizontal = 16.dp, vertical = 24.dp),
-            verticalArrangement = Arrangement.spacedBy(AppDimens.spaceLg)
+                .padding(padding)
+                .padding(horizontal = 24.dp, vertical = 16.dp),
+            verticalArrangement = Arrangement.spacedBy(20.dp)
         ) {
-            AppCard {
-                Box(
-                    modifier = Modifier
-                        .fillMaxWidth()
-                        .aspectRatio(16f / 10f)
-                        .clip(RoundedCornerShape(16.dp))
-                        .background(MaterialTheme.colorScheme.primaryContainer),
-                    contentAlignment = Alignment.Center
-                ) {
+            // Elegant Image Picker Block
+            Box(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .aspectRatio(1.33f)
+                    .clip(RoundedCornerShape(24.dp))
+                    .background(MaterialTheme.colorScheme.surfaceContainerHigh)
+                    .border(
+                        width = 1.5.dp,
+                        color = MaterialTheme.colorScheme.outlineVariant.copy(alpha = 0.5f),
+                        shape = RoundedCornerShape(24.dp)
+                    )
+                    .clickable { galleryLauncher.launch("image/*") },
+                contentAlignment = Alignment.Center
+            ) {
+                if (selectedImageUri != null) {
+                    // Show custom chosen image from gallery
+                    AsyncImage(
+                        model = selectedImageUri,
+                        contentDescription = "Selected image",
+                        modifier = Modifier.fillMaxSize(),
+                        contentScale = ContentScale.Crop
+                    )
+                    // Glassmorphic change indicator pill at top right
+                    Surface(
+                        color = Color.Black.copy(alpha = 0.55f),
+                        shape = RoundedCornerShape(12.dp),
+                        modifier = Modifier
+                            .align(Alignment.BottomEnd)
+                            .padding(12.dp)
+                    ) {
+                        Row(
+                            modifier = Modifier.padding(horizontal = 10.dp, vertical = 6.dp),
+                            verticalAlignment = Alignment.CenterVertically,
+                            horizontalArrangement = Arrangement.spacedBy(4.dp)
+                        ) {
+                            Icon(Icons.Default.PhotoLibrary, contentDescription = null, tint = Color.White, modifier = Modifier.size(12.dp))
+                            Text("Đổi ảnh thư viện", color = Color.White, style = MaterialTheme.typography.labelSmall.copy(fontSize = 10.sp, fontWeight = FontWeight.Bold))
+                        }
+                    }
+                } else {
+                    // Fallback to visual preview of default random food image but styled to encourage changing
                     AsyncImage(
                         model = mockImage,
-                        contentDescription = null,
+                        contentDescription = "Mock image",
                         modifier = Modifier.fillMaxSize(),
-                        contentScale = androidx.compose.ui.layout.ContentScale.Crop
+                        contentScale = ContentScale.Crop
                     )
-                    Box(
-                        modifier = Modifier
-                            .fillMaxSize()
-                            .background(Color.Black.copy(alpha = 0.3f))
-                    )
-                    Text(
-                        text = "Ảnh món ăn ngẫu nhiên đã chọn 📸",
-                        color = Color.White,
-                        style = MaterialTheme.typography.titleMedium.copy(fontWeight = FontWeight.Bold)
-                    )
+                    // Overlay tint
+                    Box(modifier = Modifier.fillMaxSize().background(Color.Black.copy(alpha = 0.4f)))
+                    
+                    // Call to Action
+                    Column(
+                        horizontalAlignment = Alignment.CenterHorizontally,
+                        verticalArrangement = Arrangement.spacedBy(8.dp),
+                        modifier = Modifier.padding(16.dp)
+                    ) {
+                        Box(
+                            modifier = Modifier
+                                .size(48.dp)
+                                .background(Color.White.copy(0.2f), CircleShape)
+                                .border(1.5.dp, Color.White, CircleShape),
+                            contentAlignment = Alignment.Center
+                        ) {
+                            Icon(Icons.Default.AddPhotoAlternate, contentDescription = null, tint = Color.White, modifier = Modifier.size(24.dp))
+                        }
+                        Text(
+                            text = "Nhấp để chọn ảnh từ gallery của bạn 📸",
+                            color = Color.White,
+                            style = MaterialTheme.typography.labelLarge.copy(fontWeight = FontWeight.Bold),
+                            textAlign = TextAlign.Center
+                        )
+                        Text(
+                            text = "Hoặc sử dụng ảnh món ăn ngẫu nhiên có sẵn",
+                            color = Color.White.copy(0.7f),
+                            style = MaterialTheme.typography.labelSmall,
+                            textAlign = TextAlign.Center
+                        )
+                    }
                 }
             }
 
-            AppTextField(
-                value = restaurantName,
-                onValueChange = { restaurantName = it },
-                label = "Tên quán ăn / Nhà hàng",
-                placeholder = "Ví dụ: Phở Thìn Lò Đúc"
-            )
+            // Input Fields
+            Column(verticalArrangement = Arrangement.spacedBy(16.dp)) {
+                Text(
+                    text = "Thông tin ẩm thực",
+                    style = MaterialTheme.typography.titleSmall.copy(fontWeight = FontWeight.Bold, color = MaterialTheme.colorScheme.primary)
+                )
 
-            AppTextField(
-                value = caption,
-                onValueChange = { caption = it },
-                label = "Cảm nghĩ của bạn",
-                placeholder = "Món ăn hôm nay thế nào? Trải nghiệm ra sao?",
-                singleLine = false
-            )
+                OutlinedTextField(
+                    value = restaurantName,
+                    onValueChange = { restaurantName = it },
+                    label = { Text("Tên quán ăn / Nhà hàng", style = MaterialTheme.typography.bodyMedium) },
+                    placeholder = { Text("Ví dụ: Phở Thìn Lò Đúc, Pizza 4P's...", style = MaterialTheme.typography.bodyMedium) },
+                    modifier = Modifier.fillMaxWidth(),
+                    shape = RoundedCornerShape(16.dp),
+                    colors = OutlinedTextFieldDefaults.colors(
+                        focusedBorderColor = MaterialTheme.colorScheme.primary,
+                        unfocusedBorderColor = MaterialTheme.colorScheme.outlineVariant
+                    ),
+                    singleLine = true
+                )
 
-            Spacer(modifier = Modifier.height(AppDimens.spaceSm))
+                OutlinedTextField(
+                    value = caption,
+                    onValueChange = { caption = it },
+                    label = { Text("Cảm nghĩ của bạn về bữa ăn", style = MaterialTheme.typography.bodyMedium) },
+                    placeholder = { Text("Hôm nay bạn ăn gì? Trải nghiệm hương vị ra sao? Hãy chia sẻ cho cộng đồng nhé!", style = MaterialTheme.typography.bodyMedium) },
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .height(120.dp),
+                    shape = RoundedCornerShape(16.dp),
+                    colors = OutlinedTextFieldDefaults.colors(
+                        focusedBorderColor = MaterialTheme.colorScheme.primary,
+                        unfocusedBorderColor = MaterialTheme.colorScheme.outlineVariant
+                    ),
+                    singleLine = false
+                )
+            }
 
-            AppButton(
-                text = if (isPosting) "Đang đăng..." else "Đăng bài",
+            Spacer(modifier = Modifier.height(8.dp))
+
+            // Submit Button
+            Button(
                 onClick = {
                     isPosting = true
                     scope.launch {
@@ -141,14 +233,16 @@ fun CreatePostScreen(
                                 null
                             }
                             
+                            val finalImageUrl = selectedImageUri?.toString() ?: mockImage
+                            
                             val newPost = Post(
                                 id = UUID.randomUUID().toString(),
                                 authorUid = profile?.uid ?: "",
                                 authorName = profile?.displayName ?: "User",
                                 authorAvatar = profile?.avatarUrl ?: "",
-                                caption = caption,
-                                imageUrls = listOf(mockImage),
-                                location = restaurantName,
+                                caption = caption.trim(),
+                                imageUrls = listOf(finalImageUrl),
+                                location = restaurantName.trim(),
                                 createdAt = Date(),
                                 updatedAt = Date()
                             )
@@ -161,19 +255,21 @@ fun CreatePostScreen(
                         }
                     }
                 },
-                enabled = restaurantName.isNotBlank() && caption.isNotBlank() && !isPosting
-            )
-
-            Box(
                 modifier = Modifier
-                    .fillMaxWidth(),
-                contentAlignment = Alignment.Center
+                    .fillMaxWidth()
+                    .height(52.dp),
+                shape = RoundedCornerShape(26.dp),
+                colors = ButtonDefaults.buttonColors(
+                    containerColor = MaterialTheme.colorScheme.primary,
+                    contentColor = Color.White
+                ),
+                enabled = restaurantName.isNotBlank() && caption.isNotBlank() && !isPosting
             ) {
-                Box(
-                    modifier = Modifier
-                        .clip(CircleShape)
-                        .background(MaterialTheme.colorScheme.surfaceVariant)
-                )
+                if (isPosting) {
+                    CircularProgressIndicator(modifier = Modifier.size(24.dp), strokeWidth = 2.5.dp, color = Color.White)
+                } else {
+                    Text("Đăng bài viết", style = MaterialTheme.typography.titleMedium.copy(fontWeight = FontWeight.Bold))
+                }
             }
         }
     }

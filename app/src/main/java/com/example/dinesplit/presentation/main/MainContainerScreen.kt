@@ -523,12 +523,16 @@ fun MainContainerScreen(
                         userAvatarUrl = profileUiState.profile?.avatarUrl,
                         title = title,
                         onAvatarClick = {
-                            // Navigate to profile screen as a regular screen push (not tab switch)
-                            // This preserves the current tab context (e.g. Feed stays active)
-                            val isAlreadyOnProfile = currentRoute?.contains(AppRoute.Profile.route) == true
-                            if (!isAlreadyOnProfile) {
-                                mainNavController.navigate(AppRoute.Profile.route) {
-                                    launchSingleTop = true
+                            if (currentRoute?.contains(AppRoute.Feed.route) == true) {
+                                mainNavController.navigate(AppRoute.CreatePost.route)
+                            } else {
+                                // Navigate to profile screen as a regular screen push (not tab switch)
+                                // This preserves the current tab context (e.g. Feed stays active)
+                                val isAlreadyOnProfile = currentRoute?.contains(AppRoute.Profile.route) == true
+                                if (!isAlreadyOnProfile) {
+                                    mainNavController.navigate(AppRoute.Profile.route) {
+                                        launchSingleTop = true
+                                    }
                                 }
                             }
                         },
