@@ -88,6 +88,17 @@ class CreateBillViewModelTest {
     }
 
     @Test
+    fun `switching to itemized keeps entered total as first item price`() = runBlocking {
+        val repo = FakeSplitRepository()
+        val vm = CreateBillViewModel(repository = repo, groupId = "g1", autoLoadMembers = false)
+
+        vm.onTotalAmountChange("250000")
+        vm.onMethodSelect(SplitMethod.ITEMIZED)
+
+        assertEquals(250000.0, vm.billItems.first().price, 0.001)
+    }
+
+    @Test
     fun `custom split rejects amounts that do not match total`() = runBlocking {
         val repo = FakeSplitRepository()
         val vm = CreateBillViewModel(repository = repo, groupId = "g1", autoLoadMembers = false)
