@@ -6,6 +6,7 @@ import androidx.lifecycle.viewModelScope
 import com.example.dinesplit.core.common.AppContainer
 import com.example.dinesplit.domain.model.Post
 import com.example.dinesplit.domain.model.UserProfile
+import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.SharingStarted
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.combine
@@ -15,6 +16,7 @@ import kotlinx.coroutines.launch
 data class FeedUiState(
     val posts: List<Post> = emptyList(),
     val currentUser: UserProfile? = null,
+    val viewedStoryIds: Set<String> = emptySet(),
     val isLoading: Boolean = true,
     val error: String? = null
 )
@@ -27,14 +29,18 @@ class FeedViewModel(application: Application) : AndroidViewModel(application) {
     private val likePostUseCase = AppContainer.likePostUseCase()
     private val unlikePostUseCase = AppContainer.unlikePostUseCase()
 
+    private val _viewedStoryIds = MutableStateFlow<Set<String>>(emptySet())
+
     val uiState: StateFlow<FeedUiState> = combine(
         getFeedUseCase(),
-        observeSessionUseCase()
-    ) { posts, session ->
+        observeSessionUseCase(),
+        _viewedStoryIds
+    ) { posts, session, viewedIds ->
         val userProfile = session?.uid?.let { getCurrentUserProfileUseCase(it) }
         FeedUiState(
             posts = posts,
             currentUser = userProfile,
+            viewedStoryIds = viewedIds,
             isLoading = false,
             error = null
         )
@@ -61,6 +67,10 @@ class FeedViewModel(application: Application) : AndroidViewModel(application) {
         viewModelScope.launch {
             unlikePostUseCase(postId, uid)
         }
+    }
+
+    fun markStoryAsViewed(postId: String) {
+        _viewedStoryIds.value = _viewedStoryIds.value + postId
     }
 
     fun onDeletePost(postId: String) {

@@ -20,6 +20,7 @@ import androidx.compose.runtime.*
 import androidx.compose.ui.platform.LocalContext
 import androidx.lifecycle.viewmodel.compose.viewModel
 import com.example.dinesplit.domain.model.Post
+import com.example.dinesplit.domain.model.UserProfile
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.alpha
@@ -167,13 +168,31 @@ fun FeedScreen(
                     contentPadding = PaddingValues(top = 64.dp, bottom = 96.dp)
                 ) {
                     item {
-                        // Lay recent unique-author posts for the vibes row
-                        val vibesPosts = uiState.posts
+                        val currentUser = uiState.currentUser
+                        val myActivePost = if (currentUser != null) {
+                            uiState.posts.firstOrNull { post ->
+                                post.authorUid == currentUser.uid &&
+                                post.createdAt?.let { (System.currentTimeMillis() - it.time) < 24 * 60 * 60 * 1000 } == true
+                            }
+                        } else null
+
+                        // Exclude current user from other stories to avoid duplication
+                        val otherVibesPosts = uiState.posts
+                            .filter { post -> currentUser == null || post.authorUid != currentUser.uid }
                             .distinctBy { it.authorUid }
+                            .sortedBy { post -> uiState.viewedStoryIds.contains(post.id) }
                             .take(8)
+
                         RecentGroupVibes(
-                            posts = vibesPosts,
-                            onVibeClick = { post -> onOpenPostDetail(post.id) }
+                            posts = otherVibesPosts,
+                            viewedStoryIds = uiState.viewedStoryIds,
+                            currentUser = currentUser,
+                            myActivePost = myActivePost,
+                            onVibeClick = { post ->
+                                viewModel.markStoryAsViewed(post.id)
+                                onOpenPostDetail(post.id)
+                            },
+                            onCreatePostClick = onCreatePost
                         )
                     }
 
@@ -220,7 +239,11 @@ fun FeedScreen(
 @Composable
 private fun RecentGroupVibes(
     posts: List<Post> = emptyList(),
-    onVibeClick: (Post) -> Unit = {}
+    viewedStoryIds: Set<String> = emptySet(),
+    currentUser: UserProfile? = null,
+    myActivePost: Post? = null,
+    onVibeClick: (Post) -> Unit = {},
+    onCreatePostClick: () -> Unit = {}
 ) {
     Column(modifier = Modifier.padding(vertical = 16.dp)) {
         Text(
@@ -233,7 +256,7 @@ private fun RecentGroupVibes(
             modifier = Modifier.padding(horizontal = 24.dp, vertical = 16.dp)
         )
 
-        if (posts.isEmpty()) {
+        if (posts.isEmpty() && currentUser == null) {
             // Show placeholder story circles when no data
             LazyRow(
                 contentPadding = PaddingValues(horizontal = 24.dp),
@@ -272,6 +295,118 @@ private fun RecentGroupVibes(
                 contentPadding = PaddingValues(horizontal = 24.dp),
                 horizontalArrangement = Arrangement.spacedBy(16.dp)
             ) {
+                // 1. Current user fixed story circle
+                if (currentUser != null) {
+                    item {
+                        Box(
+                            modifier = Modifier
+                                .width(100.dp)
+                                .height(150.dp)
+                                .clip(RoundedCornerShape(20.dp))
+                                .background(MaterialTheme.colorScheme.primaryContainer)
+                                .clickable {
+                                    if (myActivePost != null) {
+                                        onVibeClick(myActivePost)
+                                    } else {
+                                        onCreatePostClick()
+                                    }
+                                }
+                        ) {
+                            if (myActivePost != null && myActivePost.imageUrls.isNotEmpty()) {
+                                AsyncImage(
+                                    model = myActivePost.imageUrls.first(),
+                                    contentDescription = null,
+                                    modifier = Modifier.fillMaxSize().alpha(0.85f),
+                                    contentScale = ContentScale.Crop
+                                )
+                            } else {
+                                Box(
+                                    modifier = Modifier.fillMaxSize().background(
+                                        Brush.linearGradient(
+                                            listOf(MaterialTheme.colorScheme.primary.copy(0.4f), MaterialTheme.colorScheme.secondary.copy(0.4f))
+                                        )
+                                    ),
+                                    contentAlignment = Alignment.Center
+                                ) {
+                                    Icon(Icons.Default.Restaurant, contentDescription = null, tint = Color.White.copy(0.6f), modifier = Modifier.size(36.dp))
+                                }
+                            }
+                            // gradient overlay
+                            Box(modifier = Modifier.fillMaxSize().background(Brush.verticalGradient(listOf(Color.Transparent, Color.Black.copy(alpha = 0.75f)))))
+
+                            // Author avatar at top
+                            Box(
+                                modifier = Modifier
+                                    .align(Alignment.TopStart)
+                                    .padding(8.dp)
+                                    .size(36.dp)
+                                    .background(
+                                        Brush.sweepGradient(listOf(MaterialTheme.colorScheme.primary, MaterialTheme.colorScheme.secondary, MaterialTheme.colorScheme.primary)),
+                                        CircleShape
+                                    )
+                                    .padding(2.dp)
+                            ) {
+                                DineAvatarImage(
+                                    imageUrl = currentUser.avatarUrl,
+                                    name = currentUser.displayName,
+                                    modifier = Modifier.fillMaxSize().border(2.dp, MaterialTheme.colorScheme.background, CircleShape),
+                                    size = 32.dp
+                                )
+                            }
+
+                            // Active dot or add icon
+                            if (myActivePost != null && !viewedStoryIds.contains(myActivePost.id)) {
+                                Box(
+                                    modifier = Modifier
+                                        .align(Alignment.TopEnd)
+                                        .padding(10.dp)
+                                        .size(10.dp)
+                                        .background(MaterialTheme.colorScheme.secondary, CircleShape)
+                                        .border(2.dp, Color.White, CircleShape)
+                                )
+                            } else if (myActivePost == null) {
+                                Box(
+                                    modifier = Modifier
+                                        .align(Alignment.TopEnd)
+                                        .padding(10.dp)
+                                        .size(16.dp)
+                                        .background(MaterialTheme.colorScheme.primary, CircleShape)
+                                        .border(1.dp, Color.White, CircleShape),
+                                    contentAlignment = Alignment.Center
+                                ) {
+                                    Icon(
+                                        imageVector = Icons.Default.Add,
+                                        contentDescription = "Thêm tin",
+                                        tint = Color.White,
+                                        modifier = Modifier.size(10.dp)
+                                    )
+                                }
+                            }
+
+                            // Author name at bottom ("Tin của tôi")
+                            Column(
+                                modifier = Modifier.align(Alignment.BottomStart).padding(8.dp)
+                            ) {
+                                Text(
+                                    text = "Tin của tôi",
+                                    style = MaterialTheme.typography.labelSmall.copy(fontWeight = FontWeight.Bold, fontSize = 10.sp),
+                                    color = Color.White,
+                                    maxLines = 1,
+                                    overflow = TextOverflow.Ellipsis
+                                )
+                                Text(
+                                    text = if (myActivePost != null) "Đang hoạt động" else "Tạo tin mới",
+                                    style = MaterialTheme.typography.labelSmall.copy(fontSize = 9.sp),
+                                    color = Color.White.copy(alpha = 0.75f),
+                                    maxLines = 1,
+                                    overflow = TextOverflow.Ellipsis
+                                )
+                            }
+                        }
+                    }
+                }
+
+                // 2. Other users' vibes/stories
                 items(posts) { post ->
                     // Story card: show post image with author name
                     Box(
@@ -323,14 +458,16 @@ private fun RecentGroupVibes(
                             )
                         }
                         // Active dot
-                        Box(
-                            modifier = Modifier
-                                .align(Alignment.TopEnd)
-                                .padding(10.dp)
-                                .size(10.dp)
-                                .background(MaterialTheme.colorScheme.secondary, CircleShape)
-                                .border(2.dp, Color.White, CircleShape)
-                        )
+                        if (!viewedStoryIds.contains(post.id)) {
+                            Box(
+                                modifier = Modifier
+                                    .align(Alignment.TopEnd)
+                                    .padding(10.dp)
+                                    .size(10.dp)
+                                    .background(MaterialTheme.colorScheme.secondary, CircleShape)
+                                    .border(2.dp, Color.White, CircleShape)
+                            )
+                        }
                         // Author name at bottom
                         Column(
                             modifier = Modifier.align(Alignment.BottomStart).padding(8.dp)
@@ -394,7 +531,7 @@ private fun SocialSplitCard(
                 horizontalArrangement = Arrangement.SpaceBetween
             ) {
                 Row(
-                    verticalAlignment = Alignment.Top,
+                    verticalAlignment = Alignment.CenterVertically,
                     horizontalArrangement = Arrangement.spacedBy(12.dp),
                     modifier = Modifier
                         .weight(1f)
