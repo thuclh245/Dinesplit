@@ -63,7 +63,7 @@ private fun RecentGroupVibes(
     onVibeClick: (Post) -> Unit = {},
     onCreatePostClick: () -> Unit = {},
 ) {
-    Column(modifier = Modifier.padding(vertical = AppDimens.spaceLg)) {
+    Column(modifier = Modifier.padding(bottom = AppDimens.spaceLg)) {
         Text(
             text = "KHOẢNH KHẮC BẠN BÈ",
             style =
@@ -72,7 +72,11 @@ private fun RecentGroupVibes(
                     letterSpacing = 2.sp,
                 ),
             color = MaterialTheme.colorScheme.outline,
-            modifier = Modifier.padding(horizontal = AppDimens.screenHorizontal, vertical = AppDimens.spaceMd),
+            modifier = Modifier.padding(
+                start = AppDimens.screenHorizontal,
+                end = AppDimens.screenHorizontal,
+                bottom = AppDimens.spaceMd
+            ),
         )
 
         if (posts.isEmpty() && currentUser == null) {
@@ -484,6 +488,7 @@ fun FeedScreen(
             }
         },
     ) { padding ->
+        val statusBarHeight = WindowInsets.statusBars.asPaddingValues().calculateTopPadding()
         PullToRefreshBox(
             isRefreshing = uiState.isRefreshing,
             onRefresh = { viewModel.refresh() },
@@ -491,7 +496,7 @@ fun FeedScreen(
         ) {
             when {
                 uiState.isLoading -> {
-                    Box(modifier = Modifier.fillMaxSize().padding(top = 64.dp), contentAlignment = Alignment.Center) {
+                    Box(modifier = Modifier.fillMaxSize().padding(top = 64.dp + statusBarHeight), contentAlignment = Alignment.Center) {
                         LoadingBlock(
                             message = "Đang tải bài viết...",
                             modifier = Modifier.padding(AppDimens.spaceLg),
@@ -499,7 +504,7 @@ fun FeedScreen(
                     }
                 }
                 uiState.error != null -> {
-                    Box(modifier = Modifier.fillMaxSize().padding(top = 64.dp), contentAlignment = Alignment.Center) {
+                    Box(modifier = Modifier.fillMaxSize().padding(top = 64.dp + statusBarHeight), contentAlignment = Alignment.Center) {
                         ErrorStateBlock(
                             title = "Không thể tải bài viết",
                             subtitle = uiState.error.orEmpty(),
@@ -510,7 +515,7 @@ fun FeedScreen(
                     }
                 }
                 uiState.posts.isEmpty() -> {
-                    Box(modifier = Modifier.fillMaxSize().padding(top = 64.dp), contentAlignment = Alignment.Center) {
+                    Box(modifier = Modifier.fillMaxSize().padding(top = 64.dp + statusBarHeight), contentAlignment = Alignment.Center) {
                         EmptyStateBlock(
                             title = "Chưa có bài viết nào",
                             subtitle = "Hãy là người đầu tiên chia sẻ khoảnh khắc ẩm thực!",
@@ -528,7 +533,7 @@ fun FeedScreen(
                             Modifier
                                 .fillMaxSize()
                                 .background(MaterialTheme.colorScheme.background),
-                        contentPadding = PaddingValues(top = 64.dp, bottom = 96.dp),
+                        contentPadding = PaddingValues(top = 64.dp + statusBarHeight, bottom = 96.dp),
                     ) {
                         item {
                             val currentUser = uiState.currentUser

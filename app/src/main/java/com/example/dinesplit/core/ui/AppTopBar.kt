@@ -103,7 +103,7 @@ fun HomeTopBar(
                             .padding(vertical = 4.dp, horizontal = 2.dp),
                 ) {
                     Box(
-                        modifier = Modifier.size(44.dp),
+                        modifier = Modifier.size(40.dp),
                         contentAlignment = Alignment.Center,
                     ) {
                         Box(
@@ -127,7 +127,7 @@ fun HomeTopBar(
                         Box(
                             modifier =
                                 Modifier
-                                    .size(16.dp)
+                                    .size(14.dp)
                                     .align(Alignment.BottomEnd)
                                     .background(MaterialTheme.colorScheme.primary, CircleShape)
                                     .border(1.5.dp, MaterialTheme.colorScheme.background, CircleShape),
@@ -137,7 +137,7 @@ fun HomeTopBar(
                                 imageVector = Icons.Default.Add,
                                 contentDescription = null,
                                 tint = Color.White,
-                                modifier = Modifier.size(10.dp),
+                                modifier = Modifier.size(8.dp),
                             )
                         }
                     }
