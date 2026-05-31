@@ -177,13 +177,13 @@ fun PersonalScreen(
         ) {
             if (uiState.isLoading) {
                 item {
-                    LoadingBlock(message = "Loading personal finance data...")
+                    LoadingBlock(message = "Đang tải dữ liệu tài chính...")
                 }
             } else {
                 uiState.errorMessage?.let { message ->
                     item {
                         ErrorStateBlock(
-                            title = "Cannot load Personal data",
+                            title = "Không thể tải dữ liệu",
                             subtitle = message,
                             onRetryClick = onRefresh
                         )
@@ -252,9 +252,9 @@ fun PersonalScreen(
                 if (uiState.transactions.isEmpty()) {
                     item {
                         EmptyStateBlock(
-                            title = "No transactions yet",
-                            subtitle = "Add an income or expense entry to start tracking your real Firebase data.",
-                            actionText = "Add transaction",
+                            title = "Chưa có giao dịch nào",
+                            subtitle = "Thêm khoản thu hoặc chi để bắt đầu theo dõi tài chính của bạn.",
+                            actionText = "Thêm giao dịch",
                             onActionClick = onAddTransaction
                         )
                     }

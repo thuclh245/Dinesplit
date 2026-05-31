@@ -13,7 +13,7 @@ import androidx.compose.ui.Modifier
 @Composable
 fun LoadingBlock(
     modifier: Modifier = Modifier,
-    message: String = "Loading..."
+    message: String = "Đang tải..."
 ) {
     AppCard(modifier = modifier) {
         Column(
@@ -24,7 +24,8 @@ fun LoadingBlock(
             CircularProgressIndicator()
             Text(
                 text = message,
-                style = MaterialTheme.typography.bodyMedium
+                style = MaterialTheme.typography.bodyMedium,
+                color = MaterialTheme.colorScheme.onSurfaceVariant
             )
         }
     }
@@ -66,9 +67,9 @@ fun EmptyStateBlock(
 
 @Composable
 fun ErrorStateBlock(
-    title: String = "An error occurred",
-    subtitle: String = "Please try again.",
-    retryText: String = "Retry",
+    title: String = "Đã xảy ra lỗi",
+    subtitle: String = "Vui lòng thử lại.",
+    retryText: String = "Thử lại",
     onRetryClick: () -> Unit,
     modifier: Modifier = Modifier
 ) {
@@ -85,7 +86,8 @@ fun ErrorStateBlock(
             )
             Text(
                 text = subtitle,
-                style = MaterialTheme.typography.bodyMedium
+                style = MaterialTheme.typography.bodyMedium,
+                color = MaterialTheme.colorScheme.onSurfaceVariant
             )
             PrimaryButton(
                 text = retryText,

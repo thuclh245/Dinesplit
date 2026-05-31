@@ -40,6 +40,12 @@ import androidx.compose.ui.unit.sp
 import coil.compose.AsyncImage
 import com.example.dinesplit.ui.theme.DineSplitTheme
 import com.example.dinesplit.core.ui.HomeTopBar
+import com.example.dinesplit.core.ui.LoadingBlock
+import com.example.dinesplit.core.ui.ErrorStateBlock
+import com.example.dinesplit.core.ui.EmptyStateBlock
+import com.example.dinesplit.core.ui.AppDimens
+import com.example.dinesplit.core.ui.DineAvatarImage
+import com.example.dinesplit.core.ui.DinePostImage
 
 @Composable
 fun FeedScreen(
@@ -68,7 +74,7 @@ fun FeedScreen(
             ) {
                 // DINERS Badge (Floating at the bottom right, above navbar)
                 Surface(
-                    color = Color.White.copy(alpha = 0.9f),
+                    color = MaterialTheme.colorScheme.surfaceContainerLowest.copy(alpha = 0.92f),
                     shape = CircleShape,
                     modifier = Modifier.shadow(8.dp, CircleShape)
                 ) {
@@ -78,7 +84,7 @@ fun FeedScreen(
                         horizontalArrangement = Arrangement.spacedBy(8.dp)
                     ) {
                         Icon(Icons.Default.Group, contentDescription = null, modifier = Modifier.size(14.dp), tint = MaterialTheme.colorScheme.primary)
-                        Text("${uiState.posts.size} POSTS", style = MaterialTheme.typography.labelSmall.copy(fontSize = 10.sp, fontWeight = FontWeight.Black))
+                        Text("${uiState.posts.size} BÀI", style = MaterialTheme.typography.labelSmall.copy(fontSize = 10.sp, fontWeight = FontWeight.Black))
                     }
                 }
 
@@ -86,7 +92,7 @@ fun FeedScreen(
                 FloatingActionButton(
                     onClick = onCreatePost,
                     containerColor = MaterialTheme.colorScheme.secondary,
-                    contentColor = Color.White,
+                    contentColor = MaterialTheme.colorScheme.onSecondary,
                     shape = CircleShape,
                     modifier = Modifier
                         .size(52.dp)
@@ -94,51 +100,66 @@ fun FeedScreen(
                 ) {
                     Icon(Icons.Default.AddAPhoto, contentDescription = "New Post", modifier = Modifier.size(22.dp))
                 }
-
-                // New Bill Button
-                FloatingActionButton(
-                    onClick = { /* New Bill */ },
-                    containerColor = MaterialTheme.colorScheme.primary,
-                    contentColor = Color.White,
-                    shape = CircleShape,
-                    modifier = Modifier
-                        .size(60.dp) // Đồng bộ 60dp
-                        .shadow(12.dp, CircleShape, spotColor = MaterialTheme.colorScheme.primary.copy(alpha = 0.4f))
-                ) {
-                    Icon(Icons.AutoMirrored.Filled.ReceiptLong, contentDescription = "New Bill", modifier = Modifier.size(28.dp))
-                }
             }
         }
     ) { padding ->
-        if (uiState.isLoading) {
-            Box(modifier = Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
-                CircularProgressIndicator()
-            }
-        } else {
-            LazyColumn(
-                modifier = Modifier
-                    .fillMaxSize()
-                    .background(MaterialTheme.colorScheme.background)
-                    .padding(padding),
-                contentPadding = PaddingValues(bottom = 16.dp)
-            ) {
-                item {
-                    RecentGroupVibes()
-                }
-
-                items(uiState.posts) { post ->
-                    SocialSplitCard(
-                        post = post,
-                        onLike = { viewModel.onLikePost(post.id) },
-                        onUnlike = { viewModel.onUnlikePost(post.id) },
-                        onSettleUp = {
-                            val gId = post.linkedGroupId
-                            val bId = post.linkedBillId
-                            if (gId != null && bId != null) {
-                                onSettleUp(gId, bId)
-                            }
-                        }
+        when {
+            uiState.isLoading -> {
+                Box(modifier = Modifier.fillMaxSize().padding(padding), contentAlignment = Alignment.Center) {
+                    LoadingBlock(
+                        message = "Đang tải bài viết...",
+                        modifier = Modifier.padding(AppDimens.spaceLg)
                     )
+                }
+            }
+            uiState.error != null -> {
+                Box(modifier = Modifier.fillMaxSize().padding(padding), contentAlignment = Alignment.Center) {
+                    ErrorStateBlock(
+                        title = "Không thể tải bài viết",
+                        subtitle = uiState.error.orEmpty(),
+                        retryText = "Thử lại",
+                        onRetryClick = { viewModel.refresh() },
+                        modifier = Modifier.padding(AppDimens.spaceLg)
+                    )
+                }
+            }
+            uiState.posts.isEmpty() -> {
+                Box(modifier = Modifier.fillMaxSize().padding(padding), contentAlignment = Alignment.Center) {
+                    EmptyStateBlock(
+                        title = "Chưa có bài viết nào",
+                        subtitle = "Hãy là người đầu tiên chia sẻ khoảnh khắc ẩm thực!",
+                        actionText = "Đăng bài ngày",
+                        onActionClick = onCreatePost,
+                        modifier = Modifier.padding(AppDimens.spaceLg)
+                    )
+                }
+            }
+            else -> {
+                LazyColumn(
+                    modifier = Modifier
+                        .fillMaxSize()
+                        .background(MaterialTheme.colorScheme.background)
+                        .padding(padding),
+                    contentPadding = PaddingValues(bottom = 16.dp)
+                ) {
+                    item {
+                        RecentGroupVibes()
+                    }
+
+                    items(uiState.posts) { post ->
+                        SocialSplitCard(
+                            post = post,
+                            onLike = { viewModel.onLikePost(post.id) },
+                            onUnlike = { viewModel.onUnlikePost(post.id) },
+                            onSettleUp = {
+                                val gId = post.linkedGroupId
+                                val bId = post.linkedBillId
+                                if (gId != null && bId != null) {
+                                    onSettleUp(gId, bId)
+                                }
+                            }
+                        )
+                    }
                 }
             }
         }
@@ -212,14 +233,13 @@ private fun RecentGroupVibes() {
                             )
                             .padding(4.dp)
                     ) {
-                        AsyncImage(
-                            model = vibe.avatar,
-                            contentDescription = vibe.name,
+                        DineAvatarImage(
+                            imageUrl = vibe.avatar,
+                            name = vibe.name,
                             modifier = Modifier
                                 .fillMaxSize()
-                                .border(4.dp, MaterialTheme.colorScheme.background, CircleShape)
-                                .clip(CircleShape),
-                            contentScale = ContentScale.Crop
+                                .border(4.dp, MaterialTheme.colorScheme.background, CircleShape),
+                            size = 72.dp
                         )
                     }
                     Text(vibe.name, style = MaterialTheme.typography.labelSmall.copy(fontWeight = FontWeight.SemiBold), color = MaterialTheme.colorScheme.onSurface)
@@ -252,17 +272,21 @@ private fun SocialSplitCard(
                 horizontalArrangement = Arrangement.SpaceBetween
             ) {
                 Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(12.dp)) {
-                    AsyncImage(
-                        model = post.authorAvatar,
-                        contentDescription = null,
-                        modifier = Modifier.size(40.dp).clip(CircleShape),
-                        contentScale = ContentScale.Crop
+                    DineAvatarImage(
+                        imageUrl = post.authorAvatar,
+                        name = post.authorName,
+                        size = 40.dp
                     )
                     Column {
                         Text(post.authorName, style = MaterialTheme.typography.labelLarge.copy(fontWeight = FontWeight.Bold))
                         Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(4.dp)) {
                             Icon(Icons.Default.LocationOn, contentDescription = null, modifier = Modifier.size(12.dp), tint = MaterialTheme.colorScheme.outline)
-                            Text(post.location ?: "Unknown Location", style = MaterialTheme.typography.labelSmall.copy(fontSize = 10.sp), color = MaterialTheme.colorScheme.outline)
+                            Text(
+                                text = post.location ?: "Chưa rõ địa điểm",
+                                style = MaterialTheme.typography.labelSmall.copy(fontSize = 10.sp),
+                                color = MaterialTheme.colorScheme.outline,
+                                maxLines = 1
+                            )
                         }
                     }
                 }
@@ -272,19 +296,14 @@ private fun SocialSplitCard(
             }
 
             // Main Image
-            Box(
+            DinePostImage(
+                imageUrl = post.imageUrls.firstOrNull(),
+                contentDescription = post.caption,
                 modifier = Modifier
                     .padding(horizontal = 8.dp)
-                    .aspectRatio(1f)
-                    .clip(RoundedCornerShape(16.dp))
-            ) {
-                AsyncImage(
-                    model = post.imageUrls.firstOrNull(),
-                    contentDescription = null,
-                    modifier = Modifier.fillMaxSize(),
-                    contentScale = ContentScale.Crop
-                )
-            }
+                    .aspectRatio(1f),
+                shape = RoundedCornerShape(16.dp)
+            )
 
             // Stats
             Row(

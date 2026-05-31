@@ -15,7 +15,8 @@ import kotlinx.coroutines.launch
 data class FeedUiState(
     val posts: List<Post> = emptyList(),
     val currentUser: UserProfile? = null,
-    val isLoading: Boolean = true
+    val isLoading: Boolean = true,
+    val error: String? = null
 )
 
 class FeedViewModel(application: Application) : AndroidViewModel(application) {
@@ -34,13 +35,19 @@ class FeedViewModel(application: Application) : AndroidViewModel(application) {
         FeedUiState(
             posts = posts,
             currentUser = userProfile,
-            isLoading = false
+            isLoading = false,
+            error = null
         )
     }.stateIn(
         scope = viewModelScope,
         started = SharingStarted.WhileSubscribed(5000),
         initialValue = FeedUiState()
     )
+
+    fun refresh() {
+        // getFeedUseCase is a Flow; re-subscribing is not needed.
+        // This is a no-op placeholder — Firebase snapshot listeners auto-refresh.
+    }
 
     fun onLikePost(postId: String) {
         val uid = uiState.value.currentUser?.uid ?: return

@@ -57,6 +57,10 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.example.dinesplit.core.common.AppContainer
 import com.example.dinesplit.core.ui.HomeTopBar
+import com.example.dinesplit.core.ui.LoadingBlock
+import com.example.dinesplit.core.ui.ErrorStateBlock
+import com.example.dinesplit.core.ui.AppDimens
+import com.example.dinesplit.core.ui.AppShapes
 import com.example.dinesplit.domain.model.Bill
 import com.example.dinesplit.domain.model.Group
 import com.example.dinesplit.domain.model.SplitMethod
@@ -100,11 +104,11 @@ fun SplitScreen(
                 contentColor = Color.White,
                 shape = CircleShape,
                 modifier = Modifier
-                    .padding(bottom = 115.dp)
+                    .padding(bottom = 16.dp)
                     .size(60.dp)
                     .shadow(24.dp, CircleShape, spotColor = MaterialTheme.colorScheme.primary.copy(alpha = 0.4f))
             ) {
-                Icon(Icons.Default.Add, contentDescription = "Thêm hóa đơn", modifier = Modifier.size(30.dp))
+                Icon(Icons.AutoMirrored.Filled.ReceiptLong, contentDescription = "Thêm hóa đơn", modifier = Modifier.size(30.dp))
             }
         }
     ) { padding ->
@@ -125,20 +129,18 @@ fun SplitScreen(
 
             if (uiState.isLoading) {
                 item {
-                    Box(
-                        modifier = Modifier
-                            .fillMaxWidth()
-                            .padding(vertical = 48.dp),
-                        contentAlignment = Alignment.Center
-                    ) {
-                        CircularProgressIndicator()
-                    }
+                    LoadingBlock(
+                        message = "Đang tải dữ liệu nhóm...",
+                        modifier = Modifier.padding(horizontal = AppDimens.spaceLg)
+                    )
                 }
             } else if (uiState.error != null) {
                 item {
-                    DashboardMessageCard(
+                    ErrorStateBlock(
                         title = "Không thể tải dữ liệu",
-                        message = uiState.error.orEmpty()
+                        subtitle = uiState.error.orEmpty(),
+                        onRetryClick = { /* ViewModel refresh if available */ },
+                        modifier = Modifier.padding(horizontal = AppDimens.spaceLg)
                     )
                 }
             } else {
@@ -171,7 +173,7 @@ private fun BalanceSummaryRow(
     Row(
         modifier = Modifier
             .fillMaxWidth()
-            .padding(horizontal = 24.dp),
+            .padding(horizontal = AppDimens.screenHorizontal),
         horizontalArrangement = Arrangement.spacedBy(16.dp)
     ) {
         BalanceCard(
@@ -206,7 +208,7 @@ private fun GroupsSection(
         Row(
             modifier = Modifier
                 .fillMaxWidth()
-                .padding(horizontal = 24.dp),
+                .padding(horizontal = AppDimens.screenHorizontal),
             horizontalArrangement = Arrangement.SpaceBetween,
             verticalAlignment = Alignment.Bottom
         ) {
@@ -225,7 +227,7 @@ private fun GroupsSection(
 
         LazyRow(
             modifier = Modifier.fillMaxWidth(),
-            contentPadding = PaddingValues(horizontal = 24.dp),
+            contentPadding = PaddingValues(horizontal = AppDimens.screenHorizontal),
             horizontalArrangement = Arrangement.spacedBy(16.dp)
         ) {
             if (groups.isEmpty()) {
@@ -255,7 +257,7 @@ private fun RecentBillsSection(
     onBillClick: (groupId: String, billId: String) -> Unit
 ) {
     Column(
-        modifier = Modifier.padding(horizontal = 24.dp),
+        modifier = Modifier.padding(horizontal = AppDimens.screenHorizontal),
         verticalArrangement = Arrangement.spacedBy(16.dp)
     ) {
         Text(
@@ -295,7 +297,7 @@ private fun BalanceCard(
 ) {
     Card(
         modifier = modifier.height(160.dp),
-        shape = RoundedCornerShape(20.dp),
+        shape = AppShapes.xLarge,
         colors = CardDefaults.cardColors(containerColor = containerColor),
         elevation = CardDefaults.cardElevation(defaultElevation = 2.dp)
     ) {
@@ -318,7 +320,7 @@ private fun BalanceCard(
                 Column {
                     Text(
                         title,
-                        style = MaterialTheme.typography.labelSmall.copy(fontSize = 9.sp, fontWeight = FontWeight.Bold, letterSpacing = 1.sp),
+                        style = MaterialTheme.typography.labelSmall.copy(fontWeight = FontWeight.Bold, letterSpacing = 1.sp),
                         color = MaterialTheme.colorScheme.outlineVariant
                     )
                     Row(verticalAlignment = Alignment.Bottom) {
@@ -442,13 +444,14 @@ private fun GroupCard(
 
 @Composable
 private fun GroupInitialStack(group: Group) {
+    val surfaceColor = MaterialTheme.colorScheme.background
     Row(horizontalArrangement = Arrangement.spacedBy((-8).dp)) {
         val visibleCount = minOf(group.memberCount.coerceAtLeast(1), 3)
         repeat(visibleCount) { index ->
             Box(
                 modifier = Modifier
                     .size(32.dp)
-                    .border(2.dp, Color.White, CircleShape)
+                    .border(2.dp, surfaceColor, CircleShape)
                     .clip(CircleShape)
                     .background(
                         listOf(
@@ -461,7 +464,7 @@ private fun GroupInitialStack(group: Group) {
             ) {
                 Text(
                     text = group.name.firstOrNull()?.uppercase().orEmpty(),
-                    color = Color.White,
+                    color = MaterialTheme.colorScheme.onPrimary,
                     style = MaterialTheme.typography.labelSmall.copy(fontWeight = FontWeight.Bold)
                 )
             }
@@ -471,7 +474,7 @@ private fun GroupInitialStack(group: Group) {
             Box(
                 modifier = Modifier
                     .size(32.dp)
-                    .border(2.dp, Color.White, CircleShape)
+                    .border(2.dp, surfaceColor, CircleShape)
                     .background(MaterialTheme.colorScheme.surfaceVariant, CircleShape),
                 contentAlignment = Alignment.Center
             ) {
@@ -510,7 +513,7 @@ private fun BillItem(
         modifier = Modifier
             .fillMaxWidth()
             .clickable { onClick() },
-        shape = RoundedCornerShape(16.dp),
+        shape = AppShapes.large,
         color = MaterialTheme.colorScheme.surfaceContainerLowest
     ) {
         Row(
@@ -545,7 +548,7 @@ private fun BillItem(
                     )
                     Text(
                         "${formatDate(bill.date)} • ${recentBill.groupName}",
-                        style = MaterialTheme.typography.labelSmall.copy(fontSize = 9.sp),
+                        style = MaterialTheme.typography.labelSmall,
                         color = MaterialTheme.colorScheme.outlineVariant,
                         maxLines = 1,
                         overflow = TextOverflow.Ellipsis
@@ -580,17 +583,19 @@ private fun DashboardMessageCard(
     message: String
 ) {
     Card(
-        modifier = Modifier
-            .fillMaxWidth()
-            .padding(horizontal = 24.dp),
+        modifier = Modifier.fillMaxWidth(),
         colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surfaceContainerLowest),
-        shape = RoundedCornerShape(16.dp),
+        shape = AppShapes.large,
         elevation = CardDefaults.cardElevation(defaultElevation = 1.dp)
     ) {
         Column(modifier = Modifier.padding(18.dp)) {
             Text(title, fontWeight = FontWeight.Bold, color = MaterialTheme.colorScheme.onSurface)
             Spacer(modifier = Modifier.height(4.dp))
-            Text(message, fontSize = 13.sp, color = MaterialTheme.colorScheme.onSurfaceVariant)
+            Text(
+                text = message,
+                style = MaterialTheme.typography.bodyMedium,
+                color = MaterialTheme.colorScheme.onSurfaceVariant
+            )
         }
     }
 }

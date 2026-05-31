@@ -24,7 +24,10 @@ import coil.compose.AsyncImage
 import com.example.dinesplit.core.ui.AppCard
 import com.example.dinesplit.core.ui.AppDimens
 import com.example.dinesplit.core.ui.HomeTopBar
+import com.example.dinesplit.core.ui.DineAvatarImage
+import com.example.dinesplit.core.ui.DineGridImage
 import com.example.dinesplit.ui.theme.DineSplitTheme
+import androidx.compose.ui.text.style.TextOverflow
 
 @Composable
 fun ProfileScreen(
@@ -222,11 +225,13 @@ private fun ProfileHeader(
                     .background(Brush.sweepGradient(listOf(MaterialTheme.colorScheme.primary, MaterialTheme.colorScheme.primaryContainer, MaterialTheme.colorScheme.primary)), CircleShape)
                     .padding(3.dp)
             ) {
-                AsyncImage(
-                    model = avatarUrl,
-                    contentDescription = null,
-                    modifier = Modifier.fillMaxSize().border(4.dp, MaterialTheme.colorScheme.background, CircleShape).clip(CircleShape),
-                    contentScale = ContentScale.Crop
+                DineAvatarImage(
+                    imageUrl = avatarUrl,
+                    name = displayName,
+                    modifier = Modifier
+                        .fillMaxSize()
+                        .border(4.dp, MaterialTheme.colorScheme.background, CircleShape),
+                    size = 94.dp
                 )
             }
 
@@ -273,7 +278,13 @@ private fun ProfileHeader(
         // Info
         Column(verticalArrangement = Arrangement.spacedBy(4.dp)) {
             Text(displayName, style = MaterialTheme.typography.bodyLarge.copy(fontWeight = FontWeight.Bold))
-            Text(bio, style = MaterialTheme.typography.bodyMedium, color = MaterialTheme.colorScheme.onSurfaceVariant, lineHeight = 20.sp)
+            Text(
+                text = bio,
+                style = MaterialTheme.typography.bodyMedium,
+                color = MaterialTheme.colorScheme.onSurfaceVariant,
+                maxLines = 4,
+                overflow = TextOverflow.Ellipsis
+            )
             Text(link, style = MaterialTheme.typography.labelLarge.copy(fontWeight = FontWeight.Bold), color = MaterialTheme.colorScheme.primary)
         }
 
@@ -333,9 +344,10 @@ private fun ProfileTabs(
         TabInfo("Saved", Icons.Default.BookmarkBorder),
         TabInfo("Tagged", Icons.Default.AccountBox)
     )
+    val primaryColor = MaterialTheme.colorScheme.primary
 
     Column {
-        Row(modifier = Modifier.fillMaxWidth().height(56.dp)) {
+        Row(modifier = Modifier.fillMaxWidth().height(AppDimens.buttonHeight)) {
             tabs.forEachIndexed { index, tab ->
                 val isSelected = selectedTab == index
                 Box(
@@ -346,7 +358,7 @@ private fun ProfileTabs(
                         .drawBehind {
                             if (isSelected) {
                                 drawLine(
-                                    color = Color(0xFFAB2D00),
+                                    color = primaryColor,
                                     start = androidx.compose.ui.geometry.Offset(0f, 0f),
                                     end = androidx.compose.ui.geometry.Offset(size.width, 0f),
                                     strokeWidth = 2.dp.toPx()
@@ -375,11 +387,10 @@ private fun PhotoGrid(photos: List<String>) {
         rows.forEach { rowPhotos ->
             Row(modifier = Modifier.fillMaxWidth().padding(vertical = 2.dp), horizontalArrangement = Arrangement.spacedBy(4.dp)) {
                 rowPhotos.forEach { url ->
-                    AsyncImage(
-                        model = url,
+                    DineGridImage(
+                        imageUrl = url,
                         contentDescription = null,
-                        modifier = Modifier.weight(1f).aspectRatio(1f).clip(RoundedCornerShape(4.dp)),
-                        contentScale = ContentScale.Crop
+                        modifier = Modifier.weight(1f).aspectRatio(1f)
                     )
                 }
                 // Fill empty slots if last row has less than 3 photos
