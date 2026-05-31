@@ -207,6 +207,9 @@ fun MainContainerScreen(
                             onOpenUserProfile = { userId ->
                                 mainNavController.navigate(AppRoute.OtherUserProfile.createRoute(userId))
                             },
+                            onEditPost = { postId ->
+                                mainNavController.navigate(AppRoute.EditPost.createRoute(postId))
+                            },
                             onSettleUp = { groupId, billId ->
                                 mainNavController.navigate(AppRoute.BillDetail.createRoute(groupId, billId))
                             }
@@ -474,6 +477,10 @@ fun MainContainerScreen(
                     }
                     composable(AppRoute.CreatePost.route) {
                         CreatePostScreen(onBack = { mainNavController.navigateUp() })
+                    }
+                    composable(AppRoute.EditPost.routeWithArg) { backStackEntry ->
+                        val postId = backStackEntry.arguments?.getString(AppRoute.EditPost.ARG_ID) ?: ""
+                        CreatePostScreen(postId = postId, onBack = { mainNavController.navigateUp() })
                     }
                     composable(AppRoute.CreateBill.routeWithArg) { backStackEntry ->
                         val groupId = backStackEntry.arguments?.getString(AppRoute.CreateBill.ARG_GROUP_ID).orEmpty()

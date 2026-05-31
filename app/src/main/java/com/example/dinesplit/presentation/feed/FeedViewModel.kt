@@ -62,4 +62,10 @@ class FeedViewModel(application: Application) : AndroidViewModel(application) {
             unlikePostUseCase(postId, uid)
         }
     }
+
+    fun onDeletePost(postId: String) {
+        viewModelScope.launch {
+            AppContainer.feedRepository().deletePost(postId)
+        }
+    }
 }

@@ -16,9 +16,7 @@ import androidx.compose.material.icons.outlined.ChatBubbleOutline
 import androidx.compose.material.icons.outlined.FavoriteBorder
 import androidx.compose.material.icons.outlined.Share
 import androidx.compose.material3.*
-import androidx.compose.runtime.Composable
-import androidx.compose.runtime.collectAsState
-import androidx.compose.runtime.getValue
+import androidx.compose.runtime.*
 import androidx.compose.ui.platform.LocalContext
 import androidx.lifecycle.viewmodel.compose.viewModel
 import com.example.dinesplit.domain.model.Post
@@ -59,9 +57,35 @@ fun FeedScreen(
     onCreatePost: () -> Unit = {},
     onOpenPostDetail: (String) -> Unit = {},
     onOpenUserProfile: (String) -> Unit = {},
+    onEditPost: (String) -> Unit = {},
     onSettleUp: (String, String) -> Unit
 ) {
     val uiState by viewModel.uiState.collectAsState()
+    var postToDeleteId by remember { mutableStateOf<String?>(null) }
+
+    if (postToDeleteId != null) {
+        AlertDialog(
+            onDismissRequest = { postToDeleteId = null },
+            title = { Text("Xóa bài viết", style = MaterialTheme.typography.titleMedium.copy(fontWeight = FontWeight.Bold)) },
+            text = { Text("Bạn có chắc chắn muốn xóa bài viết này không? Hành động này không thể hoàn tác.") },
+            confirmButton = {
+                TextButton(
+                    onClick = {
+                        val id = postToDeleteId!!
+                        postToDeleteId = null
+                        viewModel.onDeletePost(id)
+                    }
+                ) {
+                    Text("Xóa", color = MaterialTheme.colorScheme.error)
+                }
+            },
+            dismissButton = {
+                TextButton(onClick = { postToDeleteId = null }) {
+                    Text("Hủy")
+                }
+            }
+        )
+    }
 
     Scaffold(
         contentWindowInsets = WindowInsets(0, 0, 0, 0),
@@ -155,9 +179,11 @@ fun FeedScreen(
 
                     items(uiState.posts) { post ->
                         val isLikedByMe = uiState.currentUser?.uid?.let { post.likedBy.contains(it) } ?: false
+                        val isOwnPost = uiState.currentUser?.uid == post.authorUid
                         SocialSplitCard(
                             post = post,
                             isLikedByMe = isLikedByMe,
+                            isOwnPost = isOwnPost,
                             onLike = { viewModel.onLikePost(post.id) },
                             onUnlike = { viewModel.onUnlikePost(post.id) },
                             onComment = { onOpenPostDetail(post.id) },
@@ -174,6 +200,8 @@ fun FeedScreen(
                                 context.startActivity(Intent.createChooser(intent, "Chia sẻ bài viết"))
                             },
                             onAuthorClick = { onOpenUserProfile(post.authorUid) },
+                            onEditClick = { onEditPost(post.id) },
+                            onDeleteClick = { postToDeleteId = post.id },
                             onSettleUp = {
                                 val gId = post.linkedGroupId
                                 val bId = post.linkedBillId
@@ -335,14 +363,19 @@ private fun RecentGroupVibes(
 private fun SocialSplitCard(
     post: Post,
     isLikedByMe: Boolean,
+    isOwnPost: Boolean = false,
     onLike: () -> Unit,
     onUnlike: () -> Unit,
     onComment: () -> Unit = {},
     onShare: () -> Unit = {},
     onBookmark: () -> Unit = {},
     onAuthorClick: () -> Unit = {},
+    onEditClick: () -> Unit = {},
+    onDeleteClick: () -> Unit = {},
     onSettleUp: () -> Unit
 ) {
+    var showMenu by remember { mutableStateOf(false) }
+
     Card(
         modifier = Modifier
             .padding(horizontal = 16.dp, vertical = 8.dp)
@@ -352,16 +385,20 @@ private fun SocialSplitCard(
         border = BorderStroke(1.dp, MaterialTheme.colorScheme.surfaceContainerLow)
     ) {
         Column {
-            // Header
+            // Header (Aligned to Top for absolute consistency)
             Row(
-                modifier = Modifier.padding(16.dp),
-                verticalAlignment = Alignment.CenterVertically,
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .padding(16.dp),
+                verticalAlignment = Alignment.Top,
                 horizontalArrangement = Arrangement.SpaceBetween
             ) {
                 Row(
-                    verticalAlignment = Alignment.CenterVertically,
+                    verticalAlignment = Alignment.Top,
                     horizontalArrangement = Arrangement.spacedBy(12.dp),
-                    modifier = Modifier.clickable { onAuthorClick() }
+                    modifier = Modifier
+                        .weight(1f)
+                        .clickable { onAuthorClick() }
                 ) {
                     DineAvatarImage(
                         imageUrl = post.authorAvatar,
@@ -369,20 +406,71 @@ private fun SocialSplitCard(
                         size = 40.dp
                     )
                     Column {
-                        Text(post.authorName, style = MaterialTheme.typography.labelLarge.copy(fontWeight = FontWeight.Bold))
-                        Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(4.dp)) {
-                            Icon(Icons.Default.LocationOn, contentDescription = null, modifier = Modifier.size(12.dp), tint = MaterialTheme.colorScheme.outline)
+                        Text(
+                            text = post.authorName, 
+                            style = MaterialTheme.typography.labelLarge.copy(fontWeight = FontWeight.Bold),
+                            maxLines = 1,
+                            overflow = TextOverflow.Ellipsis
+                        )
+                        Spacer(modifier = Modifier.height(2.dp))
+                        Row(
+                            verticalAlignment = Alignment.CenterVertically, 
+                            horizontalArrangement = Arrangement.spacedBy(4.dp)
+                        ) {
+                            Icon(
+                                imageVector = Icons.Default.LocationOn, 
+                                contentDescription = null, 
+                                modifier = Modifier.size(12.dp), 
+                                tint = MaterialTheme.colorScheme.outline
+                            )
                             Text(
                                 text = post.location ?: "Chưa rõ địa điểm",
                                 style = MaterialTheme.typography.labelSmall.copy(fontSize = 10.sp),
                                 color = MaterialTheme.colorScheme.outline,
-                                maxLines = 1
+                                maxLines = 2,
+                                overflow = TextOverflow.Ellipsis
                             )
                         }
                     }
                 }
-                IconButton(onClick = { }) {
-                    Icon(Icons.Default.MoreHoriz, contentDescription = "More", tint = MaterialTheme.colorScheme.outline)
+                Box(
+                    modifier = Modifier.offset(x = 8.dp, y = (-8).dp)
+                ) {
+                    IconButton(onClick = { showMenu = true }) {
+                        Icon(
+                            imageVector = Icons.Default.MoreHoriz, 
+                            contentDescription = "More", 
+                            tint = MaterialTheme.colorScheme.outline
+                        )
+                    }
+                    DropdownMenu(
+                        expanded = showMenu,
+                        onDismissRequest = { showMenu = false }
+                    ) {
+                        if (isOwnPost) {
+                            DropdownMenuItem(
+                                text = { Text("Chỉnh sửa bài viết") },
+                                onClick = {
+                                    showMenu = false
+                                    onEditClick()
+                                }
+                            )
+                            DropdownMenuItem(
+                                text = { Text("Xóa bài viết", color = MaterialTheme.colorScheme.error) },
+                                onClick = {
+                                    showMenu = false
+                                    onDeleteClick()
+                                }
+                            )
+                        } else {
+                            DropdownMenuItem(
+                                text = { Text("Báo cáo bài viết") },
+                                onClick = {
+                                    showMenu = false
+                                }
+                            )
+                        }
+                    }
                 }
             }
 
