@@ -157,7 +157,7 @@ fun MainContainerScreen(
                 val newTopOffset = topBarOffsetHeightPx + delta
                 topBarOffsetHeightPx = newTopOffset.coerceIn(-topBarHeightPx, 0f)
 
-                val newBottomOffset = bottomBarOffsetHeightPx - delta
+                val newBottomOffset = bottomBarOffsetHeightPx
                 bottomBarOffsetHeightPx = newBottomOffset.coerceIn(0f, bottomBarHeightPx)
 
                 return Offset.Zero
@@ -201,6 +201,12 @@ fun MainContainerScreen(
                             onOpenNotifications = onOpenNotifications,
                             onOpenSearch = { mainNavController.navigate(AppRoute.Search.route) },
                             onCreatePost = { mainNavController.navigate(AppRoute.CreatePost.route) },
+                            onOpenPostDetail = { postId ->
+                                mainNavController.navigate(AppRoute.PostDetail.createRoute(postId))
+                            },
+                            onOpenUserProfile = { userId ->
+                                mainNavController.navigate(AppRoute.OtherUserProfile.createRoute(userId))
+                            },
                             onSettleUp = { groupId, billId ->
                                 mainNavController.navigate(AppRoute.BillDetail.createRoute(groupId, billId))
                             }
@@ -517,10 +523,13 @@ fun MainContainerScreen(
                         userAvatarUrl = profileUiState.profile?.avatarUrl,
                         title = title,
                         onAvatarClick = {
-                            mainNavController.navigate(AppRoute.Profile.route) {
-                                popUpTo(mainNavController.graph.startDestinationId) { saveState = true }
-                                launchSingleTop = true
-                                restoreState = true
+                            // Navigate to profile screen as a regular screen push (not tab switch)
+                            // This preserves the current tab context (e.g. Feed stays active)
+                            val isAlreadyOnProfile = currentRoute?.contains(AppRoute.Profile.route) == true
+                            if (!isAlreadyOnProfile) {
+                                mainNavController.navigate(AppRoute.Profile.route) {
+                                    launchSingleTop = true
+                                }
                             }
                         },
                         onOpenSearch = { mainNavController.navigate(AppRoute.Search.route) },

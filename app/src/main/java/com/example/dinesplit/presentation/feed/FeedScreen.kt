@@ -1,5 +1,6 @@
 package com.example.dinesplit.presentation.feed
 
+import android.content.Intent
 import androidx.compose.foundation.*
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
@@ -18,6 +19,7 @@ import androidx.compose.material3.*
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
+import androidx.compose.ui.platform.LocalContext
 import androidx.lifecycle.viewmodel.compose.viewModel
 import com.example.dinesplit.domain.model.Post
 import androidx.compose.ui.Alignment
@@ -55,6 +57,8 @@ fun FeedScreen(
     onOpenNotifications: () -> Unit,
     onOpenSearch: () -> Unit,
     onCreatePost: () -> Unit = {},
+    onOpenPostDetail: (String) -> Unit = {},
+    onOpenUserProfile: (String) -> Unit = {},
     onSettleUp: (String, String) -> Unit
 ) {
     val uiState by viewModel.uiState.collectAsState()
@@ -130,6 +134,7 @@ fun FeedScreen(
                 }
             }
             else -> {
+                val context = LocalContext.current
                 LazyColumn(
                     modifier = Modifier
                         .fillMaxSize()
@@ -138,7 +143,14 @@ fun FeedScreen(
                     contentPadding = PaddingValues(top = 64.dp, bottom = 96.dp)
                 ) {
                     item {
-                        RecentGroupVibes()
+                        // Lay recent unique-author posts for the vibes row
+                        val vibesPosts = uiState.posts
+                            .distinctBy { it.authorUid }
+                            .take(8)
+                        RecentGroupVibes(
+                            posts = vibesPosts,
+                            onVibeClick = { post -> onOpenPostDetail(post.id) }
+                        )
                     }
 
                     items(uiState.posts) { post ->
@@ -148,6 +160,20 @@ fun FeedScreen(
                             isLikedByMe = isLikedByMe,
                             onLike = { viewModel.onLikePost(post.id) },
                             onUnlike = { viewModel.onUnlikePost(post.id) },
+                            onComment = { onOpenPostDetail(post.id) },
+                            onShare = {
+                                val shareText = buildString {
+                                    append("${post.authorName} đã chia sẻ tại DineSplit!\n")
+                                    if (!post.location.isNullOrBlank()) append("📍 ${post.location}\n")
+                                    if (post.caption.isNotBlank()) append(post.caption)
+                                }
+                                val intent = Intent(Intent.ACTION_SEND).apply {
+                                    type = "text/plain"
+                                    putExtra(Intent.EXTRA_TEXT, shareText)
+                                }
+                                context.startActivity(Intent.createChooser(intent, "Chia sẻ bài viết"))
+                            },
+                            onAuthorClick = { onOpenUserProfile(post.authorUid) },
                             onSettleUp = {
                                 val gId = post.linkedGroupId
                                 val bId = post.linkedBillId
@@ -164,7 +190,10 @@ fun FeedScreen(
 }
 
 @Composable
-private fun RecentGroupVibes() {
+private fun RecentGroupVibes(
+    posts: List<Post> = emptyList(),
+    onVibeClick: (Post) -> Unit = {}
+) {
     Column(modifier = Modifier.padding(vertical = 16.dp)) {
         Text(
             text = "RECENT GROUP VIBES",
@@ -175,71 +204,127 @@ private fun RecentGroupVibes() {
             color = MaterialTheme.colorScheme.outlineVariant,
             modifier = Modifier.padding(horizontal = 24.dp, vertical = 16.dp)
         )
-        
-        LazyRow(
-            contentPadding = PaddingValues(horizontal = 24.dp),
-            horizontalArrangement = Arrangement.spacedBy(16.dp)
-        ) {
-            item {
-                // Current Meal Status
-                Box(
-                    modifier = Modifier
-                        .width(128.dp)
-                        .height(176.dp)
-                        .clip(RoundedCornerShape(20.dp))
-                        .background(MaterialTheme.colorScheme.primaryContainer)
-                ) {
-                    AsyncImage(
-                        model = "https://lh3.googleusercontent.com/aida-public/AB6AXuDK-tvPMo867EAwEwleBgzX8R9QReUBHS9zRKDNRQeVBoRqUOW5HiZEk7lP__cGXdsQk54h1RXzZsyYX6PNbnXnIUEq8qInVBjCxseD_Xni_-dzFLT3Lnb2LuZQNOYPNU8PPqmlmeN2wvNi3UF4CfefCWdXID6R0lRwkQtzJai3znOl7lStckvTq7Z1ZELG1yjE0zCZ7AKAIS0v1uedtPu-pkZtUho7J-6NTfgh_WIkjME8KvLwICokqGXbq48s2prybOjR-ASSHRM",
-                        contentDescription = null,
-                        modifier = Modifier.fillMaxSize().alpha(0.6f),
-                        contentScale = ContentScale.Crop
-                    )
-                    Box(modifier = Modifier.fillMaxSize().background(Brush.verticalGradient(listOf(Color.Transparent, Color.Black.copy(alpha = 0.8f)))))
-                    
+
+        if (posts.isEmpty()) {
+            // Show placeholder story circles when no data
+            LazyRow(
+                contentPadding = PaddingValues(horizontal = 24.dp),
+                horizontalArrangement = Arrangement.spacedBy(16.dp)
+            ) {
+                items(vibes) { vibe ->
                     Column(
-                        modifier = Modifier.align(Alignment.BottomStart).padding(12.dp)
+                        horizontalAlignment = Alignment.CenterHorizontally,
+                        verticalArrangement = Arrangement.spacedBy(8.dp)
                     ) {
-                        Text("YOU'RE EATING", style = MaterialTheme.typography.labelSmall.copy(fontSize = 9.sp, fontWeight = FontWeight.Bold), color = Color.White.copy(alpha = 0.8f))
-                        Text("Phở Gia Truyền", style = MaterialTheme.typography.labelLarge.copy(fontWeight = FontWeight.Bold), color = Color.White)
+                        Box(
+                            modifier = Modifier
+                                .size(80.dp)
+                                .background(
+                                    if (vibe.hasStory) Brush.sweepGradient(listOf(MaterialTheme.colorScheme.primary, MaterialTheme.colorScheme.secondary, MaterialTheme.colorScheme.primary))
+                                    else Brush.linearGradient(listOf(MaterialTheme.colorScheme.surfaceContainerHigh, MaterialTheme.colorScheme.surfaceContainerHigh)),
+                                    CircleShape
+                                )
+                                .padding(4.dp)
+                        ) {
+                            DineAvatarImage(
+                                imageUrl = vibe.avatar,
+                                name = vibe.name,
+                                modifier = Modifier
+                                    .fillMaxSize()
+                                    .border(4.dp, MaterialTheme.colorScheme.background, CircleShape),
+                                size = 72.dp
+                            )
+                        }
+                        Text(vibe.name, style = MaterialTheme.typography.labelSmall.copy(fontWeight = FontWeight.SemiBold), color = MaterialTheme.colorScheme.onSurface)
                     }
-                    
-                    Box(
-                        modifier = Modifier
-                            .align(Alignment.TopEnd)
-                            .padding(8.dp)
-                            .size(12.dp)
-                            .background(MaterialTheme.colorScheme.secondary, CircleShape)
-                            .border(2.dp, Color.White, CircleShape)
-                    )
                 }
             }
-            
-            items(vibes) { vibe ->
-                Column(
-                    horizontalAlignment = Alignment.CenterHorizontally,
-                    verticalArrangement = Arrangement.spacedBy(8.dp)
-                ) {
+        } else {
+            LazyRow(
+                contentPadding = PaddingValues(horizontal = 24.dp),
+                horizontalArrangement = Arrangement.spacedBy(16.dp)
+            ) {
+                items(posts) { post ->
+                    // Story card: show post image with author name
                     Box(
                         modifier = Modifier
-                            .size(80.dp)
-                            .background(
-                                if (vibe.hasStory) Brush.sweepGradient(listOf(MaterialTheme.colorScheme.primary, MaterialTheme.colorScheme.secondary, MaterialTheme.colorScheme.primary))
-                                else Brush.linearGradient(listOf(MaterialTheme.colorScheme.surfaceContainerHigh, MaterialTheme.colorScheme.surfaceContainerHigh)),
-                                CircleShape
-                            )
-                            .padding(4.dp)
+                            .width(100.dp)
+                            .height(150.dp)
+                            .clip(RoundedCornerShape(20.dp))
+                            .background(MaterialTheme.colorScheme.primaryContainer)
+                            .clickable { onVibeClick(post) }
                     ) {
-                        DineAvatarImage(
-                            imageUrl = vibe.avatar,
-                            name = vibe.name,
+                        if (post.imageUrls.isNotEmpty()) {
+                            AsyncImage(
+                                model = post.imageUrls.first(),
+                                contentDescription = null,
+                                modifier = Modifier.fillMaxSize().alpha(0.85f),
+                                contentScale = ContentScale.Crop
+                            )
+                        } else {
+                            Box(
+                                modifier = Modifier.fillMaxSize().background(
+                                    Brush.linearGradient(
+                                        listOf(MaterialTheme.colorScheme.primary.copy(0.4f), MaterialTheme.colorScheme.secondary.copy(0.4f))
+                                    )
+                                ),
+                                contentAlignment = Alignment.Center
+                            ) {
+                                Icon(Icons.Default.Restaurant, contentDescription = null, tint = Color.White.copy(0.6f), modifier = Modifier.size(36.dp))
+                            }
+                        }
+                        // gradient overlay
+                        Box(modifier = Modifier.fillMaxSize().background(Brush.verticalGradient(listOf(Color.Transparent, Color.Black.copy(alpha = 0.75f)))))
+                        // Author avatar at top
+                        Box(
                             modifier = Modifier
-                                .fillMaxSize()
-                                .border(4.dp, MaterialTheme.colorScheme.background, CircleShape),
-                            size = 72.dp
+                                .align(Alignment.TopStart)
+                                .padding(8.dp)
+                                .size(36.dp)
+                                .background(
+                                    Brush.sweepGradient(listOf(MaterialTheme.colorScheme.primary, MaterialTheme.colorScheme.secondary, MaterialTheme.colorScheme.primary)),
+                                    CircleShape
+                                )
+                                .padding(2.dp)
+                        ) {
+                            DineAvatarImage(
+                                imageUrl = post.authorAvatar,
+                                name = post.authorName,
+                                modifier = Modifier.fillMaxSize().border(2.dp, MaterialTheme.colorScheme.background, CircleShape),
+                                size = 32.dp
+                            )
+                        }
+                        // Active dot
+                        Box(
+                            modifier = Modifier
+                                .align(Alignment.TopEnd)
+                                .padding(10.dp)
+                                .size(10.dp)
+                                .background(MaterialTheme.colorScheme.secondary, CircleShape)
+                                .border(2.dp, Color.White, CircleShape)
                         )
+                        // Author name at bottom
+                        Column(
+                            modifier = Modifier.align(Alignment.BottomStart).padding(8.dp)
+                        ) {
+                            Text(
+                                text = post.authorName,
+                                style = MaterialTheme.typography.labelSmall.copy(fontWeight = FontWeight.Bold, fontSize = 10.sp),
+                                color = Color.White,
+                                maxLines = 1,
+                                overflow = TextOverflow.Ellipsis
+                            )
+                            if (!post.location.isNullOrBlank()) {
+                                Text(
+                                    text = post.location,
+                                    style = MaterialTheme.typography.labelSmall.copy(fontSize = 9.sp),
+                                    color = Color.White.copy(alpha = 0.75f),
+                                    maxLines = 1,
+                                    overflow = TextOverflow.Ellipsis
+                                )
+                            }
+                        }
                     }
-                    Text(vibe.name, style = MaterialTheme.typography.labelSmall.copy(fontWeight = FontWeight.SemiBold), color = MaterialTheme.colorScheme.onSurface)
                 }
             }
         }
@@ -255,6 +340,7 @@ private fun SocialSplitCard(
     onComment: () -> Unit = {},
     onShare: () -> Unit = {},
     onBookmark: () -> Unit = {},
+    onAuthorClick: () -> Unit = {},
     onSettleUp: () -> Unit
 ) {
     Card(
@@ -272,7 +358,11 @@ private fun SocialSplitCard(
                 verticalAlignment = Alignment.CenterVertically,
                 horizontalArrangement = Arrangement.SpaceBetween
             ) {
-                Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(12.dp)) {
+                Row(
+                    verticalAlignment = Alignment.CenterVertically,
+                    horizontalArrangement = Arrangement.spacedBy(12.dp),
+                    modifier = Modifier.clickable { onAuthorClick() }
+                ) {
                     DineAvatarImage(
                         imageUrl = post.authorAvatar,
                         name = post.authorName,
@@ -471,6 +561,7 @@ private fun EditorialMomentCard(image: String, title: String, status: String) {
 }
 
 data class Vibe(val name: String, val avatar: String, val hasStory: Boolean)
+// Fallback placeholder vibes shown before real data loads
 private val vibes = listOf(
     Vibe("Minh Tú", "https://lh3.googleusercontent.com/aida-public/AB6AXuB-lcBKRoAYwQw73nIuBdULF7SZEeFfg2TOaffudPtrcOnyx_8_a249_LJcMx5TBluLjiWE8fbEcy4eV7gK7RbihQblIjmgOP5B7c55rKXy9JsKjJjQmetVj5yL0q9GvyYQPiR0_ZnmJv_VjBFl-eNXvTyxNV_wGEHIOerHgr7-Bhr0JQ52rl2IHVEA925v4ju8vhX_A3TbdL37vEXq2FZ6hzChgpASZ9lmR1dkpJprauIMSfg-jAAb0dHPuAtCHgI4cY8VOV-Agd4", true),
     Vibe("Khánh Linh", "https://lh3.googleusercontent.com/aida-public/AB6AXuBz8Jc-E35SQpfts5F-5Eczw6dWoYmC-HCNwwt8GI_w0EWLE-2FnqQ8mgZvohpGRKnOAVGodaj82NSuuH_X44mCJJF7svdrXs69vjYwM96R4FUn5f4TKPG3hUkyjfKZH4SiY7gfmVzYcX-w6uDBdpBiMt_ZPYvDEIlUp5JJt-Wworohv65EZUi3d15JqXw6myxzpL87IYhIB4EmDZooMn6Y3D8DcEbET8nOa6KpvmgNiVWOgGg3Cd0oMcbuAHlEdpFlt0R-injRfPo", false),
