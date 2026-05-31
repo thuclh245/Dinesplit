@@ -61,7 +61,7 @@ fun MonthlySummaryScreen(
     )
 
     AppScaffold(
-        title = "Monthly Summary",
+        title = "Tổng hợp hàng tháng",
         navigationIcon = {
             BackNavigationButton(onClick = onBack)
         }
@@ -81,10 +81,10 @@ fun MonthlySummaryScreen(
                 AppCard {
                     Column(verticalArrangement = Arrangement.spacedBy(AppDimens.spaceMd)) {
                         Text(
-                            text = "Spending breakdown",
-                            style = MaterialTheme.typography.titleMedium,
-                            fontWeight = FontWeight.Bold
-                        )
+                             text = "Chi tiêu chi tiết",
+                             style = MaterialTheme.typography.titleMedium,
+                             fontWeight = FontWeight.Bold
+                         )
                         categorySpending.forEachIndexed { index, slice ->
                             CategorySpendRow(
                                 slice = slice,
@@ -170,19 +170,19 @@ private fun SummaryHeroCard(
 
             Row(horizontalArrangement = Arrangement.spacedBy(AppDimens.spaceMd)) {
                 MetricPill(
-                    modifier = Modifier.weight(1f),
-                    icon = Icons.Filled.ArrowDownward,
-                    title = "Income",
-                    amount = summary.totalIncome,
-                    color = onAccent
-                )
-                MetricPill(
-                    modifier = Modifier.weight(1f),
-                    icon = Icons.Filled.ArrowUpward,
-                    title = "Expense",
-                    amount = summary.totalExpense,
-                    color = onAccent
-                )
+                     modifier = Modifier.weight(1f),
+                     icon = Icons.Filled.ArrowDownward,
+                     title = "Thu nhập",
+                     amount = summary.totalIncome,
+                     color = onAccent
+                 )
+                 MetricPill(
+                     modifier = Modifier.weight(1f),
+                     icon = Icons.Filled.ArrowUpward,
+                     title = "Chi tiêu",
+                     amount = summary.totalExpense,
+                     color = onAccent
+                 )
             }
         }
     }

@@ -42,8 +42,8 @@ import com.example.dinesplit.ui.theme.DineSplitTheme
 import kotlinx.coroutines.launch
 
 enum class CategoryTypeFilter(val label: String) {
-    EXPENSE("Expense"),
-    INCOME("Income")
+    EXPENSE("Chi tiêu"),
+    INCOME("Thu nhập")
 }
 
 data class ManagedCategory(
@@ -92,7 +92,7 @@ fun CategoryManagementScreen(
     val sideCategories = filteredCategories.drop(1)
 
     AppScaffold(
-        title = "Category Management",
+        title = "Quản lý danh mục",
         navigationIcon = {
             BackNavigationButton(onClick = onBack)
         }
@@ -177,71 +177,71 @@ fun CategoryManagementScreen(
         }
 
         if (isCreateDialogOpen) {
-            CategoryEditorDialog(
-                title = "Create Category",
-                initialValue = CategoryEditorInput(
-                    name = "",
-                    description = "",
-                    isCustom = true,
-                    type = CategoryTypeFilter.valueOf(creatingType)
-                ),
-                onDismiss = { isCreateDialogOpen = false },
-                onConfirm = { input ->
-                    onAddCategory(input)
-                    isCreateDialogOpen = false
-                    coroutineScope.launch { snackbarHostState.showSnackbar("Category created") }
-                }
-            )
-        }
+             CategoryEditorDialog(
+                 title = "Tạo danh mục",
+                 initialValue = CategoryEditorInput(
+                     name = "",
+                     description = "",
+                     isCustom = true,
+                     type = CategoryTypeFilter.valueOf(creatingType)
+                 ),
+                 onDismiss = { isCreateDialogOpen = false },
+                 onConfirm = { input ->
+                     onAddCategory(input)
+                     isCreateDialogOpen = false
+                     coroutineScope.launch { snackbarHostState.showSnackbar("Danh mục đã được tạo") }
+                 }
+             )
+         }
 
-        editingCategory?.let { category ->
-            CategoryEditorDialog(
-                title = "Edit Category",
-                initialValue = CategoryEditorInput(
-                    name = category.name,
-                    description = category.description,
-                    isCustom = category.isCustom,
-                    type = category.type
-                ),
-                onDismiss = { editingCategory = null },
-                onConfirm = { input ->
-                    onUpdateCategory(category, input)
-                    editingCategory = null
-                    coroutineScope.launch { snackbarHostState.showSnackbar("Category updated") }
-                }
-            )
-        }
+         editingCategory?.let { category ->
+             CategoryEditorDialog(
+                 title = "Chỉnh sửa danh mục",
+                 initialValue = CategoryEditorInput(
+                     name = category.name,
+                     description = category.description,
+                     isCustom = category.isCustom,
+                     type = category.type
+                 ),
+                 onDismiss = { editingCategory = null },
+                 onConfirm = { input ->
+                     onUpdateCategory(category, input)
+                     editingCategory = null
+                     coroutineScope.launch { snackbarHostState.showSnackbar("Danh mục đã được cập nhật") }
+                 }
+             )
+         }
 
         deletingCategory?.let { category ->
-            AlertDialog(
-                onDismissRequest = { deletingCategory = null },
-                title = { Text("Delete category") },
-                text = { Text("Delete ${category.name}? This cannot be undone.") },
-                confirmButton = {
-                    TextButton(
-                        onClick = {
-                            if (category.id in usedCategoryIds) {
-                                deletingCategory = null
-                                coroutineScope.launch {
-                                    snackbarHostState.showSnackbar("Cannot delete category in use by transactions")
-                                }
-                                return@TextButton
-                            }
-                            onDeleteCategory(category)
-                            deletingCategory = null
-                            coroutineScope.launch { snackbarHostState.showSnackbar("Category deleted") }
-                        }
-                    ) {
-                        Text("Delete")
-                    }
-                },
-                dismissButton = {
-                    TextButton(onClick = { deletingCategory = null }) {
-                        Text("Cancel")
-                    }
-                }
-            )
-        }
+             AlertDialog(
+                 onDismissRequest = { deletingCategory = null },
+                 title = { Text("Xóa danh mục") },
+                 text = { Text("Xóa ${category.name}? Điều này không thể hoàn tác.") },
+                 confirmButton = {
+                     TextButton(
+                         onClick = {
+                             if (category.id in usedCategoryIds) {
+                                 deletingCategory = null
+                                 coroutineScope.launch {
+                                     snackbarHostState.showSnackbar("Không thể xóa danh mục được sử dụng bởi các giao dịch")
+                                 }
+                                 return@TextButton
+                             }
+                             onDeleteCategory(category)
+                             deletingCategory = null
+                             coroutineScope.launch { snackbarHostState.showSnackbar("Danh mục đã được xóa") }
+                         }
+                     ) {
+                         Text("Xóa")
+                     }
+                 },
+                 dismissButton = {
+                     TextButton(onClick = { deletingCategory = null }) {
+                         Text("Hủy")
+                     }
+                 }
+             )
+         }
     }
 }
 
@@ -249,12 +249,12 @@ fun CategoryManagementScreen(
 private fun CategoryHeaderTitle() {
     Column(verticalArrangement = Arrangement.spacedBy(AppDimens.spaceXs)) {
         Text(
-            text = "Category Management",
+            text = "Quản lý danh mục",
             style = MaterialTheme.typography.labelMedium,
             color = MaterialTheme.colorScheme.onSurfaceVariant
         )
         Text(
-            text = "Taxonomies.",
+            text = "Phân loại.",
             style = MaterialTheme.typography.displayMedium
         )
     }
@@ -275,12 +275,12 @@ private fun NewCategoryActionCard(
         ) {
             Column(modifier = Modifier.weight(1f)) {
                 Text(
-                    text = "New Category",
+                    text = "Danh mục mới",
                     style = MaterialTheme.typography.labelSmall,
                     color = MaterialTheme.colorScheme.onSurfaceVariant
                 )
                 Text(
-                    text = "Expand Classification",
+                    text = "Mở rộng phân loại",
                     style = MaterialTheme.typography.bodySmall
                 )
             }
@@ -333,7 +333,7 @@ private fun FeaturedCategoryCard(
                 }
 
                 Text(
-                    text = if (category.isActive) "Active" else if (category.isCustom) "Custom" else "Default",
+                    text = if (category.isActive) "Hoạt động" else if (category.isCustom) "Tùy chỉnh" else "Mặc định",
                     style = MaterialTheme.typography.labelSmall,
                     color = MaterialTheme.colorScheme.onSurfaceVariant
                 )
@@ -368,75 +368,75 @@ private fun FeaturedCategoryCard(
             }
 
             Row(
-                modifier = Modifier.fillMaxWidth(),
-                horizontalArrangement = Arrangement.End
-            ) {
-                TextButton(onClick = onEdit) { Text("Edit") }
-                TextButton(onClick = onDelete) { Text("Delete") }
-            }
-        }
-    }
-}
+                 modifier = Modifier.fillMaxWidth(),
+                 horizontalArrangement = Arrangement.End
+             ) {
+                 TextButton(onClick = onEdit) { Text("Chỉnh sửa") }
+                 TextButton(onClick = onDelete) { Text("Xóa") }
+             }
+         }
+     }
+ }
 
-@Composable
-private fun CategoryTileCard(
-    modifier: Modifier = Modifier,
-    category: ManagedCategory,
-    onEdit: () -> Unit,
-    onDelete: () -> Unit
-) {
-    AppCard(modifier = modifier) {
-        Column(verticalArrangement = Arrangement.spacedBy(AppDimens.spaceSm)) {
-            Box(
-                modifier = Modifier
-                    .size(44.dp)
-                    .background(
-                        color = MaterialTheme.colorScheme.surfaceVariant,
-                        shape = MaterialTheme.shapes.medium
-                    ),
-                contentAlignment = Alignment.Center
-            ) {
-                Text(text = category.icon, style = MaterialTheme.typography.labelLarge)
-            }
+ @Composable
+ private fun CategoryTileCard(
+     modifier: Modifier = Modifier,
+     category: ManagedCategory,
+     onEdit: () -> Unit,
+     onDelete: () -> Unit
+ ) {
+     AppCard(modifier = modifier) {
+         Column(verticalArrangement = Arrangement.spacedBy(AppDimens.spaceSm)) {
+             Box(
+                 modifier = Modifier
+                     .size(44.dp)
+                     .background(
+                         color = MaterialTheme.colorScheme.surfaceVariant,
+                         shape = MaterialTheme.shapes.medium
+                     ),
+                 contentAlignment = Alignment.Center
+             ) {
+                 Text(text = category.icon, style = MaterialTheme.typography.labelLarge)
+             }
 
-            Text(text = category.name, style = MaterialTheme.typography.titleMedium)
-            Text(
-                text = category.description,
-                style = MaterialTheme.typography.bodySmall,
-                color = MaterialTheme.colorScheme.onSurfaceVariant
-            )
-            Text(text = category.amountLabel, style = MaterialTheme.typography.titleLarge)
+             Text(text = category.name, style = MaterialTheme.typography.titleMedium)
+             Text(
+                 text = category.description,
+                 style = MaterialTheme.typography.bodySmall,
+                 color = MaterialTheme.colorScheme.onSurfaceVariant
+             )
+             Text(text = category.amountLabel, style = MaterialTheme.typography.titleLarge)
 
-            if (category.progress > 0f) {
-                Box(
-                    modifier = Modifier
-                        .fillMaxWidth()
-                        .height(6.dp)
-                        .background(
-                            color = MaterialTheme.colorScheme.surfaceVariant,
-                            shape = MaterialTheme.shapes.small
-                        )
-                ) {
-                    Box(
-                        modifier = Modifier
-                            .fillMaxWidth(category.progress.coerceIn(0f, 1f))
-                            .height(6.dp)
-                            .background(
-                                color = MaterialTheme.colorScheme.secondary,
-                                shape = MaterialTheme.shapes.small
-                            )
-                    )
-                }
-            }
+             if (category.progress > 0f) {
+                 Box(
+                     modifier = Modifier
+                         .fillMaxWidth()
+                         .height(6.dp)
+                         .background(
+                             color = MaterialTheme.colorScheme.surfaceVariant,
+                             shape = MaterialTheme.shapes.small
+                         )
+                 ) {
+                     Box(
+                         modifier = Modifier
+                             .fillMaxWidth(category.progress.coerceIn(0f, 1f))
+                             .height(6.dp)
+                             .background(
+                                 color = MaterialTheme.colorScheme.secondary,
+                                 shape = MaterialTheme.shapes.small
+                             )
+                     )
+                 }
+             }
 
-            Row(
-                modifier = Modifier.fillMaxWidth(),
-                horizontalArrangement = Arrangement.End
-            ) {
-                TextButton(onClick = onEdit) { Text("Edit") }
-                TextButton(onClick = onDelete) { Text("Delete") }
-            }
-        }
+             Row(
+                 modifier = Modifier.fillMaxWidth(),
+                 horizontalArrangement = Arrangement.End
+             ) {
+                 TextButton(onClick = onEdit) { Text("Chỉnh sửa") }
+                 TextButton(onClick = onDelete) { Text("Xóa") }
+             }
+         }
     }
 }
 
@@ -456,52 +456,52 @@ private fun CategoryEditorDialog(
         onDismissRequest = onDismiss,
         title = { Text(title) },
         text = {
-            Column(verticalArrangement = Arrangement.spacedBy(AppDimens.spaceSm)) {
-                OutlinedTextField(
-                    value = name,
-                    onValueChange = { name = it },
-                    label = { Text("Name") },
-                    singleLine = true
-                )
-                OutlinedTextField(
-                    value = description,
-                    onValueChange = { description = it },
-                    label = { Text("Description") }
-                )
-                Row(horizontalArrangement = Arrangement.spacedBy(AppDimens.spaceSm)) {
-                    CategoryTypeFilter.entries.forEach { type ->
-                        FilterChip(
-                            selected = selectedType == type,
-                            onClick = { selectedType = type },
-                            label = { Text(type.label) }
-                        )
-                    }
-                }
-                FilterChip(
-                    selected = isCustom,
-                    onClick = { isCustom = !isCustom },
-                    label = { Text(if (isCustom) "Custom" else "Default") }
-                )
-            }
+             Column(verticalArrangement = Arrangement.spacedBy(AppDimens.spaceSm)) {
+                 OutlinedTextField(
+                     value = name,
+                     onValueChange = { name = it },
+                     label = { Text("Tên") },
+                     singleLine = true
+                 )
+                 OutlinedTextField(
+                     value = description,
+                     onValueChange = { description = it },
+                     label = { Text("Mô tả") }
+                 )
+                 Row(horizontalArrangement = Arrangement.spacedBy(AppDimens.spaceSm)) {
+                     CategoryTypeFilter.entries.forEach { type ->
+                         FilterChip(
+                             selected = selectedType == type,
+                             onClick = { selectedType = type },
+                             label = { Text(type.label) }
+                         )
+                     }
+                 }
+                 FilterChip(
+                     selected = isCustom,
+                     onClick = { isCustom = !isCustom },
+                     label = { Text(if (isCustom) "Tùy chỉnh" else "Mặc định") }
+                 )
+             }
         },
         confirmButton = {
-            TextButton(
-                onClick = {
-                    if (name.trim().isEmpty()) return@TextButton
-                    onConfirm(
-                        CategoryEditorInput(
-                            name = name.trim(),
-                            description = description.trim(),
-                            isCustom = isCustom,
-                            type = selectedType
-                        )
-                    )
-                }
-            ) { Text("Save") }
-        },
-        dismissButton = {
-            TextButton(onClick = onDismiss) { Text("Cancel") }
-        }
+             TextButton(
+                 onClick = {
+                     if (name.trim().isEmpty()) return@TextButton
+                     onConfirm(
+                         CategoryEditorInput(
+                             name = name.trim(),
+                             description = description.trim(),
+                             isCustom = isCustom,
+                             type = selectedType
+                         )
+                     )
+                 }
+             ) { Text("Lưu") }
+         },
+         dismissButton = {
+             TextButton(onClick = onDismiss) { Text("Hủy") }
+         }
     )
 }
 

@@ -90,50 +90,50 @@ fun HistoryScreen(
         Pair(income, expense)
     }
 
-    AppScaffold(
-        title = "Ledger",
-        navigationIcon = {
-            BackNavigationButton(onClick = onBack)
-        }
-    ) {
+     AppScaffold(
+         title = "Sổ cái",
+         navigationIcon = {
+             BackNavigationButton(onClick = onBack)
+         }
+     ) {
         Column(
             modifier = Modifier.fillMaxSize(),
             verticalArrangement = Arrangement.spacedBy(AppDimens.spaceLg)
         ) {
-            Text(
-                text = "Ledger.",
-                style = MaterialTheme.typography.displayLarge,
-                fontWeight = FontWeight.ExtraBold,
-                color = MaterialTheme.colorScheme.primary
-            )
+             Text(
+                 text = "Sổ cái.",
+                 style = MaterialTheme.typography.displayLarge,
+                 fontWeight = FontWeight.ExtraBold,
+                 color = MaterialTheme.colorScheme.primary
+             )
 
-            // Summary card
-            AppCard {
-                Column(verticalArrangement = Arrangement.spacedBy(AppDimens.spaceMd)) {
-                    Row(
-                        modifier = Modifier.fillMaxWidth(),
-                        horizontalArrangement = Arrangement.SpaceBetween
-                    ) {
-                        Column {
-                            Text("Income", style = MaterialTheme.typography.labelSmall)
-                            Text(
-                                "+${formatHistoryMoney(summaryStats.first)}",
-                                style = MaterialTheme.typography.titleMedium,
-                                color = MaterialTheme.colorScheme.primary
-                            )
-                        }
-                        Column(horizontalAlignment = Alignment.End) {
-                            Text("Expense", style = MaterialTheme.typography.labelSmall)
-                            Text(
-                                "-${formatHistoryMoney(summaryStats.second)}",
-                                style = MaterialTheme.typography.titleMedium,
-                                color = MaterialTheme.colorScheme.error
-                            )
-                        }
-                    }
-                    HorizontalDivider()
-                    Row(horizontalArrangement = Arrangement.spacedBy(AppDimens.spaceSm)) {
-                        Text("Net:", style = MaterialTheme.typography.labelSmall)
+             // Summary card - Thẻ tóm tắt
+             AppCard {
+                 Column(verticalArrangement = Arrangement.spacedBy(AppDimens.spaceMd)) {
+                     Row(
+                         modifier = Modifier.fillMaxWidth(),
+                         horizontalArrangement = Arrangement.SpaceBetween
+                     ) {
+                         Column {
+                             Text("Thu nhập", style = MaterialTheme.typography.labelSmall)
+                             Text(
+                                 "+${formatHistoryMoney(summaryStats.first)}",
+                                 style = MaterialTheme.typography.titleMedium,
+                                 color = MaterialTheme.colorScheme.primary
+                             )
+                         }
+                         Column(horizontalAlignment = Alignment.End) {
+                             Text("Chi tiêu", style = MaterialTheme.typography.labelSmall)
+                             Text(
+                                 "-${formatHistoryMoney(summaryStats.second)}",
+                                 style = MaterialTheme.typography.titleMedium,
+                                 color = MaterialTheme.colorScheme.error
+                             )
+                         }
+                     }
+                     HorizontalDivider()
+                     Row(horizontalArrangement = Arrangement.spacedBy(AppDimens.spaceSm)) {
+                         Text("Ròng:", style = MaterialTheme.typography.labelSmall)
                         Text(
                             formatHistoryMoney(summaryStats.first - summaryStats.second),
                             style = MaterialTheme.typography.titleSmall,
@@ -143,49 +143,49 @@ fun HistoryScreen(
                 }
             }
 
-            OutlinedTextField(
-                value = query,
-                onValueChange = { query = it },
-                modifier = Modifier.fillMaxWidth(),
-                placeholder = { Text("Search transactions...") },
-                singleLine = true,
-                colors = TextFieldDefaults.colors(
-                    focusedContainerColor = MaterialTheme.colorScheme.surface,
-                    unfocusedContainerColor = MaterialTheme.colorScheme.surface
-                )
-            )
+             OutlinedTextField(
+                 value = query,
+                 onValueChange = { query = it },
+                 modifier = Modifier.fillMaxWidth(),
+                 placeholder = { Text("Tìm kiếm giao dịch...") },
+                 singleLine = true,
+                 colors = TextFieldDefaults.colors(
+                     focusedContainerColor = MaterialTheme.colorScheme.surface,
+                     unfocusedContainerColor = MaterialTheme.colorScheme.surface
+                 )
+             )
 
-            // Type filter buttons
-            Row(
-                modifier = Modifier.fillMaxWidth(),
-                horizontalArrangement = Arrangement.spacedBy(AppDimens.spaceSm)
-            ) {
-                FilterChip(
-                    selected = selectedTypeFilter == null,
-                    onClick = { selectedTypeFilter = null },
-                    label = { Text("All") }
-                )
-                FilterChip(
-                    selected = selectedTypeFilter == TransactionType.INCOME,
-                    onClick = { selectedTypeFilter = TransactionType.INCOME },
-                    label = { Text("Income") }
-                )
-                FilterChip(
-                    selected = selectedTypeFilter == TransactionType.EXPENSE,
-                    onClick = { selectedTypeFilter = TransactionType.EXPENSE },
-                    label = { Text("Expense") }
-                )
-            }
+             // Type filter buttons - Nút bộ lọc loại
+             Row(
+                 modifier = Modifier.fillMaxWidth(),
+                 horizontalArrangement = Arrangement.spacedBy(AppDimens.spaceSm)
+             ) {
+                 FilterChip(
+                     selected = selectedTypeFilter == null,
+                     onClick = { selectedTypeFilter = null },
+                     label = { Text("Tất cả") }
+                 )
+                 FilterChip(
+                     selected = selectedTypeFilter == TransactionType.INCOME,
+                     onClick = { selectedTypeFilter = TransactionType.INCOME },
+                     label = { Text("Thu nhập") }
+                 )
+                 FilterChip(
+                     selected = selectedTypeFilter == TransactionType.EXPENSE,
+                     onClick = { selectedTypeFilter = TransactionType.EXPENSE },
+                     label = { Text("Chi tiêu") }
+                 )
+             }
 
-            if (groupedTransactions.isEmpty()) {
-                EmptyStateBlock(
-                    title = "No transactions found",
-                    subtitle = if (transactions.isEmpty()) {
-                        "Add a transaction to build your Firebase ledger."
-                    } else {
-                        "Try a different keyword."
-                    }
-                )
+             if (groupedTransactions.isEmpty()) {
+                 EmptyStateBlock(
+                     title = "Không tìm thấy giao dịch nào",
+                     subtitle = if (transactions.isEmpty()) {
+                         "Thêm giao dịch để xây dựng sổ cái Firebase của bạn."
+                     } else {
+                         "Hãy thử từ khóa khác."
+                     }
+                 )
             } else {
                 LazyColumn(
                     modifier = Modifier.fillMaxSize(),

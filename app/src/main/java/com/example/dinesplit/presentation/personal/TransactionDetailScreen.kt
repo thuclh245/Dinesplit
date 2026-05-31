@@ -27,7 +27,7 @@ fun TransactionDetailScreen(
     onBack: () -> Unit
 ) {
     AppScaffold(
-        title = "Transaction Detail",
+        title = "Chi tiết giao dịch",
         navigationIcon = {
             BackNavigationButton(onClick = onBack)
         }
@@ -39,9 +39,9 @@ fun TransactionDetailScreen(
             if (transaction == null) {
                 AppCard {
                     Text(
-                        text = "Transaction not found: $transactionId",
-                        style = MaterialTheme.typography.bodyLarge
-                    )
+                         text = "Không tìm thấy giao dịch: $transactionId",
+                         style = MaterialTheme.typography.bodyLarge
+                     )
                 }
             } else {
                 AppCard {
@@ -60,21 +60,21 @@ fun TransactionDetailScreen(
                             }
                         )
                         Text(
-                            text = "Type: ${transaction.type.name.lowercase().replaceFirstChar { it.uppercase() }}",
-                            style = MaterialTheme.typography.bodyMedium,
-                            color = MaterialTheme.colorScheme.onSurfaceVariant
-                        )
-                        Text(
-                            text = "Date: ${formatDateTime(transaction.date)}",
-                            style = MaterialTheme.typography.bodyMedium,
-                            color = MaterialTheme.colorScheme.onSurfaceVariant
-                        )
-                        if (!transaction.note.isNullOrBlank()) {
-                            Text(
-                                text = "Note: ${transaction.note}",
-                                style = MaterialTheme.typography.bodyMedium
-                            )
-                        }
+                             text = "Loại: ${transaction.type.name.lowercase().replaceFirstChar { it.uppercase() }}",
+                             style = MaterialTheme.typography.bodyMedium,
+                             color = MaterialTheme.colorScheme.onSurfaceVariant
+                         )
+                         Text(
+                             text = "Ngày: ${formatDateTime(transaction.date)}",
+                             style = MaterialTheme.typography.bodyMedium,
+                             color = MaterialTheme.colorScheme.onSurfaceVariant
+                         )
+                         if (!transaction.note.isNullOrBlank()) {
+                             Text(
+                                 text = "Ghi chú: ${transaction.note}",
+                                 style = MaterialTheme.typography.bodyMedium
+                             )
+                         }
                         Text(
                             text = "Id: ${transaction.id}",
                             style = MaterialTheme.typography.bodySmall,

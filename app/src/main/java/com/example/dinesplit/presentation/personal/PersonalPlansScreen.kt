@@ -59,10 +59,10 @@ import java.util.Date
 import java.util.Locale
 
 enum class PersonalPlanFocus(val routeValue: String, val label: String) {
-    OVERVIEW("overview", "Overview"),
-    RECURRING("recurring", "Recurring"),
-    GOALS("goals", "Goals"),
-    WALLETS("wallets", "Wallets");
+    OVERVIEW("overview", "Tổng quan"),
+    RECURRING("recurring", "Lặp lại"),
+    GOALS("goals", "Mục tiêu"),
+    WALLETS("wallets", "Ví");
 
     companion object {
         fun fromRouteValue(value: String?): PersonalPlanFocus {
@@ -106,7 +106,7 @@ fun PersonalPlansScreen(
     }
 
     AppScaffold(
-        title = "Personal Plans",
+        title = "Kế hoạch cá nhân",
         navigationIcon = {
             BackNavigationButton(onClick = onBack)
         },
@@ -120,7 +120,7 @@ fun PersonalPlansScreen(
             verticalArrangement = Arrangement.spacedBy(AppDimens.spaceLg)
         ) {
             Text(
-                text = "Plan cockpit",
+                text = "Bảng điều khiển kế hoạch",
                 style = MaterialTheme.typography.headlineSmall,
                 fontWeight = FontWeight.ExtraBold
             )
@@ -261,12 +261,12 @@ private fun PlanCockpitCard(
                 }
                 Column(modifier = Modifier.weight(1f)) {
                     Text(
-                        text = "Personal planning engine",
+                        text = "Công cụ lập kế hoạch cá nhân",
                         style = MaterialTheme.typography.titleMedium,
                         fontWeight = FontWeight.Bold
                     )
                     Text(
-                        text = "Recurring radar, goals, and wallets stay inside C scope.",
+                        text = "Radar lặp lại, mục tiêu và ví vẫn ở trong phạm vi C.",
                         style = MaterialTheme.typography.bodySmall,
                         color = MaterialTheme.colorScheme.onSurfaceVariant
                     )
@@ -284,17 +284,17 @@ private fun PlanCockpitCard(
 
             Row(horizontalArrangement = Arrangement.spacedBy(AppDimens.spaceMd)) {
                 PlanMetricPill(
-                    modifier = Modifier.weight(1f),
-                    icon = Icons.Default.Repeat,
-                    label = "Monthly fixed",
-                    value = formatMoney(monthlyOutflow)
-                )
-                PlanMetricPill(
-                    modifier = Modifier.weight(1f),
-                    icon = Icons.Default.AccountBalanceWallet,
-                    label = "Wallet total",
-                    value = formatMoney(walletTotal)
-                )
+                     modifier = Modifier.weight(1f),
+                     icon = Icons.Default.Repeat,
+                     label = "Cố định hàng tháng",
+                     value = formatMoney(monthlyOutflow)
+                 )
+                 PlanMetricPill(
+                     modifier = Modifier.weight(1f),
+                     icon = Icons.Default.AccountBalanceWallet,
+                     label = "Tổng ví",
+                     value = formatMoney(walletTotal)
+                 )
             }
             PlanMetricPill(
                 modifier = Modifier.fillMaxWidth(),

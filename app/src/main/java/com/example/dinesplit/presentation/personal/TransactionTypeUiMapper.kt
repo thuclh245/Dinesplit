@@ -4,8 +4,8 @@ import com.example.dinesplit.domain.model.TransactionType
 
 fun TransactionType.displayLabel(): String {
     return when (this) {
-        TransactionType.INCOME -> "Income"
-        TransactionType.EXPENSE -> "Expense"
+        TransactionType.INCOME -> "Thu nhập"
+        TransactionType.EXPENSE -> "Chi tiêu"
     }
 }
 

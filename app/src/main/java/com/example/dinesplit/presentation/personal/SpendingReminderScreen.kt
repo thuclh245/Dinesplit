@@ -57,7 +57,7 @@ fun SpendingReminderScreen(
     var deletingReminder by remember { mutableStateOf<SpendingReminder?>(null) }
 
     AppScaffold(
-        title = "Spending Reminders",
+        title = "Nhắc nhở chi tiêu",
         navigationIcon = {
             BackNavigationButton(onClick = onBack)
         }
@@ -69,7 +69,7 @@ fun SpendingReminderScreen(
             verticalArrangement = Arrangement.spacedBy(AppDimens.spaceLg)
         ) {
             Text(
-                text = "Spending Alerts.",
+                text = "Cảnh báo chi tiêu.",
                 style = MaterialTheme.typography.displaySmall,
                 fontWeight = FontWeight.ExtraBold,
                 modifier = Modifier.padding(horizontal = AppDimens.screenHorizontal)
@@ -77,7 +77,7 @@ fun SpendingReminderScreen(
 
             errorMessage?.let { message ->
                 ErrorStateBlock(
-                    title = "Cannot update reminders",
+                    title = "Không thể cập nhật nhắc nhở",
                     subtitle = message,
                     onRetryClick = {}
                 )
@@ -85,9 +85,9 @@ fun SpendingReminderScreen(
 
             if (reminders.isEmpty()) {
                 EmptyStateBlock(
-                    title = "No spending reminders yet",
-                    subtitle = "Create a Firebase-backed budget alert for your real spending.",
-                    actionText = "Create Reminder",
+                    title = "Chưa có nhắc nhở chi tiêu nào",
+                    subtitle = "Tạo cảnh báo ngân sách được Firebase hỗ trợ cho chi tiêu thực tế của bạn.",
+                    actionText = "Tạo nhắc nhở",
                     onActionClick = { showCreateDialog = true }
                 )
             } else {
@@ -100,7 +100,7 @@ fun SpendingReminderScreen(
             }
 
             PrimaryButton(
-                text = "Add Spending Reminder",
+                text = "Thêm nhắc nhở chi tiêu",
                 onClick = { showCreateDialog = true },
                 modifier = Modifier.padding(horizontal = AppDimens.screenHorizontal)
             )
@@ -121,27 +121,27 @@ fun SpendingReminderScreen(
     }
 
     deletingReminder?.let { reminder ->
-        AlertDialog(
-            onDismissRequest = { deletingReminder = null },
-            title = { Text("Delete reminder?") },
-            text = { Text("This will remove the reminder for ${reminder.categoryName}.") },
-            confirmButton = {
-                TextButton(
-                    onClick = {
-                        onDeleteReminder(reminder.id)
-                        deletingReminder = null
-                    }
-                ) {
-                    Text("Delete")
-                }
-            },
-            dismissButton = {
-                TextButton(onClick = { deletingReminder = null }) {
-                    Text("Cancel")
-                }
-            }
-        )
-    }
+         AlertDialog(
+             onDismissRequest = { deletingReminder = null },
+             title = { Text("Xóa nhắc nhở?") },
+             text = { Text("Điều này sẽ xóa nhắc nhở cho ${reminder.categoryName}.") },
+             confirmButton = {
+                 TextButton(
+                     onClick = {
+                         onDeleteReminder(reminder.id)
+                         deletingReminder = null
+                     }
+                 ) {
+                     Text("Xóa")
+                 }
+             },
+             dismissButton = {
+                 TextButton(onClick = { deletingReminder = null }) {
+                     Text("Hủy")
+                 }
+             }
+         )
+     }
 }
 
 @Composable

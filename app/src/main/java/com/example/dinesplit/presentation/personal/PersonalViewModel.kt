@@ -81,7 +81,7 @@ class PersonalViewModel(application: Application) : AndroidViewModel(application
                 val preparedTransaction = transaction.withUploadedReceiptIfNeeded()
                 repository.insertTransaction(preparedTransaction)
                 
-                // Trigger notification for transaction added
+                 // Kích hoạt thông báo cho giao dịch được thêm
                 val notification = NotificationFactory.transactionAdded(
                     amount = preparedTransaction.amount,
                     categoryName = preparedTransaction.category,
@@ -122,7 +122,7 @@ class PersonalViewModel(application: Application) : AndroidViewModel(application
                     type = TransactionType.EXPENSE,
                     categoryId = category.id,
                     category = category.name,
-                    note = "Split bill: ${bill.name}",
+                    note = "Hóa đơn chia tách: ${bill.name}",
                     date = bill.date,
                     createdAt = System.currentTimeMillis(),
                     source = TransactionSource.SPLIT,
@@ -173,7 +173,7 @@ class PersonalViewModel(application: Application) : AndroidViewModel(application
                     )
                 )
 
-                // Trigger notification for category created
+                // Kích hoạt thông báo cho danh mục được tạo
                 val notification = NotificationFactory.categoryCreated(
                     categoryName = name,
                     type = type,
@@ -201,10 +201,10 @@ class PersonalViewModel(application: Application) : AndroidViewModel(application
             runCatching {
                 val existing = _categories.value.firstOrNull { it.id == categoryId } ?: return@runCatching
 
-                // Check if type changed (EXPENSE <-> INCOME)
+                // Kiểm tra nếu loại thay đổi (CHI TIÊU <-> THU NHẬP)
                 val typeChanged = existing.type != type
 
-                // Update category
+                // Cập nhật danh mục
                 repository.updateCategory(
                     existing.copy(
                         name = name.trim(),
@@ -216,7 +216,7 @@ class PersonalViewModel(application: Application) : AndroidViewModel(application
                     )
                 )
                 
-                // If type changed, update all transactions with this category
+                // Nếu loại thay đổi, cập nhật tất cả giao dịch với danh mục này
                 if (typeChanged) {
                     val allTransactions = repository.getAllTransactions()
                     val transactionsToUpdate = allTransactions.filter { it.categoryId == categoryId }
@@ -227,7 +227,7 @@ class PersonalViewModel(application: Application) : AndroidViewModel(application
                     }
                 }
 
-                // Always do full refresh after category update (whether type changed or not)
+                // Luôn làm mới hoàn toàn sau khi cập nhật danh mục (cho dù loại thay đổi hay không)
                 refreshStateInternal(showLoading = false)
             }.onFailure { throwable ->
                 setError(throwable)
@@ -285,7 +285,7 @@ class PersonalViewModel(application: Application) : AndroidViewModel(application
                     )
                 )
 
-                // Trigger notification for reminder created
+                // Kích hoạt thông báo cho nhắc nhở được tạo
                 val notification = NotificationFactory.reminderCreated(
                     categoryName = categoryName,
                     budgetAmount = budgetAmount,
@@ -474,7 +474,7 @@ class PersonalViewModel(application: Application) : AndroidViewModel(application
         }
     }
 
-    // Lightweight refresh for category-only updates (avoids full transaction reload)
+    // Làm mới nhẹ cho các cập nhật danh mục (tránh tải lại giao dịch đầy đủ)
     private suspend fun refreshCategoriesOnly() {
         runCatching {
             val categories = repository.getCategories()
@@ -483,7 +483,7 @@ class PersonalViewModel(application: Application) : AndroidViewModel(application
                 .groupBy { it.type }
                 .mapValues { (_, items) -> items.map { it.name }.sorted() }
 
-            // Update UI state without reloading transactions
+            // Cập nhật trạng thái UI mà không tải lại giao dịch
             _uiState.value = buildUiState(
                 transactions = _transactions.value,
                 categories = categories
@@ -508,19 +508,19 @@ class PersonalViewModel(application: Application) : AndroidViewModel(application
             val goals = repository.getGoals()
             val wallets = repository.getWallets()
             val allTransactions = repository.getAllTransactions()
-
-            // Memory Optimization: Load current month transactions first
-            // Only load all transactions when necessary (for reminders)
+            
+            // Tối ưu hóa bộ nhớ: Tải giao dịch tháng hiện tại trước
+            // Chỉ tải tất cả giao dịch khi cần thiết (cho nhắc nhở)
             val monthFilter = currentMonthFilter.value
             val filteredTransactions = if (monthFilter != null) {
-                // Load only specific month transactions for filtering
+                // Tải chỉ giao dịch tháng cụ thể để lọc
                 filterTransactions(
                     transactions = allTransactions,
                     monthFilter = monthFilter
                 )
-                    .take(500)  // Limit to 500 most recent in this month
+                    .take(500)  // Giới hạn ở 500 gần đây nhất trong tháng này
             } else {
-                // If no month filter, load current month only
+                // Nếu không có bộ lọc tháng, chỉ tải tháng hiện tại
                 val calendar = Calendar.getInstance()
                 val currentMonth = calendar.get(Calendar.MONTH) + 1
                 val currentYear = calendar.get(Calendar.YEAR)
@@ -532,7 +532,7 @@ class PersonalViewModel(application: Application) : AndroidViewModel(application
                     txnCalendar.get(Calendar.MONTH) + 1 == currentMonth &&
                     txnCalendar.get(Calendar.YEAR) == currentYear
                 }
-                    .take(500)  // Limit to 500 most recent
+                    .take(500)  // Giới hạn ở 500 gần đây nhất
             }
             val upcomingRecurringExpense = recurringRules
                 .filter { it.isEnabled && it.type == TransactionType.EXPENSE }
@@ -569,8 +569,8 @@ class PersonalViewModel(application: Application) : AndroidViewModel(application
                 goals = goals,
                 wallets = wallets
             )
-
-            // Load all transactions asynchronously for reminders (background)
+            
+            // Tải tất cả giao dịch không đồng bộ cho nhắc nhở (nền)
             viewModelScope.launch(Dispatchers.IO) {
                 syncSpendingReminders(allTransactions)
             }

@@ -104,22 +104,22 @@ fun AddTransactionScreen(
     val isFormValid = validation.isValid
 
     AppScaffold(
-        title = "New Entry",
-        navigationIcon = {
-            BackNavigationButton(onClick = onBack)
-        }
-    ) {
-        Column(
-            modifier = Modifier
-                .fillMaxSize()
-                .verticalScroll(rememberScrollState()),
-            verticalArrangement = Arrangement.spacedBy(AppDimens.spaceXl)
-        ) {
-            Text(
-                text = "New Entry.",
-                style = MaterialTheme.typography.displaySmall,
-                fontWeight = FontWeight.ExtraBold
-            )
+         title = "Mục mới",
+         navigationIcon = {
+             BackNavigationButton(onClick = onBack)
+         }
+     ) {
+         Column(
+             modifier = Modifier
+                 .fillMaxSize()
+                 .verticalScroll(rememberScrollState()),
+             verticalArrangement = Arrangement.spacedBy(AppDimens.spaceXl)
+         ) {
+             Text(
+                 text = "Mục mới.",
+                 style = MaterialTheme.typography.displaySmall,
+                 fontWeight = FontWeight.ExtraBold
+             )
 
             AmountInputBlock(
                 value = amountText,
@@ -128,38 +128,38 @@ fun AddTransactionScreen(
                 supportingText = validation.amountError
             )
 
-            Column(verticalArrangement = Arrangement.spacedBy(AppDimens.spaceSm)) {
-                Text(
-                    text = "Type",
-                    style = MaterialTheme.typography.labelMedium,
-                    color = MaterialTheme.colorScheme.onSurfaceVariant
-                )
+             Column(verticalArrangement = Arrangement.spacedBy(AppDimens.spaceSm)) {
+                 Text(
+                     text = "Loại",
+                     style = MaterialTheme.typography.labelMedium,
+                     color = MaterialTheme.colorScheme.onSurfaceVariant
+                 )
 
-                Row(horizontalArrangement = Arrangement.spacedBy(AppDimens.spaceSm)) {
-                    TransactionType.entries.forEach { typeOption ->
-                        FilterChip(
-                            selected = selectedType == typeOption,
-                            onClick = { selectedType = typeOption },
-                            label = { Text(typeOption.displayLabel()) }
-                        )
-                    }
-                }
+                 Row(horizontalArrangement = Arrangement.spacedBy(AppDimens.spaceSm)) {
+                     TransactionType.entries.forEach { typeOption ->
+                         FilterChip(
+                             selected = selectedType == typeOption,
+                             onClick = { selectedType = typeOption },
+                             label = { Text(typeOption.displayLabel()) }
+                         )
+                     }
+                 }
 
-                if (isSubmitAttempted && !isTypeValid) {
-                    Text(
-                        text = validation.typeError,
-                        style = MaterialTheme.typography.bodySmall,
-                        color = MaterialTheme.colorScheme.error
-                    )
-                }
-            }
+                 if (isSubmitAttempted && !isTypeValid) {
+                     Text(
+                         text = validation.typeError,
+                         style = MaterialTheme.typography.bodySmall,
+                         color = MaterialTheme.colorScheme.error
+                     )
+                 }
+             }
 
-            Column(verticalArrangement = Arrangement.spacedBy(AppDimens.spaceSm)) {
-                Text(
-                    text = "Select Category",
-                    style = MaterialTheme.typography.labelMedium,
-                    color = MaterialTheme.colorScheme.onSurfaceVariant
-                )
+             Column(verticalArrangement = Arrangement.spacedBy(AppDimens.spaceSm)) {
+                 Text(
+                     text = "Chọn danh mục",
+                     style = MaterialTheme.typography.labelMedium,
+                     color = MaterialTheme.colorScheme.onSurfaceVariant
+                 )
 
                 categoryOptions.chunked(4).forEach { rowItems ->
                     Row(
@@ -183,13 +183,13 @@ fun AddTransactionScreen(
                     }
                 }
 
-                if (categoryOptions.isEmpty()) {
-                    Text(
-                        text = "No categories available. Create categories first.",
-                        style = MaterialTheme.typography.bodySmall,
-                        color = MaterialTheme.colorScheme.onSurfaceVariant
-                    )
-                }
+                 if (categoryOptions.isEmpty()) {
+                     Text(
+                         text = "Không có danh mục nào có sẵn. Tạo danh mục trước.",
+                         style = MaterialTheme.typography.bodySmall,
+                         color = MaterialTheme.colorScheme.onSurfaceVariant
+                     )
+                 }
 
                 if (isSubmitAttempted && !isCategoryValid) {
                     Text(
@@ -200,48 +200,48 @@ fun AddTransactionScreen(
                 }
             }
 
-            OutlinedTextField(
-                modifier = Modifier.fillMaxWidth(),
-                value = currentDate,
-                onValueChange = {},
-                readOnly = true,
-                label = { Text("Date") }
-            )
+             OutlinedTextField(
+                 modifier = Modifier.fillMaxWidth(),
+                 value = currentDate,
+                 onValueChange = {},
+                 readOnly = true,
+                 label = { Text("Ngày") }
+             )
 
-            OutlinedTextField(
-                modifier = Modifier.fillMaxWidth(),
-                value = note,
-                onValueChange = { note = it },
-                label = { Text("Note (optional)") },
-                placeholder = { Text("Add a note...") },
-                minLines = 2,
-                keyboardOptions = KeyboardOptions(
-                    capitalization = KeyboardCapitalization.Sentences
-                )
-            )
+             OutlinedTextField(
+                 modifier = Modifier.fillMaxWidth(),
+                 value = note,
+                 onValueChange = { note = it },
+                 label = { Text("Ghi chú (tùy chọn)") },
+                 placeholder = { Text("Thêm ghi chú...") },
+                 minLines = 2,
+                 keyboardOptions = KeyboardOptions(
+                     capitalization = KeyboardCapitalization.Sentences
+                 )
+             )
 
-            PrimaryButton(
-                text = "Save Entry",
-                onClick = {
-                    isSubmitAttempted = true
-                    if (!isFormValid) return@PrimaryButton
-                    val validInput = validation.validInput ?: return@PrimaryButton
+             PrimaryButton(
+                 text = "Lưu mục",
+                 onClick = {
+                     isSubmitAttempted = true
+                     if (!isFormValid) return@PrimaryButton
+                     val validInput = validation.validInput ?: return@PrimaryButton
 
-                    onSave(
-                        validInput.toTransaction(
-                            id = UUID.randomUUID().toString(),
-                            userId = currentUserId
-                        )
-                    )
-                    onBack()
-                },
-                enabled = isFormValid && currentUserId.isNotBlank()
-            )
+                     onSave(
+                         validInput.toTransaction(
+                             id = UUID.randomUUID().toString(),
+                             userId = currentUserId
+                         )
+                     )
+                     onBack()
+                 },
+                 enabled = isFormValid && currentUserId.isNotBlank()
+             )
 
-            SecondaryButton(
-                text = "Cancel",
-                onClick = onBack
-            )
+             SecondaryButton(
+                 text = "Hủy",
+                 onClick = onBack
+             )
         }
     }
 }
