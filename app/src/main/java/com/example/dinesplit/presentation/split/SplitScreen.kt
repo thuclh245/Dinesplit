@@ -69,8 +69,6 @@ import java.text.SimpleDateFormat
 import java.util.Date
 import java.util.Locale
 
-private const val CURRENT_USER_ID = "me"
-
 @Composable
 fun SplitScreen(
     userAvatarUrl: String?,
@@ -157,6 +155,7 @@ fun SplitScreen(
                 item {
                     RecentBillsSection(
                         recentBills = uiState.recentBills,
+                        currentUserId = uiState.currentUserId,
                         onBillClick = onBillClick
                     )
                 }
@@ -254,6 +253,7 @@ private fun GroupsSection(
 @Composable
 private fun RecentBillsSection(
     recentBills: List<SplitDashboardRecentBill>,
+    currentUserId: String?,
     onBillClick: (groupId: String, billId: String) -> Unit
 ) {
     Column(
@@ -275,6 +275,7 @@ private fun RecentBillsSection(
                 recentBills.forEach { recentBill ->
                     BillItem(
                         recentBill = recentBill,
+                        currentUserId = currentUserId,
                         onClick = {
                             onBillClick(recentBill.bill.groupId, recentBill.bill.id)
                         }
@@ -505,10 +506,11 @@ private fun CreateGroupDashboardCard(onClick: () -> Unit) {
 @Composable
 private fun BillItem(
     recentBill: SplitDashboardRecentBill,
+    currentUserId: String?,
     onClick: () -> Unit
 ) {
     val bill = recentBill.bill
-    val amountInfo = bill.dashboardAmountLabel()
+    val amountInfo = bill.dashboardAmountLabel(currentUserId)
     Surface(
         modifier = Modifier
             .fillMaxWidth()
@@ -606,13 +608,14 @@ private data class DashboardAmountLabel(
 )
 
 @Composable
-private fun Bill.dashboardAmountLabel(): DashboardAmountLabel {
+private fun Bill.dashboardAmountLabel(currentUserId: String?): DashboardAmountLabel {
     val colorScheme = MaterialTheme.colorScheme
-    val myShare = shares[CURRENT_USER_ID] ?: 0.0
-    val outstandingForMe = payerId != CURRENT_USER_ID && !paidMemberIds.contains(CURRENT_USER_ID) && myShare > 0.0
-    val owedToMe = if (payerId == CURRENT_USER_ID) {
+    val userId = currentUserId.orEmpty()
+    val myShare = shares[userId] ?: 0.0
+    val outstandingForMe = userId.isNotBlank() && payerId != userId && !paidMemberIds.contains(userId) && myShare > 0.0
+    val owedToMe = if (userId.isNotBlank() && payerId == userId) {
         shares
-            .filterKeys { memberId -> memberId != CURRENT_USER_ID && !paidMemberIds.contains(memberId) }
+            .filterKeys { memberId -> memberId != userId && !paidMemberIds.contains(memberId) }
             .values
             .sum()
     } else {
@@ -622,7 +625,7 @@ private fun Bill.dashboardAmountLabel(): DashboardAmountLabel {
     return when {
         outstandingForMe -> DashboardAmountLabel("Bạn nợ ${formatShortAmount(myShare)}", colorScheme.error)
         owedToMe > 0.0 -> DashboardAmountLabel("Nhận ${formatShortAmount(owedToMe)}", colorScheme.secondary)
-        paidMemberIds.contains(CURRENT_USER_ID) -> DashboardAmountLabel("Đã trả ${formatShortAmount(myShare)}", colorScheme.secondary)
+        userId.isNotBlank() && paidMemberIds.contains(userId) -> DashboardAmountLabel("Đã trả ${formatShortAmount(myShare)}", colorScheme.secondary)
         else -> DashboardAmountLabel(formatShortAmount(totalAmount), colorScheme.primary)
     }
 }

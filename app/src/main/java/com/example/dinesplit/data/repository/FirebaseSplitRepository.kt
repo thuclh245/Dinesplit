@@ -248,13 +248,31 @@ class FirebaseSplitRepository(
     }
 
     private fun QuerySnapshot.toMembers(): List<Member> {
-        return documents.mapNotNull { doc ->
+        val currentUserId = FirebaseProviders.auth.currentUser?.uid
+        val rawMembers = documents.mapNotNull { doc ->
             val id = doc.getString("id") ?: doc.id
             val name = doc.getString("name") ?: return@mapNotNull null
             val initial = doc.getString("initial") ?: name.firstOrNull()?.toString().orEmpty()
             val isMe = doc.getBoolean("isMe") ?: false
             Member(id = id, name = name, initial = initial, isMe = isMe)
         }
+        val hasCurrentUserMember = !currentUserId.isNullOrBlank() &&
+            rawMembers.any { it.id == currentUserId }
+
+        return rawMembers
+            .filterNot { member ->
+                hasCurrentUserMember &&
+                    member.id != currentUserId &&
+                    member.isMe
+            }
+            .map { member ->
+                if (currentUserId.isNullOrBlank()) {
+                    member
+                } else {
+                    member.copy(isMe = member.id == currentUserId)
+                }
+            }
+            .distinctBy { it.id }
     }
 
     private fun QuerySnapshot.toBills(): List<Bill> {
