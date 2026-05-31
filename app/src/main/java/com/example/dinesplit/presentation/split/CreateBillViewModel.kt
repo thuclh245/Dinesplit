@@ -54,7 +54,7 @@ class CreateBillViewModel(
         } else {
             applyMembers(fallbackBillMembers, isFallback = true)
         }
-        billItems.add(BillItem(name = "Mon 1", price = 0.0, sharedByMemberIds = emptyList()))
+        billItems.add(BillItem(name = "Món 1", price = 0.0, sharedByMemberIds = emptyList()))
     }
 
     private fun loadGroupMembers() {
@@ -111,11 +111,14 @@ class CreateBillViewModel(
     }
 
     fun onMethodSelect(method: SplitMethod) {
+        if (method == SplitMethod.ITEMIZED) {
+            seedFirstItemFromEnteredTotal()
+        }
         _uiState.update { it.copy(selectedMethod = method, error = null) }
     }
 
     fun addItem() {
-        billItems.add(BillItem(name = "Mon ${billItems.size + 1}", price = 0.0, sharedByMemberIds = emptyList()))
+        billItems.add(BillItem(name = "Món ${billItems.size + 1}", price = 0.0, sharedByMemberIds = emptyList()))
     }
 
     fun removeItem(item: BillItem) {
@@ -143,7 +146,7 @@ class CreateBillViewModel(
 
     suspend fun saveBillBlocking(): Result<Unit> {
         val currentState = _uiState.value
-        val billName = currentState.billName.trim().ifBlank { "Hoa don moi" }
+        val billName = currentState.billName.trim().ifBlank { "Hóa đơn mới" }
 
         validateBillInput(currentState)?.let { error ->
             _uiState.update { it.copy(error = error) }
@@ -152,7 +155,7 @@ class CreateBillViewModel(
 
         val totalAmount = calculateTotalAmount(currentState)
         val shares = calculateShares(totalAmount, currentState).getOrElse { throwable ->
-            val message = throwable.message ?: "Khong the tinh tien chia"
+            val message = throwable.message ?: "Không thể tính tiền chia"
             _uiState.update { it.copy(error = message) }
             return Result.failure(IllegalArgumentException(message))
         }
@@ -173,7 +176,7 @@ class CreateBillViewModel(
             if (result.isSuccess) {
                 it.copy(isLoading = false, isSaved = true, savedBill = bill)
             } else {
-                it.copy(isLoading = false, error = "Khong the luu hoa don")
+                it.copy(isLoading = false, error = "Không thể lưu hóa đơn")
             }
         }
         return result
@@ -184,27 +187,34 @@ class CreateBillViewModel(
         val selectedMembers = state.selectedMemberIds.toList()
 
         return when {
-            groupId.isBlank() -> "Thieu nhom de luu hoa don"
-            totalAmount <= 0.0 -> "Tong tien phai lon hon 0"
-            state.selectedMemberIds.isEmpty() -> "Can chon it nhat mot nguoi tham gia"
-            state.payerId.isBlank() -> "Can chon nguoi thanh toan"
-            state.payerId !in state.members.map { it.id } -> "Nguoi thanh toan khong hop le"
+            groupId.isBlank() -> "Thiếu nhóm để lưu hóa đơn"
+            totalAmount <= 0.0 -> "Tổng tiền phải lớn hơn 0"
+            state.selectedMemberIds.isEmpty() -> "Cần chọn ít nhất một người tham gia"
+            state.payerId.isBlank() -> "Cần chọn người thanh toán"
+            state.payerId !in state.members.map { it.id } -> "Người thanh toán không hợp lệ"
             state.selectedMethod == SplitMethod.CUSTOM &&
-                customAmounts.keys.any { it !in state.selectedMemberIds } -> "Custom amount chi ap dung cho nguoi duoc chon"
+                customAmounts.keys.any { it !in state.selectedMemberIds } -> "Số tiền tự nhập chỉ áp dụng cho người được chọn"
             state.selectedMethod == SplitMethod.CUSTOM &&
-                selectedMembers.any { customAmounts[it].isNullOrBlank() } -> "Nhap so tien cho tat ca thanh vien duoc chon"
+                selectedMembers.any { customAmounts[it].isNullOrBlank() } -> "Nhập số tiền cho tất cả thành viên được chọn"
             state.selectedMethod == SplitMethod.CUSTOM &&
                 !SplitCalculationEngine.moneyEquals(customAmountsForSelected(selectedMembers).values.sum(), totalAmount) ->
-                "Tong tien tu nhap phai bang tong hoa don"
+                "Tổng tiền tự nhập phải bằng tổng hóa đơn"
             state.selectedMethod == SplitMethod.ITEMIZED &&
-                billItems.any { it.name.isBlank() || it.price <= 0.0 } -> "Moi mon can co ten va gia hop le"
+                billItems.any { it.name.isBlank() || it.price <= 0.0 } -> "Mỗi món cần có tên và giá hợp lệ"
             state.selectedMethod == SplitMethod.ITEMIZED &&
-                billItems.any { it.sharedByMemberIds.isEmpty() } -> "Moi mon can chon nguoi chia"
+                billItems.any { it.sharedByMemberIds.isEmpty() } -> "Mỗi món cần chọn người chia"
             state.selectedMethod == SplitMethod.ITEMIZED &&
                 billItems.any { item -> item.sharedByMemberIds.any { it !in state.selectedMemberIds } } ->
-                "Nguoi chia mon phai nam trong danh sach tham gia"
+                "Người chia món phải nằm trong danh sách tham gia"
             else -> null
         }
+    }
+
+    private fun seedFirstItemFromEnteredTotal() {
+        val enteredTotal = _uiState.value.totalAmountStr.toDoubleOrNull() ?: 0.0
+        if (enteredTotal <= 0.0 || billItems.isEmpty() || billItems.any { it.price > 0.0 }) return
+
+        billItems[0] = billItems[0].copy(price = enteredTotal)
     }
 
     private fun calculateTotalAmount(state: CreateBillUiState): Double {

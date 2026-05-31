@@ -132,8 +132,7 @@ class GroupDetailViewModel(
                     val effectiveMembers = buildEffectiveMembers(members, bills)
                     val memberBalances = calculateMemberBalances(bills, effectiveMembers)
                     val settlements = calculateSettlements(memberBalances, bills)
-                    val totalExpense = bills.sumOf { it.totalAmount }.takeIf { it > 0.0 }
-                        ?: (group?.totalExpense ?: 0.0)
+                    val totalExpense = bills.sumOf { it.totalAmount }
                     val yourBalance = memberBalances.firstOrNull { it.isMe }?.balance ?: 0.0
 
                     _uiState.update {
