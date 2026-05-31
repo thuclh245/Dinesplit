@@ -49,14 +49,13 @@ import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.tooling.preview.Preview
-import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.Dp
+import androidx.compose.ui.unit.dp
 import com.example.dinesplit.core.ui.AppCard
 import com.example.dinesplit.core.ui.AppDimens
 import com.example.dinesplit.core.ui.AppShapes
 import com.example.dinesplit.core.ui.EmptyStateBlock
 import com.example.dinesplit.core.ui.ErrorStateBlock
-import com.example.dinesplit.core.ui.HomeTopBar
 import com.example.dinesplit.core.ui.LoadingBlock
 import com.example.dinesplit.domain.model.Transaction
 import com.example.dinesplit.domain.model.TransactionSource
@@ -86,64 +85,71 @@ fun PersonalScreen(
     onOpenRecurringPlans: () -> Unit = onOpenPlans,
     onOpenGoalPlans: () -> Unit = onOpenPlans,
     onOpenWalletPlans: () -> Unit = onOpenPlans,
-    onRefresh: () -> Unit = {}
+    onRefresh: () -> Unit = {},
 ) {
-    val expenseSlices = remember(chartState.pieSlices) {
-        chartState.pieSlices
-    }
-    val dailyBars = remember(chartState.dailyExpenseBars) {
-        chartState.dailyExpenseBars
-    }
+    val expenseSlices =
+        remember(chartState.pieSlices) {
+            chartState.pieSlices
+        }
+    val dailyBars =
+        remember(chartState.dailyExpenseBars) {
+            chartState.dailyExpenseBars
+        }
     val automationCount = uiState.recurringRules.size + uiState.goals.size + uiState.wallets.size
-    val personalScore = remember(
-        chartState.monthlySummary,
-        chartState.safeToSpend,
-        chartState.insights,
-        reminderCount,
-        automationCount,
-        uiState.transactions.size
-    ) {
-        buildPersonalScore(
-            summary = chartState.monthlySummary,
-            forecast = chartState.safeToSpend,
-            insights = chartState.insights,
-            reminderCount = reminderCount,
-            automationCount = automationCount,
-            transactionCount = uiState.transactions.size
-        )
-    }
+    val personalScore =
+        remember(
+            chartState.monthlySummary,
+            chartState.safeToSpend,
+            chartState.insights,
+            reminderCount,
+            automationCount,
+            uiState.transactions.size,
+        ) {
+            buildPersonalScore(
+                summary = chartState.monthlySummary,
+                forecast = chartState.safeToSpend,
+                insights = chartState.insights,
+                reminderCount = reminderCount,
+                automationCount = automationCount,
+                transactionCount = uiState.transactions.size,
+            )
+        }
     val monthMarker = remember { currentMonthMarker() }
-    val topCategory = remember(expenseSlices) {
-        expenseSlices.maxByOrNull { it.amount }
-    }
-    val anomalySignals = remember(uiState.transactions, chartState.monthlySummary, monthMarker) {
-        buildAnomalySignals(
-            transactions = uiState.transactions,
-            summary = chartState.monthlySummary,
-            monthMarker = monthMarker
-        )
-    }
-    val prioritySignals = remember(anomalySignals) {
-        anomalySignals
-            .filter { it.tone != AdvancedSignalTone.POSITIVE && it.metric != "Idle" }
-            .take(3)
-    }
-    val autopilotActions = remember(
-        uiState.transactions,
-        uiState.recurringRules,
-        uiState.goals,
-        uiState.wallets,
-        reminderCount,
-        topCategory,
-        personalScore
-    ) {
-        buildAutopilotActions(
-            uiState = uiState,
-            topCategory = topCategory,
-            reminderCount = reminderCount,
-            score = personalScore
-        )
-    }
+    val topCategory =
+        remember(expenseSlices) {
+            expenseSlices.maxByOrNull { it.amount }
+        }
+    val anomalySignals =
+        remember(uiState.transactions, chartState.monthlySummary, monthMarker) {
+            buildAnomalySignals(
+                transactions = uiState.transactions,
+                summary = chartState.monthlySummary,
+                monthMarker = monthMarker,
+            )
+        }
+    val prioritySignals =
+        remember(anomalySignals) {
+            anomalySignals
+                .filter { it.tone != AdvancedSignalTone.POSITIVE && it.metric != "Idle" }
+                .take(3)
+        }
+    val autopilotActions =
+        remember(
+            uiState.transactions,
+            uiState.recurringRules,
+            uiState.goals,
+            uiState.wallets,
+            reminderCount,
+            topCategory,
+            personalScore,
+        ) {
+            buildAutopilotActions(
+                uiState = uiState,
+                topCategory = topCategory,
+                reminderCount = reminderCount,
+                score = personalScore,
+            )
+        }
 
     Scaffold(
         floatingActionButton = {
@@ -152,24 +158,26 @@ fun PersonalScreen(
                 containerColor = MaterialTheme.colorScheme.primary,
                 contentColor = MaterialTheme.colorScheme.onPrimary,
                 shape = CircleShape,
-                modifier = Modifier.padding(bottom = bottomPadding)
+                modifier = Modifier.padding(bottom = bottomPadding),
             ) {
                 Icon(Icons.Default.Add, contentDescription = "Add transaction")
             }
-        }
+        },
     ) { padding ->
         LazyColumn(
-            modifier = Modifier
-                .fillMaxSize()
-                .background(MaterialTheme.colorScheme.background)
-                .padding(padding),
-            contentPadding = PaddingValues(
-                start = AppDimens.screenHorizontal,
-                end = AppDimens.screenHorizontal,
-                top = 72.dp,
-                bottom = 120.dp
-            ),
-            verticalArrangement = Arrangement.spacedBy(AppDimens.spaceLg)
+            modifier =
+                Modifier
+                    .fillMaxSize()
+                    .background(MaterialTheme.colorScheme.background)
+                    .padding(padding),
+            contentPadding =
+                PaddingValues(
+                    start = AppDimens.screenHorizontal,
+                    end = AppDimens.screenHorizontal,
+                    top = 72.dp,
+                    bottom = 120.dp,
+                ),
+            verticalArrangement = Arrangement.spacedBy(AppDimens.spaceLg),
         ) {
             if (uiState.isLoading) {
                 item {
@@ -181,7 +189,7 @@ fun PersonalScreen(
                         ErrorStateBlock(
                             title = "Không thể tải dữ liệu",
                             subtitle = message,
-                            onRetryClick = onRefresh
+                            onRetryClick = onRefresh,
                         )
                     }
                 }
@@ -193,7 +201,7 @@ fun PersonalScreen(
                         expense = chartState.monthlySummary.totalExpense,
                         forecast = chartState.safeToSpend,
                         score = personalScore,
-                        monthMarker = monthMarker
+                        monthMarker = monthMarker,
                     )
                 }
 
@@ -203,7 +211,7 @@ fun PersonalScreen(
                         forecast = chartState.safeToSpend,
                         topCategory = topCategory,
                         reminderCount = reminderCount,
-                        automationCount = automationCount
+                        automationCount = automationCount,
                     )
                 }
 
@@ -212,7 +220,7 @@ fun PersonalScreen(
                         PriorityAlertSection(
                             signals = prioritySignals,
                             onOpenHistory = onOpenHistory,
-                            onOpenReminders = onOpenReminders
+                            onOpenReminders = onOpenReminders,
                         )
                     }
                 }
@@ -225,7 +233,7 @@ fun PersonalScreen(
                             onOpenReminders = onOpenReminders,
                             onOpenRecurringPlans = onOpenRecurringPlans,
                             onOpenGoalPlans = onOpenGoalPlans,
-                            onOpenWalletPlans = onOpenWalletPlans
+                            onOpenWalletPlans = onOpenWalletPlans,
                         )
                     }
                 }
@@ -241,7 +249,7 @@ fun PersonalScreen(
                         onOpenCategories = onOpenCategories,
                         onOpenReminders = onOpenReminders,
                         onOpenInsights = onOpenInsights,
-                        onOpenPlans = onOpenPlans
+                        onOpenPlans = onOpenPlans,
                     )
                 }
 
@@ -251,7 +259,7 @@ fun PersonalScreen(
                             title = "Chưa có giao dịch nào",
                             subtitle = "Thêm khoản thu hoặc chi để bắt đầu theo dõi tài chính của bạn.",
                             actionText = "Thêm giao dịch",
-                            onActionClick = onAddTransaction
+                            onActionClick = onAddTransaction,
                         )
                     }
                 } else {
@@ -259,7 +267,7 @@ fun PersonalScreen(
                         SpendingSnapshotCard(
                             expenseSlices = expenseSlices,
                             dailyBars = dailyBars,
-                            onOpenHistory = onOpenHistory
+                            onOpenHistory = onOpenHistory,
                         )
                     }
 
@@ -287,49 +295,53 @@ private fun MonthlyCommandCard(
     expense: Double,
     forecast: SafeToSpendForecast,
     score: PersonalScore,
-    monthMarker: MonthMarker
+    monthMarker: MonthMarker,
 ) {
     val onAccent = MaterialTheme.colorScheme.onPrimary
     val scoreColor = scoreBandColor(score.band)
-    val runwayProgress = animateFloatAsState(
-        targetValue = monthMarker.progress,
-        animationSpec = tween(durationMillis = 700),
-        label = "monthRunway"
-    ).value
+    val runwayProgress =
+        animateFloatAsState(
+            targetValue = monthMarker.progress,
+            animationSpec = tween(durationMillis = 700),
+            label = "monthRunway",
+        ).value
 
     Surface(
         modifier = Modifier.fillMaxWidth(),
         shape = AppShapes.xLarge,
         color = Color.Transparent,
-        shadowElevation = AppDimens.cardElevation
+        shadowElevation = AppDimens.cardElevation,
     ) {
         Column(
-            modifier = Modifier
-                .background(
-                    brush = Brush.linearGradient(
-                        colors = listOf(
-                            MaterialTheme.colorScheme.primary,
-                            MaterialTheme.colorScheme.secondary
-                        )
-                    ),
-                    shape = AppShapes.xLarge
-                )
-                .padding(AppDimens.spaceLg),
-            verticalArrangement = Arrangement.spacedBy(AppDimens.spaceLg)
+            modifier =
+                Modifier
+                    .background(
+                        brush =
+                            Brush.linearGradient(
+                                colors =
+                                    listOf(
+                                        MaterialTheme.colorScheme.primary,
+                                        MaterialTheme.colorScheme.secondary,
+                                    ),
+                            ),
+                        shape = AppShapes.xLarge,
+                    )
+                    .padding(AppDimens.spaceLg),
+            verticalArrangement = Arrangement.spacedBy(AppDimens.spaceLg),
         ) {
             Row(
                 modifier = Modifier.fillMaxWidth(),
                 horizontalArrangement = Arrangement.SpaceBetween,
-                verticalAlignment = Alignment.Top
+                verticalAlignment = Alignment.Top,
             ) {
                 Column(
                     modifier = Modifier.weight(1f),
-                    verticalArrangement = Arrangement.spacedBy(AppDimens.spaceXs)
+                    verticalArrangement = Arrangement.spacedBy(AppDimens.spaceXs),
                 ) {
                     Text(
                         text = "Monthly command center",
                         style = MaterialTheme.typography.labelMedium,
-                        color = onAccent.copy(alpha = 0.76f)
+                        color = onAccent.copy(alpha = 0.76f),
                     )
                     Text(
                         text = formatMoney(balance),
@@ -337,52 +349,53 @@ private fun MonthlyCommandCard(
                         fontWeight = FontWeight.ExtraBold,
                         color = onAccent,
                         maxLines = 1,
-                        overflow = TextOverflow.Ellipsis
+                        overflow = TextOverflow.Ellipsis,
                     )
                     Text(
                         text = "Safe today ${formatMoney(forecast.dailyAmount)}",
                         style = MaterialTheme.typography.bodySmall,
                         color = onAccent.copy(alpha = 0.82f),
                         maxLines = 1,
-                        overflow = TextOverflow.Ellipsis
+                        overflow = TextOverflow.Ellipsis,
                     )
                     Row(horizontalArrangement = Arrangement.spacedBy(AppDimens.spaceSm)) {
                         HeroSticker(
                             icon = Icons.Default.Flag,
                             label = score.label,
-                            contentColor = onAccent
+                            contentColor = onAccent,
                         )
                         HeroSticker(
                             icon = Icons.Default.Savings,
                             label = forecast.status.name.lowercase().replaceFirstChar { it.uppercase() },
-                            contentColor = onAccent
+                            contentColor = onAccent,
                         )
                     }
                 }
 
                 Surface(
                     shape = AppShapes.full,
-                    color = scoreColor.copy(alpha = 0.22f)
+                    color = scoreColor.copy(alpha = 0.22f),
                 ) {
                     Row(
-                        modifier = Modifier.padding(
-                            horizontal = AppDimens.spaceMd,
-                            vertical = AppDimens.spaceSm
-                        ),
+                        modifier =
+                            Modifier.padding(
+                                horizontal = AppDimens.spaceMd,
+                                vertical = AppDimens.spaceSm,
+                            ),
                         horizontalArrangement = Arrangement.spacedBy(AppDimens.spaceXs),
-                        verticalAlignment = Alignment.CenterVertically
+                        verticalAlignment = Alignment.CenterVertically,
                     ) {
                         Icon(
                             imageVector = Icons.Default.AutoGraph,
                             contentDescription = null,
                             tint = onAccent,
-                            modifier = Modifier.size(16.dp)
+                            modifier = Modifier.size(16.dp),
                         )
                         Text(
                             text = "${score.value}",
                             style = MaterialTheme.typography.titleSmall,
                             fontWeight = FontWeight.ExtraBold,
-                            color = onAccent
+                            color = onAccent,
                         )
                     }
                 }
@@ -394,21 +407,21 @@ private fun MonthlyCommandCard(
                     icon = Icons.Default.ArrowDownward,
                     title = "Income",
                     amount = income,
-                    contentColor = onAccent
+                    contentColor = onAccent,
                 )
                 CommandMetricPill(
                     modifier = Modifier.weight(1f),
                     icon = Icons.Default.ArrowUpward,
                     title = "Expense",
                     amount = expense,
-                    contentColor = onAccent
+                    contentColor = onAccent,
                 )
             }
 
             MonthRunwayBar(
                 progress = runwayProgress,
                 label = monthMarker.label,
-                contentColor = onAccent
+                contentColor = onAccent,
             )
         }
     }
@@ -418,32 +431,33 @@ private fun MonthlyCommandCard(
 private fun HeroSticker(
     icon: ImageVector,
     label: String,
-    contentColor: Color
+    contentColor: Color,
 ) {
     Surface(
         shape = AppShapes.full,
-        color = contentColor.copy(alpha = 0.14f)
+        color = contentColor.copy(alpha = 0.14f),
     ) {
         Row(
-            modifier = Modifier.padding(
-                horizontal = AppDimens.spaceSm,
-                vertical = AppDimens.spaceXs
-            ),
+            modifier =
+                Modifier.padding(
+                    horizontal = AppDimens.spaceSm,
+                    vertical = AppDimens.spaceXs,
+                ),
             horizontalArrangement = Arrangement.spacedBy(AppDimens.spaceXs),
-            verticalAlignment = Alignment.CenterVertically
+            verticalAlignment = Alignment.CenterVertically,
         ) {
             Icon(
                 imageVector = icon,
                 contentDescription = null,
                 tint = contentColor,
-                modifier = Modifier.size(14.dp)
+                modifier = Modifier.size(14.dp),
             )
             Text(
                 text = label,
                 style = MaterialTheme.typography.labelSmall,
                 color = contentColor,
                 maxLines = 1,
-                overflow = TextOverflow.Ellipsis
+                overflow = TextOverflow.Ellipsis,
             )
         }
     }
@@ -455,29 +469,29 @@ private fun CommandMetricPill(
     icon: ImageVector,
     title: String,
     amount: Double,
-    contentColor: Color
+    contentColor: Color,
 ) {
     Surface(
         modifier = modifier,
         shape = MaterialTheme.shapes.large,
-        color = contentColor.copy(alpha = 0.12f)
+        color = contentColor.copy(alpha = 0.12f),
     ) {
         Row(
             modifier = Modifier.padding(AppDimens.spaceMd),
             horizontalArrangement = Arrangement.spacedBy(AppDimens.spaceSm),
-            verticalAlignment = Alignment.CenterVertically
+            verticalAlignment = Alignment.CenterVertically,
         ) {
             Icon(
                 imageVector = icon,
                 contentDescription = null,
                 tint = contentColor,
-                modifier = Modifier.size(18.dp)
+                modifier = Modifier.size(18.dp),
             )
             Column {
                 Text(
                     text = title,
                     style = MaterialTheme.typography.labelSmall,
-                    color = contentColor.copy(alpha = 0.76f)
+                    color = contentColor.copy(alpha = 0.76f),
                 )
                 Text(
                     text = formatMoney(amount),
@@ -485,7 +499,7 @@ private fun CommandMetricPill(
                     fontWeight = FontWeight.ExtraBold,
                     color = contentColor,
                     maxLines = 1,
-                    overflow = TextOverflow.Ellipsis
+                    overflow = TextOverflow.Ellipsis,
                 )
             }
         }
@@ -496,31 +510,32 @@ private fun CommandMetricPill(
 private fun MonthRunwayBar(
     progress: Float,
     label: String,
-    contentColor: Color
+    contentColor: Color,
 ) {
     Column(verticalArrangement = Arrangement.spacedBy(AppDimens.spaceXs)) {
         Row(
             modifier = Modifier.fillMaxWidth(),
-            horizontalArrangement = Arrangement.SpaceBetween
+            horizontalArrangement = Arrangement.SpaceBetween,
         ) {
             Text(
                 text = label,
                 style = MaterialTheme.typography.labelSmall,
-                color = contentColor.copy(alpha = 0.78f)
+                color = contentColor.copy(alpha = 0.78f),
             )
             Text(
                 text = "Month runway",
                 style = MaterialTheme.typography.labelSmall,
-                color = contentColor.copy(alpha = 0.78f)
+                color = contentColor.copy(alpha = 0.78f),
             )
         }
         LinearProgressIndicator(
             progress = { progress },
-            modifier = Modifier
-                .fillMaxWidth()
-                .height(8.dp),
+            modifier =
+                Modifier
+                    .fillMaxWidth()
+                    .height(8.dp),
             color = contentColor,
-            trackColor = contentColor.copy(alpha = 0.24f)
+            trackColor = contentColor.copy(alpha = 0.24f),
         )
     }
 }
@@ -531,13 +546,13 @@ private fun PersonalSignalGrid(
     forecast: SafeToSpendForecast,
     topCategory: PieCategorySlice?,
     reminderCount: Int,
-    automationCount: Int
+    automationCount: Int,
 ) {
     Column(verticalArrangement = Arrangement.spacedBy(AppDimens.spaceMd)) {
         SectionHeader(title = "Financial signals")
         Row(
             modifier = Modifier.fillMaxWidth(),
-            horizontalArrangement = Arrangement.spacedBy(AppDimens.spaceMd)
+            horizontalArrangement = Arrangement.spacedBy(AppDimens.spaceMd),
         ) {
             SignalTile(
                 modifier = Modifier.weight(1f),
@@ -545,7 +560,7 @@ private fun PersonalSignalGrid(
                 label = "Personal score",
                 value = score.value.toString(),
                 subtitle = score.label,
-                color = scoreBandColor(score.band)
+                color = scoreBandColor(score.band),
             )
             SignalTile(
                 modifier = Modifier.weight(1f),
@@ -553,12 +568,12 @@ private fun PersonalSignalGrid(
                 label = "Runway",
                 value = formatMoney(forecast.dailyAmount),
                 subtitle = "${forecast.daysLeft} days left",
-                color = forecastStatusColor(forecast.status)
+                color = forecastStatusColor(forecast.status),
             )
         }
         Row(
             modifier = Modifier.fillMaxWidth(),
-            horizontalArrangement = Arrangement.spacedBy(AppDimens.spaceMd)
+            horizontalArrangement = Arrangement.spacedBy(AppDimens.spaceMd),
         ) {
             SignalTile(
                 modifier = Modifier.weight(1f),
@@ -566,7 +581,7 @@ private fun PersonalSignalGrid(
                 label = "Top spend",
                 value = topCategory?.category ?: "No data",
                 subtitle = topCategory?.let { formatMoney(it.amount) } ?: "Add expenses",
-                color = MaterialTheme.colorScheme.tertiary
+                color = MaterialTheme.colorScheme.tertiary,
             )
             SignalTile(
                 modifier = Modifier.weight(1f),
@@ -574,7 +589,7 @@ private fun PersonalSignalGrid(
                 label = "C engine",
                 value = "${reminderCount + automationCount}",
                 subtitle = "alerts and plans",
-                color = MaterialTheme.colorScheme.secondary
+                color = MaterialTheme.colorScheme.secondary,
             )
         }
     }
@@ -587,29 +602,30 @@ private fun SignalTile(
     label: String,
     value: String,
     subtitle: String,
-    color: Color
+    color: Color,
 ) {
     AppCard(
         modifier = modifier,
-        contentPadding = PaddingValues(AppDimens.spaceMd)
+        contentPadding = PaddingValues(AppDimens.spaceMd),
     ) {
         Column(verticalArrangement = Arrangement.spacedBy(AppDimens.spaceSm)) {
             Row(
                 modifier = Modifier.fillMaxWidth(),
                 horizontalArrangement = Arrangement.SpaceBetween,
-                verticalAlignment = Alignment.CenterVertically
+                verticalAlignment = Alignment.CenterVertically,
             ) {
                 Surface(
                     shape = CircleShape,
-                    color = color.copy(alpha = 0.12f)
+                    color = color.copy(alpha = 0.12f),
                 ) {
                     Icon(
                         imageVector = icon,
                         contentDescription = null,
                         tint = color,
-                        modifier = Modifier
-                            .padding(AppDimens.spaceSm)
-                            .size(18.dp)
+                        modifier =
+                            Modifier
+                                .padding(AppDimens.spaceSm)
+                                .size(18.dp),
                     )
                 }
                 Text(
@@ -617,7 +633,7 @@ private fun SignalTile(
                     style = MaterialTheme.typography.labelSmall,
                     color = MaterialTheme.colorScheme.onSurfaceVariant,
                     maxLines = 1,
-                    overflow = TextOverflow.Ellipsis
+                    overflow = TextOverflow.Ellipsis,
                 )
             }
             Text(
@@ -625,14 +641,14 @@ private fun SignalTile(
                 style = MaterialTheme.typography.titleMedium,
                 fontWeight = FontWeight.ExtraBold,
                 maxLines = 1,
-                overflow = TextOverflow.Ellipsis
+                overflow = TextOverflow.Ellipsis,
             )
             Text(
                 text = subtitle,
                 style = MaterialTheme.typography.bodySmall,
                 color = MaterialTheme.colorScheme.onSurfaceVariant,
                 maxLines = 1,
-                overflow = TextOverflow.Ellipsis
+                overflow = TextOverflow.Ellipsis,
             )
         }
     }
@@ -642,7 +658,7 @@ private fun SignalTile(
 private fun PriorityAlertSection(
     signals: List<AnomalySignal>,
     onOpenHistory: () -> Unit,
-    onOpenReminders: () -> Unit
+    onOpenReminders: () -> Unit,
 ) {
     AppCard {
         Column(verticalArrangement = Arrangement.spacedBy(AppDimens.spaceMd)) {
@@ -650,7 +666,7 @@ private fun PriorityAlertSection(
             Text(
                 text = "Review these before adding more spending.",
                 style = MaterialTheme.typography.bodySmall,
-                color = MaterialTheme.colorScheme.onSurfaceVariant
+                color = MaterialTheme.colorScheme.onSurfaceVariant,
             )
             signals.forEach { signal ->
                 IntelligenceSignalRow(
@@ -666,7 +682,7 @@ private fun PriorityAlertSection(
                             PersonalActionTarget.REMINDERS -> onOpenReminders()
                             else -> Unit
                         }
-                    }
+                    },
                 )
             }
         }
@@ -680,7 +696,7 @@ private fun AutopilotQueue(
     onOpenReminders: () -> Unit,
     onOpenRecurringPlans: () -> Unit,
     onOpenGoalPlans: () -> Unit,
-    onOpenWalletPlans: () -> Unit
+    onOpenWalletPlans: () -> Unit,
 ) {
     AppCard {
         Column(verticalArrangement = Arrangement.spacedBy(AppDimens.spaceMd)) {
@@ -688,7 +704,7 @@ private fun AutopilotQueue(
             Text(
                 text = "Concrete setup steps ranked by priority.",
                 style = MaterialTheme.typography.bodySmall,
-                color = MaterialTheme.colorScheme.onSurfaceVariant
+                color = MaterialTheme.colorScheme.onSurfaceVariant,
             )
             actions.forEach { action ->
                 IntelligenceSignalRow(
@@ -706,7 +722,7 @@ private fun AutopilotQueue(
                             PersonalActionTarget.GOALS -> onOpenGoalPlans()
                             PersonalActionTarget.WALLETS -> onOpenWalletPlans()
                         }
-                    }
+                    },
                 )
             }
         }
@@ -721,55 +737,56 @@ private fun IntelligenceSignalRow(
     metric: String,
     tone: AdvancedSignalTone,
     actionLabel: String?,
-    onAction: () -> Unit
+    onAction: () -> Unit,
 ) {
     val color = advancedToneColor(tone)
 
     Surface(
         modifier = Modifier.fillMaxWidth(),
         shape = AppShapes.large,
-        color = color.copy(alpha = 0.08f)
+        color = color.copy(alpha = 0.08f),
     ) {
         Row(
             modifier = Modifier.padding(AppDimens.spaceMd),
             horizontalArrangement = Arrangement.spacedBy(AppDimens.spaceMd),
-            verticalAlignment = Alignment.CenterVertically
+            verticalAlignment = Alignment.CenterVertically,
         ) {
             Surface(
                 shape = CircleShape,
-                color = color.copy(alpha = 0.14f)
+                color = color.copy(alpha = 0.14f),
             ) {
                 Icon(
                     imageVector = icon,
                     contentDescription = null,
                     tint = color,
-                    modifier = Modifier
-                        .padding(AppDimens.spaceSm)
-                        .size(18.dp)
+                    modifier =
+                        Modifier
+                            .padding(AppDimens.spaceSm)
+                            .size(18.dp),
                 )
             }
             Column(
                 modifier = Modifier.weight(1f),
-                verticalArrangement = Arrangement.spacedBy(AppDimens.spaceXs)
+                verticalArrangement = Arrangement.spacedBy(AppDimens.spaceXs),
             ) {
                 Row(
                     modifier = Modifier.fillMaxWidth(),
                     horizontalArrangement = Arrangement.SpaceBetween,
-                    verticalAlignment = Alignment.CenterVertically
+                    verticalAlignment = Alignment.CenterVertically,
                 ) {
                     Text(
                         text = title,
                         style = MaterialTheme.typography.titleSmall,
                         fontWeight = FontWeight.Bold,
                         maxLines = 1,
-                        overflow = TextOverflow.Ellipsis
+                        overflow = TextOverflow.Ellipsis,
                     )
                     Text(
                         text = metric,
                         style = MaterialTheme.typography.labelSmall,
                         color = color,
                         fontWeight = FontWeight.Bold,
-                        maxLines = 1
+                        maxLines = 1,
                     )
                 }
                 Text(
@@ -777,12 +794,12 @@ private fun IntelligenceSignalRow(
                     style = MaterialTheme.typography.bodySmall,
                     color = MaterialTheme.colorScheme.onSurfaceVariant,
                     maxLines = 2,
-                    overflow = TextOverflow.Ellipsis
+                    overflow = TextOverflow.Ellipsis,
                 )
                 if (!actionLabel.isNullOrBlank()) {
                     TextButton(
                         onClick = onAction,
-                        contentPadding = PaddingValues(0.dp)
+                        contentPadding = PaddingValues(0.dp),
                     ) {
                         Text(actionLabel)
                     }
@@ -803,13 +820,13 @@ private fun PersonalActionGrid(
     onOpenCategories: () -> Unit,
     onOpenReminders: () -> Unit,
     onOpenInsights: () -> Unit,
-    onOpenPlans: () -> Unit
+    onOpenPlans: () -> Unit,
 ) {
     Column(verticalArrangement = Arrangement.spacedBy(AppDimens.spaceMd)) {
         SectionHeader(title = "Manage")
         Row(
             modifier = Modifier.fillMaxWidth(),
-            horizontalArrangement = Arrangement.spacedBy(AppDimens.spaceMd)
+            horizontalArrangement = Arrangement.spacedBy(AppDimens.spaceMd),
         ) {
             QuickActionCard(
                 modifier = Modifier.weight(1f),
@@ -817,7 +834,7 @@ private fun PersonalActionGrid(
                 label = "Ledger",
                 value = "$transactionCount entries",
                 color = MaterialTheme.colorScheme.primary,
-                onClick = onOpenHistory
+                onClick = onOpenHistory,
             )
             QuickActionCard(
                 modifier = Modifier.weight(1f),
@@ -825,12 +842,12 @@ private fun PersonalActionGrid(
                 label = "Insights",
                 value = "Radar and simulator",
                 color = MaterialTheme.colorScheme.secondary,
-                onClick = onOpenInsights
+                onClick = onOpenInsights,
             )
         }
         Row(
             modifier = Modifier.fillMaxWidth(),
-            horizontalArrangement = Arrangement.spacedBy(AppDimens.spaceMd)
+            horizontalArrangement = Arrangement.spacedBy(AppDimens.spaceMd),
         ) {
             QuickActionCard(
                 modifier = Modifier.weight(1f),
@@ -838,7 +855,7 @@ private fun PersonalActionGrid(
                 label = "Summary",
                 value = "Monthly report",
                 color = MaterialTheme.colorScheme.tertiary,
-                onClick = onOpenMonthlySummary
+                onClick = onOpenMonthlySummary,
             )
             QuickActionCard(
                 modifier = Modifier.weight(1f),
@@ -846,12 +863,12 @@ private fun PersonalActionGrid(
                 label = "Categories",
                 value = "$categoryCount active",
                 color = MaterialTheme.colorScheme.primary,
-                onClick = onOpenCategories
+                onClick = onOpenCategories,
             )
         }
         Row(
             modifier = Modifier.fillMaxWidth(),
-            horizontalArrangement = Arrangement.spacedBy(AppDimens.spaceMd)
+            horizontalArrangement = Arrangement.spacedBy(AppDimens.spaceMd),
         ) {
             QuickActionCard(
                 modifier = Modifier.weight(1f),
@@ -859,7 +876,7 @@ private fun PersonalActionGrid(
                 label = "Reminders",
                 value = "$reminderCount active",
                 color = MaterialTheme.colorScheme.error,
-                onClick = onOpenReminders
+                onClick = onOpenReminders,
             )
             QuickActionCard(
                 modifier = Modifier.weight(1f),
@@ -867,7 +884,7 @@ private fun PersonalActionGrid(
                 label = "Plans",
                 value = "$planCount active",
                 color = MaterialTheme.colorScheme.secondary,
-                onClick = onOpenPlans
+                onClick = onOpenPlans,
             )
         }
     }
@@ -880,27 +897,28 @@ private fun QuickActionCard(
     label: String,
     value: String,
     color: Color,
-    onClick: () -> Unit
+    onClick: () -> Unit,
 ) {
     AppCard(
         modifier = modifier.clickable(onClick = onClick),
-        contentPadding = PaddingValues(AppDimens.spaceMd)
+        contentPadding = PaddingValues(AppDimens.spaceMd),
     ) {
         Row(
             horizontalArrangement = Arrangement.spacedBy(AppDimens.spaceMd),
-            verticalAlignment = Alignment.CenterVertically
+            verticalAlignment = Alignment.CenterVertically,
         ) {
             Surface(
                 shape = CircleShape,
-                color = color.copy(alpha = 0.12f)
+                color = color.copy(alpha = 0.12f),
             ) {
                 Icon(
                     imageVector = icon,
                     contentDescription = null,
                     tint = color,
-                    modifier = Modifier
-                        .padding(AppDimens.spaceSm)
-                        .size(18.dp)
+                    modifier =
+                        Modifier
+                            .padding(AppDimens.spaceSm)
+                            .size(18.dp),
                 )
             }
             Column(verticalArrangement = Arrangement.spacedBy(AppDimens.spaceXs)) {
@@ -909,14 +927,14 @@ private fun QuickActionCard(
                     style = MaterialTheme.typography.titleSmall,
                     fontWeight = FontWeight.Bold,
                     maxLines = 1,
-                    overflow = TextOverflow.Ellipsis
+                    overflow = TextOverflow.Ellipsis,
                 )
                 Text(
                     text = value,
                     style = MaterialTheme.typography.bodySmall,
                     color = MaterialTheme.colorScheme.onSurfaceVariant,
                     maxLines = 1,
-                    overflow = TextOverflow.Ellipsis
+                    overflow = TextOverflow.Ellipsis,
                 )
             }
         }
@@ -927,20 +945,20 @@ private fun QuickActionCard(
 private fun SpendingSnapshotCard(
     expenseSlices: List<PieCategorySlice>,
     dailyBars: List<DailyExpenseBar>,
-    onOpenHistory: () -> Unit
+    onOpenHistory: () -> Unit,
 ) {
     AppCard {
         Column(verticalArrangement = Arrangement.spacedBy(AppDimens.spaceMd)) {
             SectionHeader(
                 title = "Spending snapshot",
                 actionLabel = "View ledger",
-                onAction = onOpenHistory
+                onAction = onOpenHistory,
             )
             if (expenseSlices.isEmpty() && dailyBars.isEmpty()) {
                 Text(
                     text = "No expense chart yet. Add expense entries to unlock category and daily spend views.",
                     style = MaterialTheme.typography.bodySmall,
-                    color = MaterialTheme.colorScheme.onSurfaceVariant
+                    color = MaterialTheme.colorScheme.onSurfaceVariant,
                 )
             } else {
                 if (expenseSlices.isNotEmpty()) {
@@ -958,19 +976,19 @@ private fun SpendingSnapshotCard(
 private fun SectionHeader(
     title: String,
     actionLabel: String? = null,
-    onAction: (() -> Unit)? = null
+    onAction: (() -> Unit)? = null,
 ) {
     Row(
         modifier = Modifier.fillMaxWidth(),
         horizontalArrangement = Arrangement.SpaceBetween,
-        verticalAlignment = Alignment.CenterVertically
+        verticalAlignment = Alignment.CenterVertically,
     ) {
         Text(
             text = title,
             style = MaterialTheme.typography.titleMedium,
             fontWeight = FontWeight.Bold,
             maxLines = 1,
-            overflow = TextOverflow.Ellipsis
+            overflow = TextOverflow.Ellipsis,
         )
         if (!actionLabel.isNullOrBlank() && onAction != null) {
             TextButton(onClick = onAction) {
@@ -978,7 +996,7 @@ private fun SectionHeader(
                     Icon(
                         imageVector = Icons.Default.Refresh,
                         contentDescription = null,
-                        modifier = Modifier.size(16.dp)
+                        modifier = Modifier.size(16.dp),
                     )
                 }
                 Text(text = actionLabel)
@@ -989,43 +1007,44 @@ private fun SectionHeader(
 
 @Composable
 private fun TransactionRow(transaction: Transaction) {
-    val amountColor = if (transaction.type == TransactionType.INCOME) {
-        MaterialTheme.colorScheme.primary
-    } else {
-        MaterialTheme.colorScheme.error
-    }
+    val amountColor =
+        if (transaction.type == TransactionType.INCOME) {
+            MaterialTheme.colorScheme.primary
+        } else {
+            MaterialTheme.colorScheme.error
+        }
 
     AppCard(contentPadding = PaddingValues(AppDimens.spaceMd)) {
         Row(
             modifier = Modifier.fillMaxWidth(),
             horizontalArrangement = Arrangement.spacedBy(AppDimens.spaceMd),
-            verticalAlignment = Alignment.CenterVertically
+            verticalAlignment = Alignment.CenterVertically,
         ) {
             Surface(
                 shape = CircleShape,
-                color = amountColor.copy(alpha = 0.12f)
+                color = amountColor.copy(alpha = 0.12f),
             ) {
                 Text(
                     text = transaction.category.take(2).uppercase(),
                     modifier = Modifier.padding(AppDimens.spaceSm),
                     style = MaterialTheme.typography.labelMedium,
                     fontWeight = FontWeight.Bold,
-                    color = amountColor
+                    color = amountColor,
                 )
             }
             Column(
                 modifier = Modifier.weight(1f),
-                verticalArrangement = Arrangement.spacedBy(AppDimens.spaceXs)
+                verticalArrangement = Arrangement.spacedBy(AppDimens.spaceXs),
             ) {
                 Row(
                     horizontalArrangement = Arrangement.spacedBy(AppDimens.spaceSm),
-                    verticalAlignment = Alignment.CenterVertically
+                    verticalAlignment = Alignment.CenterVertically,
                 ) {
                     Text(
                         text = transaction.category,
                         style = MaterialTheme.typography.titleSmall,
                         maxLines = 1,
-                        overflow = TextOverflow.Ellipsis
+                        overflow = TextOverflow.Ellipsis,
                     )
                     if (transaction.source != TransactionSource.MANUAL) {
                         SourceBadge(source = transaction.source)
@@ -1036,7 +1055,7 @@ private fun TransactionRow(transaction: Transaction) {
                     style = MaterialTheme.typography.bodySmall,
                     color = MaterialTheme.colorScheme.onSurfaceVariant,
                     maxLines = 1,
-                    overflow = TextOverflow.Ellipsis
+                    overflow = TextOverflow.Ellipsis,
                 )
             }
             Text(
@@ -1044,7 +1063,7 @@ private fun TransactionRow(transaction: Transaction) {
                 style = MaterialTheme.typography.titleSmall,
                 color = amountColor,
                 maxLines = 1,
-                overflow = TextOverflow.Ellipsis
+                overflow = TextOverflow.Ellipsis,
             )
         }
     }
@@ -1054,14 +1073,14 @@ private fun TransactionRow(transaction: Transaction) {
 private fun SourceBadge(source: TransactionSource) {
     Surface(
         shape = AppShapes.full,
-        color = MaterialTheme.colorScheme.secondary.copy(alpha = 0.12f)
+        color = MaterialTheme.colorScheme.secondary.copy(alpha = 0.12f),
     ) {
         Text(
             text = source.displayLabel(),
             modifier = Modifier.padding(horizontal = AppDimens.spaceSm, vertical = AppDimens.spaceXs),
             style = MaterialTheme.typography.labelSmall,
             color = MaterialTheme.colorScheme.secondary,
-            maxLines = 1
+            maxLines = 1,
         )
     }
 }
@@ -1084,19 +1103,19 @@ private fun formatDate(epochMillis: Long): String {
 private data class PersonalScore(
     val value: Int,
     val band: PersonalScoreBand,
-    val label: String
+    val label: String,
 )
 
 private enum class PersonalScoreBand {
     EXCELLENT,
     STABLE,
     WATCH,
-    RISK
+    RISK,
 }
 
 private data class MonthMarker(
     val label: String,
-    val progress: Float
+    val progress: Float,
 )
 
 private fun buildPersonalScore(
@@ -1105,36 +1124,39 @@ private fun buildPersonalScore(
     insights: List<PersonalInsight>,
     reminderCount: Int,
     automationCount: Int,
-    transactionCount: Int
+    transactionCount: Int,
 ): PersonalScore {
     if (transactionCount == 0) {
         return PersonalScore(
             value = 20,
             band = PersonalScoreBand.RISK,
-            label = "Needs data"
+            label = "Needs data",
         )
     }
 
     var score = 48
-    val spendRatio = if (summary.totalIncome > 0.0) {
-        summary.totalExpense / summary.totalIncome
-    } else {
-        Double.POSITIVE_INFINITY
-    }
+    val spendRatio =
+        if (summary.totalIncome > 0.0) {
+            summary.totalExpense / summary.totalIncome
+        } else {
+            Double.POSITIVE_INFINITY
+        }
 
-    score += when {
-        summary.totalIncome <= 0.0 -> -8
-        spendRatio < 0.65 -> 20
-        spendRatio < 0.85 -> 14
-        spendRatio <= 1.0 -> 4
-        else -> -16
-    }
+    score +=
+        when {
+            summary.totalIncome <= 0.0 -> -8
+            spendRatio < 0.65 -> 20
+            spendRatio < 0.85 -> 14
+            spendRatio <= 1.0 -> 4
+            else -> -16
+        }
 
-    score += when (forecast.status) {
-        SafeToSpendStatus.HEALTHY -> 16
-        SafeToSpendStatus.WATCH -> 5
-        SafeToSpendStatus.OVER -> -14
-    }
+    score +=
+        when (forecast.status) {
+            SafeToSpendStatus.HEALTHY -> 16
+            SafeToSpendStatus.WATCH -> 5
+            SafeToSpendStatus.OVER -> -14
+        }
 
     if (reminderCount > 0) score += 7
     if (automationCount > 0) score += 7
@@ -1142,23 +1164,25 @@ private fun buildPersonalScore(
     score -= insights.count { it.tone == PersonalInsightTone.WARNING } * 6
 
     val normalized = score.coerceIn(0, 100)
-    val band = when {
-        normalized >= 82 -> PersonalScoreBand.EXCELLENT
-        normalized >= 64 -> PersonalScoreBand.STABLE
-        normalized >= 42 -> PersonalScoreBand.WATCH
-        else -> PersonalScoreBand.RISK
-    }
-    val label = when (band) {
-        PersonalScoreBand.EXCELLENT -> "Excellent control"
-        PersonalScoreBand.STABLE -> "Stable month"
-        PersonalScoreBand.WATCH -> "Watch spending"
-        PersonalScoreBand.RISK -> "Needs attention"
-    }
+    val band =
+        when {
+            normalized >= 82 -> PersonalScoreBand.EXCELLENT
+            normalized >= 64 -> PersonalScoreBand.STABLE
+            normalized >= 42 -> PersonalScoreBand.WATCH
+            else -> PersonalScoreBand.RISK
+        }
+    val label =
+        when (band) {
+            PersonalScoreBand.EXCELLENT -> "Excellent control"
+            PersonalScoreBand.STABLE -> "Stable month"
+            PersonalScoreBand.WATCH -> "Watch spending"
+            PersonalScoreBand.RISK -> "Needs attention"
+        }
 
     return PersonalScore(
         value = normalized,
         band = band,
-        label = label
+        label = label,
     )
 }
 
@@ -1168,7 +1192,7 @@ private fun currentMonthMarker(): MonthMarker {
     val maxDay = calendar.getActualMaximum(Calendar.DAY_OF_MONTH).coerceAtLeast(1)
     return MonthMarker(
         label = "Day $day of $maxDay",
-        progress = (day.toFloat() / maxDay.toFloat()).coerceIn(0f, 1f)
+        progress = (day.toFloat() / maxDay.toFloat()).coerceIn(0f, 1f),
     )
 }
 
@@ -1206,7 +1230,7 @@ private data class AnomalySignal(
     val metric: String,
     val tone: AdvancedSignalTone,
     val actionLabel: String,
-    val target: PersonalActionTarget
+    val target: PersonalActionTarget,
 )
 
 private data class AutopilotAction(
@@ -1215,14 +1239,14 @@ private data class AutopilotAction(
     val priority: String,
     val tone: AdvancedSignalTone,
     val actionLabel: String,
-    val target: PersonalActionTarget
+    val target: PersonalActionTarget,
 )
 
 private enum class AdvancedSignalTone {
     POSITIVE,
     INFO,
     WARNING,
-    DANGER
+    DANGER,
 }
 
 private enum class PersonalActionTarget {
@@ -1230,13 +1254,13 @@ private enum class PersonalActionTarget {
     REMINDERS,
     RECURRING_PLANS,
     GOALS,
-    WALLETS
+    WALLETS,
 }
 
 private fun buildAnomalySignals(
     transactions: List<Transaction>,
     summary: MonthlySummary,
-    monthMarker: MonthMarker
+    monthMarker: MonthMarker,
 ): List<AnomalySignal> {
     val expenses = transactions.filter { it.type == TransactionType.EXPENSE }
     if (expenses.isEmpty()) {
@@ -1247,8 +1271,8 @@ private fun buildAnomalySignals(
                 metric = "Idle",
                 tone = AdvancedSignalTone.INFO,
                 actionLabel = "Open ledger",
-                target = PersonalActionTarget.HISTORY
-            )
+                target = PersonalActionTarget.HISTORY,
+            ),
         )
     }
 
@@ -1256,69 +1280,76 @@ private fun buildAnomalySignals(
     val averageExpense = expenses.map { it.amount }.average().takeUnless { it.isNaN() } ?: 0.0
     val largestExpense = expenses.maxByOrNull { it.amount }
     if (largestExpense != null && averageExpense > 0.0 && largestExpense.amount >= averageExpense * 1.8) {
-        signals += AnomalySignal(
-            title = "Outlier transaction",
-            message = "${largestExpense.category} is ${formatRatio(largestExpense.amount / averageExpense)}x higher than your average expense.",
-            metric = formatMoney(largestExpense.amount),
-            tone = AdvancedSignalTone.WARNING,
-            actionLabel = "Review history",
-            target = PersonalActionTarget.HISTORY
-        )
+        signals +=
+            AnomalySignal(
+                title = "Outlier transaction",
+                message = "${largestExpense.category} is ${formatRatio(largestExpense.amount / averageExpense)}x higher than your average expense.",
+                metric = formatMoney(largestExpense.amount),
+                tone = AdvancedSignalTone.WARNING,
+                actionLabel = "Review history",
+                target = PersonalActionTarget.HISTORY,
+            )
     }
 
-    val topCategory = expenses
-        .groupBy { it.category }
-        .mapValues { (_, items) -> items.sumOf { it.amount } }
-        .maxByOrNull { it.value }
+    val topCategory =
+        expenses
+            .groupBy { it.category }
+            .mapValues { (_, items) -> items.sumOf { it.amount } }
+            .maxByOrNull { it.value }
     if (topCategory != null && summary.totalExpense > 0.0) {
         val categoryShare = topCategory.value / summary.totalExpense
         if (categoryShare >= 0.45) {
-            signals += AnomalySignal(
-                title = "Category concentration",
-                message = "${topCategory.key} owns ${(categoryShare * 100).toInt()}% of this month's expense.",
-                metric = "${(categoryShare * 100).toInt()}%",
-                tone = AdvancedSignalTone.WARNING,
-                actionLabel = "Add reminder",
-                target = PersonalActionTarget.REMINDERS
-            )
+            signals +=
+                AnomalySignal(
+                    title = "Category concentration",
+                    message = "${topCategory.key} owns ${(categoryShare * 100).toInt()}% of this month's expense.",
+                    metric = "${(categoryShare * 100).toInt()}%",
+                    tone = AdvancedSignalTone.WARNING,
+                    actionLabel = "Add reminder",
+                    target = PersonalActionTarget.REMINDERS,
+                )
         }
     }
 
-    val splitExpense = expenses
-        .filter { it.source == TransactionSource.SPLIT }
-        .sumOf { it.amount }
+    val splitExpense =
+        expenses
+            .filter { it.source == TransactionSource.SPLIT }
+            .sumOf { it.amount }
     if (summary.totalExpense > 0.0 && splitExpense / summary.totalExpense >= 0.35) {
-        signals += AnomalySignal(
-            title = "Split-heavy month",
-            message = "Split bills are driving ${(splitExpense / summary.totalExpense * 100).toInt()}% of your expense.",
-            metric = formatMoney(splitExpense),
-            tone = AdvancedSignalTone.INFO,
-            actionLabel = "Review ledger",
-            target = PersonalActionTarget.HISTORY
-        )
+        signals +=
+            AnomalySignal(
+                title = "Split-heavy month",
+                message = "Split bills are driving ${(splitExpense / summary.totalExpense * 100).toInt()}% of your expense.",
+                metric = formatMoney(splitExpense),
+                tone = AdvancedSignalTone.INFO,
+                actionLabel = "Review ledger",
+                target = PersonalActionTarget.HISTORY,
+            )
     }
 
-    val dailyTotals = expenses
-        .groupBy { transactionDayOfMonth(it.date) }
-        .mapValues { (_, items) -> items.sumOf { it.amount } }
-        .toSortedMap()
-        .values
-        .toList()
-        .takeLast(3)
+    val dailyTotals =
+        expenses
+            .groupBy { transactionDayOfMonth(it.date) }
+            .mapValues { (_, items) -> items.sumOf { it.amount } }
+            .toSortedMap()
+            .values
+            .toList()
+            .takeLast(3)
     if (
         dailyTotals.size == 3 &&
         dailyTotals[0] < dailyTotals[1] &&
         dailyTotals[1] < dailyTotals[2] &&
         monthMarker.progress > 0.2f
     ) {
-        signals += AnomalySignal(
-            title = "Three-day climb",
-            message = "Your daily expense increased three tracked days in a row.",
-            metric = "3d",
-            tone = AdvancedSignalTone.DANGER,
-            actionLabel = "Set guardrail",
-            target = PersonalActionTarget.REMINDERS
-        )
+        signals +=
+            AnomalySignal(
+                title = "Three-day climb",
+                message = "Your daily expense increased three tracked days in a row.",
+                metric = "3d",
+                tone = AdvancedSignalTone.DANGER,
+                actionLabel = "Set guardrail",
+                target = PersonalActionTarget.REMINDERS,
+            )
     }
 
     return signals.take(3).ifEmpty {
@@ -1329,8 +1360,8 @@ private fun buildAnomalySignals(
                 metric = "OK",
                 tone = AdvancedSignalTone.POSITIVE,
                 actionLabel = "Open ledger",
-                target = PersonalActionTarget.HISTORY
-            )
+                target = PersonalActionTarget.HISTORY,
+            ),
         )
     }
 }
@@ -1339,80 +1370,87 @@ private fun buildAutopilotActions(
     uiState: PersonalUiState,
     topCategory: PieCategorySlice?,
     reminderCount: Int,
-    score: PersonalScore
+    score: PersonalScore,
 ): List<AutopilotAction> {
     val actions = mutableListOf<AutopilotAction>()
     val expenses = uiState.transactions.filter { it.type == TransactionType.EXPENSE }
     val totalExpense = expenses.sumOf { it.amount }
-    val splitExpense = expenses
-        .filter { it.source == TransactionSource.SPLIT }
-        .sumOf { it.amount }
+    val splitExpense =
+        expenses
+            .filter { it.source == TransactionSource.SPLIT }
+            .sumOf { it.amount }
 
     if (score.band == PersonalScoreBand.RISK || score.band == PersonalScoreBand.WATCH) {
-        actions += AutopilotAction(
-            title = "Run defensive month",
-            message = "Your score band suggests using a stricter reminder before adding more plans.",
-            priority = "High",
-            tone = AdvancedSignalTone.DANGER,
-            actionLabel = "Open reminders",
-            target = PersonalActionTarget.REMINDERS
-        )
+        actions +=
+            AutopilotAction(
+                title = "Run defensive month",
+                message = "Your score band suggests using a stricter reminder before adding more plans.",
+                priority = "High",
+                tone = AdvancedSignalTone.DANGER,
+                actionLabel = "Open reminders",
+                target = PersonalActionTarget.REMINDERS,
+            )
     }
 
     if (reminderCount == 0 && topCategory != null) {
-        actions += AutopilotAction(
-            title = "Guard ${topCategory.category}",
-            message = "Create a spending reminder for the category currently leading your expense.",
-            priority = "High",
-            tone = AdvancedSignalTone.WARNING,
-            actionLabel = "Create guard",
-            target = PersonalActionTarget.REMINDERS
-        )
+        actions +=
+            AutopilotAction(
+                title = "Guard ${topCategory.category}",
+                message = "Create a spending reminder for the category currently leading your expense.",
+                priority = "High",
+                tone = AdvancedSignalTone.WARNING,
+                actionLabel = "Create guard",
+                target = PersonalActionTarget.REMINDERS,
+            )
     }
 
     if (uiState.recurringRules.isEmpty()) {
-        actions += AutopilotAction(
-            title = "Set recurring bill",
-            message = "Add rent, salary, subscriptions, or fixed bills to improve forecast accuracy.",
-            priority = "Medium",
-            tone = AdvancedSignalTone.INFO,
-            actionLabel = "Add recurring",
-            target = PersonalActionTarget.RECURRING_PLANS
-        )
+        actions +=
+            AutopilotAction(
+                title = "Set recurring bill",
+                message = "Add rent, salary, subscriptions, or fixed bills to improve forecast accuracy.",
+                priority = "Medium",
+                tone = AdvancedSignalTone.INFO,
+                actionLabel = "Add recurring",
+                target = PersonalActionTarget.RECURRING_PLANS,
+            )
     }
 
     if (totalExpense > 0.0 && splitExpense / totalExpense >= 0.3) {
-        actions += AutopilotAction(
-            title = "Audit split impact",
-            message = "Split bills are a large part of this month. Check whether all reimbursements are reflected.",
-            priority = "Medium",
-            tone = AdvancedSignalTone.INFO,
-            actionLabel = "Review ledger",
-            target = PersonalActionTarget.HISTORY
-        )
+        actions +=
+            AutopilotAction(
+                title = "Audit split impact",
+                message = "Split bills are a large part of this month. Check whether all reimbursements are reflected.",
+                priority = "Medium",
+                tone = AdvancedSignalTone.INFO,
+                actionLabel = "Review ledger",
+                target = PersonalActionTarget.HISTORY,
+            )
     }
 
     if (uiState.goals.isEmpty()) {
         val goalSubject = topCategory?.category ?: "monthly spending"
-        actions += AutopilotAction(
-            title = "Create goal for $goalSubject",
-            message = "Set a target around $goalSubject so the score reacts to the plan you actually want.",
-            priority = "Medium",
-            tone = AdvancedSignalTone.POSITIVE,
-            actionLabel = "Create goal",
-            target = PersonalActionTarget.GOALS
-        )
+        actions +=
+            AutopilotAction(
+                title = "Create goal for $goalSubject",
+                message = "Set a target around $goalSubject so the score reacts to the plan you actually want.",
+                priority = "Medium",
+                tone = AdvancedSignalTone.POSITIVE,
+                actionLabel = "Create goal",
+                target = PersonalActionTarget.GOALS,
+            )
     }
 
     if (uiState.wallets.isEmpty()) {
-        actions += AutopilotAction(
-            title = "Map wallet coverage",
-            message = "Add cash, bank, e-wallet, or credit balances to improve the balance forecast.",
-            priority = "Low",
-            tone = AdvancedSignalTone.INFO,
-            actionLabel = "Add wallet",
-            target = PersonalActionTarget.WALLETS
-        )
+        actions +=
+            AutopilotAction(
+                title = "Map wallet coverage",
+                message = "Add cash, bank, e-wallet, or credit balances to improve the balance forecast.",
+                priority = "Low",
+                tone = AdvancedSignalTone.INFO,
+                actionLabel = "Add wallet",
+                target = PersonalActionTarget.WALLETS,
+            )
     }
 
     return actions.take(3)
@@ -1446,7 +1484,7 @@ private fun PersonalScreenPreview() {
             uiState = PersonalUiState(isLoading = false),
             chartState = PersonalChartState(),
             onOpenSearch = {},
-            onAddTransaction = {}
+            onAddTransaction = {},
         )
     }
 }

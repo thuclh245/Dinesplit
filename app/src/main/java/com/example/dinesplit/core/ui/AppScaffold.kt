@@ -17,31 +17,33 @@ fun AppScaffold(
     navigationIcon: (@Composable () -> Unit)? = null,
     actions: @Composable RowScope.() -> Unit = {},
     floatingActionButton: (@Composable () -> Unit)? = null,
-    contentPadding: PaddingValues = PaddingValues(
-        horizontal = AppDimens.screenHorizontal,
-        vertical = AppDimens.screenVertical
-    ),
-    content: @Composable () -> Unit
+    contentPadding: PaddingValues =
+        PaddingValues(
+            horizontal = AppDimens.screenHorizontal,
+            vertical = AppDimens.screenVertical,
+        ),
+    content: @Composable () -> Unit,
 ) {
     Scaffold(
         modifier = modifier.fillMaxSize(),
-            containerColor = MaterialTheme.colorScheme.background,
+        containerColor = MaterialTheme.colorScheme.background,
         topBar = {
             AppTopBar(
                 title = title,
                 navigationIcon = navigationIcon,
-                actions = actions
+                actions = actions,
             )
         },
         floatingActionButton = {
             floatingActionButton?.invoke()
-        }
+        },
     ) { innerPadding ->
         Box(
-            modifier = Modifier
-                .fillMaxSize()
-                .padding(innerPadding)
-                .padding(contentPadding)
+            modifier =
+                Modifier
+                    .fillMaxSize()
+                    .padding(innerPadding)
+                    .padding(contentPadding),
         ) {
             content()
         }

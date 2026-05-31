@@ -20,7 +20,7 @@ data class LoginUiState(
     val emailError: String? = null,
     val passwordError: String? = null,
     val isSubmitting: Boolean = false,
-    val submitError: String? = null
+    val submitError: String? = null,
 )
 
 sealed interface LoginUiEffect {
@@ -28,7 +28,6 @@ sealed interface LoginUiEffect {
 }
 
 class LoginViewModel(application: Application) : AndroidViewModel(application) {
-
     private val loginUseCase = AppContainer.loginUseCase(application)
     private val resolveStartDestinationUseCase = AppContainer.resolveStartDestinationUseCase(application)
 
@@ -67,19 +66,20 @@ class LoginViewModel(application: Application) : AndroidViewModel(application) {
                         _effect.emit(LoginUiEffect.NavigateToResolved(destination))
                     } catch (e: Exception) {
                         android.util.Log.e("LoginViewModel", "Error resolving destination", e)
-                        _uiState.value = _uiState.value.copy(
-                            isSubmitting = false,
-                            submitError = "Successfully logged in, but couldn't load profile. Please check your internet connection."
-                        )
+                        _uiState.value =
+                            _uiState.value.copy(
+                                isSubmitting = false,
+                                submitError = "Successfully logged in, but couldn't load profile. Please check your internet connection.",
+                            )
                     }
                 }
                 .onFailure { throwable ->
-                    _uiState.value = _uiState.value.copy(
-                        isSubmitting = false,
-                        submitError = FirebaseErrorMapper.toUserMessage(throwable)
-                    )
+                    _uiState.value =
+                        _uiState.value.copy(
+                            isSubmitting = false,
+                            submitError = FirebaseErrorMapper.toUserMessage(throwable),
+                        )
                 }
         }
     }
 }
-

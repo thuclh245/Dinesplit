@@ -1,10 +1,10 @@
 package com.example.dinesplit.data.repository
 
+import android.net.Uri
+import com.example.dinesplit.core.firebase.FirebaseProviders
 import com.example.dinesplit.domain.model.Comment
 import com.example.dinesplit.domain.model.Post
 import com.example.dinesplit.domain.repository.FeedRepository
-import android.net.Uri
-import com.example.dinesplit.core.firebase.FirebaseProviders
 import com.google.android.gms.tasks.Task
 import com.google.firebase.firestore.FirebaseFirestore
 import com.google.firebase.firestore.Query
@@ -16,45 +16,50 @@ import kotlin.coroutines.resume
 import kotlin.coroutines.resumeWithException
 
 class FirebaseFeedRepository(
-    private val firestore: FirebaseFirestore
+    private val firestore: FirebaseFirestore,
 ) : FeedRepository {
+    override fun getFeedPosts(): Flow<List<Post>> =
+        callbackFlow {
+            val subscription =
+                firestore.collection("posts")
+                    .orderBy("createdAt", Query.Direction.DESCENDING)
+                    .addSnapshotListener { snapshot, error ->
+                        if (error != null) {
+                            close(error)
+                            return@addSnapshotListener
+                        }
+                        val posts =
+                            snapshot?.documents?.mapNotNull { doc ->
+                                runCatching {
+                                    doc.toObject(Post::class.java)?.copy(id = doc.id)
+                                }.getOrNull()
+                            } ?: emptyList()
+                        trySend(posts)
+                    }
+            awaitClose { subscription.remove() }
+        }
 
-    override fun getFeedPosts(): Flow<List<Post>> = callbackFlow {
-        val subscription = firestore.collection("posts")
-            .orderBy("createdAt", Query.Direction.DESCENDING)
-            .addSnapshotListener { snapshot, error ->
-                if (error != null) {
-                    close(error)
-                    return@addSnapshotListener
-                }
-                val posts = snapshot?.documents?.mapNotNull { doc ->
-                    runCatching {
-                        doc.toObject(Post::class.java)?.copy(id = doc.id)
-                    }.getOrNull()
-                } ?: emptyList()
-                trySend(posts)
-            }
-        awaitClose { subscription.remove() }
-    }
-
-    override fun getUserPosts(userId: String): Flow<List<Post>> = callbackFlow {
-        val subscription = firestore.collection("posts")
-            .whereEqualTo("authorUid", userId)
-            .orderBy("createdAt", Query.Direction.DESCENDING)
-            .addSnapshotListener { snapshot, error ->
-                if (error != null) {
-                    close(error)
-                    return@addSnapshotListener
-                }
-                val posts = snapshot?.documents?.mapNotNull { doc ->
-                    runCatching {
-                        doc.toObject(Post::class.java)?.copy(id = doc.id)
-                    }.getOrNull()
-                } ?: emptyList()
-                trySend(posts)
-            }
-        awaitClose { subscription.remove() }
-    }
+    override fun getUserPosts(userId: String): Flow<List<Post>> =
+        callbackFlow {
+            val subscription =
+                firestore.collection("posts")
+                    .whereEqualTo("authorUid", userId)
+                    .orderBy("createdAt", Query.Direction.DESCENDING)
+                    .addSnapshotListener { snapshot, error ->
+                        if (error != null) {
+                            close(error)
+                            return@addSnapshotListener
+                        }
+                        val posts =
+                            snapshot?.documents?.mapNotNull { doc ->
+                                runCatching {
+                                    doc.toObject(Post::class.java)?.copy(id = doc.id)
+                                }.getOrNull()
+                            } ?: emptyList()
+                        trySend(posts)
+                    }
+            awaitClose { subscription.remove() }
+        }
 
     override suspend fun createPost(post: Post) {
         firestore.collection("posts").document(post.id).set(post).awaitFirebase()
@@ -68,13 +73,19 @@ class FirebaseFeedRepository(
         firestore.collection("posts").document(postId).delete().awaitFirebase()
     }
 
-    override suspend fun uploadPostImage(postId: String, imageUri: Uri): String {
+    override suspend fun uploadPostImage(
+        postId: String,
+        imageUri: Uri,
+    ): String {
         val storageRef = FirebaseProviders.storage.reference.child("posts/$postId/post_image.jpg")
         storageRef.putFile(imageUri).awaitFirebase()
         return storageRef.downloadUrl.awaitFirebase().toString()
     }
 
-    override suspend fun likePost(postId: String, userId: String) {
+    override suspend fun likePost(
+        postId: String,
+        userId: String,
+    ) {
         val postRef = firestore.collection("posts").document(postId)
         firestore.runTransaction { transaction ->
             val snapshot = transaction.get(postRef)
@@ -87,7 +98,10 @@ class FirebaseFeedRepository(
         }.awaitFirebase()
     }
 
-    override suspend fun unlikePost(postId: String, userId: String) {
+    override suspend fun unlikePost(
+        postId: String,
+        userId: String,
+    ) {
         val postRef = firestore.collection("posts").document(postId)
         firestore.runTransaction { transaction ->
             val snapshot = transaction.get(postRef)
@@ -100,31 +114,37 @@ class FirebaseFeedRepository(
         }.awaitFirebase()
     }
 
-    override fun getComments(postId: String): Flow<List<Comment>> = callbackFlow {
-        val subscription = firestore.collection("posts")
-            .document(postId)
-            .collection("comments")
-            .orderBy("createdAt", Query.Direction.ASCENDING)
-            .addSnapshotListener { snapshot, error ->
-                if (error != null) {
-                    close(error)
-                    return@addSnapshotListener
-                }
-                val comments = snapshot?.documents?.mapNotNull { doc ->
-                    runCatching {
-                        doc.toObject(Comment::class.java)?.copy(id = doc.id)
-                    }.getOrNull()
-                } ?: emptyList()
-                trySend(comments)
-            }
-        awaitClose { subscription.remove() }
-    }
+    override fun getComments(postId: String): Flow<List<Comment>> =
+        callbackFlow {
+            val subscription =
+                firestore.collection("posts")
+                    .document(postId)
+                    .collection("comments")
+                    .orderBy("createdAt", Query.Direction.ASCENDING)
+                    .addSnapshotListener { snapshot, error ->
+                        if (error != null) {
+                            close(error)
+                            return@addSnapshotListener
+                        }
+                        val comments =
+                            snapshot?.documents?.mapNotNull { doc ->
+                                runCatching {
+                                    doc.toObject(Comment::class.java)?.copy(id = doc.id)
+                                }.getOrNull()
+                            } ?: emptyList()
+                        trySend(comments)
+                    }
+            awaitClose { subscription.remove() }
+        }
 
-    override suspend fun addComment(postId: String, comment: Comment) {
+    override suspend fun addComment(
+        postId: String,
+        comment: Comment,
+    ) {
         val postRef = firestore.collection("posts").document(postId)
         val commentRef = postRef.collection("comments").document()
         val finalComment = comment.copy(id = commentRef.id, createdAt = java.util.Date())
-        
+
         firestore.runTransaction { transaction ->
             val snapshot = transaction.get(postRef)
             val currentComments = snapshot.getLong("commentsCount") ?: 0L
@@ -140,11 +160,10 @@ class FirebaseFeedRepository(
                     continuation.resume(task.result)
                 } else {
                     continuation.resumeWithException(
-                        task.exception ?: IllegalStateException("Firebase task failed")
+                        task.exception ?: IllegalStateException("Firebase task failed"),
                     )
                 }
             }
         }
     }
 }
-

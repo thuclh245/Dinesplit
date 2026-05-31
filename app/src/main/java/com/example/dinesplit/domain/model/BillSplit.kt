@@ -8,5 +8,5 @@ data class BillSplit(
     val amount: Double = 0.0,
     val isPaid: Boolean = false,
     val paidAt: Date? = null,
-    val paidVia: String? = null // "manual" | "qr_transfer"
+    val paidVia: String? = null, // "manual" | "qr_transfer"
 )

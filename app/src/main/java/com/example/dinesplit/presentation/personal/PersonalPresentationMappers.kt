@@ -8,16 +8,16 @@ import java.text.SimpleDateFormat
 import java.util.Date
 import java.util.Locale
 
-fun List<StoredCategory>.toManagedCategories(
-    transactions: List<Transaction>
-): List<ManagedCategory> {
-    val totalsByCategory = transactions
-        .groupBy { it.categoryId }
-        .mapValues { (_, items) -> items.sumOf { it.amount } }
-    val maxByType = groupBy { it.type }
-        .mapValues { (_, categories) ->
-            categories.maxOfOrNull { category -> totalsByCategory[category.id] ?: 0.0 } ?: 0.0
-        }
+fun List<StoredCategory>.toManagedCategories(transactions: List<Transaction>): List<ManagedCategory> {
+    val totalsByCategory =
+        transactions
+            .groupBy { it.categoryId }
+            .mapValues { (_, items) -> items.sumOf { it.amount } }
+    val maxByType =
+        groupBy { it.type }
+            .mapValues { (_, categories) ->
+                categories.maxOfOrNull { category -> totalsByCategory[category.id] ?: 0.0 } ?: 0.0
+            }
 
     return map { category ->
         val total = totalsByCategory[category.id] ?: 0.0
@@ -30,19 +30,18 @@ fun List<StoredCategory>.toManagedCategories(
             isCustom = category.isCustom,
             description = category.description,
             amountLabel = formatPersonalMoney(total),
-            progress = if (maxForType > 0.0) {
-                (total / maxForType).toFloat()
-            } else {
-                0f
-            },
-            isActive = category.isActive
+            progress =
+                if (maxForType > 0.0) {
+                    (total / maxForType).toFloat()
+                } else {
+                    0f
+                },
+            isActive = category.isActive,
         )
     }
 }
 
-fun List<Transaction>.toHistoryItems(
-    categories: List<StoredCategory>
-): List<HistoryTransactionItem> {
+fun List<Transaction>.toHistoryItems(categories: List<StoredCategory>): List<HistoryTransactionItem> {
     val iconsByCategory = categories.associate { it.id to it.icon }
 
     return sortedByDescending { it.date }.map { transaction ->
@@ -54,7 +53,7 @@ fun List<Transaction>.toHistoryItems(
             date = formatHistoryDate(transaction.date),
             month = formatHistoryMonth(transaction.date),
             type = transaction.type,
-            note = transaction.note
+            note = transaction.note,
         )
     }
 }

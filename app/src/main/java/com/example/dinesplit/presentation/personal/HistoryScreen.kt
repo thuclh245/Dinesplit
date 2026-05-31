@@ -46,65 +46,69 @@ data class HistoryTransactionItem(
     val date: String,
     val month: String,
     val type: TransactionType,
-    val note: String?
+    val note: String?,
 )
 
 @Composable
 fun HistoryScreen(
     onBack: () -> Unit,
     transactions: List<HistoryTransactionItem> = emptyList(),
-    onTransactionClick: (HistoryTransactionItem) -> Unit = {}
+    onTransactionClick: (HistoryTransactionItem) -> Unit = {},
 ) {
     var query by rememberSaveable { mutableStateOf("") }
     var selectedTypeFilter by rememberSaveable { mutableStateOf<TransactionType?>(null) }
 
-    val filteredTransactions = remember(transactions, query, selectedTypeFilter) {
-        transactions.filter { item ->
-            val matchesQuery = if (query.isBlank()) {
-                true
-            } else {
-                val needle = query.trim().lowercase()
-                listOfNotNull(
-                    item.category,
-                    item.amount,
-                    item.date,
-                    item.month,
-                    item.note,
-                    item.type.name
-                ).any { value -> value.lowercase().contains(needle) }
+    val filteredTransactions =
+        remember(transactions, query, selectedTypeFilter) {
+            transactions.filter { item ->
+                val matchesQuery =
+                    if (query.isBlank()) {
+                        true
+                    } else {
+                        val needle = query.trim().lowercase()
+                        listOfNotNull(
+                            item.category,
+                            item.amount,
+                            item.date,
+                            item.month,
+                            item.note,
+                            item.type.name,
+                        ).any { value -> value.lowercase().contains(needle) }
+                    }
+
+                val matchesType = selectedTypeFilter == null || item.type == selectedTypeFilter
+
+                matchesQuery && matchesType
             }
-
-            val matchesType = selectedTypeFilter == null || item.type == selectedTypeFilter
-
-            matchesQuery && matchesType
         }
-    }
 
-    val groupedTransactions = remember(filteredTransactions) {
-        filteredTransactions.groupBy { historyGroupLabel(it) }
-    }
+    val groupedTransactions =
+        remember(filteredTransactions) {
+            filteredTransactions.groupBy { historyGroupLabel(it) }
+        }
 
-    val summaryStats = remember(filteredTransactions) {
-        val income = filteredTransactions.filter { it.type == TransactionType.INCOME }.sumOf { parseAmount(it.amount) }
-        val expense = filteredTransactions.filter { it.type == TransactionType.EXPENSE }.sumOf { parseAmount(it.amount) }
-        Pair(income, expense)
-    }
+    val summaryStats =
+        remember(filteredTransactions) {
+            val income = filteredTransactions.filter { it.type == TransactionType.INCOME }.sumOf { parseAmount(it.amount) }
+            val expense = filteredTransactions.filter { it.type == TransactionType.EXPENSE }.sumOf { parseAmount(it.amount) }
+            Pair(income, expense)
+        }
 
     AppScaffold(
         title = "Ledger",
         navigationIcon = {
             BackNavigationButton(onClick = onBack)
-        }
+        },
     ) {
         Column(
             modifier = Modifier.fillMaxSize(),
-            verticalArrangement = Arrangement.spacedBy(AppDimens.spaceLg)
+            verticalArrangement = Arrangement.spacedBy(AppDimens.spaceLg),
         ) {
             Text(
                 text = "Ledger.",
                 style = MaterialTheme.typography.displayLarge,
                 fontWeight = FontWeight.ExtraBold,
-                color = MaterialTheme.colorScheme.primary
+                color = MaterialTheme.colorScheme.primary,
             )
 
             // Summary card
@@ -112,14 +116,14 @@ fun HistoryScreen(
                 Column(verticalArrangement = Arrangement.spacedBy(AppDimens.spaceMd)) {
                     Row(
                         modifier = Modifier.fillMaxWidth(),
-                        horizontalArrangement = Arrangement.SpaceBetween
+                        horizontalArrangement = Arrangement.SpaceBetween,
                     ) {
                         Column {
                             Text("Income", style = MaterialTheme.typography.labelSmall)
                             Text(
                                 "+${formatHistoryMoney(summaryStats.first)}",
                                 style = MaterialTheme.typography.titleMedium,
-                                color = MaterialTheme.colorScheme.primary
+                                color = MaterialTheme.colorScheme.primary,
                             )
                         }
                         Column(horizontalAlignment = Alignment.End) {
@@ -127,7 +131,7 @@ fun HistoryScreen(
                             Text(
                                 "-${formatHistoryMoney(summaryStats.second)}",
                                 style = MaterialTheme.typography.titleMedium,
-                                color = MaterialTheme.colorScheme.error
+                                color = MaterialTheme.colorScheme.error,
                             )
                         }
                     }
@@ -137,7 +141,7 @@ fun HistoryScreen(
                         Text(
                             formatHistoryMoney(summaryStats.first - summaryStats.second),
                             style = MaterialTheme.typography.titleSmall,
-                            fontWeight = FontWeight.Bold
+                            fontWeight = FontWeight.Bold,
                         )
                     }
                 }
@@ -149,47 +153,49 @@ fun HistoryScreen(
                 modifier = Modifier.fillMaxWidth(),
                 placeholder = { Text("Search transactions...") },
                 singleLine = true,
-                colors = TextFieldDefaults.colors(
-                    focusedContainerColor = MaterialTheme.colorScheme.surface,
-                    unfocusedContainerColor = MaterialTheme.colorScheme.surface
-                )
+                colors =
+                    TextFieldDefaults.colors(
+                        focusedContainerColor = MaterialTheme.colorScheme.surface,
+                        unfocusedContainerColor = MaterialTheme.colorScheme.surface,
+                    ),
             )
 
             // Type filter buttons
             Row(
                 modifier = Modifier.fillMaxWidth(),
-                horizontalArrangement = Arrangement.spacedBy(AppDimens.spaceSm)
+                horizontalArrangement = Arrangement.spacedBy(AppDimens.spaceSm),
             ) {
                 FilterChip(
                     selected = selectedTypeFilter == null,
                     onClick = { selectedTypeFilter = null },
-                    label = { Text("All") }
+                    label = { Text("All") },
                 )
                 FilterChip(
                     selected = selectedTypeFilter == TransactionType.INCOME,
                     onClick = { selectedTypeFilter = TransactionType.INCOME },
-                    label = { Text("Income") }
+                    label = { Text("Income") },
                 )
                 FilterChip(
                     selected = selectedTypeFilter == TransactionType.EXPENSE,
                     onClick = { selectedTypeFilter = TransactionType.EXPENSE },
-                    label = { Text("Expense") }
+                    label = { Text("Expense") },
                 )
             }
 
             if (groupedTransactions.isEmpty()) {
                 EmptyStateBlock(
                     title = "No transactions found",
-                    subtitle = if (transactions.isEmpty()) {
-                        "Add a transaction to build your Firebase ledger."
-                    } else {
-                        "Try a different keyword."
-                    }
+                    subtitle =
+                        if (transactions.isEmpty()) {
+                            "Add a transaction to build your Firebase ledger."
+                        } else {
+                            "Try a different keyword."
+                        },
                 )
             } else {
                 LazyColumn(
                     modifier = Modifier.fillMaxSize(),
-                    verticalArrangement = Arrangement.spacedBy(AppDimens.spaceLg)
+                    verticalArrangement = Arrangement.spacedBy(AppDimens.spaceLg),
                 ) {
                     groupedTransactions.forEach { (sectionTitle, itemsInSection) ->
                         item(key = "header_$sectionTitle") {
@@ -197,7 +203,7 @@ fun HistoryScreen(
                                 text = sectionTitle,
                                 style = MaterialTheme.typography.labelMedium,
                                 color = MaterialTheme.colorScheme.outline,
-                                modifier = Modifier.padding(top = AppDimens.spaceSm)
+                                modifier = Modifier.padding(top = AppDimens.spaceSm),
                             )
                         }
 
@@ -207,7 +213,7 @@ fun HistoryScreen(
                                     itemsInSection.forEachIndexed { index, item ->
                                         HistoryTransactionRow(
                                             item = item,
-                                            onClick = { onTransactionClick(item) }
+                                            onClick = { onTransactionClick(item) },
                                         )
                                         if (index != itemsInSection.lastIndex) {
                                             HorizontalDivider(color = MaterialTheme.colorScheme.outlineVariant)
@@ -244,45 +250,47 @@ private fun formatHistoryMoney(amount: Double): String {
 @Composable
 private fun HistoryTransactionRow(
     item: HistoryTransactionItem,
-    onClick: () -> Unit
+    onClick: () -> Unit,
 ) {
     Row(
-        modifier = Modifier
-            .fillMaxWidth()
-            .clickable(onClick = onClick)
-            .padding(vertical = AppDimens.spaceMd),
+        modifier =
+            Modifier
+                .fillMaxWidth()
+                .clickable(onClick = onClick)
+                .padding(vertical = AppDimens.spaceMd),
         horizontalArrangement = Arrangement.spacedBy(AppDimens.spaceMd),
-        verticalAlignment = Alignment.CenterVertically
+        verticalAlignment = Alignment.CenterVertically,
     ) {
         Box(
-            modifier = Modifier
-                .size(48.dp)
-                .background(
-                    color = MaterialTheme.colorScheme.primaryContainer.copy(alpha = 0.25f),
-                    shape = MaterialTheme.shapes.large
-                ),
-            contentAlignment = Alignment.Center
+            modifier =
+                Modifier
+                    .size(48.dp)
+                    .background(
+                        color = MaterialTheme.colorScheme.primaryContainer.copy(alpha = 0.25f),
+                        shape = MaterialTheme.shapes.large,
+                    ),
+            contentAlignment = Alignment.Center,
         ) {
             Text(
                 text = item.categoryIcon,
                 style = MaterialTheme.typography.titleSmall,
-                color = MaterialTheme.colorScheme.primary
+                color = MaterialTheme.colorScheme.primary,
             )
         }
 
         Column(
             modifier = Modifier.weight(1f),
-            verticalArrangement = Arrangement.spacedBy(AppDimens.spaceXs)
+            verticalArrangement = Arrangement.spacedBy(AppDimens.spaceXs),
         ) {
             Text(
                 text = item.category,
                 style = MaterialTheme.typography.titleMedium,
-                color = MaterialTheme.colorScheme.onSurface
+                color = MaterialTheme.colorScheme.onSurface,
             )
             Text(
                 text = item.note ?: item.date,
                 style = MaterialTheme.typography.bodySmall,
-                color = MaterialTheme.colorScheme.onSurfaceVariant
+                color = MaterialTheme.colorScheme.onSurfaceVariant,
             )
         }
 
@@ -290,20 +298,22 @@ private fun HistoryTransactionRow(
             Text(
                 text = item.amount,
                 style = MaterialTheme.typography.titleLarge,
-                color = if (item.type == TransactionType.INCOME) {
-                    MaterialTheme.colorScheme.primary
-                } else {
-                    MaterialTheme.colorScheme.onSurface
-                }
+                color =
+                    if (item.type == TransactionType.INCOME) {
+                        MaterialTheme.colorScheme.primary
+                    } else {
+                        MaterialTheme.colorScheme.onSurface
+                    },
             )
             Text(
                 text = if (item.type == TransactionType.INCOME) "RECEIVED" else "PERSONAL",
                 style = MaterialTheme.typography.labelSmall,
-                color = if (item.type == TransactionType.INCOME) {
-                    MaterialTheme.colorScheme.secondary
-                } else {
-                    MaterialTheme.colorScheme.outline
-                }
+                color =
+                    if (item.type == TransactionType.INCOME) {
+                        MaterialTheme.colorScheme.secondary
+                    } else {
+                        MaterialTheme.colorScheme.outline
+                    },
             )
         }
     }

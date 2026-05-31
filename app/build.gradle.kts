@@ -3,6 +3,7 @@ plugins {
     alias(libs.plugins.kotlin.android)
     alias(libs.plugins.kotlin.compose)
     id("com.google.gms.google-services")
+    id("org.jlleitschuh.gradle.ktlint")
 }
 
 android {
@@ -24,7 +25,7 @@ android {
             isMinifyEnabled = true
             proguardFiles(
                 getDefaultProguardFile("proguard-android-optimize.txt"),
-                "proguard-rules.pro"
+                "proguard-rules.pro",
             )
         }
         debug {
@@ -41,11 +42,12 @@ android {
 
     packaging {
         resources {
-            excludes += setOf(
-                "META-INF/proguard/androidx-*.pro",
-                "META-INF/.kotlin_module",
-                "DebugProbesKt.bin"
-            )
+            excludes +=
+                setOf(
+                    "META-INF/proguard/androidx-*.pro",
+                    "META-INF/.kotlin_module",
+                    "DebugProbesKt.bin",
+                )
         }
     }
 

@@ -7,7 +7,6 @@ import com.example.dinesplit.domain.model.Member
 import com.example.dinesplit.domain.model.UserProfile
 import com.example.dinesplit.domain.repository.ProfileRepository
 import com.example.dinesplit.domain.repository.SplitRepository
-import java.util.UUID
 import kotlinx.coroutines.Job
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.MutableStateFlow
@@ -15,6 +14,7 @@ import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
+import java.util.UUID
 
 data class CreateGroupUiState(
     val groupName: String = "",
@@ -26,7 +26,7 @@ data class CreateGroupUiState(
     val isSearching: Boolean = false,
     val isLoading: Boolean = false,
     val isCreated: Boolean = false,
-    val error: String? = null
+    val error: String? = null,
 ) {
     val selectedMemberIds: Set<String>
         get() = selectedProfiles.map { it.uid }.toSet()
@@ -38,9 +38,8 @@ data class CreateGroupUiState(
 class CreateGroupViewModel(
     private val repository: SplitRepository,
     private val profileRepository: ProfileRepository,
-    private val currentUserId: String?
+    private val currentUserId: String?,
 ) : ViewModel() {
-
     private val _uiState = MutableStateFlow(CreateGroupUiState())
     val uiState: StateFlow<CreateGroupUiState> = _uiState.asStateFlow()
 
@@ -62,10 +61,11 @@ class CreateGroupViewModel(
     fun onSearchQueryChange(value: String) {
         _uiState.update { it.copy(searchQuery = value) }
         searchJob?.cancel()
-        searchJob = viewModelScope.launch {
-            delay(250)
-            searchProfiles(value)
-        }
+        searchJob =
+            viewModelScope.launch {
+                delay(250)
+                searchProfiles(value)
+            }
     }
 
     fun onProfileToggled(profile: UserProfile) {
@@ -102,20 +102,22 @@ class CreateGroupViewModel(
 
             runCatching {
                 val now = System.currentTimeMillis()
-                val members = buildSelectedMembers(
-                    currentProfile = currentState.currentProfile,
-                    selectedProfiles = currentState.selectedProfiles
-                )
-                val group = Group(
-                    id = UUID.randomUUID().toString(),
-                    name = trimmedName,
-                    imageUrl = null,
-                    memberCount = members.size,
-                    totalExpense = 0.0,
-                    yourBalance = 0.0,
-                    createdAt = now,
-                    ownerId = currentState.currentProfile.uid
-                )
+                val members =
+                    buildSelectedMembers(
+                        currentProfile = currentState.currentProfile,
+                        selectedProfiles = currentState.selectedProfiles,
+                    )
+                val group =
+                    Group(
+                        id = UUID.randomUUID().toString(),
+                        name = trimmedName,
+                        imageUrl = null,
+                        memberCount = members.size,
+                        totalExpense = 0.0,
+                        yourBalance = 0.0,
+                        createdAt = now,
+                        ownerId = currentState.currentProfile.uid,
+                    )
 
                 repository.createGroup(group, members)
             }.onSuccess {
@@ -124,7 +126,7 @@ class CreateGroupViewModel(
                 _uiState.update {
                     it.copy(
                         isLoading = false,
-                        error = throwable.message ?: "Không thể tạo nhóm"
+                        error = throwable.message ?: "Không thể tạo nhóm",
                     )
                 }
             }
@@ -152,18 +154,19 @@ class CreateGroupViewModel(
                 result.fold(
                     onSuccess = { profiles ->
                         state.copy(
-                            searchResults = profiles
-                                .filter { it.uid != currentUserId }
-                                .sortedBy { it.displayName.lowercase() },
-                            isSearching = false
+                            searchResults =
+                                profiles
+                                    .filter { it.uid != currentUserId }
+                                    .sortedBy { it.displayName.lowercase() },
+                            isSearching = false,
                         )
                     },
                     onFailure = { throwable ->
                         state.copy(
                             isSearching = false,
-                            error = throwable.message ?: "Không thể tìm người dùng"
+                            error = throwable.message ?: "Không thể tìm người dùng",
                         )
-                    }
+                    },
                 )
             }
         }
@@ -171,7 +174,7 @@ class CreateGroupViewModel(
 
     private fun buildSelectedMembers(
         currentProfile: UserProfile,
-        selectedProfiles: List<UserProfile>
+        selectedProfiles: List<UserProfile>,
     ): List<Member> {
         val currentMember = currentProfile.toMember(isMe = true)
         val selectedMembers = selectedProfiles.map { it.toMember(isMe = false) }
@@ -184,7 +187,7 @@ class CreateGroupViewModel(
             id = uid,
             name = name,
             initial = name.firstOrNull()?.uppercase().orEmpty(),
-            isMe = isMe
+            isMe = isMe,
         )
     }
 
@@ -198,7 +201,7 @@ class CreateGroupViewModel(
             avatarUrl = "",
             bio = "",
             createdAt = now,
-            updatedAt = now
+            updatedAt = now,
         )
     }
 }

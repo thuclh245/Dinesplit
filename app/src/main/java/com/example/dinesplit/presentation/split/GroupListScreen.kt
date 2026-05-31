@@ -58,7 +58,7 @@ data class GroupItem(
     val statusText: String,
     val isSettled: Boolean,
     val statusType: GroupStatusType,
-    val avatarCount: Int
+    val avatarCount: Int,
 )
 
 enum class GroupStatusType { OWE, RECEIVE, SETTLED }
@@ -67,7 +67,7 @@ enum class GroupStatusType { OWE, RECEIVE, SETTLED }
 fun GroupListScreen(
     onNavigateToGroupDetail: (String) -> Unit,
     onNavigateToCreateGroup: () -> Unit,
-    onNavigateToAllGroups: () -> Unit
+    onNavigateToAllGroups: () -> Unit,
 ) {
     val colorScheme = MaterialTheme.colorScheme
     val context = LocalContext.current
@@ -81,19 +81,20 @@ fun GroupListScreen(
             FloatingActionButton(
                 onClick = onNavigateToCreateGroup,
                 containerColor = colorScheme.primaryContainer,
-                shape = CircleShape
+                shape = CircleShape,
             ) {
                 Icon(Icons.Default.Add, contentDescription = "Tạo nhóm", tint = colorScheme.onPrimaryContainer)
             }
-        }
+        },
     ) { paddingValues ->
         LazyColumn(
-            modifier = Modifier
-                .fillMaxSize()
-                .padding(paddingValues)
-                .padding(horizontal = 20.dp),
+            modifier =
+                Modifier
+                    .fillMaxSize()
+                    .padding(paddingValues)
+                    .padding(horizontal = 20.dp),
             contentPadding = PaddingValues(top = 16.dp, bottom = 100.dp),
-            verticalArrangement = Arrangement.spacedBy(16.dp)
+            verticalArrangement = Arrangement.spacedBy(16.dp),
         ) {
             item {
                 FinancialSummaryCard()
@@ -104,20 +105,20 @@ fun GroupListScreen(
                 Row(
                     modifier = Modifier.fillMaxWidth(),
                     horizontalArrangement = Arrangement.SpaceBetween,
-                    verticalAlignment = Alignment.Bottom
+                    verticalAlignment = Alignment.Bottom,
                 ) {
                     Text(
                         text = "Hoạt động gần đây",
                         fontSize = 18.sp,
                         fontWeight = FontWeight.Bold,
-                        color = colorScheme.onSurface
+                        color = colorScheme.onSurface,
                     )
                     Text(
                         text = "Xem tất cả",
                         fontSize = 14.sp,
                         fontWeight = FontWeight.Bold,
                         color = colorScheme.primary,
-                        modifier = Modifier.clickable { onNavigateToAllGroups() }
+                        modifier = Modifier.clickable { onNavigateToAllGroups() },
                     )
                 }
             }
@@ -126,10 +127,11 @@ fun GroupListScreen(
                 uiState.isLoading -> {
                     item {
                         Box(
-                            modifier = Modifier
-                                .fillMaxWidth()
-                                .padding(top = 32.dp),
-                            contentAlignment = Alignment.Center
+                            modifier =
+                                Modifier
+                                    .fillMaxWidth()
+                                    .padding(top = 32.dp),
+                            contentAlignment = Alignment.Center,
                         ) {
                             CircularProgressIndicator()
                         }
@@ -140,7 +142,7 @@ fun GroupListScreen(
                     item {
                         GroupMessageCard(
                             title = "Không thể tải nhóm",
-                            message = uiState.error.orEmpty()
+                            message = uiState.error.orEmpty(),
                         )
                     }
                 }
@@ -149,7 +151,7 @@ fun GroupListScreen(
                     item {
                         GroupMessageCard(
                             title = "Chưa có nhóm nào",
-                            message = "Bấm nút + để tạo nhóm đầu tiên."
+                            message = "Bấm nút + để tạo nhóm đầu tiên.",
                         )
                     }
                 }
@@ -158,7 +160,7 @@ fun GroupListScreen(
                     items(uiState.groups, key = { group -> group.id }) { group ->
                         GroupCardItem(
                             group = group.toGroupItem(),
-                            onClick = { onNavigateToGroupDetail(group.id) }
+                            onClick = { onNavigateToGroupDetail(group.id) },
                         )
                     }
                 }
@@ -181,9 +183,10 @@ fun GroupTopBar() {
                 Icon(Icons.Default.Notifications, contentDescription = "Thông báo")
             }
         },
-        colors = TopAppBarDefaults.topAppBarColors(
-            containerColor = colorScheme.surface.copy(alpha = 0.9f)
-        )
+        colors =
+            TopAppBarDefaults.topAppBarColors(
+                containerColor = colorScheme.surface.copy(alpha = 0.9f),
+            ),
     )
 }
 
@@ -193,13 +196,13 @@ fun FinancialSummaryCard() {
 
     Row(
         modifier = Modifier.fillMaxWidth(),
-        horizontalArrangement = Arrangement.spacedBy(16.dp)
+        horizontalArrangement = Arrangement.spacedBy(16.dp),
     ) {
         Card(
             modifier = Modifier.weight(1f),
             colors = CardDefaults.cardColors(containerColor = colorScheme.surfaceContainerLowest),
             shape = RoundedCornerShape(24.dp),
-            elevation = CardDefaults.cardElevation(defaultElevation = 2.dp)
+            elevation = CardDefaults.cardElevation(defaultElevation = 2.dp),
         ) {
             Column(modifier = Modifier.padding(16.dp)) {
                 Text(
@@ -207,14 +210,14 @@ fun FinancialSummaryCard() {
                     fontSize = 11.sp,
                     color = colorScheme.outline,
                     fontWeight = FontWeight.Bold,
-                    letterSpacing = 0.5.sp
+                    letterSpacing = 0.5.sp,
                 )
                 Spacer(modifier = Modifier.height(8.dp))
                 Text(
                     text = "0 đ",
                     fontSize = 22.sp,
                     color = colorScheme.primary,
-                    fontWeight = FontWeight.ExtraBold
+                    fontWeight = FontWeight.ExtraBold,
                 )
                 Spacer(modifier = Modifier.height(16.dp))
                 Button(
@@ -222,7 +225,7 @@ fun FinancialSummaryCard() {
                     colors = ButtonDefaults.buttonColors(containerColor = colorScheme.primary),
                     shape = RoundedCornerShape(50),
                     contentPadding = PaddingValues(horizontal = 16.dp, vertical = 8.dp),
-                    modifier = Modifier.height(36.dp)
+                    modifier = Modifier.height(36.dp),
                 ) {
                     Text("Settle Up", fontSize = 13.sp, fontWeight = FontWeight.Bold, color = colorScheme.onPrimary)
                 }
@@ -233,7 +236,7 @@ fun FinancialSummaryCard() {
             modifier = Modifier.weight(1f),
             colors = CardDefaults.cardColors(containerColor = colorScheme.secondaryContainer),
             shape = RoundedCornerShape(24.dp),
-            elevation = CardDefaults.cardElevation(defaultElevation = 0.dp)
+            elevation = CardDefaults.cardElevation(defaultElevation = 0.dp),
         ) {
             Column(modifier = Modifier.padding(16.dp)) {
                 Text(
@@ -241,14 +244,14 @@ fun FinancialSummaryCard() {
                     fontSize = 11.sp,
                     color = colorScheme.outline,
                     fontWeight = FontWeight.Bold,
-                    letterSpacing = 0.5.sp
+                    letterSpacing = 0.5.sp,
                 )
                 Spacer(modifier = Modifier.height(8.dp))
                 Text(
                     text = "0 đ",
                     fontSize = 22.sp,
                     color = colorScheme.onSecondaryContainer,
-                    fontWeight = FontWeight.ExtraBold
+                    fontWeight = FontWeight.ExtraBold,
                 )
                 Spacer(modifier = Modifier.height(16.dp))
                 Button(
@@ -256,7 +259,7 @@ fun FinancialSummaryCard() {
                     colors = ButtonDefaults.buttonColors(containerColor = colorScheme.secondary),
                     shape = RoundedCornerShape(50),
                     contentPadding = PaddingValues(horizontal = 16.dp, vertical = 8.dp),
-                    modifier = Modifier.height(36.dp)
+                    modifier = Modifier.height(36.dp),
                 ) {
                     Text("Remind", fontSize = 13.sp, fontWeight = FontWeight.Bold, color = colorScheme.onSecondary)
                 }
@@ -268,7 +271,7 @@ fun FinancialSummaryCard() {
 @Composable
 private fun GroupMessageCard(
     title: String,
-    message: String
+    message: String,
 ) {
     val colorScheme = MaterialTheme.colorScheme
 
@@ -276,55 +279,62 @@ private fun GroupMessageCard(
         modifier = Modifier.fillMaxWidth(),
         colors = CardDefaults.cardColors(containerColor = colorScheme.surfaceContainerLowest),
         elevation = CardDefaults.cardElevation(defaultElevation = 1.dp),
-        shape = RoundedCornerShape(20.dp)
+        shape = RoundedCornerShape(20.dp),
     ) {
         Column(modifier = Modifier.padding(20.dp)) {
             Text(
                 text = title,
                 fontSize = 16.sp,
                 fontWeight = FontWeight.Bold,
-                color = colorScheme.onSurface
+                color = colorScheme.onSurface,
             )
             Spacer(modifier = Modifier.height(6.dp))
             Text(
                 text = message,
                 fontSize = 13.sp,
-                color = colorScheme.onSurfaceVariant
+                color = colorScheme.onSurfaceVariant,
             )
         }
     }
 }
 
 @Composable
-fun GroupCardItem(group: GroupItem, onClick: () -> Unit) {
+fun GroupCardItem(
+    group: GroupItem,
+    onClick: () -> Unit,
+) {
     val colorScheme = MaterialTheme.colorScheme
 
-    val statusColor = when (group.statusType) {
-        GroupStatusType.OWE -> colorScheme.error
-        GroupStatusType.RECEIVE -> colorScheme.secondary
-        GroupStatusType.SETTLED -> colorScheme.onSurfaceVariant
-    }
+    val statusColor =
+        when (group.statusType) {
+            GroupStatusType.OWE -> colorScheme.error
+            GroupStatusType.RECEIVE -> colorScheme.secondary
+            GroupStatusType.SETTLED -> colorScheme.onSurfaceVariant
+        }
 
     Card(
-        modifier = Modifier
-            .fillMaxWidth()
-            .clickable { onClick() },
+        modifier =
+            Modifier
+                .fillMaxWidth()
+                .clickable { onClick() },
         colors = CardDefaults.cardColors(containerColor = colorScheme.surfaceContainerLowest),
         elevation = CardDefaults.cardElevation(defaultElevation = 1.dp),
-        shape = RoundedCornerShape(20.dp)
+        shape = RoundedCornerShape(20.dp),
     ) {
         Row(
-            modifier = Modifier
-                .fillMaxWidth()
-                .padding(16.dp),
-            verticalAlignment = Alignment.CenterVertically
+            modifier =
+                Modifier
+                    .fillMaxWidth()
+                    .padding(16.dp),
+            verticalAlignment = Alignment.CenterVertically,
         ) {
             Box(
-                modifier = Modifier
-                    .size(56.dp)
-                    .clip(RoundedCornerShape(16.dp))
-                    .background(colorScheme.surfaceContainerHigh),
-                contentAlignment = Alignment.Center
+                modifier =
+                    Modifier
+                        .size(56.dp)
+                        .clip(RoundedCornerShape(16.dp))
+                        .background(colorScheme.surfaceContainerHigh),
+                contentAlignment = Alignment.Center,
             ) {
                 Icon(Icons.Default.Star, contentDescription = null, tint = colorScheme.outline)
             }
@@ -336,7 +346,7 @@ fun GroupCardItem(group: GroupItem, onClick: () -> Unit) {
                     text = group.title,
                     fontSize = 16.sp,
                     fontWeight = FontWeight.Bold,
-                    color = colorScheme.onSurface
+                    color = colorScheme.onSurface,
                 )
                 Spacer(modifier = Modifier.height(4.dp))
 
@@ -344,10 +354,11 @@ fun GroupCardItem(group: GroupItem, onClick: () -> Unit) {
                     Row(horizontalArrangement = Arrangement.spacedBy((-8).dp)) {
                         for (i in 0 until minOf(3, group.avatarCount)) {
                             Box(
-                                modifier = Modifier
-                                    .size(24.dp)
-                                    .clip(CircleShape)
-                                    .background(colorScheme.surfaceContainerHigh)
+                                modifier =
+                                    Modifier
+                                        .size(24.dp)
+                                        .clip(CircleShape)
+                                        .background(colorScheme.surfaceContainerHigh),
                             )
                         }
                     }
@@ -358,16 +369,17 @@ fun GroupCardItem(group: GroupItem, onClick: () -> Unit) {
 
             if (group.isSettled) {
                 Box(
-                    modifier = Modifier
-                        .clip(RoundedCornerShape(50))
-                        .background(colorScheme.surfaceContainerHigh)
-                        .padding(horizontal = 10.dp, vertical = 4.dp)
+                    modifier =
+                        Modifier
+                            .clip(RoundedCornerShape(50))
+                            .background(colorScheme.surfaceContainerHigh)
+                            .padding(horizontal = 10.dp, vertical = 4.dp),
                 ) {
                     Text(
                         text = group.statusText.uppercase(),
                         fontSize = 10.sp,
                         fontWeight = FontWeight.Bold,
-                        color = colorScheme.onSurfaceVariant
+                        color = colorScheme.onSurfaceVariant,
                     )
                 }
             } else {
@@ -375,7 +387,7 @@ fun GroupCardItem(group: GroupItem, onClick: () -> Unit) {
                     text = group.statusText,
                     fontSize = 14.sp,
                     fontWeight = FontWeight.Bold,
-                    color = statusColor
+                    color = statusColor,
                 )
             }
         }
@@ -383,11 +395,12 @@ fun GroupCardItem(group: GroupItem, onClick: () -> Unit) {
 }
 
 private fun Group.toGroupItem(): GroupItem {
-    val statusType = when {
-        yourBalance < 0.0 -> GroupStatusType.OWE
-        yourBalance > 0.0 -> GroupStatusType.RECEIVE
-        else -> GroupStatusType.SETTLED
-    }
+    val statusType =
+        when {
+            yourBalance < 0.0 -> GroupStatusType.OWE
+            yourBalance > 0.0 -> GroupStatusType.RECEIVE
+            else -> GroupStatusType.SETTLED
+        }
 
     return GroupItem(
         title = name,
@@ -395,7 +408,7 @@ private fun Group.toGroupItem(): GroupItem {
         statusText = formatGroupStatus(yourBalance),
         isSettled = yourBalance == 0.0,
         statusType = statusType,
-        avatarCount = memberCount.coerceAtLeast(1)
+        avatarCount = memberCount.coerceAtLeast(1),
     )
 }
 

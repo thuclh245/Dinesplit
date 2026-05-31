@@ -19,7 +19,7 @@ data class GroupMemberBalance(
     val name: String,
     val initial: String,
     val balance: Double,
-    val isMe: Boolean
+    val isMe: Boolean,
 )
 
 data class SettlementSuggestion(
@@ -28,7 +28,7 @@ data class SettlementSuggestion(
     val toMemberId: String,
     val toName: String,
     val amount: Double,
-    val relatedBillId: String? = null
+    val relatedBillId: String? = null,
 )
 
 data class GroupDetailUiState(
@@ -45,7 +45,7 @@ data class GroupDetailUiState(
     val isLeaving: Boolean = false,
     val isLeft: Boolean = false,
     val currentUserId: String? = null,
-    val error: String? = null
+    val error: String? = null,
 ) {
     val isCurrentUserOwner: Boolean
         get() = !group?.ownerId.isNullOrBlank() && group?.ownerId == currentUserId
@@ -54,9 +54,8 @@ data class GroupDetailUiState(
 class GroupDetailViewModel(
     private val repository: SplitRepository,
     private val groupId: String,
-    private val currentUserId: String?
+    private val currentUserId: String?,
 ) : ViewModel() {
-
     private val _uiState = MutableStateFlow(GroupDetailUiState(currentUserId = currentUserId))
     val uiState: StateFlow<GroupDetailUiState> = _uiState.asStateFlow()
 
@@ -87,7 +86,7 @@ class GroupDetailViewModel(
                 } else {
                     it.copy(
                         isDeleting = false,
-                        error = result.exceptionOrNull()?.message ?: "Không thể xóa nhóm"
+                        error = result.exceptionOrNull()?.message ?: "Không thể xóa nhóm",
                     )
                 }
             }
@@ -112,7 +111,7 @@ class GroupDetailViewModel(
                 } else {
                     it.copy(
                         isLeaving = false,
-                        error = result.exceptionOrNull()?.message ?: "Không thể rời nhóm"
+                        error = result.exceptionOrNull()?.message ?: "Không thể rời nhóm",
                     )
                 }
             }
@@ -125,7 +124,7 @@ class GroupDetailViewModel(
                 combine(
                     repository.getGroup(groupId),
                     repository.getBills(groupId),
-                    repository.getGroupMembers(groupId)
+                    repository.getGroupMembers(groupId),
                 ) { group, bills, members ->
                     Triple(group, bills, members)
                 }.collect { (group, bills, members) ->
@@ -145,7 +144,7 @@ class GroupDetailViewModel(
                             totalExpense = totalExpense,
                             yourBalance = yourBalance,
                             isLoading = false,
-                            error = if (group == null) "Không tìm thấy nhóm" else null
+                            error = if (group == null) "Không tìm thấy nhóm" else null,
                         )
                     }
                 }
@@ -153,7 +152,7 @@ class GroupDetailViewModel(
                 _uiState.update {
                     it.copy(
                         isLoading = false,
-                        error = throwable.message ?: "Không thể tải chi tiết nhóm"
+                        error = throwable.message ?: "Không thể tải chi tiết nhóm",
                     )
                 }
             }
@@ -162,7 +161,7 @@ class GroupDetailViewModel(
 
     private fun buildEffectiveMembers(
         firestoreMembers: List<Member>,
-        bills: List<Bill>
+        bills: List<Bill>,
     ): List<Member> {
         if (firestoreMembers.isNotEmpty()) {
             return firestoreMembers.map { member ->
@@ -170,10 +169,11 @@ class GroupDetailViewModel(
             }
         }
 
-        val ids = bills
-            .flatMap { bill -> bill.shares.keys + bill.payerId }
-            .filter { it.isNotBlank() }
-            .distinct()
+        val ids =
+            bills
+                .flatMap { bill -> bill.shares.keys + bill.payerId }
+                .filter { it.isNotBlank() }
+                .distinct()
 
         return ids.map { id ->
             val name = fallbackMemberName(id)
@@ -181,19 +181,20 @@ class GroupDetailViewModel(
                 id = id,
                 name = name,
                 initial = name.firstOrNull()?.uppercase().orEmpty(),
-                isMe = id == currentUserId
+                isMe = id == currentUserId,
             )
         }
     }
 
     private fun calculateMemberBalances(
         bills: List<Bill>,
-        members: List<Member>
+        members: List<Member>,
     ): List<GroupMemberBalance> {
-        val balances = SplitCalculationEngine.calculateBalances(
-            bills = bills,
-            memberIds = members.map { it.id }
-        )
+        val balances =
+            SplitCalculationEngine.calculateBalances(
+                bills = bills,
+                memberIds = members.map { it.id },
+            )
 
         return balances.map { (memberId, balance) ->
             val member = members.firstOrNull { it.id == memberId }
@@ -203,18 +204,18 @@ class GroupDetailViewModel(
                 name = name,
                 initial = member?.initial ?: name.firstOrNull()?.uppercase().orEmpty(),
                 balance = balance,
-                isMe = member?.isMe ?: (memberId == currentUserId)
+                isMe = member?.isMe ?: (memberId == currentUserId),
             )
         }.sortedWith(
             compareByDescending<GroupMemberBalance> { it.isMe }
                 .thenBy { it.balance >= 0.0 }
-                .thenBy { it.name }
+                .thenBy { it.name },
         )
     }
 
     private fun calculateSettlements(
         balances: List<GroupMemberBalance>,
-        bills: List<Bill>
+        bills: List<Bill>,
     ): List<SettlementSuggestion> {
         val balanceById = balances.associate { it.memberId to it.balance }
         val memberById = balances.associateBy { it.memberId }
@@ -228,11 +229,12 @@ class GroupDetailViewModel(
                 toMemberId = settlement.toMemberId,
                 toName = creditor?.name ?: fallbackMemberName(settlement.toMemberId),
                 amount = settlement.amount,
-                relatedBillId = findRelatedUnpaidBill(
-                    bills = bills,
-                    debtorId = settlement.fromMemberId,
-                    creditorId = settlement.toMemberId
-                )?.id
+                relatedBillId =
+                    findRelatedUnpaidBill(
+                        bills = bills,
+                        debtorId = settlement.fromMemberId,
+                        creditorId = settlement.toMemberId,
+                    )?.id,
             )
         }
     }
@@ -240,15 +242,16 @@ class GroupDetailViewModel(
     private fun findRelatedUnpaidBill(
         bills: List<Bill>,
         debtorId: String,
-        creditorId: String
+        creditorId: String,
     ): Bill? {
-        val unpaidBillsForDebtor = bills
-            .filter { bill ->
-                debtorId != bill.payerId &&
-                    (bill.shares[debtorId] ?: 0.0) > 0.0 &&
-                    debtorId !in bill.paidMemberIds
-            }
-            .sortedByDescending { it.date }
+        val unpaidBillsForDebtor =
+            bills
+                .filter { bill ->
+                    debtorId != bill.payerId &&
+                        (bill.shares[debtorId] ?: 0.0) > 0.0 &&
+                        debtorId !in bill.paidMemberIds
+                }
+                .sortedByDescending { it.date }
 
         return unpaidBillsForDebtor.firstOrNull { bill ->
             bill.payerId == creditorId

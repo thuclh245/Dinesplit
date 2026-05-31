@@ -1,7 +1,5 @@
 package com.example.dinesplit.ui.theme
 
-import androidx.compose.foundation.isSystemInDarkTheme
-import androidx.compose.runtime.Composable
 import androidx.compose.runtime.Immutable
 import androidx.compose.runtime.staticCompositionLocalOf
 import androidx.compose.ui.graphics.Color
@@ -38,44 +36,46 @@ data class ExtendedColors(
     val surfaceTint: Color,
 )
 
-val LightExtendedColors = ExtendedColors(
-    primaryDim = BrandPrimaryDim,
-    primaryFixed = BrandPrimaryFixed,
-    primaryFixedDim = BrandPrimaryFixedDim,
-    onPrimaryFixed = BrandOnPrimaryFixed,
-    onPrimaryFixedVariant = BrandOnPrimaryFixedVariant,
-    secondaryDim = BrandSecondaryDim,
-    secondaryFixed = BrandSecondaryFixed,
-    secondaryFixedDim = BrandSecondaryFixedDim,
-    onSecondaryFixed = BrandOnSecondaryFixed,
-    onSecondaryFixedVariant = BrandOnSecondaryFixedVariant,
-    tertiaryDim = BrandTertiaryDim,
-    tertiaryFixed = BrandTertiaryFixed,
-    tertiaryFixedDim = BrandTertiaryFixedDim,
-    onTertiaryFixed = BrandOnTertiaryFixed,
-    onTertiaryFixedVariant = BrandOnTertiaryFixedVariant,
-    errorDim = BrandErrorDim,
-    surfaceTint = BrandSurfaceTint,
-)
+val LightExtendedColors =
+    ExtendedColors(
+        primaryDim = BrandPrimaryDim,
+        primaryFixed = BrandPrimaryFixed,
+        primaryFixedDim = BrandPrimaryFixedDim,
+        onPrimaryFixed = BrandOnPrimaryFixed,
+        onPrimaryFixedVariant = BrandOnPrimaryFixedVariant,
+        secondaryDim = BrandSecondaryDim,
+        secondaryFixed = BrandSecondaryFixed,
+        secondaryFixedDim = BrandSecondaryFixedDim,
+        onSecondaryFixed = BrandOnSecondaryFixed,
+        onSecondaryFixedVariant = BrandOnSecondaryFixedVariant,
+        tertiaryDim = BrandTertiaryDim,
+        tertiaryFixed = BrandTertiaryFixed,
+        tertiaryFixedDim = BrandTertiaryFixedDim,
+        onTertiaryFixed = BrandOnTertiaryFixed,
+        onTertiaryFixedVariant = BrandOnTertiaryFixedVariant,
+        errorDim = BrandErrorDim,
+        surfaceTint = BrandSurfaceTint,
+    )
 
-val DarkExtendedColors = ExtendedColors(
-    primaryDim = BrandDarkPrimary,          // in dark mode, primary itself is the "dim" variant
-    primaryFixed = BrandPrimaryFixed,       // fixed colors stay the same across themes
-    primaryFixedDim = BrandPrimaryFixedDim,
-    onPrimaryFixed = BrandOnPrimaryFixed,
-    onPrimaryFixedVariant = BrandOnPrimaryFixedVariant,
-    secondaryDim = BrandDarkSecondary,
-    secondaryFixed = BrandSecondaryFixed,
-    secondaryFixedDim = BrandSecondaryFixedDim,
-    onSecondaryFixed = BrandOnSecondaryFixed,
-    onSecondaryFixedVariant = BrandOnSecondaryFixedVariant,
-    tertiaryDim = BrandTertiaryDim,
-    tertiaryFixed = BrandTertiaryFixed,
-    tertiaryFixedDim = BrandTertiaryFixedDim,
-    onTertiaryFixed = BrandOnTertiaryFixed,
-    onTertiaryFixedVariant = BrandOnTertiaryFixedVariant,
-    errorDim = BrandErrorDim,
-    surfaceTint = BrandDarkPrimary,
-)
+val DarkExtendedColors =
+    ExtendedColors(
+        primaryDim = BrandDarkPrimary, // in dark mode, primary itself is the "dim" variant
+        primaryFixed = BrandPrimaryFixed, // fixed colors stay the same across themes
+        primaryFixedDim = BrandPrimaryFixedDim,
+        onPrimaryFixed = BrandOnPrimaryFixed,
+        onPrimaryFixedVariant = BrandOnPrimaryFixedVariant,
+        secondaryDim = BrandDarkSecondary,
+        secondaryFixed = BrandSecondaryFixed,
+        secondaryFixedDim = BrandSecondaryFixedDim,
+        onSecondaryFixed = BrandOnSecondaryFixed,
+        onSecondaryFixedVariant = BrandOnSecondaryFixedVariant,
+        tertiaryDim = BrandTertiaryDim,
+        tertiaryFixed = BrandTertiaryFixed,
+        tertiaryFixedDim = BrandTertiaryFixedDim,
+        onTertiaryFixed = BrandOnTertiaryFixed,
+        onTertiaryFixedVariant = BrandOnTertiaryFixedVariant,
+        errorDim = BrandErrorDim,
+        surfaceTint = BrandDarkPrimary,
+    )
 
 val LocalExtendedColors = staticCompositionLocalOf { LightExtendedColors }

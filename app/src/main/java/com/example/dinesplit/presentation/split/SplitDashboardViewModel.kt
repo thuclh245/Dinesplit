@@ -20,7 +20,7 @@ import kotlinx.coroutines.launch
 
 data class SplitDashboardRecentBill(
     val bill: Bill,
-    val groupName: String
+    val groupName: String,
 )
 
 data class SplitDashboardUiState(
@@ -31,13 +31,12 @@ data class SplitDashboardUiState(
     val amountYouAreOwed: Double = 0.0,
     val currentUserId: String? = null,
     val isLoading: Boolean = true,
-    val error: String? = null
+    val error: String? = null,
 )
 
 class SplitDashboardViewModel(
-    private val repository: SplitRepository
+    private val repository: SplitRepository,
 ) : ViewModel() {
-
     private val currentUserId: String?
         get() = FirebaseProviders.auth.currentUser?.uid
 
@@ -62,14 +61,15 @@ class SplitDashboardViewModel(
                     }
                     .collect { (groups, billsByGroup) ->
                         val sortedGroups = groups.sortedByDescending { it.createdAt }
-                        val recentBills = sortedGroups
-                            .flatMap { group ->
-                                billsByGroup[group.id].orEmpty().map { bill ->
-                                    SplitDashboardRecentBill(bill = bill, groupName = group.name)
+                        val recentBills =
+                            sortedGroups
+                                .flatMap { group ->
+                                    billsByGroup[group.id].orEmpty().map { bill ->
+                                        SplitDashboardRecentBill(bill = bill, groupName = group.name)
+                                    }
                                 }
-                            }
-                            .sortedByDescending { it.bill.date }
-                            .take(5)
+                                .sortedByDescending { it.bill.date }
+                                .take(5)
 
                         _uiState.update {
                             it.copy(
@@ -80,7 +80,7 @@ class SplitDashboardViewModel(
                                 amountYouAreOwed = calculateAmountYouAreOwed(billsByGroup),
                                 currentUserId = currentUserId,
                                 isLoading = false,
-                                error = null
+                                error = null,
                             )
                         }
                     }
@@ -88,7 +88,7 @@ class SplitDashboardViewModel(
                 _uiState.update {
                     it.copy(
                         isLoading = false,
-                        error = throwable.message ?: "Không thể tải dữ liệu chia tiền"
+                        error = throwable.message ?: "Không thể tải dữ liệu chia tiền",
                     )
                 }
             }
@@ -96,9 +96,10 @@ class SplitDashboardViewModel(
     }
 
     private fun combineBillFlows(groups: List<Group>): Flow<Pair<List<Group>, Map<String, List<Bill>>>> {
-        val billFlows = groups.map { group ->
-            repository.getBills(group.id).map { bills -> group.id to bills }
-        }
+        val billFlows =
+            groups.map { group ->
+                repository.getBills(group.id).map { bills -> group.id to bills }
+            }
 
         return combine(billFlows) { billPairs ->
             groups to billPairs.toMap()

@@ -23,13 +23,12 @@ import kotlinx.coroutines.launch
  */
 @Suppress("unused", "ObjectName")
 object NotificationTriggerIntegration {
-
     @OptIn(DelicateCoroutinesApi::class)
-    @Suppress("kotlin:S6808")  // Suppress GlobalScope warning for notification dispatch
+    @Suppress("kotlin:S6808") // Suppress GlobalScope warning for notification dispatch
     fun triggerFeedNotification(
         context: android.content.Context,
         trigger: FeedNotificationTrigger,
-        userId: String
+        userId: String,
     ) {
         GlobalScope.launch(Dispatchers.IO) {
             try {
@@ -47,7 +46,7 @@ object NotificationTriggerIntegration {
     fun triggerSplitNotification(
         context: android.content.Context,
         trigger: SplitNotificationTrigger,
-        userId: String
+        userId: String,
     ) {
         GlobalScope.launch(Dispatchers.IO) {
             try {
@@ -65,7 +64,7 @@ object NotificationTriggerIntegration {
     fun triggerPersonalNotification(
         context: android.content.Context,
         trigger: PersonalNotificationTrigger,
-        userId: String
+        userId: String,
     ) {
         GlobalScope.launch(Dispatchers.IO) {
             try {
@@ -78,6 +77,3 @@ object NotificationTriggerIntegration {
         }
     }
 }
-
-
-

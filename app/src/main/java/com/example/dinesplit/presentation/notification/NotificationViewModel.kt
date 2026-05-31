@@ -37,18 +37,20 @@ class NotificationViewModel(application: Application) : AndroidViewModel(applica
             runCatching {
                 val notifications = repository.getNotifications()
                 _notifications.value = notifications
-                _uiState.value = _uiState.value.copy(
-                    isLoading = false,
-                    currentUserId = currentUserId(),
-                    unreadCount = notifications.count { !it.isRead }
-                )
+                _uiState.value =
+                    _uiState.value.copy(
+                        isLoading = false,
+                        currentUserId = currentUserId(),
+                        unreadCount = notifications.count { !it.isRead },
+                    )
             }.onFailure { throwable ->
                 _notifications.value = emptyList()
-                _uiState.value = _uiState.value.copy(
-                    isLoading = false,
-                    currentUserId = currentUserId(),
-                    errorMessage = FirebaseErrorMapper.toUserMessage(throwable)
-                )
+                _uiState.value =
+                    _uiState.value.copy(
+                        isLoading = false,
+                        currentUserId = currentUserId(),
+                        errorMessage = FirebaseErrorMapper.toUserMessage(throwable),
+                    )
             }
         }
     }
@@ -71,32 +73,36 @@ class NotificationViewModel(application: Application) : AndroidViewModel(applica
                 _notifications.value = _notifications.value.map { it.copy(isRead = true) }
                 _uiState.value = _uiState.value.copy(unreadCount = 0)
             }.onFailure { throwable ->
-                _uiState.value = _uiState.value.copy(
-                    errorMessage = FirebaseErrorMapper.toUserMessage(throwable)
-                )
+                _uiState.value =
+                    _uiState.value.copy(
+                        errorMessage = FirebaseErrorMapper.toUserMessage(throwable),
+                    )
             }
         }
     }
 
     fun onFeedTrigger(trigger: FeedNotificationTrigger) {
         insertGeneratedNotification(
-            notification = NotificationFactory.fromFeedTrigger(trigger, currentUserId())
+            notification = NotificationFactory.fromFeedTrigger(trigger, currentUserId()),
         )
     }
 
     fun onSplitTrigger(trigger: SplitNotificationTrigger) {
         insertGeneratedNotification(
-            notification = NotificationFactory.fromSplitTrigger(trigger, currentUserId())
+            notification = NotificationFactory.fromSplitTrigger(trigger, currentUserId()),
         )
     }
 
     fun onPersonalTrigger(trigger: PersonalNotificationTrigger) {
         insertGeneratedNotification(
-            notification = NotificationFactory.fromPersonalTrigger(trigger, currentUserId())
+            notification = NotificationFactory.fromPersonalTrigger(trigger, currentUserId()),
         )
     }
 
-    private fun updateNotificationReadState(notificationId: String, isRead: Boolean) {
+    private fun updateNotificationReadState(
+        notificationId: String,
+        isRead: Boolean,
+    ) {
         viewModelScope.launch(Dispatchers.IO) {
             runCatching {
                 if (isRead) {
@@ -104,20 +110,23 @@ class NotificationViewModel(application: Application) : AndroidViewModel(applica
                 } else {
                     repository.markAsUnread(notificationId)
                 }
-                _notifications.value = _notifications.value.map { notification ->
-                    if (notification.id == notificationId) {
-                        notification.copy(isRead = isRead)
-                    } else {
-                        notification
+                _notifications.value =
+                    _notifications.value.map { notification ->
+                        if (notification.id == notificationId) {
+                            notification.copy(isRead = isRead)
+                        } else {
+                            notification
+                        }
                     }
-                }
-                _uiState.value = _uiState.value.copy(
-                    unreadCount = _notifications.value.count { !it.isRead }
-                )
+                _uiState.value =
+                    _uiState.value.copy(
+                        unreadCount = _notifications.value.count { !it.isRead },
+                    )
             }.onFailure { throwable ->
-                _uiState.value = _uiState.value.copy(
-                    errorMessage = FirebaseErrorMapper.toUserMessage(throwable)
-                )
+                _uiState.value =
+                    _uiState.value.copy(
+                        errorMessage = FirebaseErrorMapper.toUserMessage(throwable),
+                    )
             }
         }
     }
@@ -127,13 +136,15 @@ class NotificationViewModel(application: Application) : AndroidViewModel(applica
             runCatching {
                 repository.insertNotification(notification)
                 _notifications.value = listOf(notification) + _notifications.value
-                _uiState.value = _uiState.value.copy(
-                    unreadCount = _notifications.value.count { !it.isRead }
-                )
+                _uiState.value =
+                    _uiState.value.copy(
+                        unreadCount = _notifications.value.count { !it.isRead },
+                    )
             }.onFailure { throwable ->
-                _uiState.value = _uiState.value.copy(
-                    errorMessage = FirebaseErrorMapper.toUserMessage(throwable)
-                )
+                _uiState.value =
+                    _uiState.value.copy(
+                        errorMessage = FirebaseErrorMapper.toUserMessage(throwable),
+                    )
             }
         }
     }
@@ -147,5 +158,5 @@ data class NotificationUiState(
     val isLoading: Boolean = false,
     val errorMessage: String? = null,
     val currentUserId: String = "",
-    val unreadCount: Int = 0
+    val unreadCount: Int = 0,
 )

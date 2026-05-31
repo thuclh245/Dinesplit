@@ -2,7 +2,7 @@ package com.example.dinesplit.domain.model
 
 enum class RecurringCadence {
     WEEKLY,
-    MONTHLY
+    MONTHLY,
 }
 
 data class RecurringRule(
@@ -18,13 +18,13 @@ data class RecurringRule(
     val nextRunAt: Long,
     val isEnabled: Boolean,
     val createdAt: Long,
-    val updatedAt: Long
+    val updatedAt: Long,
 )
 
 enum class GoalStatus {
     ACTIVE,
     COMPLETED,
-    PAUSED
+    PAUSED,
 }
 
 data class PersonalGoal(
@@ -37,14 +37,14 @@ data class PersonalGoal(
     val deadlineAt: Long,
     val status: GoalStatus,
     val createdAt: Long,
-    val updatedAt: Long
+    val updatedAt: Long,
 )
 
 enum class WalletType {
     CASH,
     BANK,
     EWALLET,
-    CREDIT
+    CREDIT,
 }
 
 data class PersonalWallet(
@@ -56,5 +56,5 @@ data class PersonalWallet(
     val color: String,
     val isArchived: Boolean,
     val createdAt: Long,
-    val updatedAt: Long
+    val updatedAt: Long,
 )

@@ -2,9 +2,6 @@
 
 package com.example.dinesplit.ui.theme
 
-import androidx.compose.material3.MaterialTheme
-import androidx.compose.runtime.Composable
-import androidx.compose.runtime.ReadOnlyComposable
 import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
 
@@ -33,41 +30,42 @@ import androidx.compose.ui.graphics.Color
  * Old Color(0xFFFFDAD3/6) → MaterialTheme.colorScheme.errorContainer (#FB5151) or lighter
  */
 object AppColors {
-
     // ─── Gradient for Primary CTA (Design System "Signature Texture") ────────
     /** 135° gradient from primary → primaryContainer for main CTAs */
     val primaryGradient: Brush
-        get() = Brush.linearGradient(
-            colors = listOf(BrandPrimary, BrandPrimaryContainer)
-        )
+        get() =
+            Brush.linearGradient(
+                colors = listOf(BrandPrimary, BrandPrimaryContainer),
+            )
 
     /** Reverse gradient for dark-on-light contexts */
     val primaryGradientReverse: Brush
-        get() = Brush.linearGradient(
-            colors = listOf(BrandPrimaryContainer, BrandPrimary)
-        )
+        get() =
+            Brush.linearGradient(
+                colors = listOf(BrandPrimaryContainer, BrandPrimary),
+            )
 
     // ─── Semantic Surface Colors (use these instead of hardcoded hex) ────────
-    val background: Color get() = BrandSurface                    // #F6F6F6
-    val surfaceWhite: Color get() = BrandSurfaceContainerLowest   // #FFFFFF
-    val surfaceLow: Color get() = BrandSurfaceContainerLow        // #F0F1F1
-    val surfaceMid: Color get() = BrandSurfaceContainer           // #E7E8E8
-    val surfaceHigh: Color get() = BrandSurfaceContainerHigh      // #E1E3E3
+    val background: Color get() = BrandSurface // #F6F6F6
+    val surfaceWhite: Color get() = BrandSurfaceContainerLowest // #FFFFFF
+    val surfaceLow: Color get() = BrandSurfaceContainerLow // #F0F1F1
+    val surfaceMid: Color get() = BrandSurfaceContainer // #E7E8E8
+    val surfaceHigh: Color get() = BrandSurfaceContainerHigh // #E1E3E3
     val surfaceHighest: Color get() = BrandSurfaceContainerHighest // #DBDDDD
 
     // ─── Text Colors ─────────────────────────────────────────────────────────
-    val textMain: Color get() = BrandOnSurface                    // #2D2F2F
-    val textSub: Color get() = BrandOnSurfaceVariant              // #5A5C5C
-    val textHint: Color get() = BrandOutline                      // #767777
+    val textMain: Color get() = BrandOnSurface // #2D2F2F
+    val textSub: Color get() = BrandOnSurfaceVariant // #5A5C5C
+    val textHint: Color get() = BrandOutline // #767777
 
     // ─── Accent Colors ───────────────────────────────────────────────────────
-    val orangePrimary: Color get() = BrandPrimary                 // #AB2D00
-    val orangeContainer: Color get() = BrandPrimaryContainer      // #FF7851
-    val tealPrimary: Color get() = BrandSecondary                 // #00675F
-    val tealContainer: Color get() = BrandSecondaryContainer      // #81F3E5
-    val errorRed: Color get() = BrandError                        // #B31B25
-    val errorContainer: Color get() = BrandErrorContainer         // #FB5151
+    val orangePrimary: Color get() = BrandPrimary // #AB2D00
+    val orangeContainer: Color get() = BrandPrimaryContainer // #FF7851
+    val tealPrimary: Color get() = BrandSecondary // #00675F
+    val tealContainer: Color get() = BrandSecondaryContainer // #81F3E5
+    val errorRed: Color get() = BrandError // #B31B25
+    val errorContainer: Color get() = BrandErrorContainer // #FB5151
 
     // ─── Border / Outline (Ghost Border at 15% opacity per design system) ────
-    val borderLight: Color get() = BrandOutlineVariant             // #ACADAD
+    val borderLight: Color get() = BrandOutlineVariant // #ACADAD
 }

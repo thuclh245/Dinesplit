@@ -6,10 +6,15 @@ import com.example.dinesplit.domain.model.UserProfile
 interface ProfileRepository {
     suspend fun getProfile(uid: String): UserProfile?
 
-    suspend fun searchProfiles(query: String, limit: Long = 20): Result<List<UserProfile>>
+    suspend fun searchProfiles(
+        query: String,
+        limit: Long = 20,
+    ): Result<List<UserProfile>>
 
     suspend fun upsertProfile(profile: UserProfile): Result<Unit>
 
-    suspend fun uploadAvatar(uid: String, avatarUri: Uri): Result<String>
+    suspend fun uploadAvatar(
+        uid: String,
+        avatarUri: Uri,
+    ): Result<String>
 }
-

@@ -20,34 +20,35 @@ import com.example.dinesplit.presentation.main.MainContainerScreen
 import com.example.dinesplit.presentation.notification.NotificationScreen
 
 @Composable
-fun AppNavHost(
-    navController: NavHostController
-) {
+fun AppNavHost(navController: NavHostController) {
     NavHost(
         navController = navController,
-        startDestination = AppRoute.Splash.route
+        startDestination = AppRoute.Splash.route,
     ) {
         composable(AppRoute.Splash.route) {
             SplashScreen(
                 onDestinationResolved = { destination ->
                     when (destination) {
-                        AppStartDestination.AUTH -> navController.navigate(NavGraph.AUTH) {
-                            popUpTo(AppRoute.Splash.route) { inclusive = true }
-                        }
-                        AppStartDestination.COMPLETE_PROFILE -> navController.navigate(AppRoute.CompleteProfile.route) {
-                            popUpTo(AppRoute.Splash.route) { inclusive = true }
-                        }
-                        AppStartDestination.MAIN -> navController.navigate(NavGraph.MAIN) {
-                            popUpTo(AppRoute.Splash.route) { inclusive = true }
-                        }
+                        AppStartDestination.AUTH ->
+                            navController.navigate(NavGraph.AUTH) {
+                                popUpTo(AppRoute.Splash.route) { inclusive = true }
+                            }
+                        AppStartDestination.COMPLETE_PROFILE ->
+                            navController.navigate(AppRoute.CompleteProfile.route) {
+                                popUpTo(AppRoute.Splash.route) { inclusive = true }
+                            }
+                        AppStartDestination.MAIN ->
+                            navController.navigate(NavGraph.MAIN) {
+                                popUpTo(AppRoute.Splash.route) { inclusive = true }
+                            }
                     }
-                }
+                },
             )
         }
 
         navigation(
             route = NavGraph.AUTH,
-            startDestination = AppRoute.Login.route
+            startDestination = AppRoute.Login.route,
         ) {
             composable(AppRoute.Login.route) {
                 LoginScreen(
@@ -55,11 +56,12 @@ fun AppNavHost(
                         navController.navigate(AppRoute.Register.route)
                     },
                     onLoginSuccess = { destination ->
-                        val target = when (destination) {
-                            AppStartDestination.MAIN -> NavGraph.MAIN
-                            AppStartDestination.COMPLETE_PROFILE -> AppRoute.CompleteProfile.route
-                            AppStartDestination.AUTH -> AppRoute.Login.route
-                        }
+                        val target =
+                            when (destination) {
+                                AppStartDestination.MAIN -> NavGraph.MAIN
+                                AppStartDestination.COMPLETE_PROFILE -> AppRoute.CompleteProfile.route
+                                AppStartDestination.AUTH -> AppRoute.Login.route
+                            }
 
                         if (target != AppRoute.Login.route) {
                             navController.navigate(target) {
@@ -67,7 +69,7 @@ fun AppNavHost(
                                 launchSingleTop = true
                             }
                         }
-                    }
+                    },
                 )
             }
 
@@ -78,7 +80,7 @@ fun AppNavHost(
                     },
                     onRegisterSuccess = {
                         navController.navigate(AppRoute.CompleteProfile.route)
-                    }
+                    },
                 )
             }
 
@@ -92,39 +94,42 @@ fun AppNavHost(
                             popUpTo(NavGraph.AUTH) { inclusive = true }
                             launchSingleTop = true
                         }
-                    }
+                    },
                 )
             }
         }
 
         navigation(
             route = NavGraph.MAIN,
-            startDestination = AppRoute.MainContainer.routeWithArgs
+            startDestination = AppRoute.MainContainer.routeWithArgs,
         ) {
             composable(
                 route = AppRoute.MainContainer.routeWithArgs,
-                arguments = listOf(
-                    navArgument(AppRoute.MainContainer.ARG_TAB) {
-                        type = NavType.StringType
-                        nullable = true
-                        defaultValue = null
-                    },
-                    navArgument(AppRoute.MainContainer.ARG_TARGET) {
-                        type = NavType.StringType
-                        nullable = true
-                        defaultValue = null
-                    }
-                )
+                arguments =
+                    listOf(
+                        navArgument(AppRoute.MainContainer.ARG_TAB) {
+                            type = NavType.StringType
+                            nullable = true
+                            defaultValue = null
+                        },
+                        navArgument(AppRoute.MainContainer.ARG_TARGET) {
+                            type = NavType.StringType
+                            nullable = true
+                            defaultValue = null
+                        },
+                    ),
             ) { backStackEntry ->
-                val initialTabRoute = backStackEntry.arguments
-                    ?.getString(AppRoute.MainContainer.ARG_TAB)
-                    ?.let(Uri::decode)
-                    .orEmpty()
-                    .ifBlank { AppRoute.Feed.route }
-                val pendingRoute = backStackEntry.arguments
-                    ?.getString(AppRoute.MainContainer.ARG_TARGET)
-                    ?.let(Uri::decode)
-                    ?.takeIf { it.isNotBlank() }
+                val initialTabRoute =
+                    backStackEntry.arguments
+                        ?.getString(AppRoute.MainContainer.ARG_TAB)
+                        ?.let(Uri::decode)
+                        .orEmpty()
+                        .ifBlank { AppRoute.Feed.route }
+                val pendingRoute =
+                    backStackEntry.arguments
+                        ?.getString(AppRoute.MainContainer.ARG_TARGET)
+                        ?.let(Uri::decode)
+                        ?.takeIf { it.isNotBlank() }
 
                 MainContainerScreen(
                     initialTabRoute = initialTabRoute,
@@ -140,7 +145,7 @@ fun AppNavHost(
                             popUpTo(NavGraph.MAIN) { inclusive = true }
                             launchSingleTop = true
                         }
-                    }
+                    },
                 )
             }
         }
@@ -158,7 +163,7 @@ fun AppNavHost(
                     navController.navigate(notification.toMainContainerRoute()) {
                         launchSingleTop = true
                     }
-                }
+                },
             )
         }
 
@@ -177,66 +182,68 @@ private fun Notification.toMainContainerRoute(): String {
         destination == "ACTIVITY_DETAIL" && !targetId.isNullOrBlank() -> {
             AppRoute.MainContainer.createRoute(
                 tab = AppRoute.Feed.route,
-                target = AppRoute.PostDetail.createRoute(targetId)
+                target = AppRoute.PostDetail.createRoute(targetId),
             )
         }
         // Personal transaction detail
         destination == "TRANSACTION_DETAIL" && !targetId.isNullOrBlank() -> {
             AppRoute.MainContainer.createRoute(
                 tab = AppRoute.Personal.route,
-                target = AppRoute.TransactionDetail.createRoute(targetId)
+                target = AppRoute.TransactionDetail.createRoute(targetId),
             )
         }
         // Spending reminders (budget alert)
         destination == "SPENDING_REMINDERS" -> {
             AppRoute.MainContainer.createRoute(
                 tab = AppRoute.Personal.route,
-                target = AppRoute.SpendingReminders.route
+                target = AppRoute.SpendingReminders.route,
             )
         }
         destination == "CATEGORY_MANAGEMENT" -> {
             AppRoute.MainContainer.createRoute(
                 tab = AppRoute.Personal.route,
-                target = AppRoute.CategoryManagement.route
+                target = AppRoute.CategoryManagement.route,
             )
         }
         destination == "PERSONAL_PLANS" -> {
             AppRoute.MainContainer.createRoute(
                 tab = AppRoute.Personal.route,
-                target = AppRoute.PersonalPlans.route
+                target = AppRoute.PersonalPlans.route,
             )
         }
         destination == "PERSONAL" -> {
             AppRoute.MainContainer.createRoute(
-                tab = AppRoute.Personal.route
+                tab = AppRoute.Personal.route,
             )
         }
         // Split bill detail
         destination == "SPLIT_DETAIL" && !targetId.isNullOrBlank() -> {
             AppRoute.MainContainer.createRoute(
-                tab = AppRoute.Split.route
+                tab = AppRoute.Split.route,
             )
         }
         // Split settle/payment
         destination == "SPLIT_SETTLE" && !targetId.isNullOrBlank() -> {
             AppRoute.MainContainer.createRoute(
-                tab = AppRoute.Split.route
+                tab = AppRoute.Split.route,
             )
         }
         // Other user profile (from activity)
         destination == "PROFILE" && !targetId.isNullOrBlank() -> {
             AppRoute.MainContainer.createRoute(
                 tab = AppRoute.Profile.route,
-                target = AppRoute.OtherUserProfile.createRoute(targetId)
+                target = AppRoute.OtherUserProfile.createRoute(targetId),
             )
         }
         // Fallback: route to split tab if payment/bill notification
-        type in setOf(
-            NotificationType.BILL_CREATED,
-            NotificationType.PAYMENT_PENDING,
-            NotificationType.PAYMENT_COMPLETED,
-            NotificationType.SPLIT_COMPLETED
-        ) -> {
+        type in
+            setOf(
+                NotificationType.BILL_CREATED,
+                NotificationType.PAYMENT_PENDING,
+                NotificationType.PAYMENT_COMPLETED,
+                NotificationType.SPLIT_COMPLETED,
+            )
+        -> {
             AppRoute.MainContainer.createRoute(tab = AppRoute.Split.route)
         }
         // Fallback: route to activity/feed if activity update
@@ -247,7 +254,7 @@ private fun Notification.toMainContainerRoute(): String {
         type == NotificationType.TRANSACTION_ALERT -> {
             AppRoute.MainContainer.createRoute(
                 tab = AppRoute.Personal.route,
-                target = AppRoute.SpendingReminders.route
+                target = AppRoute.SpendingReminders.route,
             )
         }
         // Default fallback

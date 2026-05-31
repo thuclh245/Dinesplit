@@ -6,16 +6,15 @@ import androidx.lifecycle.AndroidViewModel
 import androidx.lifecycle.viewModelScope
 import com.example.dinesplit.core.common.AppContainer
 import com.example.dinesplit.core.firebase.FirebaseErrorMapper
+import com.example.dinesplit.data.seeder.DemoDataSeeder
 import com.example.dinesplit.domain.exception.UsernameAlreadyExistsException
 import com.example.dinesplit.domain.model.UserProfile
-import java.util.Date
 import com.example.dinesplit.domain.usecase.GetCurrentUserProfileUseCase
 import com.example.dinesplit.domain.usecase.LogoutUseCase
 import com.example.dinesplit.domain.usecase.ObserveSessionUseCase
 import com.example.dinesplit.domain.usecase.UpdateProfileUseCase
 import com.example.dinesplit.domain.usecase.UploadAvatarUseCase
 import com.example.dinesplit.domain.validation.ProfileInputValidator
-import com.example.dinesplit.data.seeder.DemoDataSeeder
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.flow.MutableSharedFlow
 import kotlinx.coroutines.flow.MutableStateFlow
@@ -25,13 +24,14 @@ import kotlinx.coroutines.flow.asSharedFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
+import java.util.Date
 
 data class ProfileUiState(
     val isLoading: Boolean = true,
     val profile: UserProfile? = null,
     val errorMessage: String? = null,
     val isLoggingOut: Boolean = false,
-    val isSeeding: Boolean = false
+    val isSeeding: Boolean = false,
 )
 
 data class EditProfileUiState(
@@ -46,18 +46,20 @@ data class EditProfileUiState(
     val usernameError: String? = null,
     val isSubmitting: Boolean = false,
     val submitError: String? = null,
-    val selectedStyles: List<String> = emptyList()
+    val selectedStyles: List<String> = emptyList(),
 )
 
 sealed interface ProfileUiEffect {
     data object LogoutSuccess : ProfileUiEffect
+
     data object SaveSuccess : ProfileUiEffect
+
     data object SeedSuccess : ProfileUiEffect
+
     data class SeedError(val message: String) : ProfileUiEffect
 }
 
 class ProfileViewModel(application: Application) : AndroidViewModel(application) {
-
     private val observeSessionUseCase: ObserveSessionUseCase = AppContainer.observeSessionUseCase(application)
     private val getCurrentUserProfileUseCase: GetCurrentUserProfileUseCase =
         AppContainer.getCurrentUserProfileUseCase(application)
@@ -90,27 +92,30 @@ class ProfileViewModel(application: Application) : AndroidViewModel(application)
             _profileUiState.value = _profileUiState.value.copy(isLoading = true, errorMessage = null)
             val profile = getCurrentUserProfileUseCase(session.uid)
             if (profile == null) {
-                _profileUiState.value = _profileUiState.value.copy(
-                    isLoading = false,
-                    profile = null,
-                    errorMessage = "Profile not completed"
-                )
+                _profileUiState.value =
+                    _profileUiState.value.copy(
+                        isLoading = false,
+                        profile = null,
+                        errorMessage = "Profile not completed",
+                    )
                 _editUiState.value = EditProfileUiState()
                 return@launch
             }
 
-            _profileUiState.value = _profileUiState.value.copy(
-                isLoading = false,
-                profile = profile,
-                errorMessage = null
-            )
-            _editUiState.value = EditProfileUiState(
-                displayName = profile.displayName,
-                username = profile.username,
-                bio = profile.bio,
-                avatarUrl = profile.avatarUrl,
-                selectedStyles = profile.diningStyles
-            )
+            _profileUiState.value =
+                _profileUiState.value.copy(
+                    isLoading = false,
+                    profile = profile,
+                    errorMessage = null,
+                )
+            _editUiState.value =
+                EditProfileUiState(
+                    displayName = profile.displayName,
+                    username = profile.username,
+                    bio = profile.bio,
+                    avatarUrl = profile.avatarUrl,
+                    selectedStyles = profile.diningStyles,
+                )
         }
     }
 
@@ -127,30 +132,33 @@ class ProfileViewModel(application: Application) : AndroidViewModel(application)
     }
 
     fun onAvatarSelected(value: Uri) {
-        _editUiState.value = _editUiState.value.copy(
-            avatarUrl = value.toString(),
-            avatarLocalUri = value.toString(),
-            avatarError = null,
-            submitError = null
-        )
+        _editUiState.value =
+            _editUiState.value.copy(
+                avatarUrl = value.toString(),
+                avatarLocalUri = value.toString(),
+                avatarError = null,
+                submitError = null,
+            )
     }
 
     fun onAvatarCleared() {
-        _editUiState.value = _editUiState.value.copy(
-            avatarUrl = "",
-            avatarLocalUri = null,
-            avatarError = null,
-            submitError = null
-        )
+        _editUiState.value =
+            _editUiState.value.copy(
+                avatarUrl = "",
+                avatarLocalUri = null,
+                avatarError = null,
+                submitError = null,
+            )
     }
 
     fun toggleDiningStyle(style: String) {
         val currentSelected = _editUiState.value.selectedStyles
-        val updated = if (currentSelected.contains(style)) {
-            currentSelected - style
-        } else {
-            currentSelected + style
-        }
+        val updated =
+            if (currentSelected.contains(style)) {
+                currentSelected - style
+            } else {
+                currentSelected + style
+            }
         _editUiState.value = _editUiState.value.copy(selectedStyles = updated)
     }
 
@@ -167,57 +175,65 @@ class ProfileViewModel(application: Application) : AndroidViewModel(application)
         }
 
         viewModelScope.launch {
-            _editUiState.value = _editUiState.value.copy(
-                isSubmitting = true,
-                isAvatarUploading = false,
-                submitError = null,
-                avatarError = null
-            )
+            _editUiState.value =
+                _editUiState.value.copy(
+                    isSubmitting = true,
+                    isAvatarUploading = false,
+                    submitError = null,
+                    avatarError = null,
+                )
 
-            val finalAvatarUrl = uploadAvatarIfNeeded(profile.uid, current.avatarLocalUri)
-                ?: return@launch
+            val finalAvatarUrl =
+                uploadAvatarIfNeeded(profile.uid, current.avatarLocalUri)
+                    ?: return@launch
 
-            val updatedProfile = profile.copy(
-                displayName = current.displayName.trim(),
-                username = current.username.trim(),
-                avatarUrl = finalAvatarUrl,
-                bio = current.bio.trim(),
-                diningStyles = current.selectedStyles,
-                updatedAt = Date()
-            )
+            val updatedProfile =
+                profile.copy(
+                    displayName = current.displayName.trim(),
+                    username = current.username.trim(),
+                    avatarUrl = finalAvatarUrl,
+                    bio = current.bio.trim(),
+                    diningStyles = current.selectedStyles,
+                    updatedAt = Date(),
+                )
 
             updateProfileUseCase(updatedProfile)
                 .onSuccess {
                     _profileUiState.value = _profileUiState.value.copy(profile = updatedProfile)
-                    _editUiState.value = _editUiState.value.copy(
-                        isSubmitting = false,
-                        isAvatarUploading = false,
-                        avatarUrl = finalAvatarUrl,
-                        avatarLocalUri = null,
-                        selectedStyles = updatedProfile.diningStyles
-                    )
+                    _editUiState.value =
+                        _editUiState.value.copy(
+                            isSubmitting = false,
+                            isAvatarUploading = false,
+                            avatarUrl = finalAvatarUrl,
+                            avatarLocalUri = null,
+                            selectedStyles = updatedProfile.diningStyles,
+                        )
                     _effect.emit(ProfileUiEffect.SaveSuccess)
                 }
                 .onFailure { throwable ->
-                    _editUiState.value = if (throwable is UsernameAlreadyExistsException) {
-                        _editUiState.value.copy(
-                            isSubmitting = false,
-                            isAvatarUploading = false,
-                            usernameError = FirebaseErrorMapper.toUserMessage(throwable),
-                            submitError = null
-                        )
-                    } else {
-                        _editUiState.value.copy(
-                            isSubmitting = false,
-                            isAvatarUploading = false,
-                            submitError = FirebaseErrorMapper.toUserMessage(throwable)
-                        )
-                    }
+                    _editUiState.value =
+                        if (throwable is UsernameAlreadyExistsException) {
+                            _editUiState.value.copy(
+                                isSubmitting = false,
+                                isAvatarUploading = false,
+                                usernameError = FirebaseErrorMapper.toUserMessage(throwable),
+                                submitError = null,
+                            )
+                        } else {
+                            _editUiState.value.copy(
+                                isSubmitting = false,
+                                isAvatarUploading = false,
+                                submitError = FirebaseErrorMapper.toUserMessage(throwable),
+                            )
+                        }
                 }
         }
     }
 
-    private suspend fun uploadAvatarIfNeeded(uid: String, avatarLocalUri: String?): String? {
+    private suspend fun uploadAvatarIfNeeded(
+        uid: String,
+        avatarLocalUri: String?,
+    ): String? {
         if (avatarLocalUri.isNullOrBlank()) {
             return _editUiState.value.avatarUrl.trim()
         }
@@ -225,18 +241,20 @@ class ProfileViewModel(application: Application) : AndroidViewModel(application)
         _editUiState.value = _editUiState.value.copy(isAvatarUploading = true)
         return uploadAvatarUseCase(uid, Uri.parse(avatarLocalUri))
             .onSuccess { uploadedAvatarUrl ->
-                _editUiState.value = _editUiState.value.copy(
-                    avatarUrl = uploadedAvatarUrl,
-                    avatarLocalUri = null,
-                    isAvatarUploading = false
-                )
+                _editUiState.value =
+                    _editUiState.value.copy(
+                        avatarUrl = uploadedAvatarUrl,
+                        avatarLocalUri = null,
+                        isAvatarUploading = false,
+                    )
             }
             .onFailure { throwable ->
-                _editUiState.value = _editUiState.value.copy(
-                    isSubmitting = false,
-                    isAvatarUploading = false,
-                    avatarError = FirebaseErrorMapper.toUserMessage(throwable)
-                )
+                _editUiState.value =
+                    _editUiState.value.copy(
+                        isSubmitting = false,
+                        isAvatarUploading = false,
+                        avatarError = FirebaseErrorMapper.toUserMessage(throwable),
+                    )
             }
             .getOrNull()
     }
@@ -265,7 +283,7 @@ class ProfileViewModel(application: Application) : AndroidViewModel(application)
                     val notificationRepo = AppContainer.notificationRepository(context)
                     val feedRepo = AppContainer.feedRepository()
                     val splitRepo = AppContainer.splitRepository()
-                    
+
                     DemoDataSeeder.seedDemoTransactions(personalRepo, profile.uid)
                     DemoDataSeeder.seedDemoNotifications(notificationRepo, profile.uid)
                     DemoDataSeeder.seedDemoSplit(splitRepo, profile.uid)
@@ -280,4 +298,3 @@ class ProfileViewModel(application: Application) : AndroidViewModel(application)
         }
     }
 }
-

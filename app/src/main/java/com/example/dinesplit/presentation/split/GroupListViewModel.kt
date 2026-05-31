@@ -13,13 +13,12 @@ import kotlinx.coroutines.launch
 data class GroupListUiState(
     val groups: List<Group> = emptyList(),
     val isLoading: Boolean = true,
-    val error: String? = null
+    val error: String? = null,
 )
 
 class GroupListViewModel(
-    private val repository: SplitRepository
+    private val repository: SplitRepository,
 ) : ViewModel() {
-
     private val _uiState = MutableStateFlow(GroupListUiState())
     val uiState: StateFlow<GroupListUiState> = _uiState.asStateFlow()
 
@@ -35,7 +34,7 @@ class GroupListViewModel(
                         it.copy(
                             groups = groups.sortedByDescending { group -> group.createdAt },
                             isLoading = false,
-                            error = null
+                            error = null,
                         )
                     }
                 }
@@ -43,7 +42,7 @@ class GroupListViewModel(
                 _uiState.update {
                     it.copy(
                         isLoading = false,
-                        error = throwable.message ?: "Không thể tải danh sách nhóm"
+                        error = throwable.message ?: "Không thể tải danh sách nhóm",
                     )
                 }
             }

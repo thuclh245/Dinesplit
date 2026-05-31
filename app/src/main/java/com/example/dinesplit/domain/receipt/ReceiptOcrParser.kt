@@ -11,186 +11,202 @@ object ReceiptOcrParser {
     private const val DONG_LETTER_CHAR = '\u0111'
     private const val DONG_SIGN_CHAR = '\u20ab'
 
-    private val amountPattern = Regex(
-        pattern = "(?i)(?:vnd|vn$DONG_LETTER|$DONG_LETTER|d|$DONG_SIGN)?\\s*" +
-            "((?:\\d{1,3}(?:[.,\\s]\\d{3})+|\\d+)(?:[.,]\\d{1,2})?)\\s*" +
-            "(?:vnd|vn$DONG_LETTER|$DONG_LETTER|d|$DONG_SIGN)?"
-    )
-
-    private val totalKeywords = listOf(
-        "grand total",
-        "total amount",
-        "amount due",
-        "balance due",
-        "tong cong",
-        "tong tien",
-        "thanh tien",
-        "thanh toan",
-        "can tra",
-        "phai tra",
-        "total"
-    )
-
-    private val nonTotalKeywords = listOf(
-        "subtotal",
-        "sub total",
-        "tam tinh",
-        "tax",
-        "vat",
-        "discount",
-        "giam gia",
-        "change",
-        "tien thua",
-        "cash",
-        "card",
-        "service charge",
-        "shipping",
-        "qty",
-        "quantity",
-        "unit price"
-    )
-
-    private val merchantNoiseKeywords = listOf(
-        "receipt",
-        "invoice",
-        "bill",
-        "hoa don",
-        "total",
-        "date",
-        "time",
-        "tel",
-        "phone",
-        "address",
-        "mst"
-    )
-
-    private val categoryBuckets = listOf(
-        CategoryKeywordBucket(
-            hints = setOf("food", "dining", "restaurant", "cafe", "coffee", "meal", "drink", "c_food"),
-            keywords = setOf(
-                "restaurant",
-                "cafe",
-                "coffee",
-                "tea",
-                "milk tea",
-                "pizza",
-                "burger",
-                "pho",
-                "banh",
-                "com",
-                "highlands",
-                "phuc long",
-                "starbucks",
-                "kfc",
-                "lotteria",
-                "jollibee",
-                "food",
-                "dining"
-            )
-        ),
-        CategoryKeywordBucket(
-            hints = setOf("grocery", "groceries", "market", "supermarket", "mart", "store", "c_grocery"),
-            keywords = setOf(
-                "grocery",
-                "groceries",
-                "supermarket",
-                "market",
-                "mini mart",
-                "mart",
-                "winmart",
-                "coop",
-                "co op",
-                "bach hoa",
-                "lotte mart",
-                "aeon",
-                "circle k",
-                "familymart",
-                "gs25",
-                "store"
-            )
-        ),
-        CategoryKeywordBucket(
-            hints = setOf("transit", "transport", "taxi", "ride", "bus", "train", "fuel", "parking", "c_transit"),
-            keywords = setOf(
-                "taxi",
-                "grab",
-                "gojek",
-                "be",
-                "xanh sm",
-                "bus",
-                "metro",
-                "train",
-                "parking",
-                "fuel",
-                "xang",
-                "toll",
-                "transport",
-                "transit"
-            )
-        ),
-        CategoryKeywordBucket(
-            hints = setOf("entertainment", "movie", "cinema", "ticket", "game", "event", "fun", "c_fun"),
-            keywords = setOf(
-                "cinema",
-                "movie",
-                "cgv",
-                "lotte cinema",
-                "bhd",
-                "galaxy",
-                "ticket",
-                "karaoke",
-                "event",
-                "game",
-                "netflix",
-                "spotify",
-                "entertainment"
-            )
+    private val amountPattern =
+        Regex(
+            pattern =
+                "(?i)(?:vnd|vn$DONG_LETTER|$DONG_LETTER|d|$DONG_SIGN)?\\s*" +
+                    "((?:\\d{1,3}(?:[.,\\s]\\d{3})+|\\d+)(?:[.,]\\d{1,2})?)\\s*" +
+                    "(?:vnd|vn$DONG_LETTER|$DONG_LETTER|d|$DONG_SIGN)?",
         )
-    )
 
-    fun parse(rawText: String, categories: List<ReceiptCategoryOption>): ReceiptOcrResult {
-        val lines = rawText
-            .lineSequence()
-            .map { it.trim() }
-            .filter { it.isNotBlank() }
-            .toList()
+    private val totalKeywords =
+        listOf(
+            "grand total",
+            "total amount",
+            "amount due",
+            "balance due",
+            "tong cong",
+            "tong tien",
+            "thanh tien",
+            "thanh toan",
+            "can tra",
+            "phai tra",
+            "total",
+        )
+
+    private val nonTotalKeywords =
+        listOf(
+            "subtotal",
+            "sub total",
+            "tam tinh",
+            "tax",
+            "vat",
+            "discount",
+            "giam gia",
+            "change",
+            "tien thua",
+            "cash",
+            "card",
+            "service charge",
+            "shipping",
+            "qty",
+            "quantity",
+            "unit price",
+        )
+
+    private val merchantNoiseKeywords =
+        listOf(
+            "receipt",
+            "invoice",
+            "bill",
+            "hoa don",
+            "total",
+            "date",
+            "time",
+            "tel",
+            "phone",
+            "address",
+            "mst",
+        )
+
+    private val categoryBuckets =
+        listOf(
+            CategoryKeywordBucket(
+                hints = setOf("food", "dining", "restaurant", "cafe", "coffee", "meal", "drink", "c_food"),
+                keywords =
+                    setOf(
+                        "restaurant",
+                        "cafe",
+                        "coffee",
+                        "tea",
+                        "milk tea",
+                        "pizza",
+                        "burger",
+                        "pho",
+                        "banh",
+                        "com",
+                        "highlands",
+                        "phuc long",
+                        "starbucks",
+                        "kfc",
+                        "lotteria",
+                        "jollibee",
+                        "food",
+                        "dining",
+                    ),
+            ),
+            CategoryKeywordBucket(
+                hints = setOf("grocery", "groceries", "market", "supermarket", "mart", "store", "c_grocery"),
+                keywords =
+                    setOf(
+                        "grocery",
+                        "groceries",
+                        "supermarket",
+                        "market",
+                        "mini mart",
+                        "mart",
+                        "winmart",
+                        "coop",
+                        "co op",
+                        "bach hoa",
+                        "lotte mart",
+                        "aeon",
+                        "circle k",
+                        "familymart",
+                        "gs25",
+                        "store",
+                    ),
+            ),
+            CategoryKeywordBucket(
+                hints = setOf("transit", "transport", "taxi", "ride", "bus", "train", "fuel", "parking", "c_transit"),
+                keywords =
+                    setOf(
+                        "taxi",
+                        "grab",
+                        "gojek",
+                        "be",
+                        "xanh sm",
+                        "bus",
+                        "metro",
+                        "train",
+                        "parking",
+                        "fuel",
+                        "xang",
+                        "toll",
+                        "transport",
+                        "transit",
+                    ),
+            ),
+            CategoryKeywordBucket(
+                hints = setOf("entertainment", "movie", "cinema", "ticket", "game", "event", "fun", "c_fun"),
+                keywords =
+                    setOf(
+                        "cinema",
+                        "movie",
+                        "cgv",
+                        "lotte cinema",
+                        "bhd",
+                        "galaxy",
+                        "ticket",
+                        "karaoke",
+                        "event",
+                        "game",
+                        "netflix",
+                        "spotify",
+                        "entertainment",
+                    ),
+            ),
+        )
+
+    fun parse(
+        rawText: String,
+        categories: List<ReceiptCategoryOption>,
+    ): ReceiptOcrResult {
+        val lines =
+            rawText
+                .lineSequence()
+                .map { it.trim() }
+                .filter { it.isNotBlank() }
+                .toList()
 
         return ReceiptOcrResult(
             rawText = rawText,
             amount = extractTotalAmount(lines),
             category = inferCategory(rawText, categories),
-            merchantName = inferMerchantName(lines)
+            merchantName = inferMerchantName(lines),
         )
     }
 
     private fun extractTotalAmount(lines: List<String>): Double? {
-        val candidates = lines.flatMapIndexed { index, line ->
-            amountPattern.findAll(line).mapNotNull { match ->
-                val token = match.groupValues[1]
-                val value = token.parseMoneyToken() ?: return@mapNotNull null
-                val normalizedLine = line.searchable()
-                val hasCurrency = match.value.hasCurrencyMarker()
-                val isTotalLine = totalKeywords.any { normalizedLine.contains(it) }
-                val isNonTotalLine = nonTotalKeywords.any { normalizedLine.contains(it) }
+        val candidates =
+            lines.flatMapIndexed { index, line ->
+                amountPattern.findAll(line).mapNotNull { match ->
+                    val token = match.groupValues[1]
+                    val value = token.parseMoneyToken() ?: return@mapNotNull null
+                    val normalizedLine = line.searchable()
+                    val hasCurrency = match.value.hasCurrencyMarker()
+                    val isTotalLine = totalKeywords.any { normalizedLine.contains(it) }
+                    val isNonTotalLine = nonTotalKeywords.any { normalizedLine.contains(it) }
 
-                if (value <= 0.0 || value > 1_000_000_000.0) return@mapNotNull null
-                if (value < 1_000.0 && !hasCurrency && !isTotalLine) return@mapNotNull null
+                    if (value <= 0.0 || value > 1_000_000_000.0) return@mapNotNull null
+                    if (value < 1_000.0 && !hasCurrency && !isTotalLine) return@mapNotNull null
 
-                val keywordScore = when {
-                    isTotalLine -> 100.0
-                    isNonTotalLine -> -60.0
-                    else -> 0.0
-                }
-                val currencyScore = if (hasCurrency) 12.0 else 0.0
-                val positionScore = index.toDouble() / 10.0
-                val valueScore = ln(value.coerceAtLeast(1.0)) / 10.0
+                    val keywordScore =
+                        when {
+                            isTotalLine -> 100.0
+                            isNonTotalLine -> -60.0
+                            else -> 0.0
+                        }
+                    val currencyScore = if (hasCurrency) 12.0 else 0.0
+                    val positionScore = index.toDouble() / 10.0
+                    val valueScore = ln(value.coerceAtLeast(1.0)) / 10.0
 
-                AmountCandidate(
-                    value = value,
-                    score = keywordScore + currencyScore + positionScore + valueScore
-                )
-            }.toList()
-        }
+                    AmountCandidate(
+                        value = value,
+                        score = keywordScore + currencyScore + positionScore + valueScore,
+                    )
+                }.toList()
+            }
 
         return candidates
             .maxWithOrNull(compareBy<AmountCandidate> { it.score }.thenBy { it.value })
@@ -199,7 +215,7 @@ object ReceiptOcrParser {
 
     private fun inferCategory(
         rawText: String,
-        categories: List<ReceiptCategoryOption>
+        categories: List<ReceiptCategoryOption>,
     ): ReceiptCategoryOption? {
         val searchableText = rawText.searchable()
         val expenseCategories = categories.filter { it.type == TransactionType.EXPENSE }
@@ -214,9 +230,10 @@ object ReceiptOcrParser {
     private fun ReceiptCategoryOption.score(searchableText: String): Int {
         val searchableId = id.searchable()
         val searchableName = name.searchable()
-        val nameTokens = searchableName
-            .split(Regex("""\s+"""))
-            .filter { it.length >= 3 }
+        val nameTokens =
+            searchableName
+                .split(Regex("""\s+"""))
+                .filter { it.length >= 3 }
 
         var score = nameTokens.count { searchableText.contains(it) } * 2
         if (searchableName.isNotBlank() && searchableText.contains(searchableName)) {
@@ -224,9 +241,10 @@ object ReceiptOcrParser {
         }
 
         categoryBuckets.forEach { bucket ->
-            val matchesBucket = bucket.hints.any { hint ->
-                searchableId.contains(hint) || searchableName.contains(hint)
-            }
+            val matchesBucket =
+                bucket.hints.any { hint ->
+                    searchableId.contains(hint) || searchableName.contains(hint)
+                }
             if (matchesBucket) {
                 score += bucket.keywords.count { keyword -> searchableText.contains(keyword) } * 3
             }
@@ -246,18 +264,20 @@ object ReceiptOcrParser {
     }
 
     private fun String.parseMoneyToken(): Double? {
-        val token = filter { it.isDigit() || it == '.' || it == ',' || it == ' ' }
-            .replace(" ", "")
+        val token =
+            filter { it.isDigit() || it == '.' || it == ',' || it == ' ' }
+                .replace(" ", "")
         if (token.isBlank() || token.none { it.isDigit() }) return null
 
         val dotCount = token.count { it == '.' }
         val commaCount = token.count { it == ',' }
-        val normalized = when {
-            dotCount > 0 && commaCount > 0 -> normalizeMixedSeparators(token)
-            dotCount > 0 -> normalizeSingleSeparator(token, '.')
-            commaCount > 0 -> normalizeSingleSeparator(token, ',')
-            else -> token
-        } ?: return null
+        val normalized =
+            when {
+                dotCount > 0 && commaCount > 0 -> normalizeMixedSeparators(token)
+                dotCount > 0 -> normalizeSingleSeparator(token, '.')
+                commaCount > 0 -> normalizeSingleSeparator(token, ',')
+                else -> token
+            } ?: return null
 
         return normalized.toDoubleOrNull()
     }
@@ -269,11 +289,12 @@ object ReceiptOcrParser {
         val fractionalLength = token.length - decimalIndex - 1
 
         return if (fractionalLength in 1..2) {
-            val whole = token.substring(0, decimalIndex)
-                .split(groupingSeparator)
-                .takeIf { it.hasValidGrouping() }
-                ?.joinToString("")
-                ?: return null
+            val whole =
+                token.substring(0, decimalIndex)
+                    .split(groupingSeparator)
+                    .takeIf { it.hasValidGrouping() }
+                    ?.joinToString("")
+                    ?: return null
             val fraction = token.substring(decimalIndex + 1)
             "$whole.$fraction"
         } else {
@@ -283,7 +304,10 @@ object ReceiptOcrParser {
         }
     }
 
-    private fun normalizeSingleSeparator(token: String, separator: Char): String? {
+    private fun normalizeSingleSeparator(
+        token: String,
+        separator: Char,
+    ): String? {
         val parts = token.split(separator)
         if (parts.size <= 1) return token
 
@@ -319,11 +343,11 @@ object ReceiptOcrParser {
 
     private data class AmountCandidate(
         val value: Double,
-        val score: Double
+        val score: Double,
     )
 
     private data class CategoryKeywordBucket(
         val hints: Set<String>,
-        val keywords: Set<String>
+        val keywords: Set<String>,
     )
 }

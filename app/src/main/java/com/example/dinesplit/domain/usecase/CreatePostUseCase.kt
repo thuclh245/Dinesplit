@@ -4,7 +4,7 @@ import com.example.dinesplit.domain.model.Post
 import com.example.dinesplit.domain.repository.FeedRepository
 
 class CreatePostUseCase(
-    private val repository: FeedRepository
+    private val repository: FeedRepository,
 ) {
     suspend operator fun invoke(post: Post) = repository.createPost(post)
 }

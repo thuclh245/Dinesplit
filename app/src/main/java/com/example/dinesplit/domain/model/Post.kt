@@ -20,5 +20,5 @@ data class Post(
     val visibility: String = "public", // "public" | "followers_only"
     val tags: List<String> = emptyList(),
     val createdAt: Date? = null,
-    val updatedAt: Date? = null
+    val updatedAt: Date? = null,
 )

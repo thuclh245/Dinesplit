@@ -4,7 +4,7 @@ import com.example.dinesplit.domain.model.AppStartDestination
 
 class ResolveStartDestinationUseCase(
     private val observeSessionUseCase: ObserveSessionUseCase,
-    private val getCurrentUserProfileUseCase: GetCurrentUserProfileUseCase
+    private val getCurrentUserProfileUseCase: GetCurrentUserProfileUseCase,
 ) {
     suspend operator fun invoke(): AppStartDestination {
         val session = observeSessionUseCase().value ?: return AppStartDestination.AUTH
@@ -16,4 +16,3 @@ class ResolveStartDestinationUseCase(
         }
     }
 }
-

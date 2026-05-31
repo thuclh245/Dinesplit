@@ -39,11 +39,11 @@ object FirebaseErrorMapper {
             FirebaseFirestoreException.Code.UNAUTHENTICATED -> "Authentication failed"
             FirebaseFirestoreException.Code.UNAVAILABLE,
             FirebaseFirestoreException.Code.DEADLINE_EXCEEDED,
-            FirebaseFirestoreException.Code.ABORTED -> "Firebase temporarily unavailable"
+            FirebaseFirestoreException.Code.ABORTED,
+            -> "Firebase temporarily unavailable"
             FirebaseFirestoreException.Code.INVALID_ARGUMENT -> "Invalid data"
             FirebaseFirestoreException.Code.NOT_FOUND -> "Data not found"
             else -> "Unable to save profile"
         }
     }
 }
-

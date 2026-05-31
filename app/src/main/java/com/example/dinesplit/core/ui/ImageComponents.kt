@@ -39,44 +39,46 @@ fun DineAvatarImage(
     imageUrl: String?,
     name: String?,
     modifier: Modifier = Modifier,
-    size: Dp = 48.dp
+    size: Dp = 48.dp,
 ) {
     val initial = name?.trim()?.firstOrNull()?.uppercase()
     var isError by remember(imageUrl) { mutableStateOf(false) }
 
     Box(
-        modifier = modifier
-            .size(size)
-            .clip(CircleShape)
-            .background(MaterialTheme.colorScheme.primaryContainer),
-        contentAlignment = Alignment.Center
+        modifier =
+            modifier
+                .size(size)
+                .clip(CircleShape)
+                .background(MaterialTheme.colorScheme.primaryContainer),
+        contentAlignment = Alignment.Center,
     ) {
         if (!imageUrl.isNullOrBlank() && !isError) {
             AsyncImage(
-                model = ImageRequest.Builder(LocalContext.current)
-                    .data(imageUrl)
-                    .crossfade(true)
-                    .build(),
+                model =
+                    ImageRequest.Builder(LocalContext.current)
+                        .data(imageUrl)
+                        .crossfade(true)
+                        .build(),
                 contentDescription = name,
                 modifier = Modifier.fillMaxSize(),
                 contentScale = ContentScale.Crop,
                 onState = { state ->
                     isError = state is AsyncImagePainter.State.Error
-                }
+                },
             )
         } else if (!initial.isNullOrBlank()) {
             Text(
                 text = initial,
                 style = MaterialTheme.typography.titleMedium,
                 fontWeight = FontWeight.ExtraBold,
-                color = MaterialTheme.colorScheme.onPrimaryContainer
+                color = MaterialTheme.colorScheme.onPrimaryContainer,
             )
         } else {
             Icon(
                 imageVector = Icons.Default.Person,
                 contentDescription = null,
                 tint = MaterialTheme.colorScheme.onPrimaryContainer,
-                modifier = Modifier.size(size * 0.5f)
+                modifier = Modifier.size(size * 0.5f),
             )
         }
     }
@@ -90,30 +92,32 @@ fun DinePostImage(
     imageUrl: String?,
     contentDescription: String?,
     modifier: Modifier = Modifier,
-    shape: RoundedCornerShape = RoundedCornerShape(AppDimens.radiusLg)
+    shape: RoundedCornerShape = RoundedCornerShape(AppDimens.radiusLg),
 ) {
     var isError by remember(imageUrl) { mutableStateOf(false) }
     var isLoading by remember(imageUrl) { mutableStateOf(true) }
 
     Box(
-        modifier = modifier
-            .clip(shape)
-            .background(MaterialTheme.colorScheme.surfaceContainerHigh),
-        contentAlignment = Alignment.Center
+        modifier =
+            modifier
+                .clip(shape)
+                .background(MaterialTheme.colorScheme.surfaceContainerHigh),
+        contentAlignment = Alignment.Center,
     ) {
         if (!imageUrl.isNullOrBlank() && !isError) {
             AsyncImage(
-                model = ImageRequest.Builder(LocalContext.current)
-                    .data(imageUrl)
-                    .crossfade(true)
-                    .build(),
+                model =
+                    ImageRequest.Builder(LocalContext.current)
+                        .data(imageUrl)
+                        .crossfade(true)
+                        .build(),
                 contentDescription = contentDescription,
                 modifier = Modifier.fillMaxSize(),
                 contentScale = ContentScale.Crop,
                 onState = { state ->
                     isLoading = state is AsyncImagePainter.State.Loading
                     isError = state is AsyncImagePainter.State.Error
-                }
+                },
             )
         } else {
             // Error or null URL
@@ -121,7 +125,7 @@ fun DinePostImage(
                 imageVector = Icons.Default.BrokenImage,
                 contentDescription = null,
                 tint = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.4f),
-                modifier = Modifier.size(48.dp)
+                modifier = Modifier.size(48.dp),
             )
         }
     }
@@ -135,12 +139,12 @@ fun DineGridImage(
     imageUrl: String?,
     contentDescription: String?,
     modifier: Modifier = Modifier,
-    shape: RoundedCornerShape = RoundedCornerShape(AppDimens.radiusSm)
+    shape: RoundedCornerShape = RoundedCornerShape(AppDimens.radiusSm),
 ) {
     DinePostImage(
         imageUrl = imageUrl,
         contentDescription = contentDescription,
         modifier = modifier,
-        shape = shape
+        shape = shape,
     )
 }

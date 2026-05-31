@@ -3,8 +3,8 @@ package com.example.dinesplit.core.ui
 import android.content.Context
 import android.graphics.Bitmap
 import android.graphics.BitmapFactory
-import androidx.compose.foundation.background
 import androidx.compose.foundation.Image
+import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
@@ -43,44 +43,45 @@ fun ProfileAvatarSection(
     clearText: String? = null,
     onActionClick: (() -> Unit)? = null,
     onClearClick: (() -> Unit)? = null,
-    isBusy: Boolean = false
+    isBusy: Boolean = false,
 ) {
     val avatarBitmap by rememberAvatarBitmap(avatarModel)
 
     AppCard(modifier = modifier) {
         Column(verticalArrangement = Arrangement.spacedBy(AppDimens.spaceMd)) {
             Box(
-                modifier = Modifier
-                    .size(72.dp)
-                    .clip(CircleShape)
-                    .background(MaterialTheme.colorScheme.primaryContainer),
-                contentAlignment = Alignment.Center
+                modifier =
+                    Modifier
+                        .size(72.dp)
+                        .clip(CircleShape)
+                        .background(MaterialTheme.colorScheme.primaryContainer),
+                contentAlignment = Alignment.Center,
             ) {
                 if (avatarBitmap != null) {
                     Image(
                         bitmap = avatarBitmap!!.asImageBitmap(),
                         contentDescription = title,
                         contentScale = ContentScale.Crop,
-                        modifier = Modifier.fillMaxSize()
+                        modifier = Modifier.fillMaxSize(),
                     )
                 } else {
                     Icon(
                         imageVector = Icons.Default.Person,
                         contentDescription = title,
-                        tint = MaterialTheme.colorScheme.onPrimaryContainer
+                        tint = MaterialTheme.colorScheme.onPrimaryContainer,
                     )
                 }
             }
 
             Text(
                 text = title,
-                style = MaterialTheme.typography.titleMedium
+                style = MaterialTheme.typography.titleMedium,
             )
             if (!subtitle.isNullOrBlank()) {
                 Text(
                     text = subtitle,
                     style = MaterialTheme.typography.bodyMedium,
-                    color = MaterialTheme.colorScheme.onSurfaceVariant
+                    color = MaterialTheme.colorScheme.onSurfaceVariant,
                 )
             }
 
@@ -88,7 +89,7 @@ fun ProfileAvatarSection(
                 PrimaryButton(
                     text = if (isBusy) "$actionText..." else actionText,
                     onClick = onActionClick,
-                    enabled = !isBusy
+                    enabled = !isBusy,
                 )
             }
 
@@ -96,7 +97,7 @@ fun ProfileAvatarSection(
                 SecondaryButton(
                     text = clearText,
                     onClick = onClearClick,
-                    enabled = !isBusy
+                    enabled = !isBusy,
                 )
             }
         }
@@ -111,7 +112,10 @@ private fun rememberAvatarBitmap(avatarModel: Any?): androidx.compose.runtime.St
     }
 }
 
-private suspend fun loadAvatarBitmap(context: Context, avatarModel: Any?): Bitmap? {
+private suspend fun loadAvatarBitmap(
+    context: Context,
+    avatarModel: Any?,
+): Bitmap? {
     val model = avatarModel?.toString().orEmpty()
     if (model.isBlank()) return null
 
@@ -131,12 +135,3 @@ private fun InputStream?.useBitmapStream(): Bitmap? {
     this ?: return null
     return use { stream -> BitmapFactory.decodeStream(stream) }
 }
-
-
-
-
-
-
-
-
-

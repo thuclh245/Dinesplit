@@ -7,7 +7,6 @@ import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
-import androidx.compose.foundation.layout.size
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
@@ -21,23 +20,24 @@ import kotlin.math.max
 @Composable
 fun PersonalDailyExpenseBarChart(
     bars: List<DailyExpenseBar>,
-    modifier: Modifier = Modifier
+    modifier: Modifier = Modifier,
 ) {
     val validBars = bars.filter { it.amount > 0.0 }.sortedBy { it.dayOfMonth }
     val maxAmount = validBars.maxOfOrNull { it.amount } ?: 0.0
 
     if (validBars.isEmpty() || maxAmount <= 0.0) {
         Box(
-            modifier = modifier
-                .height(180.dp)
-                .clip(MaterialTheme.shapes.large)
-                .background(MaterialTheme.colorScheme.surfaceVariant),
-            contentAlignment = Alignment.Center
+            modifier =
+                modifier
+                    .height(180.dp)
+                    .clip(MaterialTheme.shapes.large)
+                    .background(MaterialTheme.colorScheme.surfaceVariant),
+            contentAlignment = Alignment.Center,
         ) {
             Text(
                 text = "No daily expense data",
                 style = MaterialTheme.typography.bodyMedium,
-                color = MaterialTheme.colorScheme.onSurfaceVariant
+                color = MaterialTheme.colorScheme.onSurfaceVariant,
             )
         }
         return
@@ -45,39 +45,41 @@ fun PersonalDailyExpenseBarChart(
 
     Column(
         modifier = modifier,
-        verticalArrangement = Arrangement.spacedBy(AppDimens.spaceSm)
+        verticalArrangement = Arrangement.spacedBy(AppDimens.spaceSm),
     ) {
         Row(
-            modifier = Modifier
-                .fillMaxWidth()
-                .height(170.dp),
+            modifier =
+                Modifier
+                    .fillMaxWidth()
+                    .height(170.dp),
             horizontalArrangement = Arrangement.spacedBy(AppDimens.spaceXs),
-            verticalAlignment = Alignment.Bottom
+            verticalAlignment = Alignment.Bottom,
         ) {
             validBars.forEach { item ->
                 val fraction = (item.amount / maxAmount).toFloat().coerceIn(0.05f, 1f)
                 Column(
                     modifier = Modifier.weight(1f),
                     horizontalAlignment = Alignment.CenterHorizontally,
-                    verticalArrangement = Arrangement.spacedBy(AppDimens.spaceXs)
+                    verticalArrangement = Arrangement.spacedBy(AppDimens.spaceXs),
                 ) {
                     Text(
                         text = item.amount.toInt().toString(),
                         style = MaterialTheme.typography.labelSmall,
                         color = MaterialTheme.colorScheme.onSurfaceVariant,
-                        maxLines = 1
+                        maxLines = 1,
                     )
                     Box(
-                        modifier = Modifier
-                            .fillMaxWidth()
-                            .height(max(18f, 110f * fraction).dp)
-                            .clip(MaterialTheme.shapes.small)
-                            .background(MaterialTheme.colorScheme.primary)
+                        modifier =
+                            Modifier
+                                .fillMaxWidth()
+                                .height(max(18f, 110f * fraction).dp)
+                                .clip(MaterialTheme.shapes.small)
+                                .background(MaterialTheme.colorScheme.primary),
                     )
                     Text(
                         text = item.dayOfMonth.toString(),
                         style = MaterialTheme.typography.labelSmall,
-                        color = MaterialTheme.colorScheme.onSurfaceVariant
+                        color = MaterialTheme.colorScheme.onSurfaceVariant,
                     )
                 }
             }
@@ -86,8 +88,7 @@ fun PersonalDailyExpenseBarChart(
         Text(
             text = "Day of month",
             style = MaterialTheme.typography.bodySmall,
-            color = MaterialTheme.colorScheme.onSurfaceVariant
+            color = MaterialTheme.colorScheme.onSurfaceVariant,
         )
     }
 }
-

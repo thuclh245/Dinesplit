@@ -1,10 +1,10 @@
 package com.example.dinesplit.core.common
 
+import android.content.Context
 import com.example.dinesplit.data.repository.*
 import com.example.dinesplit.domain.repository.*
 import com.example.dinesplit.domain.usecase.*
 import com.google.firebase.firestore.FirebaseFirestore
-import android.content.Context
 
 object AppContainer {
     fun authRepository(context: Context): AuthRepository {
@@ -78,7 +78,7 @@ object AppContainer {
     fun resolveStartDestinationUseCase(context: Context): ResolveStartDestinationUseCase {
         return ResolveStartDestinationUseCase(
             observeSessionUseCase = observeSessionUseCase(context),
-            getCurrentUserProfileUseCase = getCurrentUserProfileUseCase(context)
+            getCurrentUserProfileUseCase = getCurrentUserProfileUseCase(context),
         )
     }
 
@@ -86,4 +86,3 @@ object AppContainer {
         return FirebaseSplitRepository.getInstance(context)
     }
 }
-

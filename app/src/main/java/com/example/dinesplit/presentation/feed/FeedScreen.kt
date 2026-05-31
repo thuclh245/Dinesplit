@@ -10,17 +10,12 @@ import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.*
-import androidx.compose.material.icons.automirrored.filled.ReceiptLong
 import androidx.compose.material.icons.outlined.BookmarkBorder
 import androidx.compose.material.icons.outlined.ChatBubbleOutline
 import androidx.compose.material.icons.outlined.FavoriteBorder
 import androidx.compose.material.icons.outlined.Share
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
-import androidx.compose.ui.platform.LocalContext
-import androidx.lifecycle.viewmodel.compose.viewModel
-import com.example.dinesplit.domain.model.Post
-import com.example.dinesplit.domain.model.UserProfile
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.alpha
@@ -29,25 +24,27 @@ import androidx.compose.ui.draw.shadow
 import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.layout.ContentScale
+import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.SpanStyle
 import androidx.compose.ui.text.buildAnnotatedString
 import androidx.compose.ui.text.font.FontWeight
-import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.text.withStyle
 import androidx.compose.ui.tooling.preview.Preview
+import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
-import androidx.compose.ui.unit.Dp
+import androidx.lifecycle.viewmodel.compose.viewModel
 import coil.compose.AsyncImage
-import com.example.dinesplit.ui.theme.DineSplitTheme
-import com.example.dinesplit.core.ui.HomeTopBar
-import com.example.dinesplit.core.ui.LoadingBlock
-import com.example.dinesplit.core.ui.ErrorStateBlock
-import com.example.dinesplit.core.ui.EmptyStateBlock
 import com.example.dinesplit.core.ui.AppDimens
 import com.example.dinesplit.core.ui.DineAvatarImage
 import com.example.dinesplit.core.ui.DinePostImage
+import com.example.dinesplit.core.ui.EmptyStateBlock
+import com.example.dinesplit.core.ui.ErrorStateBlock
+import com.example.dinesplit.core.ui.LoadingBlock
+import com.example.dinesplit.domain.model.Post
+import com.example.dinesplit.domain.model.UserProfile
+import com.example.dinesplit.ui.theme.DineSplitTheme
 
 @Composable
 fun FeedScreen(
@@ -59,7 +56,7 @@ fun FeedScreen(
     onOpenPostDetail: (String) -> Unit = {},
     onOpenUserProfile: (String) -> Unit = {},
     onEditPost: (String) -> Unit = {},
-    onSettleUp: (String, String) -> Unit
+    onSettleUp: (String, String) -> Unit,
 ) {
     val uiState by viewModel.uiState.collectAsState()
     var postToDeleteId by remember { mutableStateOf<String?>(null) }
@@ -75,7 +72,7 @@ fun FeedScreen(
                         val id = postToDeleteId!!
                         postToDeleteId = null
                         viewModel.onDeletePost(id)
-                    }
+                    },
                 ) {
                     Text("Xóa", color = MaterialTheme.colorScheme.error)
                 }
@@ -84,7 +81,7 @@ fun FeedScreen(
                 TextButton(onClick = { postToDeleteId = null }) {
                     Text("Hủy")
                 }
-            }
+            },
         )
     }
 
@@ -94,21 +91,29 @@ fun FeedScreen(
             Column(
                 horizontalAlignment = Alignment.End,
                 verticalArrangement = Arrangement.spacedBy(12.dp),
-                modifier = Modifier.padding(bottom = bottomPadding)
+                modifier = Modifier.padding(bottom = bottomPadding),
             ) {
                 // DINERS Badge (Floating at the bottom right, above navbar)
                 Surface(
                     color = MaterialTheme.colorScheme.surfaceContainerLowest.copy(alpha = 0.92f),
                     shape = CircleShape,
-                    modifier = Modifier.shadow(8.dp, CircleShape)
+                    modifier = Modifier.shadow(8.dp, CircleShape),
                 ) {
                     Row(
                         modifier = Modifier.padding(horizontal = 12.dp, vertical = 6.dp),
                         verticalAlignment = Alignment.CenterVertically,
-                        horizontalArrangement = Arrangement.spacedBy(8.dp)
+                        horizontalArrangement = Arrangement.spacedBy(8.dp),
                     ) {
-                        Icon(Icons.Default.Group, contentDescription = null, modifier = Modifier.size(14.dp), tint = MaterialTheme.colorScheme.primary)
-                        Text("${uiState.posts.size} BÀI", style = MaterialTheme.typography.labelSmall.copy(fontSize = 10.sp, fontWeight = FontWeight.Black))
+                        Icon(
+                            Icons.Default.Group,
+                            contentDescription = null,
+                            modifier = Modifier.size(14.dp),
+                            tint = MaterialTheme.colorScheme.primary,
+                        )
+                        Text(
+                            "${uiState.posts.size} BÀI",
+                            style = MaterialTheme.typography.labelSmall.copy(fontSize = 10.sp, fontWeight = FontWeight.Black),
+                        )
                     }
                 }
 
@@ -118,21 +123,22 @@ fun FeedScreen(
                     containerColor = MaterialTheme.colorScheme.secondary,
                     contentColor = MaterialTheme.colorScheme.onSecondary,
                     shape = CircleShape,
-                    modifier = Modifier
-                        .size(52.dp)
-                        .shadow(12.dp, CircleShape, spotColor = MaterialTheme.colorScheme.secondary.copy(alpha = 0.4f))
+                    modifier =
+                        Modifier
+                            .size(52.dp)
+                            .shadow(12.dp, CircleShape, spotColor = MaterialTheme.colorScheme.secondary.copy(alpha = 0.4f)),
                 ) {
                     Icon(Icons.Default.AddAPhoto, contentDescription = "New Post", modifier = Modifier.size(22.dp))
                 }
             }
-        }
+        },
     ) { padding ->
         when {
             uiState.isLoading -> {
                 Box(modifier = Modifier.fillMaxSize().padding(padding).padding(top = 64.dp), contentAlignment = Alignment.Center) {
                     LoadingBlock(
                         message = "Đang tải bài viết...",
-                        modifier = Modifier.padding(AppDimens.spaceLg)
+                        modifier = Modifier.padding(AppDimens.spaceLg),
                     )
                 }
             }
@@ -143,7 +149,7 @@ fun FeedScreen(
                         subtitle = uiState.error.orEmpty(),
                         retryText = "Thử lại",
                         onRetryClick = { viewModel.refresh() },
-                        modifier = Modifier.padding(AppDimens.spaceLg)
+                        modifier = Modifier.padding(AppDimens.spaceLg),
                     )
                 }
             }
@@ -154,34 +160,39 @@ fun FeedScreen(
                         subtitle = "Hãy là người đầu tiên chia sẻ khoảnh khắc ẩm thực!",
                         actionText = "Đăng bài ngày",
                         onActionClick = onCreatePost,
-                        modifier = Modifier.padding(AppDimens.spaceLg)
+                        modifier = Modifier.padding(AppDimens.spaceLg),
                     )
                 }
             }
             else -> {
                 val context = LocalContext.current
                 LazyColumn(
-                    modifier = Modifier
-                        .fillMaxSize()
-                        .background(MaterialTheme.colorScheme.background)
-                        .padding(padding),
-                    contentPadding = PaddingValues(top = 64.dp, bottom = 96.dp)
+                    modifier =
+                        Modifier
+                            .fillMaxSize()
+                            .background(MaterialTheme.colorScheme.background)
+                            .padding(padding),
+                    contentPadding = PaddingValues(top = 64.dp, bottom = 96.dp),
                 ) {
                     item {
                         val currentUser = uiState.currentUser
-                        val myActivePost = if (currentUser != null) {
-                            uiState.posts.firstOrNull { post ->
-                                post.authorUid == currentUser.uid &&
-                                post.createdAt?.let { (System.currentTimeMillis() - it.time) < 24 * 60 * 60 * 1000 } == true
+                        val myActivePost =
+                            if (currentUser != null) {
+                                uiState.posts.firstOrNull { post ->
+                                    post.authorUid == currentUser.uid &&
+                                        post.createdAt?.let { (System.currentTimeMillis() - it.time) < 24 * 60 * 60 * 1000 } == true
+                                }
+                            } else {
+                                null
                             }
-                        } else null
 
                         // Exclude current user from other stories to avoid duplication
-                        val otherVibesPosts = uiState.posts
-                            .filter { post -> currentUser == null || post.authorUid != currentUser.uid }
-                            .distinctBy { it.authorUid }
-                            .sortedBy { post -> uiState.viewedStoryIds.contains(post.id) }
-                            .take(8)
+                        val otherVibesPosts =
+                            uiState.posts
+                                .filter { post -> currentUser == null || post.authorUid != currentUser.uid }
+                                .distinctBy { it.authorUid }
+                                .sortedBy { post -> uiState.viewedStoryIds.contains(post.id) }
+                                .take(8)
 
                         RecentGroupVibes(
                             posts = otherVibesPosts,
@@ -192,7 +203,7 @@ fun FeedScreen(
                                 viewModel.markStoryAsViewed(post.id)
                                 onOpenPostDetail(post.id)
                             },
-                            onCreatePostClick = onCreatePost
+                            onCreatePostClick = onCreatePost,
                         )
                     }
 
@@ -207,15 +218,17 @@ fun FeedScreen(
                             onUnlike = { viewModel.onUnlikePost(post.id) },
                             onComment = { onOpenPostDetail(post.id) },
                             onShare = {
-                                val shareText = buildString {
-                                    append("${post.authorName} đã chia sẻ tại DineSplit!\n")
-                                    if (!post.location.isNullOrBlank()) append("📍 ${post.location}\n")
-                                    if (post.caption.isNotBlank()) append(post.caption)
-                                }
-                                val intent = Intent(Intent.ACTION_SEND).apply {
-                                    type = "text/plain"
-                                    putExtra(Intent.EXTRA_TEXT, shareText)
-                                }
+                                val shareText =
+                                    buildString {
+                                        append("${post.authorName} đã chia sẻ tại DineSplit!\n")
+                                        if (!post.location.isNullOrBlank()) append("📍 ${post.location}\n")
+                                        if (post.caption.isNotBlank()) append(post.caption)
+                                    }
+                                val intent =
+                                    Intent(Intent.ACTION_SEND).apply {
+                                        type = "text/plain"
+                                        putExtra(Intent.EXTRA_TEXT, shareText)
+                                    }
                                 context.startActivity(Intent.createChooser(intent, "Chia sẻ bài viết"))
                             },
                             onAuthorClick = { onOpenUserProfile(post.authorUid) },
@@ -227,7 +240,7 @@ fun FeedScreen(
                                 if (gId != null && bId != null) {
                                     onSettleUp(gId, bId)
                                 }
-                            }
+                            },
                         )
                     }
                 }
@@ -243,163 +256,208 @@ private fun RecentGroupVibes(
     currentUser: UserProfile? = null,
     myActivePost: Post? = null,
     onVibeClick: (Post) -> Unit = {},
-    onCreatePostClick: () -> Unit = {}
+    onCreatePostClick: () -> Unit = {},
 ) {
     Column(modifier = Modifier.padding(vertical = 16.dp)) {
         Text(
             text = "RECENT GROUP VIBES",
-            style = MaterialTheme.typography.labelSmall.copy(
-                fontWeight = FontWeight.Bold,
-                letterSpacing = 2.sp
-            ),
+            style =
+                MaterialTheme.typography.labelSmall.copy(
+                    fontWeight = FontWeight.Bold,
+                    letterSpacing = 2.sp,
+                ),
             color = MaterialTheme.colorScheme.outlineVariant,
-            modifier = Modifier.padding(horizontal = 24.dp, vertical = 16.dp)
+            modifier = Modifier.padding(horizontal = 24.dp, vertical = 16.dp),
         )
 
         if (posts.isEmpty() && currentUser == null) {
             // Show placeholder story circles when no data
             LazyRow(
                 contentPadding = PaddingValues(horizontal = 24.dp),
-                horizontalArrangement = Arrangement.spacedBy(16.dp)
+                horizontalArrangement = Arrangement.spacedBy(16.dp),
             ) {
                 items(vibes) { vibe ->
                     Column(
                         horizontalAlignment = Alignment.CenterHorizontally,
-                        verticalArrangement = Arrangement.spacedBy(8.dp)
+                        verticalArrangement = Arrangement.spacedBy(8.dp),
                     ) {
                         Box(
-                            modifier = Modifier
-                                .size(80.dp)
-                                .background(
-                                    if (vibe.hasStory) Brush.sweepGradient(listOf(MaterialTheme.colorScheme.primary, MaterialTheme.colorScheme.secondary, MaterialTheme.colorScheme.primary))
-                                    else Brush.linearGradient(listOf(MaterialTheme.colorScheme.surfaceContainerHigh, MaterialTheme.colorScheme.surfaceContainerHigh)),
-                                    CircleShape
-                                )
-                                .padding(4.dp)
+                            modifier =
+                                Modifier
+                                    .size(80.dp)
+                                    .background(
+                                        if (vibe.hasStory) {
+                                            Brush.sweepGradient(
+                                                listOf(
+                                                    MaterialTheme.colorScheme.primary,
+                                                    MaterialTheme.colorScheme.secondary,
+                                                    MaterialTheme.colorScheme.primary,
+                                                ),
+                                            )
+                                        } else {
+                                            Brush.linearGradient(
+                                                listOf(
+                                                    MaterialTheme.colorScheme.surfaceContainerHigh,
+                                                    MaterialTheme.colorScheme.surfaceContainerHigh,
+                                                ),
+                                            )
+                                        },
+                                        CircleShape,
+                                    )
+                                    .padding(4.dp),
                         ) {
                             DineAvatarImage(
                                 imageUrl = vibe.avatar,
                                 name = vibe.name,
-                                modifier = Modifier
-                                    .fillMaxSize()
-                                    .border(4.dp, MaterialTheme.colorScheme.background, CircleShape),
-                                size = 72.dp
+                                modifier =
+                                    Modifier
+                                        .fillMaxSize()
+                                        .border(4.dp, MaterialTheme.colorScheme.background, CircleShape),
+                                size = 72.dp,
                             )
                         }
-                        Text(vibe.name, style = MaterialTheme.typography.labelSmall.copy(fontWeight = FontWeight.SemiBold), color = MaterialTheme.colorScheme.onSurface)
+                        Text(
+                            vibe.name,
+                            style = MaterialTheme.typography.labelSmall.copy(fontWeight = FontWeight.SemiBold),
+                            color = MaterialTheme.colorScheme.onSurface,
+                        )
                     }
                 }
             }
         } else {
             LazyRow(
                 contentPadding = PaddingValues(horizontal = 24.dp),
-                horizontalArrangement = Arrangement.spacedBy(16.dp)
+                horizontalArrangement = Arrangement.spacedBy(16.dp),
             ) {
                 // 1. Current user fixed story circle
                 if (currentUser != null) {
                     item {
                         Box(
-                            modifier = Modifier
-                                .width(100.dp)
-                                .height(150.dp)
-                                .clip(RoundedCornerShape(20.dp))
-                                .background(MaterialTheme.colorScheme.primaryContainer)
-                                .clickable {
-                                    if (myActivePost != null) {
-                                        onVibeClick(myActivePost)
-                                    } else {
-                                        onCreatePostClick()
-                                    }
-                                }
+                            modifier =
+                                Modifier
+                                    .width(100.dp)
+                                    .height(150.dp)
+                                    .clip(RoundedCornerShape(20.dp))
+                                    .background(MaterialTheme.colorScheme.primaryContainer)
+                                    .clickable {
+                                        if (myActivePost != null) {
+                                            onVibeClick(myActivePost)
+                                        } else {
+                                            onCreatePostClick()
+                                        }
+                                    },
                         ) {
                             if (myActivePost != null && myActivePost.imageUrls.isNotEmpty()) {
                                 AsyncImage(
                                     model = myActivePost.imageUrls.first(),
                                     contentDescription = null,
                                     modifier = Modifier.fillMaxSize().alpha(0.85f),
-                                    contentScale = ContentScale.Crop
+                                    contentScale = ContentScale.Crop,
                                 )
                             } else {
                                 Box(
-                                    modifier = Modifier.fillMaxSize().background(
-                                        Brush.linearGradient(
-                                            listOf(MaterialTheme.colorScheme.primary.copy(0.4f), MaterialTheme.colorScheme.secondary.copy(0.4f))
-                                        )
-                                    ),
-                                    contentAlignment = Alignment.Center
+                                    modifier =
+                                        Modifier.fillMaxSize().background(
+                                            Brush.linearGradient(
+                                                listOf(
+                                                    MaterialTheme.colorScheme.primary.copy(0.4f),
+                                                    MaterialTheme.colorScheme.secondary.copy(0.4f),
+                                                ),
+                                            ),
+                                        ),
+                                    contentAlignment = Alignment.Center,
                                 ) {
-                                    Icon(Icons.Default.Restaurant, contentDescription = null, tint = Color.White.copy(0.6f), modifier = Modifier.size(36.dp))
+                                    Icon(
+                                        Icons.Default.Restaurant,
+                                        contentDescription = null,
+                                        tint = Color.White.copy(0.6f),
+                                        modifier = Modifier.size(36.dp),
+                                    )
                                 }
                             }
                             // gradient overlay
-                            Box(modifier = Modifier.fillMaxSize().background(Brush.verticalGradient(listOf(Color.Transparent, Color.Black.copy(alpha = 0.75f)))))
+                            Box(
+                                modifier =
+                                    Modifier.fillMaxSize().background(
+                                        Brush.verticalGradient(listOf(Color.Transparent, Color.Black.copy(alpha = 0.75f))),
+                                    ),
+                            )
 
                             // Author avatar at top
                             Box(
-                                modifier = Modifier
-                                    .align(Alignment.TopStart)
-                                    .padding(8.dp)
-                                    .size(36.dp)
-                                    .background(
-                                        Brush.sweepGradient(listOf(MaterialTheme.colorScheme.primary, MaterialTheme.colorScheme.secondary, MaterialTheme.colorScheme.primary)),
-                                        CircleShape
-                                    )
-                                    .padding(2.dp)
+                                modifier =
+                                    Modifier
+                                        .align(Alignment.TopStart)
+                                        .padding(8.dp)
+                                        .size(36.dp)
+                                        .background(
+                                            Brush.sweepGradient(
+                                                listOf(
+                                                    MaterialTheme.colorScheme.primary,
+                                                    MaterialTheme.colorScheme.secondary,
+                                                    MaterialTheme.colorScheme.primary,
+                                                ),
+                                            ),
+                                            CircleShape,
+                                        )
+                                        .padding(2.dp),
                             ) {
                                 DineAvatarImage(
                                     imageUrl = currentUser.avatarUrl,
                                     name = currentUser.displayName,
                                     modifier = Modifier.fillMaxSize().border(2.dp, MaterialTheme.colorScheme.background, CircleShape),
-                                    size = 32.dp
+                                    size = 32.dp,
                                 )
                             }
 
                             // Active dot or add icon
                             if (myActivePost != null && !viewedStoryIds.contains(myActivePost.id)) {
                                 Box(
-                                    modifier = Modifier
-                                        .align(Alignment.TopEnd)
-                                        .padding(10.dp)
-                                        .size(10.dp)
-                                        .background(MaterialTheme.colorScheme.secondary, CircleShape)
-                                        .border(2.dp, Color.White, CircleShape)
+                                    modifier =
+                                        Modifier
+                                            .align(Alignment.TopEnd)
+                                            .padding(10.dp)
+                                            .size(10.dp)
+                                            .background(MaterialTheme.colorScheme.secondary, CircleShape)
+                                            .border(2.dp, Color.White, CircleShape),
                                 )
                             } else if (myActivePost == null) {
                                 Box(
-                                    modifier = Modifier
-                                        .align(Alignment.TopEnd)
-                                        .padding(10.dp)
-                                        .size(16.dp)
-                                        .background(MaterialTheme.colorScheme.primary, CircleShape)
-                                        .border(1.dp, Color.White, CircleShape),
-                                    contentAlignment = Alignment.Center
+                                    modifier =
+                                        Modifier
+                                            .align(Alignment.TopEnd)
+                                            .padding(10.dp)
+                                            .size(16.dp)
+                                            .background(MaterialTheme.colorScheme.primary, CircleShape)
+                                            .border(1.dp, Color.White, CircleShape),
+                                    contentAlignment = Alignment.Center,
                                 ) {
                                     Icon(
                                         imageVector = Icons.Default.Add,
                                         contentDescription = "Thêm tin",
                                         tint = Color.White,
-                                        modifier = Modifier.size(10.dp)
+                                        modifier = Modifier.size(10.dp),
                                     )
                                 }
                             }
 
                             // Author name at bottom ("Tin của tôi")
                             Column(
-                                modifier = Modifier.align(Alignment.BottomStart).padding(8.dp)
+                                modifier = Modifier.align(Alignment.BottomStart).padding(8.dp),
                             ) {
                                 Text(
                                     text = "Tin của tôi",
                                     style = MaterialTheme.typography.labelSmall.copy(fontWeight = FontWeight.Bold, fontSize = 10.sp),
                                     color = Color.White,
                                     maxLines = 1,
-                                    overflow = TextOverflow.Ellipsis
+                                    overflow = TextOverflow.Ellipsis,
                                 )
                                 Text(
                                     text = if (myActivePost != null) "Đang hoạt động" else "Tạo tin mới",
                                     style = MaterialTheme.typography.labelSmall.copy(fontSize = 9.sp),
                                     color = Color.White.copy(alpha = 0.75f),
                                     maxLines = 1,
-                                    overflow = TextOverflow.Ellipsis
+                                    overflow = TextOverflow.Ellipsis,
                                 )
                             }
                         }
@@ -410,74 +468,97 @@ private fun RecentGroupVibes(
                 items(posts) { post ->
                     // Story card: show post image with author name
                     Box(
-                        modifier = Modifier
-                            .width(100.dp)
-                            .height(150.dp)
-                            .clip(RoundedCornerShape(20.dp))
-                            .background(MaterialTheme.colorScheme.primaryContainer)
-                            .clickable { onVibeClick(post) }
+                        modifier =
+                            Modifier
+                                .width(100.dp)
+                                .height(150.dp)
+                                .clip(RoundedCornerShape(20.dp))
+                                .background(MaterialTheme.colorScheme.primaryContainer)
+                                .clickable { onVibeClick(post) },
                     ) {
                         if (post.imageUrls.isNotEmpty()) {
                             AsyncImage(
                                 model = post.imageUrls.first(),
                                 contentDescription = null,
                                 modifier = Modifier.fillMaxSize().alpha(0.85f),
-                                contentScale = ContentScale.Crop
+                                contentScale = ContentScale.Crop,
                             )
                         } else {
                             Box(
-                                modifier = Modifier.fillMaxSize().background(
-                                    Brush.linearGradient(
-                                        listOf(MaterialTheme.colorScheme.primary.copy(0.4f), MaterialTheme.colorScheme.secondary.copy(0.4f))
-                                    )
-                                ),
-                                contentAlignment = Alignment.Center
+                                modifier =
+                                    Modifier.fillMaxSize().background(
+                                        Brush.linearGradient(
+                                            listOf(
+                                                MaterialTheme.colorScheme.primary.copy(0.4f),
+                                                MaterialTheme.colorScheme.secondary.copy(0.4f),
+                                            ),
+                                        ),
+                                    ),
+                                contentAlignment = Alignment.Center,
                             ) {
-                                Icon(Icons.Default.Restaurant, contentDescription = null, tint = Color.White.copy(0.6f), modifier = Modifier.size(36.dp))
+                                Icon(
+                                    Icons.Default.Restaurant,
+                                    contentDescription = null,
+                                    tint = Color.White.copy(0.6f),
+                                    modifier = Modifier.size(36.dp),
+                                )
                             }
                         }
                         // gradient overlay
-                        Box(modifier = Modifier.fillMaxSize().background(Brush.verticalGradient(listOf(Color.Transparent, Color.Black.copy(alpha = 0.75f)))))
+                        Box(
+                            modifier =
+                                Modifier.fillMaxSize().background(
+                                    Brush.verticalGradient(listOf(Color.Transparent, Color.Black.copy(alpha = 0.75f))),
+                                ),
+                        )
                         // Author avatar at top
                         Box(
-                            modifier = Modifier
-                                .align(Alignment.TopStart)
-                                .padding(8.dp)
-                                .size(36.dp)
-                                .background(
-                                    Brush.sweepGradient(listOf(MaterialTheme.colorScheme.primary, MaterialTheme.colorScheme.secondary, MaterialTheme.colorScheme.primary)),
-                                    CircleShape
-                                )
-                                .padding(2.dp)
+                            modifier =
+                                Modifier
+                                    .align(Alignment.TopStart)
+                                    .padding(8.dp)
+                                    .size(36.dp)
+                                    .background(
+                                        Brush.sweepGradient(
+                                            listOf(
+                                                MaterialTheme.colorScheme.primary,
+                                                MaterialTheme.colorScheme.secondary,
+                                                MaterialTheme.colorScheme.primary,
+                                            ),
+                                        ),
+                                        CircleShape,
+                                    )
+                                    .padding(2.dp),
                         ) {
                             DineAvatarImage(
                                 imageUrl = post.authorAvatar,
                                 name = post.authorName,
                                 modifier = Modifier.fillMaxSize().border(2.dp, MaterialTheme.colorScheme.background, CircleShape),
-                                size = 32.dp
+                                size = 32.dp,
                             )
                         }
                         // Active dot
                         if (!viewedStoryIds.contains(post.id)) {
                             Box(
-                                modifier = Modifier
-                                    .align(Alignment.TopEnd)
-                                    .padding(10.dp)
-                                    .size(10.dp)
-                                    .background(MaterialTheme.colorScheme.secondary, CircleShape)
-                                    .border(2.dp, Color.White, CircleShape)
+                                modifier =
+                                    Modifier
+                                        .align(Alignment.TopEnd)
+                                        .padding(10.dp)
+                                        .size(10.dp)
+                                        .background(MaterialTheme.colorScheme.secondary, CircleShape)
+                                        .border(2.dp, Color.White, CircleShape),
                             )
                         }
                         // Author name at bottom
                         Column(
-                            modifier = Modifier.align(Alignment.BottomStart).padding(8.dp)
+                            modifier = Modifier.align(Alignment.BottomStart).padding(8.dp),
                         ) {
                             Text(
                                 text = post.authorName,
                                 style = MaterialTheme.typography.labelSmall.copy(fontWeight = FontWeight.Bold, fontSize = 10.sp),
                                 color = Color.White,
                                 maxLines = 1,
-                                overflow = TextOverflow.Ellipsis
+                                overflow = TextOverflow.Ellipsis,
                             )
                             if (!post.location.isNullOrBlank()) {
                                 Text(
@@ -485,7 +566,7 @@ private fun RecentGroupVibes(
                                     style = MaterialTheme.typography.labelSmall.copy(fontSize = 9.sp),
                                     color = Color.White.copy(alpha = 0.75f),
                                     maxLines = 1,
-                                    overflow = TextOverflow.Ellipsis
+                                    overflow = TextOverflow.Ellipsis,
                                 )
                             }
                         }
@@ -509,80 +590,83 @@ private fun SocialSplitCard(
     onAuthorClick: () -> Unit = {},
     onEditClick: () -> Unit = {},
     onDeleteClick: () -> Unit = {},
-    onSettleUp: () -> Unit
+    onSettleUp: () -> Unit,
 ) {
     var showMenu by remember { mutableStateOf(false) }
 
     Card(
-        modifier = Modifier
-            .padding(horizontal = 16.dp, vertical = 8.dp)
-            .fillMaxWidth(),
+        modifier =
+            Modifier
+                .padding(horizontal = 16.dp, vertical = 8.dp)
+                .fillMaxWidth(),
         shape = RoundedCornerShape(24.dp),
         colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surfaceContainerLowest),
-        border = BorderStroke(1.dp, MaterialTheme.colorScheme.surfaceContainerLow)
+        border = BorderStroke(1.dp, MaterialTheme.colorScheme.surfaceContainerLow),
     ) {
         Column {
             // Header (Aligned to Top for absolute consistency)
             Row(
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .padding(16.dp),
+                modifier =
+                    Modifier
+                        .fillMaxWidth()
+                        .padding(16.dp),
                 verticalAlignment = Alignment.Top,
-                horizontalArrangement = Arrangement.SpaceBetween
+                horizontalArrangement = Arrangement.SpaceBetween,
             ) {
                 Row(
                     verticalAlignment = Alignment.CenterVertically,
                     horizontalArrangement = Arrangement.spacedBy(12.dp),
-                    modifier = Modifier
-                        .weight(1f)
-                        .clickable { onAuthorClick() }
+                    modifier =
+                        Modifier
+                            .weight(1f)
+                            .clickable { onAuthorClick() },
                 ) {
                     DineAvatarImage(
                         imageUrl = post.authorAvatar,
                         name = post.authorName,
-                        size = 40.dp
+                        size = 40.dp,
                     )
                     Column {
                         Text(
-                            text = post.authorName, 
+                            text = post.authorName,
                             style = MaterialTheme.typography.labelLarge.copy(fontWeight = FontWeight.Bold),
                             maxLines = 1,
-                            overflow = TextOverflow.Ellipsis
+                            overflow = TextOverflow.Ellipsis,
                         )
                         Spacer(modifier = Modifier.height(2.dp))
                         Row(
-                            verticalAlignment = Alignment.CenterVertically, 
-                            horizontalArrangement = Arrangement.spacedBy(4.dp)
+                            verticalAlignment = Alignment.CenterVertically,
+                            horizontalArrangement = Arrangement.spacedBy(4.dp),
                         ) {
                             Icon(
-                                imageVector = Icons.Default.LocationOn, 
-                                contentDescription = null, 
-                                modifier = Modifier.size(12.dp), 
-                                tint = MaterialTheme.colorScheme.outline
+                                imageVector = Icons.Default.LocationOn,
+                                contentDescription = null,
+                                modifier = Modifier.size(12.dp),
+                                tint = MaterialTheme.colorScheme.outline,
                             )
                             Text(
                                 text = post.location ?: "Chưa rõ địa điểm",
                                 style = MaterialTheme.typography.labelSmall.copy(fontSize = 10.sp),
                                 color = MaterialTheme.colorScheme.outline,
                                 maxLines = 2,
-                                overflow = TextOverflow.Ellipsis
+                                overflow = TextOverflow.Ellipsis,
                             )
                         }
                     }
                 }
                 Box(
-                    modifier = Modifier.offset(x = 8.dp, y = (-8).dp)
+                    modifier = Modifier.offset(x = 8.dp, y = (-8).dp),
                 ) {
                     IconButton(onClick = { showMenu = true }) {
                         Icon(
-                            imageVector = Icons.Default.MoreHoriz, 
-                            contentDescription = "More", 
-                            tint = MaterialTheme.colorScheme.outline
+                            imageVector = Icons.Default.MoreHoriz,
+                            contentDescription = "More",
+                            tint = MaterialTheme.colorScheme.outline,
                         )
                     }
                     DropdownMenu(
                         expanded = showMenu,
-                        onDismissRequest = { showMenu = false }
+                        onDismissRequest = { showMenu = false },
                     ) {
                         if (isOwnPost) {
                             DropdownMenuItem(
@@ -590,21 +674,21 @@ private fun SocialSplitCard(
                                 onClick = {
                                     showMenu = false
                                     onEditClick()
-                                }
+                                },
                             )
                             DropdownMenuItem(
                                 text = { Text("Xóa bài viết", color = MaterialTheme.colorScheme.error) },
                                 onClick = {
                                     showMenu = false
                                     onDeleteClick()
-                                }
+                                },
                             )
                         } else {
                             DropdownMenuItem(
                                 text = { Text("Báo cáo bài viết") },
                                 onClick = {
                                     showMenu = false
-                                }
+                                },
                             )
                         }
                     }
@@ -615,33 +699,37 @@ private fun SocialSplitCard(
             DinePostImage(
                 imageUrl = post.imageUrls.firstOrNull(),
                 contentDescription = post.caption,
-                modifier = Modifier
-                    .padding(horizontal = 8.dp)
-                    .aspectRatio(1f),
-                shape = RoundedCornerShape(16.dp)
+                modifier =
+                    Modifier
+                        .padding(horizontal = 8.dp)
+                        .aspectRatio(1f),
+                shape = RoundedCornerShape(16.dp),
             )
 
             // Stats
             Row(
                 modifier = Modifier.padding(horizontal = 16.dp, vertical = 8.dp).fillMaxWidth(),
                 verticalAlignment = Alignment.CenterVertically,
-                horizontalArrangement = Arrangement.SpaceBetween
+                horizontalArrangement = Arrangement.SpaceBetween,
             ) {
                 Row(horizontalArrangement = Arrangement.spacedBy(8.dp), verticalAlignment = Alignment.CenterVertically) {
                     Row(verticalAlignment = Alignment.CenterVertically) {
                         IconButton(
                             onClick = if (isLikedByMe) onUnlike else onLike,
-                            modifier = Modifier.size(40.dp)
+                            modifier = Modifier.size(40.dp),
                         ) {
                             Icon(
                                 imageVector = if (isLikedByMe) Icons.Filled.Favorite else Icons.Outlined.FavoriteBorder,
                                 contentDescription = if (isLikedByMe) "Unlike" else "Like",
                                 tint = if (isLikedByMe) MaterialTheme.colorScheme.error else MaterialTheme.colorScheme.onSurface,
-                                modifier = Modifier.size(24.dp)
+                                modifier = Modifier.size(24.dp),
                             )
                         }
                         if (post.likesCount > 0) {
-                            Text(post.likesCount.toString(), style = MaterialTheme.typography.labelMedium.copy(fontWeight = FontWeight.Bold))
+                            Text(
+                                post.likesCount.toString(),
+                                style = MaterialTheme.typography.labelMedium.copy(fontWeight = FontWeight.Bold),
+                            )
                         }
                     }
                     Row(verticalAlignment = Alignment.CenterVertically) {
@@ -649,7 +737,10 @@ private fun SocialSplitCard(
                             Icon(Icons.Outlined.ChatBubbleOutline, contentDescription = "Comment", modifier = Modifier.size(22.dp))
                         }
                         if (post.commentsCount > 0) {
-                            Text(post.commentsCount.toString(), style = MaterialTheme.typography.labelMedium.copy(fontWeight = FontWeight.Bold))
+                            Text(
+                                post.commentsCount.toString(),
+                                style = MaterialTheme.typography.labelMedium.copy(fontWeight = FontWeight.Bold),
+                            )
                         }
                     }
                     Row(verticalAlignment = Alignment.CenterVertically) {
@@ -657,7 +748,10 @@ private fun SocialSplitCard(
                             Icon(Icons.Outlined.Share, contentDescription = "Share", modifier = Modifier.size(22.dp))
                         }
                         if (post.sharesCount > 0) {
-                            Text(post.sharesCount.toString(), style = MaterialTheme.typography.labelMedium.copy(fontWeight = FontWeight.Bold))
+                            Text(
+                                post.sharesCount.toString(),
+                                style = MaterialTheme.typography.labelMedium.copy(fontWeight = FontWeight.Bold),
+                            )
                         }
                     }
                 }
@@ -668,14 +762,15 @@ private fun SocialSplitCard(
 
             // Caption
             Text(
-                text = buildAnnotatedString {
-                    withStyle(SpanStyle(fontWeight = FontWeight.Bold)) { append("${post.authorName} ") }
-                    append(post.caption)
-                },
+                text =
+                    buildAnnotatedString {
+                        withStyle(SpanStyle(fontWeight = FontWeight.Bold)) { append("${post.authorName} ") }
+                        append(post.caption)
+                    },
                 style = MaterialTheme.typography.bodySmall,
                 modifier = Modifier.padding(horizontal = 16.dp).padding(bottom = 16.dp),
                 maxLines = 2,
-                overflow = TextOverflow.Ellipsis
+                overflow = TextOverflow.Ellipsis,
             )
         }
     }
@@ -691,25 +786,34 @@ private fun AsymmetricSplitCard(
     totalBill: String,
     timeAgo: String,
     participantsAvatars: List<String>,
-    extraParticipants: Int
+    extraParticipants: Int,
 ) {
     Card(
         modifier = Modifier.padding(horizontal = 16.dp, vertical = 8.dp).fillMaxWidth(),
         shape = RoundedCornerShape(24.dp),
         colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surfaceContainerLowest),
-        border = BorderStroke(1.dp, MaterialTheme.colorScheme.surfaceContainerLow)
+        border = BorderStroke(1.dp, MaterialTheme.colorScheme.surfaceContainerLow),
     ) {
         Row(modifier = Modifier.height(IntrinsicSize.Min)) {
             // Image Half
             Box(modifier = Modifier.weight(1f).aspectRatio(1f)) {
                 AsyncImage(model = image, contentDescription = null, modifier = Modifier.fillMaxSize(), contentScale = ContentScale.Crop)
-                Box(modifier = Modifier.fillMaxSize().background(Brush.verticalGradient(listOf(Color.Transparent, Color.Black.copy(alpha = 0.4f)))))
+                Box(
+                    modifier =
+                        Modifier.fillMaxSize().background(
+                            Brush.verticalGradient(listOf(Color.Transparent, Color.Black.copy(alpha = 0.4f))),
+                        ),
+                )
                 Row(
                     modifier = Modifier.align(Alignment.BottomStart).padding(12.dp),
                     verticalAlignment = Alignment.CenterVertically,
-                    horizontalArrangement = Arrangement.spacedBy(8.dp)
+                    horizontalArrangement = Arrangement.spacedBy(8.dp),
                 ) {
-                    AsyncImage(model = userAvatar, contentDescription = null, modifier = Modifier.size(24.dp).clip(CircleShape).border(1.dp, Color.White, CircleShape))
+                    AsyncImage(
+                        model = userAvatar,
+                        contentDescription = null,
+                        modifier = Modifier.size(24.dp).clip(CircleShape).border(1.dp, Color.White, CircleShape),
+                    )
                     Text(userName, style = MaterialTheme.typography.labelSmall.copy(fontWeight = FontWeight.Bold), color = Color.White)
                 }
             }
@@ -719,28 +823,60 @@ private fun AsymmetricSplitCard(
                 Column {
                     Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(8.dp)) {
                         Surface(color = MaterialTheme.colorScheme.secondaryContainer, shape = CircleShape) {
-                            Text("SETTLED", modifier = Modifier.padding(horizontal = 8.dp, vertical = 2.dp), style = MaterialTheme.typography.labelSmall.copy(fontSize = 8.sp, fontWeight = FontWeight.Black), color = MaterialTheme.colorScheme.onSecondaryContainer)
+                            Text(
+                                "SETTLED",
+                                modifier = Modifier.padding(horizontal = 8.dp, vertical = 2.dp),
+                                style = MaterialTheme.typography.labelSmall.copy(fontSize = 8.sp, fontWeight = FontWeight.Black),
+                                color = MaterialTheme.colorScheme.onSecondaryContainer,
+                            )
                         }
-                        Text(timeAgo, style = MaterialTheme.typography.labelSmall.copy(fontSize = 8.sp, fontWeight = FontWeight.Bold), color = MaterialTheme.colorScheme.outline)
+                        Text(
+                            timeAgo,
+                            style = MaterialTheme.typography.labelSmall.copy(fontSize = 8.sp, fontWeight = FontWeight.Bold),
+                            color = MaterialTheme.colorScheme.outline,
+                        )
                     }
                     Spacer(modifier = Modifier.height(8.dp))
                     Text(title, style = MaterialTheme.typography.titleMedium.copy(fontWeight = FontWeight.Bold, lineHeight = 20.sp))
                     Spacer(modifier = Modifier.height(4.dp))
-                    Text("\"$quote\"", style = MaterialTheme.typography.bodySmall.copy(fontStyle = androidx.compose.ui.text.font.FontStyle.Italic), color = MaterialTheme.colorScheme.onSurfaceVariant)
+                    Text(
+                        "\"$quote\"",
+                        style = MaterialTheme.typography.bodySmall.copy(fontStyle = androidx.compose.ui.text.font.FontStyle.Italic),
+                        color = MaterialTheme.colorScheme.onSurfaceVariant,
+                    )
                 }
 
                 Column(verticalArrangement = Arrangement.spacedBy(12.dp)) {
                     Row(horizontalArrangement = Arrangement.spacedBy((-8).dp)) {
                         participantsAvatars.forEach { url ->
-                            AsyncImage(model = url, contentDescription = null, modifier = Modifier.size(32.dp).border(2.dp, Color.White, CircleShape).clip(CircleShape), contentScale = ContentScale.Crop)
+                            AsyncImage(
+                                model = url,
+                                contentDescription = null,
+                                modifier = Modifier.size(32.dp).border(2.dp, Color.White, CircleShape).clip(CircleShape),
+                                contentScale = ContentScale.Crop,
+                            )
                         }
                         if (extraParticipants > 0) {
-                            Box(modifier = Modifier.size(32.dp).border(2.dp, Color.White, CircleShape).background(MaterialTheme.colorScheme.primary, CircleShape), contentAlignment = Alignment.Center) {
-                                Text("+$extraParticipants", style = MaterialTheme.typography.labelSmall.copy(fontSize = 8.sp, fontWeight = FontWeight.Bold), color = Color.White)
+                            Box(
+                                modifier =
+                                    Modifier.size(
+                                        32.dp,
+                                    ).border(2.dp, Color.White, CircleShape).background(MaterialTheme.colorScheme.primary, CircleShape),
+                                contentAlignment = Alignment.Center,
+                            ) {
+                                Text(
+                                    "+$extraParticipants",
+                                    style = MaterialTheme.typography.labelSmall.copy(fontSize = 8.sp, fontWeight = FontWeight.Bold),
+                                    color = Color.White,
+                                )
                             }
                         }
                     }
-                    Row(modifier = Modifier.fillMaxWidth(), verticalAlignment = Alignment.Bottom, horizontalArrangement = Arrangement.SpaceBetween) {
+                    Row(
+                        modifier = Modifier.fillMaxWidth(),
+                        verticalAlignment = Alignment.Bottom,
+                        horizontalArrangement = Arrangement.SpaceBetween,
+                    ) {
                         Text("Total Bill", style = MaterialTheme.typography.labelSmall, color = MaterialTheme.colorScheme.outline)
                         Text(totalBill, style = MaterialTheme.typography.titleMedium.copy(fontWeight = FontWeight.Black))
                     }
@@ -751,31 +887,45 @@ private fun AsymmetricSplitCard(
 }
 
 @Composable
-private fun EditorialMomentCard(image: String, title: String, status: String) {
+private fun EditorialMomentCard(
+    image: String,
+    title: String,
+    status: String,
+) {
     Box(
-        modifier = Modifier
-            .padding(16.dp)
-            .fillMaxWidth()
-            .aspectRatio(1.77f)
-            .clip(RoundedCornerShape(24.dp))
+        modifier =
+            Modifier
+                .padding(16.dp)
+                .fillMaxWidth()
+                .aspectRatio(1.77f)
+                .clip(RoundedCornerShape(24.dp)),
     ) {
         AsyncImage(model = image, contentDescription = null, modifier = Modifier.fillMaxSize(), contentScale = ContentScale.Crop)
-        Box(modifier = Modifier.fillMaxSize().background(Brush.verticalGradient(listOf(Color.Transparent, Color.Black.copy(alpha = 0.2f), Color.Black.copy(alpha = 0.9f)))))
-        
+        Box(
+            modifier =
+                Modifier.fillMaxSize().background(
+                    Brush.verticalGradient(listOf(Color.Transparent, Color.Black.copy(alpha = 0.2f), Color.Black.copy(alpha = 0.9f))),
+                ),
+        )
+
         Row(
             modifier = Modifier.align(Alignment.BottomStart).padding(20.dp).fillMaxWidth(),
             verticalAlignment = Alignment.CenterVertically,
-            horizontalArrangement = Arrangement.SpaceBetween
+            horizontalArrangement = Arrangement.SpaceBetween,
         ) {
             Column {
-                Text(status, style = MaterialTheme.typography.labelSmall.copy(fontSize = 9.sp, fontWeight = FontWeight.Bold, letterSpacing = 2.sp), color = Color.White.copy(alpha = 0.6f))
+                Text(
+                    status,
+                    style = MaterialTheme.typography.labelSmall.copy(fontSize = 9.sp, fontWeight = FontWeight.Bold, letterSpacing = 2.sp),
+                    color = Color.White.copy(alpha = 0.6f),
+                )
                 Text(title, style = MaterialTheme.typography.titleLarge.copy(fontWeight = FontWeight.Bold), color = Color.White)
             }
             Surface(
                 color = Color.White.copy(alpha = 0.1f),
                 shape = CircleShape,
                 modifier = Modifier.size(48.dp),
-                border = BorderStroke(1.dp, Color.White.copy(alpha = 0.2f))
+                border = BorderStroke(1.dp, Color.White.copy(alpha = 0.2f)),
             ) {
                 Box(contentAlignment = Alignment.Center) {
                     Icon(Icons.Default.Add, contentDescription = null, tint = Color.White)
@@ -786,12 +936,26 @@ private fun EditorialMomentCard(image: String, title: String, status: String) {
 }
 
 data class Vibe(val name: String, val avatar: String, val hasStory: Boolean)
+
 // Fallback placeholder vibes shown before real data loads
-private val vibes = listOf(
-    Vibe("Minh Tú", "https://lh3.googleusercontent.com/aida-public/AB6AXuB-lcBKRoAYwQw73nIuBdULF7SZEeFfg2TOaffudPtrcOnyx_8_a249_LJcMx5TBluLjiWE8fbEcy4eV7gK7RbihQblIjmgOP5B7c55rKXy9JsKjJjQmetVj5yL0q9GvyYQPiR0_ZnmJv_VjBFl-eNXvTyxNV_wGEHIOerHgr7-Bhr0JQ52rl2IHVEA925v4ju8vhX_A3TbdL37vEXq2FZ6hzChgpASZ9lmR1dkpJprauIMSfg-jAAb0dHPuAtCHgI4cY8VOV-Agd4", true),
-    Vibe("Khánh Linh", "https://lh3.googleusercontent.com/aida-public/AB6AXuBz8Jc-E35SQpfts5F-5Eczw6dWoYmC-HCNwwt8GI_w0EWLE-2FnqQ8mgZvohpGRKnOAVGodaj82NSuuH_X44mCJJF7svdrXs69vjYwM96R4FUn5f4TKPG3hUkyjfKZH4SiY7gfmVzYcX-w6uDBdpBiMt_ZPYvDEIlUp5JJt-Wworohv65EZUi3d15JqXw6myxzpL87IYhIB4EmDZooMn6Y3D8DcEbET8nOa6KpvmgNiVWOgGg3Cd0oMcbuAHlEdpFlt0R-injRfPo", false),
-    Vibe("Thế Huy", "https://lh3.googleusercontent.com/aida-public/AB6AXuDgF0M5FazB2IT4juh4tcOt4K1Ebn3YjSLLXXnEO_orZuRvR7754qsoNDOrLZZRk9MBdEyyJm92iSBTTnUo254hKU062XQiAI0pDu2ZzQ6qUeeRLIRs31LkLGwZlpQVMko9-vOn8jdvYQxhY1IXcHNASxdE5qHGU8nV6uM1v89Ykoyi-NsBff_wlPgG-H-Xsclt1CrCt3PDOJlWGuMnbGFCAkt3p8c5XbDj3XqELFVIf12Tnm9BMHwVXvqOCJPx3F_X1-e8Nyuo7RU", false)
-)
+private val vibes =
+    listOf(
+        Vibe(
+            "Minh Tú",
+            "https://lh3.googleusercontent.com/aida-public/AB6AXuB-lcBKRoAYwQw73nIuBdULF7SZEeFfg2TOaffudPtrcOnyx_8_a249_LJcMx5TBluLjiWE8fbEcy4eV7gK7RbihQblIjmgOP5B7c55rKXy9JsKjJjQmetVj5yL0q9GvyYQPiR0_ZnmJv_VjBFl-eNXvTyxNV_wGEHIOerHgr7-Bhr0JQ52rl2IHVEA925v4ju8vhX_A3TbdL37vEXq2FZ6hzChgpASZ9lmR1dkpJprauIMSfg-jAAb0dHPuAtCHgI4cY8VOV-Agd4",
+            true,
+        ),
+        Vibe(
+            "Khánh Linh",
+            "https://lh3.googleusercontent.com/aida-public/AB6AXuBz8Jc-E35SQpfts5F-5Eczw6dWoYmC-HCNwwt8GI_w0EWLE-2FnqQ8mgZvohpGRKnOAVGodaj82NSuuH_X44mCJJF7svdrXs69vjYwM96R4FUn5f4TKPG3hUkyjfKZH4SiY7gfmVzYcX-w6uDBdpBiMt_ZPYvDEIlUp5JJt-Wworohv65EZUi3d15JqXw6myxzpL87IYhIB4EmDZooMn6Y3D8DcEbET8nOa6KpvmgNiVWOgGg3Cd0oMcbuAHlEdpFlt0R-injRfPo",
+            false,
+        ),
+        Vibe(
+            "Thế Huy",
+            "https://lh3.googleusercontent.com/aida-public/AB6AXuDgF0M5FazB2IT4juh4tcOt4K1Ebn3YjSLLXXnEO_orZuRvR7754qsoNDOrLZZRk9MBdEyyJm92iSBTTnUo254hKU062XQiAI0pDu2ZzQ6qUeeRLIRs31LkLGwZlpQVMko9-vOn8jdvYQxhY1IXcHNASxdE5qHGU8nV6uM1v89Ykoyi-NsBff_wlPgG-H-Xsclt1CrCt3PDOJlWGuMnbGFCAkt3p8c5XbDj3XqELFVIf12Tnm9BMHwVXvqOCJPx3F_X1-e8Nyuo7RU",
+            false,
+        ),
+    )
 
 @Preview(showBackground = true)
 @Composable

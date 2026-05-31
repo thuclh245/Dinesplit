@@ -14,17 +14,19 @@ import androidx.compose.ui.Modifier
 fun AppCard(
     modifier: Modifier = Modifier,
     contentPadding: PaddingValues = PaddingValues(AppDimens.spaceLg),
-    content: @Composable () -> Unit
+    content: @Composable () -> Unit,
 ) {
     Card(
         modifier = modifier.fillMaxWidth(),
         shape = AppShapes.xLarge,
-        colors = CardDefaults.cardColors(
-            containerColor = MaterialTheme.colorScheme.surfaceContainerLowest
-        ),
-        elevation = CardDefaults.cardElevation(
-            defaultElevation = AppDimens.cardElevation
-        )
+        colors =
+            CardDefaults.cardColors(
+                containerColor = MaterialTheme.colorScheme.surfaceContainerLowest,
+            ),
+        elevation =
+            CardDefaults.cardElevation(
+                defaultElevation = AppDimens.cardElevation,
+            ),
     ) {
         Column(modifier = Modifier.padding(contentPadding)) {
             content()

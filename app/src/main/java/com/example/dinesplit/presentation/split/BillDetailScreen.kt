@@ -57,8 +57,8 @@ import androidx.compose.ui.unit.sp
 import com.example.dinesplit.core.common.AppContainer
 import com.example.dinesplit.core.firebase.FirebaseProviders
 import com.example.dinesplit.domain.model.Bill
-import com.example.dinesplit.domain.model.BillStatus
 import com.example.dinesplit.domain.model.BillItem
+import com.example.dinesplit.domain.model.BillStatus
 import com.example.dinesplit.domain.model.Member
 import com.example.dinesplit.domain.model.PaymentStatus
 import com.example.dinesplit.domain.model.SplitMethod
@@ -72,7 +72,7 @@ private data class BillSplitRow(
     val initial: String,
     val amount: Double,
     val paymentStatus: PaymentStatus,
-    val isMe: Boolean
+    val isMe: Boolean,
 ) {
     val isPayer: Boolean
         get() = paymentStatus == PaymentStatus.PAYER
@@ -85,17 +85,18 @@ private data class BillSplitRow(
 fun BillDetailScreen(
     groupId: String,
     billId: String,
-    onBack: () -> Unit
+    onBack: () -> Unit,
 ) {
     val context = LocalContext.current
-    val viewModel = remember(groupId, billId) {
-        BillDetailViewModel(
-            repository = AppContainer.splitRepository(context),
-            groupId = groupId,
-            billId = billId,
-            currentUserId = FirebaseProviders.auth.currentUser?.uid
-        )
-    }
+    val viewModel =
+        remember(groupId, billId) {
+            BillDetailViewModel(
+                repository = AppContainer.splitRepository(context),
+                groupId = groupId,
+                billId = billId,
+                currentUserId = FirebaseProviders.auth.currentUser?.uid,
+            )
+        }
     val uiState by viewModel.uiState.collectAsState()
     val colorScheme = MaterialTheme.colorScheme
     val snackbarHostState = remember { SnackbarHostState() }
@@ -119,37 +120,41 @@ fun BillDetailScreen(
                     isCurrentMemberPayer = uiState.currentMemberId == bill.payerId,
                     isCurrentMemberPaid = bill.paidMemberIds.contains(uiState.currentMemberId),
                     isUpdating = uiState.isUpdatingPayment,
-                    onMarkPaid = viewModel::markCurrentMemberPaid
+                    onMarkPaid = viewModel::markCurrentMemberPaid,
                 )
             }
-        }
+        },
     ) { paddingValues ->
         LazyColumn(
-            modifier = Modifier
-                .fillMaxSize()
-                .padding(paddingValues)
-                .padding(horizontal = 24.dp),
+            modifier =
+                Modifier
+                    .fillMaxSize()
+                    .padding(paddingValues)
+                    .padding(horizontal = 24.dp),
             contentPadding = PaddingValues(top = 16.dp, bottom = 100.dp),
-            verticalArrangement = Arrangement.spacedBy(24.dp)
+            verticalArrangement = Arrangement.spacedBy(24.dp),
         ) {
             when {
-                uiState.isLoading -> item {
-                    Box(
-                        modifier = Modifier
-                            .fillMaxWidth()
-                            .padding(top = 48.dp),
-                        contentAlignment = Alignment.Center
-                    ) {
-                        CircularProgressIndicator()
+                uiState.isLoading ->
+                    item {
+                        Box(
+                            modifier =
+                                Modifier
+                                    .fillMaxWidth()
+                                    .padding(top = 48.dp),
+                            contentAlignment = Alignment.Center,
+                        ) {
+                            CircularProgressIndicator()
+                        }
                     }
-                }
 
-                uiState.error != null -> item {
-                    BdMessageCard(
-                        title = "Không thể tải hóa đơn",
-                        message = uiState.error.orEmpty()
-                    )
-                }
+                uiState.error != null ->
+                    item {
+                        BdMessageCard(
+                            title = "Không thể tải hóa đơn",
+                            message = uiState.error.orEmpty(),
+                        )
+                    }
 
                 uiState.bill != null -> {
                     val bill = uiState.bill!!
@@ -159,7 +164,7 @@ fun BillDetailScreen(
                         BdReceiptHeaderCard(
                             bill = bill,
                             payerName = resolveMemberName(bill.payerId, uiState.members),
-                            payerInitial = resolveMemberInitial(bill.payerId, uiState.members)
+                            payerInitial = resolveMemberInitial(bill.payerId, uiState.members),
                         )
                     }
                     item { BdSplitBreakdown(splitRows) }
@@ -178,19 +183,20 @@ private fun BdTopBar(onBack: () -> Unit) {
     val colorScheme = MaterialTheme.colorScheme
 
     Row(
-        modifier = Modifier
-            .fillMaxWidth()
-            .statusBarsPadding()
-            .background(colorScheme.surfaceContainerLowest.copy(alpha = 0.98f))
-            .padding(horizontal = 12.dp, vertical = 10.dp),
+        modifier =
+            Modifier
+                .fillMaxWidth()
+                .statusBarsPadding()
+                .background(colorScheme.surfaceContainerLowest.copy(alpha = 0.98f))
+                .padding(horizontal = 12.dp, vertical = 10.dp),
         verticalAlignment = Alignment.CenterVertically,
-        horizontalArrangement = Arrangement.SpaceBetween
+        horizontalArrangement = Arrangement.SpaceBetween,
     ) {
         IconButton(onClick = onBack, modifier = Modifier.size(40.dp)) {
             Icon(
                 imageVector = Icons.AutoMirrored.Filled.ArrowBack,
                 contentDescription = "Quay lại",
-                tint = colorScheme.primary
+                tint = colorScheme.primary,
             )
         }
 
@@ -198,14 +204,14 @@ private fun BdTopBar(onBack: () -> Unit) {
             text = "Chi tiết hóa đơn",
             fontSize = 18.sp,
             fontWeight = FontWeight.Bold,
-            color = colorScheme.onSurface
+            color = colorScheme.onSurface,
         )
 
         IconButton(onClick = { }, modifier = Modifier.size(40.dp)) {
             Icon(
                 imageVector = Icons.Default.MoreVert,
                 contentDescription = "Tùy chọn",
-                tint = colorScheme.primary
+                tint = colorScheme.primary,
             )
         }
     }
@@ -215,7 +221,7 @@ private fun BdTopBar(onBack: () -> Unit) {
 private fun BdReceiptHeaderCard(
     bill: Bill,
     payerName: String,
-    payerInitial: String
+    payerInitial: String,
 ) {
     val colorScheme = MaterialTheme.colorScheme
 
@@ -223,26 +229,28 @@ private fun BdReceiptHeaderCard(
         modifier = Modifier.fillMaxWidth(),
         colors = CardDefaults.cardColors(containerColor = colorScheme.surfaceContainerLowest),
         elevation = CardDefaults.cardElevation(defaultElevation = 2.dp),
-        shape = RoundedCornerShape(20.dp)
+        shape = RoundedCornerShape(20.dp),
     ) {
         Column(
-            modifier = Modifier
-                .fillMaxWidth()
-                .padding(24.dp),
-            horizontalAlignment = Alignment.CenterHorizontally
+            modifier =
+                Modifier
+                    .fillMaxWidth()
+                    .padding(24.dp),
+            horizontalAlignment = Alignment.CenterHorizontally,
         ) {
             Box(
-                modifier = Modifier
-                    .size(64.dp)
-                    .clip(CircleShape)
-                    .background(colorScheme.primaryContainer.copy(alpha = 0.18f)),
-                contentAlignment = Alignment.Center
+                modifier =
+                    Modifier
+                        .size(64.dp)
+                        .clip(CircleShape)
+                        .background(colorScheme.primaryContainer.copy(alpha = 0.18f)),
+                contentAlignment = Alignment.Center,
             ) {
                 Icon(
                     imageVector = Icons.AutoMirrored.Filled.ReceiptLong,
                     contentDescription = null,
                     tint = colorScheme.primary,
-                    modifier = Modifier.size(32.dp)
+                    modifier = Modifier.size(32.dp),
                 )
             }
 
@@ -254,14 +262,14 @@ private fun BdReceiptHeaderCard(
                 fontWeight = FontWeight.ExtraBold,
                 color = colorScheme.onSurface,
                 maxLines = 2,
-                overflow = TextOverflow.Ellipsis
+                overflow = TextOverflow.Ellipsis,
             )
             Spacer(modifier = Modifier.height(4.dp))
             Text(
                 text = formatDate(bill.date),
                 fontSize = 14.sp,
                 fontWeight = FontWeight.Medium,
-                color = colorScheme.onSurfaceVariant
+                color = colorScheme.onSurfaceVariant,
             )
 
             Spacer(modifier = Modifier.height(22.dp))
@@ -272,29 +280,31 @@ private fun BdReceiptHeaderCard(
                 fontWeight = FontWeight.ExtraBold,
                 color = colorScheme.onSurface,
                 maxLines = 1,
-                overflow = TextOverflow.Ellipsis
+                overflow = TextOverflow.Ellipsis,
             )
 
             Spacer(modifier = Modifier.height(22.dp))
 
             Row(
                 verticalAlignment = Alignment.CenterVertically,
-                modifier = Modifier
-                    .background(colorScheme.surfaceContainerLow, RoundedCornerShape(50))
-                    .padding(horizontal = 16.dp, vertical = 8.dp)
+                modifier =
+                    Modifier
+                        .background(colorScheme.surfaceContainerLow, RoundedCornerShape(50))
+                        .padding(horizontal = 16.dp, vertical = 8.dp),
             ) {
                 Box(
-                    modifier = Modifier
-                        .size(24.dp)
-                        .clip(CircleShape)
-                        .background(colorScheme.onSurfaceVariant),
-                    contentAlignment = Alignment.Center
+                    modifier =
+                        Modifier
+                            .size(24.dp)
+                            .clip(CircleShape)
+                            .background(colorScheme.onSurfaceVariant),
+                    contentAlignment = Alignment.Center,
                 ) {
                     Text(
                         text = payerInitial,
                         color = colorScheme.surfaceContainerLowest,
                         fontSize = 12.sp,
-                        fontWeight = FontWeight.Bold
+                        fontWeight = FontWeight.Bold,
                     )
                 }
                 Spacer(modifier = Modifier.width(8.dp))
@@ -302,7 +312,7 @@ private fun BdReceiptHeaderCard(
                     text = "Thanh toán bởi ",
                     fontSize = 12.sp,
                     fontWeight = FontWeight.SemiBold,
-                    color = colorScheme.onSurfaceVariant
+                    color = colorScheme.onSurfaceVariant,
                 )
                 Text(
                     text = payerName,
@@ -310,7 +320,7 @@ private fun BdReceiptHeaderCard(
                     fontWeight = FontWeight.Bold,
                     color = colorScheme.onSurface,
                     maxLines = 1,
-                    overflow = TextOverflow.Ellipsis
+                    overflow = TextOverflow.Ellipsis,
                 )
             }
 
@@ -319,7 +329,7 @@ private fun BdReceiptHeaderCard(
             HorizontalDivider(
                 color = colorScheme.outlineVariant.copy(alpha = 0.5f),
                 thickness = 1.dp,
-                modifier = Modifier.fillMaxWidth()
+                modifier = Modifier.fillMaxWidth(),
             )
         }
     }
@@ -336,14 +346,14 @@ private fun BdSplitBreakdown(rows: List<BillSplitRow>) {
             fontWeight = FontWeight.Bold,
             color = colorScheme.onSurfaceVariant.copy(alpha = 0.7f),
             letterSpacing = 1.5.sp,
-            modifier = Modifier.padding(start = 8.dp, bottom = 12.dp)
+            modifier = Modifier.padding(start = 8.dp, bottom = 12.dp),
         )
 
         Card(
             modifier = Modifier.fillMaxWidth(),
             colors = CardDefaults.cardColors(containerColor = colorScheme.surfaceContainerLowest),
             shape = RoundedCornerShape(16.dp),
-            elevation = CardDefaults.cardElevation(defaultElevation = 1.dp)
+            elevation = CardDefaults.cardElevation(defaultElevation = 1.dp),
         ) {
             Column {
                 rows.forEachIndexed { index, row ->
@@ -362,41 +372,45 @@ private fun BdSplitRow(row: BillSplitRow) {
     val colorScheme = MaterialTheme.colorScheme
 
     Row(
-        modifier = Modifier
-            .fillMaxWidth()
-            .background(if (row.isMe) colorScheme.primaryContainer.copy(alpha = 0.15f) else Color.Transparent)
-            .height(IntrinsicSize.Min),
-        verticalAlignment = Alignment.CenterVertically
+        modifier =
+            Modifier
+                .fillMaxWidth()
+                .background(if (row.isMe) colorScheme.primaryContainer.copy(alpha = 0.15f) else Color.Transparent)
+                .height(IntrinsicSize.Min),
+        verticalAlignment = Alignment.CenterVertically,
     ) {
         Box(
-            modifier = Modifier
-                .width(4.dp)
-                .fillMaxHeight()
-                .background(if (row.isMe) colorScheme.primary else Color.Transparent)
+            modifier =
+                Modifier
+                    .width(4.dp)
+                    .fillMaxHeight()
+                    .background(if (row.isMe) colorScheme.primary else Color.Transparent),
         )
 
         Row(
-            modifier = Modifier
-                .fillMaxWidth()
-                .padding(horizontal = 16.dp, vertical = 16.dp),
+            modifier =
+                Modifier
+                    .fillMaxWidth()
+                    .padding(horizontal = 16.dp, vertical = 16.dp),
             verticalAlignment = Alignment.CenterVertically,
-            horizontalArrangement = Arrangement.SpaceBetween
+            horizontalArrangement = Arrangement.SpaceBetween,
         ) {
             Row(
                 modifier = Modifier.weight(1f),
-                verticalAlignment = Alignment.CenterVertically
+                verticalAlignment = Alignment.CenterVertically,
             ) {
                 Box(
-                    modifier = Modifier
-                        .size(40.dp)
-                        .clip(CircleShape)
-                        .background(if (row.isMe) colorScheme.primary else colorScheme.outlineVariant),
-                    contentAlignment = Alignment.Center
+                    modifier =
+                        Modifier
+                            .size(40.dp)
+                            .clip(CircleShape)
+                            .background(if (row.isMe) colorScheme.primary else colorScheme.outlineVariant),
+                    contentAlignment = Alignment.Center,
                 ) {
                     Text(
                         text = row.initial,
                         color = colorScheme.surfaceContainerLowest,
-                        fontWeight = FontWeight.Bold
+                        fontWeight = FontWeight.Bold,
                     )
                 }
                 Spacer(modifier = Modifier.width(12.dp))
@@ -406,14 +420,14 @@ private fun BdSplitRow(row: BillSplitRow) {
                         fontWeight = FontWeight.Bold,
                         color = if (row.isMe) colorScheme.primary else colorScheme.onSurface,
                         maxLines = 1,
-                        overflow = TextOverflow.Ellipsis
+                        overflow = TextOverflow.Ellipsis,
                     )
                     if (row.isPayer) {
                         Text(
                             text = "CHỦ CHI",
                             fontSize = 10.sp,
                             fontWeight = FontWeight.Bold,
-                            color = colorScheme.primary
+                            color = colorScheme.primary,
                         )
                     }
                 }
@@ -424,43 +438,45 @@ private fun BdSplitRow(row: BillSplitRow) {
                     text = "${formatAmount(row.amount)} đ",
                     fontWeight = FontWeight.Bold,
                     color = if (row.isMe) colorScheme.primary else colorScheme.onSurface,
-                    maxLines = 1
+                    maxLines = 1,
                 )
                 Spacer(modifier = Modifier.height(4.dp))
 
                 if (row.isPaid) {
                     Row(
-                        modifier = Modifier
-                            .background(colorScheme.secondaryContainer, RoundedCornerShape(50))
-                            .padding(horizontal = 6.dp, vertical = 2.dp),
-                        verticalAlignment = Alignment.CenterVertically
+                        modifier =
+                            Modifier
+                                .background(colorScheme.secondaryContainer, RoundedCornerShape(50))
+                                .padding(horizontal = 6.dp, vertical = 2.dp),
+                        verticalAlignment = Alignment.CenterVertically,
                     ) {
                         Icon(
                             imageVector = Icons.Default.Check,
                             contentDescription = null,
                             tint = colorScheme.secondary,
-                            modifier = Modifier.size(12.dp)
+                            modifier = Modifier.size(12.dp),
                         )
                         Spacer(modifier = Modifier.width(2.dp))
                         Text(
                             text = "ĐÃ TRẢ",
                             fontSize = 9.sp,
                             fontWeight = FontWeight.Bold,
-                            color = colorScheme.secondary
+                            color = colorScheme.secondary,
                         )
                     }
                 } else {
                     Row(
-                        modifier = Modifier
-                            .background(colorScheme.surfaceContainerHigh, RoundedCornerShape(50))
-                            .padding(horizontal = 6.dp, vertical = 2.dp),
-                        verticalAlignment = Alignment.CenterVertically
+                        modifier =
+                            Modifier
+                                .background(colorScheme.surfaceContainerHigh, RoundedCornerShape(50))
+                                .padding(horizontal = 6.dp, vertical = 2.dp),
+                        verticalAlignment = Alignment.CenterVertically,
                     ) {
                         Text(
                             text = "CHƯA TRẢ",
                             fontSize = 9.sp,
                             fontWeight = FontWeight.Bold,
-                            color = colorScheme.onSurfaceVariant
+                            color = colorScheme.onSurfaceVariant,
                         )
                     }
                 }
@@ -480,23 +496,24 @@ private fun BdItemBreakdown(items: List<BillItem>) {
             fontWeight = FontWeight.Bold,
             color = colorScheme.onSurfaceVariant.copy(alpha = 0.7f),
             letterSpacing = 1.5.sp,
-            modifier = Modifier.padding(start = 8.dp, bottom = 12.dp)
+            modifier = Modifier.padding(start = 8.dp, bottom = 12.dp),
         )
 
         Card(
             modifier = Modifier.fillMaxWidth(),
             colors = CardDefaults.cardColors(containerColor = colorScheme.surfaceContainerLowest),
             shape = RoundedCornerShape(16.dp),
-            elevation = CardDefaults.cardElevation(defaultElevation = 1.dp)
+            elevation = CardDefaults.cardElevation(defaultElevation = 1.dp),
         ) {
             Column {
                 items.forEachIndexed { index, item ->
                     Row(
-                        modifier = Modifier
-                            .fillMaxWidth()
-                            .padding(16.dp),
+                        modifier =
+                            Modifier
+                                .fillMaxWidth()
+                                .padding(16.dp),
                         horizontalArrangement = Arrangement.SpaceBetween,
-                        verticalAlignment = Alignment.CenterVertically
+                        verticalAlignment = Alignment.CenterVertically,
                     ) {
                         Column(modifier = Modifier.weight(1f)) {
                             Text(
@@ -505,19 +522,19 @@ private fun BdItemBreakdown(items: List<BillItem>) {
                                 fontWeight = FontWeight.Bold,
                                 color = colorScheme.onSurface,
                                 maxLines = 1,
-                                overflow = TextOverflow.Ellipsis
+                                overflow = TextOverflow.Ellipsis,
                             )
                             Text(
                                 text = "${item.sharedByMemberIds.size} người chia",
                                 fontSize = 12.sp,
-                                color = colorScheme.onSurfaceVariant
+                                color = colorScheme.onSurfaceVariant,
                             )
                         }
                         Text(
                             text = "${formatAmount(item.price)} đ",
                             fontSize = 14.sp,
                             fontWeight = FontWeight.Bold,
-                            color = colorScheme.primary
+                            color = colorScheme.primary,
                         )
                     }
                     if (index < items.size - 1) {
@@ -538,12 +555,17 @@ private fun BdFooterInfo(bill: Bill) {
         modifier = Modifier.fillMaxWidth(),
         colors = CardDefaults.cardColors(containerColor = colorScheme.surfaceContainerLow),
         shape = RoundedCornerShape(12.dp),
-        elevation = CardDefaults.cardElevation(defaultElevation = 0.dp)
+        elevation = CardDefaults.cardElevation(defaultElevation = 0.dp),
     ) {
         Column(modifier = Modifier.padding(16.dp), verticalArrangement = Arrangement.spacedBy(12.dp)) {
             Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.SpaceBetween) {
                 Text("Mã hóa đơn", fontSize = 12.sp, fontWeight = FontWeight.Medium, color = colorScheme.onSurfaceVariant)
-                Text("#${bill.id.takeLast(6).uppercase()}", fontSize = 12.sp, fontWeight = FontWeight.Bold, fontFamily = FontFamily.Monospace)
+                Text(
+                    "#${bill.id.takeLast(6).uppercase()}",
+                    fontSize = 12.sp,
+                    fontWeight = FontWeight.Bold,
+                    fontFamily = FontFamily.Monospace,
+                )
             }
             Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.SpaceBetween) {
                 Text("Kiểu chia", fontSize = 12.sp, fontWeight = FontWeight.Medium, color = colorScheme.onSurfaceVariant)
@@ -555,7 +577,7 @@ private fun BdFooterInfo(bill: Bill) {
                     text = if (isSettled) "Đã thanh toán" else "Còn mở",
                     fontSize = 12.sp,
                     fontWeight = FontWeight.Bold,
-                    color = if (isSettled) colorScheme.secondary else colorScheme.primary
+                    color = if (isSettled) colorScheme.secondary else colorScheme.primary,
                 )
             }
         }
@@ -565,7 +587,7 @@ private fun BdFooterInfo(bill: Bill) {
 @Composable
 private fun BdMessageCard(
     title: String,
-    message: String
+    message: String,
 ) {
     val colorScheme = MaterialTheme.colorScheme
 
@@ -573,7 +595,7 @@ private fun BdMessageCard(
         modifier = Modifier.fillMaxWidth(),
         colors = CardDefaults.cardColors(containerColor = colorScheme.surfaceContainerLowest),
         elevation = CardDefaults.cardElevation(defaultElevation = 1.dp),
-        shape = RoundedCornerShape(20.dp)
+        shape = RoundedCornerShape(20.dp),
     ) {
         Column(modifier = Modifier.padding(20.dp)) {
             Text(title, fontSize = 16.sp, fontWeight = FontWeight.Bold, color = colorScheme.onSurface)
@@ -590,49 +612,53 @@ private fun BdBottomAction(
     isCurrentMemberPayer: Boolean,
     isCurrentMemberPaid: Boolean,
     isUpdating: Boolean,
-    onMarkPaid: () -> Unit
+    onMarkPaid: () -> Unit,
 ) {
     val colorScheme = MaterialTheme.colorScheme
     val enabled = currentMemberId.isNotBlank() && !isCurrentMemberPayer && !isCurrentMemberPaid && !isUpdating
-    val label = when {
-        isUpdating -> "Đang cập nhật thanh toán..."
-        isCurrentMemberPayer -> "Bạn là người thanh toán"
-        isCurrentMemberPaid -> "Bạn đã trả cho $payerName"
-        else -> "Đánh dấu đã trả cho $payerName"
-    }
+    val label =
+        when {
+            isUpdating -> "Đang cập nhật thanh toán..."
+            isCurrentMemberPayer -> "Bạn là người thanh toán"
+            isCurrentMemberPaid -> "Bạn đã trả cho $payerName"
+            else -> "Đánh dấu đã trả cho $payerName"
+        }
 
     Box(
-        modifier = Modifier
-            .fillMaxWidth()
-            .background(colorScheme.surfaceContainerLowest.copy(alpha = 0.96f))
-            .padding(horizontal = 24.dp, vertical = 14.dp)
-            .navigationBarsPadding()
+        modifier =
+            Modifier
+                .fillMaxWidth()
+                .background(colorScheme.surfaceContainerLowest.copy(alpha = 0.96f))
+                .padding(horizontal = 24.dp, vertical = 14.dp)
+                .navigationBarsPadding(),
     ) {
         Button(
             onClick = onMarkPaid,
             enabled = enabled,
-            modifier = Modifier
-                .fillMaxWidth()
-                .height(56.dp),
-            colors = ButtonDefaults.buttonColors(
-                containerColor = colorScheme.primaryContainer,
-                disabledContainerColor = colorScheme.surfaceContainerHigh
-            ),
+            modifier =
+                Modifier
+                    .fillMaxWidth()
+                    .height(56.dp),
+            colors =
+                ButtonDefaults.buttonColors(
+                    containerColor = colorScheme.primaryContainer,
+                    disabledContainerColor = colorScheme.surfaceContainerHigh,
+                ),
             shape = RoundedCornerShape(50),
-            elevation = ButtonDefaults.buttonElevation(defaultElevation = 4.dp)
+            elevation = ButtonDefaults.buttonElevation(defaultElevation = 4.dp),
         ) {
             if (isUpdating) {
                 CircularProgressIndicator(
                     modifier = Modifier.size(18.dp),
                     color = colorScheme.surfaceContainerLowest,
-                    strokeWidth = 2.dp
+                    strokeWidth = 2.dp,
                 )
             } else {
                 Icon(
                     imageVector = Icons.Default.Check,
                     contentDescription = null,
                     tint = if (enabled) colorScheme.surfaceContainerLowest else colorScheme.onSurfaceVariant,
-                    modifier = Modifier.size(18.dp)
+                    modifier = Modifier.size(18.dp),
                 )
             }
             Spacer(modifier = Modifier.width(8.dp))
@@ -642,13 +668,16 @@ private fun BdBottomAction(
                 fontWeight = FontWeight.Bold,
                 color = if (enabled) colorScheme.surfaceContainerLowest else colorScheme.onSurfaceVariant,
                 maxLines = 1,
-                overflow = TextOverflow.Ellipsis
+                overflow = TextOverflow.Ellipsis,
             )
         }
     }
 }
 
-private fun buildSplitRows(bill: Bill, members: List<Member>): List<BillSplitRow> {
+private fun buildSplitRows(
+    bill: Bill,
+    members: List<Member>,
+): List<BillSplitRow> {
     val memberById = members.associateBy { it.id }
     val shareMemberIds = bill.shares.keys
     val ids = (shareMemberIds + bill.payerId).filter { it.isNotBlank() }.distinct()
@@ -662,17 +691,23 @@ private fun buildSplitRows(bill: Bill, members: List<Member>): List<BillSplitRow
             initial = member?.initial ?: name.firstOrNull()?.uppercase().orEmpty(),
             amount = bill.shares[memberId] ?: 0.0,
             paymentStatus = bill.paymentStatusFor(memberId),
-            isMe = member?.isMe ?: (memberId == "me")
+            isMe = member?.isMe ?: (memberId == "me"),
         )
     }.sortedWith(compareByDescending<BillSplitRow> { it.isPayer }.thenByDescending { it.isMe })
 }
 
-private fun resolveMemberName(memberId: String, members: List<Member>): String {
+private fun resolveMemberName(
+    memberId: String,
+    members: List<Member>,
+): String {
     return members.firstOrNull { it.id == memberId }?.name
         ?: fallbackMemberName(memberId).ifBlank { "Người thanh toán" }
 }
 
-private fun resolveMemberInitial(memberId: String, members: List<Member>): String {
+private fun resolveMemberInitial(
+    memberId: String,
+    members: List<Member>,
+): String {
     val member = members.firstOrNull { it.id == memberId }
     return member?.initial ?: resolveMemberName(memberId, members).firstOrNull()?.uppercase().orEmpty()
 }

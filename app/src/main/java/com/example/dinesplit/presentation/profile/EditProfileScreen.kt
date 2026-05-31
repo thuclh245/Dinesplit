@@ -17,15 +17,15 @@ import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Coffee
 import androidx.compose.material.icons.filled.LocalBar
 import androidx.compose.material.icons.filled.Restaurant
+import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
-import androidx.compose.material3.Icon
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.graphics.vector.ImageVector
+import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.example.dinesplit.core.ui.AppDimens
@@ -45,36 +45,38 @@ fun EditProfileScreen(
     onAvatarClear: () -> Unit,
     onToggleDiningStyle: (String) -> Unit,
     onSave: () -> Unit,
-    onBack: () -> Unit
+    onBack: () -> Unit,
 ) {
-    val avatarPickerLauncher = rememberLauncherForActivityResult(
-        contract = ActivityResultContracts.PickVisualMedia()
-    ) { uri ->
-        uri?.let(onAvatarChange)
-    }
+    val avatarPickerLauncher =
+        rememberLauncherForActivityResult(
+            contract = ActivityResultContracts.PickVisualMedia(),
+        ) { uri ->
+            uri?.let(onAvatarChange)
+        }
 
     AppScaffold(title = "Edit Profile") {
         Column(
             modifier = Modifier.fillMaxSize(),
-            verticalArrangement = Arrangement.spacedBy(AppDimens.spaceLg)
+            verticalArrangement = Arrangement.spacedBy(AppDimens.spaceLg),
         ) {
             ProfileAvatarSection(
                 avatarModel = uiState.avatarUrl,
                 title = "Profile avatar",
-                subtitle = if (uiState.avatarError.isNullOrBlank()) {
-                    "Choose a new avatar or clear the current one"
-                } else {
-                    uiState.avatarError
-                },
+                subtitle =
+                    if (uiState.avatarError.isNullOrBlank()) {
+                        "Choose a new avatar or clear the current one"
+                    } else {
+                        uiState.avatarError
+                    },
                 actionText = "Change avatar",
                 clearText = if (uiState.avatarUrl.isNotBlank()) "Clear avatar" else null,
                 onActionClick = {
                     avatarPickerLauncher.launch(
-                        PickVisualMediaRequest(ActivityResultContracts.PickVisualMedia.ImageOnly)
+                        PickVisualMediaRequest(ActivityResultContracts.PickVisualMedia.ImageOnly),
                     )
                 },
                 onClearClick = onAvatarClear,
-                isBusy = uiState.isSubmitting || uiState.isAvatarUploading
+                isBusy = uiState.isSubmitting || uiState.isAvatarUploading,
             )
 
             AppTextField(
@@ -82,7 +84,7 @@ fun EditProfileScreen(
                 onValueChange = onDisplayNameChange,
                 label = "Display name",
                 isError = uiState.displayNameError != null,
-                supportingText = uiState.displayNameError
+                supportingText = uiState.displayNameError,
             )
 
             AppTextField(
@@ -91,7 +93,7 @@ fun EditProfileScreen(
                 label = "Username",
                 placeholder = "your_handle",
                 isError = uiState.usernameError != null,
-                supportingText = uiState.usernameError
+                supportingText = uiState.usernameError,
             )
 
             AppTextField(
@@ -100,7 +102,7 @@ fun EditProfileScreen(
                 label = "Bio (optional)",
                 placeholder = "A short bio",
                 singleLine = false,
-                supportingText = uiState.submitError
+                supportingText = uiState.submitError,
             )
 
             // Dining Style Section
@@ -109,29 +111,60 @@ fun EditProfileScreen(
                     text = "DINING STYLE",
                     style = MaterialTheme.typography.labelSmall.copy(fontWeight = FontWeight.Bold, letterSpacing = 1.sp),
                     color = MaterialTheme.colorScheme.onSurfaceVariant,
-                    modifier = Modifier.padding(start = 4.dp)
+                    modifier = Modifier.padding(start = 4.dp),
                 )
                 Row(horizontalArrangement = Arrangement.spacedBy(8.dp), modifier = Modifier.fillMaxWidth()) {
-                    StyleChip(label = "Fine Dining", icon = Icons.Default.Restaurant, selected = uiState.selectedStyles.contains("Fine Dining"), onClick = { onToggleDiningStyle("Fine Dining") })
-                    StyleChip(label = "Cafe Hopper", icon = Icons.Default.Coffee, selected = uiState.selectedStyles.contains("Cafe Hopper"), onClick = { onToggleDiningStyle("Cafe Hopper") })
-                    StyleChip(label = "Nightlife", icon = Icons.Default.LocalBar, selected = uiState.selectedStyles.contains("Nightlife"), onClick = { onToggleDiningStyle("Nightlife") })
+                    StyleChip(
+                        label = "Fine Dining",
+                        icon = Icons.Default.Restaurant,
+                        selected =
+                            uiState.selectedStyles.contains(
+                                "Fine Dining",
+                            ),
+                        onClick = {
+                            onToggleDiningStyle("Fine Dining")
+                        },
+                    )
+                    StyleChip(
+                        label = "Cafe Hopper",
+                        icon = Icons.Default.Coffee,
+                        selected =
+                            uiState.selectedStyles.contains(
+                                "Cafe Hopper",
+                            ),
+                        onClick = {
+                            onToggleDiningStyle("Cafe Hopper")
+                        },
+                    )
+                    StyleChip(
+                        label = "Nightlife",
+                        icon = Icons.Default.LocalBar,
+                        selected =
+                            uiState.selectedStyles.contains(
+                                "Nightlife",
+                            ),
+                        onClick = {
+                            onToggleDiningStyle("Nightlife")
+                        },
+                    )
                 }
             }
 
             PrimaryButton(
-                text = when {
-                    uiState.isAvatarUploading -> "Uploading avatar..."
-                    uiState.isSubmitting -> "Saving..."
-                    else -> "Save"
-                },
+                text =
+                    when {
+                        uiState.isAvatarUploading -> "Uploading avatar..."
+                        uiState.isSubmitting -> "Saving..."
+                        else -> "Save"
+                    },
                 enabled = !uiState.isSubmitting && !uiState.isAvatarUploading,
-                onClick = onSave
+                onClick = onSave,
             )
 
             SecondaryButton(
                 text = "Back",
                 enabled = !uiState.isSubmitting && !uiState.isAvatarUploading,
-                onClick = onBack
+                onClick = onBack,
             )
         }
     }
@@ -142,31 +175,29 @@ private fun StyleChip(
     label: String,
     icon: ImageVector,
     selected: Boolean,
-    onClick: () -> Unit
+    onClick: () -> Unit,
 ) {
     Surface(
         color = if (selected) MaterialTheme.colorScheme.secondaryContainer else MaterialTheme.colorScheme.surfaceContainerHighest,
         shape = CircleShape,
-        modifier = Modifier.clickable { onClick() }
+        modifier = Modifier.clickable { onClick() },
     ) {
         Row(
             modifier = Modifier.padding(horizontal = 16.dp, vertical = 8.dp),
             verticalAlignment = Alignment.CenterVertically,
-            horizontalArrangement = Arrangement.spacedBy(8.dp)
+            horizontalArrangement = Arrangement.spacedBy(8.dp),
         ) {
             Icon(
                 imageVector = icon,
                 contentDescription = null,
                 modifier = Modifier.size(14.dp),
-                tint = if (selected) MaterialTheme.colorScheme.onSecondaryContainer else MaterialTheme.colorScheme.onSurfaceVariant
+                tint = if (selected) MaterialTheme.colorScheme.onSecondaryContainer else MaterialTheme.colorScheme.onSurfaceVariant,
             )
             Text(
                 text = label,
                 style = MaterialTheme.typography.labelSmall.copy(fontWeight = FontWeight.Bold),
-                color = if (selected) MaterialTheme.colorScheme.onSecondaryContainer else MaterialTheme.colorScheme.onSurfaceVariant
+                color = if (selected) MaterialTheme.colorScheme.onSecondaryContainer else MaterialTheme.colorScheme.onSurfaceVariant,
             )
         }
     }
 }
-
-

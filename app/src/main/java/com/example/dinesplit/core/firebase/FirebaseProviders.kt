@@ -11,4 +11,3 @@ object FirebaseProviders {
     val storage: FirebaseStorage by lazy { FirebaseStorage.getInstance() }
     val messaging: FirebaseMessaging by lazy { FirebaseMessaging.getInstance() }
 }
-

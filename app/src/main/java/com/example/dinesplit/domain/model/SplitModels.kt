@@ -3,29 +3,34 @@ package com.example.dinesplit.domain.model
 import java.util.UUID
 
 enum class SplitMethod {
-    EQUAL, CUSTOM, ITEMIZED
+    EQUAL,
+    CUSTOM,
+    ITEMIZED,
 }
 
 enum class PaymentStatus {
-    PAYER, PAID, UNPAID
+    PAYER,
+    PAID,
+    UNPAID,
 }
 
 enum class BillStatus {
-    OPEN, SETTLED
+    OPEN,
+    SETTLED,
 }
 
 data class Member(
     val id: String,
     val name: String,
     val initial: String,
-    val isMe: Boolean = false
+    val isMe: Boolean = false,
 )
 
 data class BillItem(
     val id: String = UUID.randomUUID().toString(),
     val name: String,
     val price: Double,
-    val sharedByMemberIds: List<String>
+    val sharedByMemberIds: List<String>,
 )
 
 data class Bill(
@@ -38,7 +43,7 @@ data class Bill(
     val items: List<BillItem> = emptyList(),
     val shares: Map<String, Double> = emptyMap(), // MemberId -> Amount
     val paidMemberIds: List<String> = emptyList(),
-    val date: Long = System.currentTimeMillis()
+    val date: Long = System.currentTimeMillis(),
 ) {
     fun paymentStatusFor(memberId: String): PaymentStatus {
         return when {
@@ -58,5 +63,5 @@ data class Bill(
 data class Settlement(
     val fromMemberId: String,
     val toMemberId: String,
-    val amount: Double
+    val amount: Double,
 )

@@ -18,11 +18,10 @@ data class FeedUiState(
     val currentUser: UserProfile? = null,
     val viewedStoryIds: Set<String> = emptySet(),
     val isLoading: Boolean = true,
-    val error: String? = null
+    val error: String? = null,
 )
 
 class FeedViewModel(application: Application) : AndroidViewModel(application) {
-
     private val getFeedUseCase = AppContainer.getFeedUseCase()
     private val observeSessionUseCase = AppContainer.observeSessionUseCase(application)
     private val getCurrentUserProfileUseCase = AppContainer.getCurrentUserProfileUseCase(application)
@@ -31,24 +30,25 @@ class FeedViewModel(application: Application) : AndroidViewModel(application) {
 
     private val _viewedStoryIds = MutableStateFlow<Set<String>>(emptySet())
 
-    val uiState: StateFlow<FeedUiState> = combine(
-        getFeedUseCase(),
-        observeSessionUseCase(),
-        _viewedStoryIds
-    ) { posts, session, viewedIds ->
-        val userProfile = session?.uid?.let { getCurrentUserProfileUseCase(it) }
-        FeedUiState(
-            posts = posts,
-            currentUser = userProfile,
-            viewedStoryIds = viewedIds,
-            isLoading = false,
-            error = null
+    val uiState: StateFlow<FeedUiState> =
+        combine(
+            getFeedUseCase(),
+            observeSessionUseCase(),
+            _viewedStoryIds,
+        ) { posts, session, viewedIds ->
+            val userProfile = session?.uid?.let { getCurrentUserProfileUseCase(it) }
+            FeedUiState(
+                posts = posts,
+                currentUser = userProfile,
+                viewedStoryIds = viewedIds,
+                isLoading = false,
+                error = null,
+            )
+        }.stateIn(
+            scope = viewModelScope,
+            started = SharingStarted.WhileSubscribed(5000),
+            initialValue = FeedUiState(),
         )
-    }.stateIn(
-        scope = viewModelScope,
-        started = SharingStarted.WhileSubscribed(5000),
-        initialValue = FeedUiState()
-    )
 
     fun refresh() {
         // getFeedUseCase is a Flow; re-subscribing is not needed.

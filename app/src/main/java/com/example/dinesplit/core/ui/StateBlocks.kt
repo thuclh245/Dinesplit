@@ -13,19 +13,19 @@ import androidx.compose.ui.Modifier
 @Composable
 fun LoadingBlock(
     modifier: Modifier = Modifier,
-    message: String = "Đang tải..."
+    message: String = "Đang tải...",
 ) {
     AppCard(modifier = modifier) {
         Column(
             modifier = Modifier.fillMaxWidth(),
             horizontalAlignment = Alignment.CenterHorizontally,
-            verticalArrangement = Arrangement.spacedBy(AppDimens.spaceMd)
+            verticalArrangement = Arrangement.spacedBy(AppDimens.spaceMd),
         ) {
             CircularProgressIndicator()
             Text(
                 text = message,
                 style = MaterialTheme.typography.bodyMedium,
-                color = MaterialTheme.colorScheme.onSurfaceVariant
+                color = MaterialTheme.colorScheme.onSurfaceVariant,
             )
         }
     }
@@ -37,28 +37,28 @@ fun EmptyStateBlock(
     subtitle: String,
     actionText: String? = null,
     onActionClick: (() -> Unit)? = null,
-    modifier: Modifier = Modifier
+    modifier: Modifier = Modifier,
 ) {
     AppCard(modifier = modifier) {
         Column(
             modifier = Modifier.fillMaxWidth(),
             horizontalAlignment = Alignment.CenterHorizontally,
-            verticalArrangement = Arrangement.spacedBy(AppDimens.spaceSm)
+            verticalArrangement = Arrangement.spacedBy(AppDimens.spaceSm),
         ) {
             Text(
                 text = title,
-                style = MaterialTheme.typography.titleMedium
+                style = MaterialTheme.typography.titleMedium,
             )
             Text(
                 text = subtitle,
                 style = MaterialTheme.typography.bodyMedium,
-                color = MaterialTheme.colorScheme.onSurfaceVariant
+                color = MaterialTheme.colorScheme.onSurfaceVariant,
             )
 
             if (!actionText.isNullOrBlank() && onActionClick != null) {
                 PrimaryButton(
                     text = actionText,
-                    onClick = onActionClick
+                    onClick = onActionClick,
                 )
             }
         }
@@ -71,27 +71,27 @@ fun ErrorStateBlock(
     subtitle: String = "Vui lòng thử lại.",
     retryText: String = "Thử lại",
     onRetryClick: () -> Unit,
-    modifier: Modifier = Modifier
+    modifier: Modifier = Modifier,
 ) {
     AppCard(modifier = modifier) {
         Column(
             modifier = Modifier.fillMaxWidth(),
             horizontalAlignment = Alignment.CenterHorizontally,
-            verticalArrangement = Arrangement.spacedBy(AppDimens.spaceSm)
+            verticalArrangement = Arrangement.spacedBy(AppDimens.spaceSm),
         ) {
             Text(
                 text = title,
                 style = MaterialTheme.typography.titleMedium,
-                color = MaterialTheme.colorScheme.error
+                color = MaterialTheme.colorScheme.error,
             )
             Text(
                 text = subtitle,
                 style = MaterialTheme.typography.bodyMedium,
-                color = MaterialTheme.colorScheme.onSurfaceVariant
+                color = MaterialTheme.colorScheme.onSurfaceVariant,
             )
             PrimaryButton(
                 text = retryText,
-                onClick = onRetryClick
+                onClick = onRetryClick,
             )
         }
     }

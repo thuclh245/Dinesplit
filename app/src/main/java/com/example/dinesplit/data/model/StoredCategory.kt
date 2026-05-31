@@ -15,5 +15,5 @@ data class StoredCategory(
     val description: String,
     val amountLabel: String,
     val progress: Float,
-    val isActive: Boolean
+    val isActive: Boolean,
 )

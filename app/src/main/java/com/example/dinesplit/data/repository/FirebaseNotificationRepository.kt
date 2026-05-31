@@ -13,18 +13,18 @@ import kotlin.coroutines.resumeWithException
 
 class FirebaseNotificationRepository private constructor(
     @Suppress("UNUSED_PARAMETER") context: Context,
-    private val firestore: FirebaseFirestore = FirebaseProviders.firestore
+    private val firestore: FirebaseFirestore = FirebaseProviders.firestore,
 ) : NotificationRepository {
-
     override suspend fun getNotifications(): List<Notification> {
         val uid = requireCurrentUserId()
-        val snapshot = firestore
-            .collection(COLLECTION_USER_NOTIFICATIONS)
-            .document(uid)
-            .collection(COLLECTION_NOTIFICATIONS)
-            .orderBy(FIELD_CREATED_AT, com.google.firebase.firestore.Query.Direction.DESCENDING)
-            .get()
-            .awaitFirebase()
+        val snapshot =
+            firestore
+                .collection(COLLECTION_USER_NOTIFICATIONS)
+                .document(uid)
+                .collection(COLLECTION_NOTIFICATIONS)
+                .orderBy(FIELD_CREATED_AT, com.google.firebase.firestore.Query.Direction.DESCENDING)
+                .get()
+                .awaitFirebase()
 
         return snapshot.documents.mapNotNull { document ->
             document.toNotification(uid)
@@ -50,7 +50,10 @@ class FirebaseNotificationRepository private constructor(
         updateReadState(notificationId = notificationId, isRead = false)
     }
 
-    private suspend fun updateReadState(notificationId: String, isRead: Boolean) {
+    private suspend fun updateReadState(
+        notificationId: String,
+        isRead: Boolean,
+    ) {
         val uid = requireCurrentUserId()
         firestore
             .collection(COLLECTION_USER_NOTIFICATIONS)
@@ -60,8 +63,8 @@ class FirebaseNotificationRepository private constructor(
             .update(
                 mapOf(
                     FIELD_IS_READ to isRead,
-                    FIELD_UPDATED_AT to System.currentTimeMillis()
-                )
+                    FIELD_UPDATED_AT to System.currentTimeMillis(),
+                ),
             )
             .awaitFirebase()
     }
@@ -72,9 +75,10 @@ class FirebaseNotificationRepository private constructor(
     }
 
     private fun com.google.firebase.firestore.DocumentSnapshot.toNotification(uid: String): Notification? {
-        val type = getString(FIELD_TYPE)?.let { value ->
-            NotificationType.entries.firstOrNull { it.name == value }
-        } ?: return null
+        val type =
+            getString(FIELD_TYPE)?.let { value ->
+                NotificationType.entries.firstOrNull { it.name == value }
+            } ?: return null
 
         return Notification(
             id = getString(FIELD_ID) ?: id,
@@ -87,7 +91,7 @@ class FirebaseNotificationRepository private constructor(
             createdAt = getLong(FIELD_CREATED_AT) ?: return null,
             updatedAt = getLong(FIELD_UPDATED_AT) ?: System.currentTimeMillis(),
             deepLinkDestination = getString(FIELD_DEEP_LINK_DESTINATION)?.takeIf { it.isNotBlank() },
-            deepLinkTargetId = getString(FIELD_DEEP_LINK_TARGET_ID)?.takeIf { it.isNotBlank() }
+            deepLinkTargetId = getString(FIELD_DEEP_LINK_TARGET_ID)?.takeIf { it.isNotBlank() },
         )
     }
 
@@ -103,7 +107,7 @@ class FirebaseNotificationRepository private constructor(
             FIELD_CREATED_AT to createdAt,
             FIELD_UPDATED_AT to updatedAt,
             FIELD_DEEP_LINK_DESTINATION to deepLinkDestination.orEmpty(),
-            FIELD_DEEP_LINK_TARGET_ID to deepLinkTargetId.orEmpty()
+            FIELD_DEEP_LINK_TARGET_ID to deepLinkTargetId.orEmpty(),
         )
     }
 
@@ -114,7 +118,7 @@ class FirebaseNotificationRepository private constructor(
                     continuation.resume(task.result)
                 } else {
                     continuation.resumeWithException(
-                        task.exception ?: IllegalStateException("Firebase task failed")
+                        task.exception ?: IllegalStateException("Firebase task failed"),
                     )
                 }
             }

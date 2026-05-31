@@ -3,20 +3,20 @@ package com.example.dinesplit.presentation.main
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.*
-import androidx.compose.foundation.shape.CircleShape
-import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.draw.clip
-import androidx.compose.ui.draw.shadow
-import androidx.compose.ui.graphics.Brush
-import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.geometry.Offset
+import androidx.compose.ui.input.nestedscroll.NestedScrollConnection
+import androidx.compose.ui.input.nestedscroll.NestedScrollSource
+import androidx.compose.ui.input.nestedscroll.nestedScroll
+import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.tooling.preview.Preview
+import androidx.compose.ui.unit.IntOffset
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
-import androidx.compose.ui.tooling.preview.Preview
 import androidx.lifecycle.viewmodel.compose.viewModel
 import androidx.navigation.NavDestination.Companion.hierarchy
 import androidx.navigation.NavType
@@ -27,6 +27,10 @@ import androidx.navigation.compose.rememberNavController
 import androidx.navigation.navArgument
 import com.example.dinesplit.core.navigation.AppRoute
 import com.example.dinesplit.core.navigation.BottomTab
+import com.example.dinesplit.core.ui.AppDimens
+import com.example.dinesplit.core.ui.ErrorStateBlock
+import com.example.dinesplit.core.ui.HomeTopBar
+import com.example.dinesplit.core.ui.LoadingBlock
 import com.example.dinesplit.presentation.feed.CreatePostScreen
 import com.example.dinesplit.presentation.feed.FeedScreen
 import com.example.dinesplit.presentation.feed.PostDetailScreen
@@ -36,39 +40,28 @@ import com.example.dinesplit.presentation.personal.CategoryManagementScreen
 import com.example.dinesplit.presentation.personal.HistoryScreen
 import com.example.dinesplit.presentation.personal.MonthlySummaryScreen
 import com.example.dinesplit.presentation.personal.PersonalIntelligenceScreen
-import com.example.dinesplit.presentation.personal.PersonalScreen
 import com.example.dinesplit.presentation.personal.PersonalPlanFocus
 import com.example.dinesplit.presentation.personal.PersonalPlansScreen
+import com.example.dinesplit.presentation.personal.PersonalScreen
 import com.example.dinesplit.presentation.personal.PersonalViewModel
 import com.example.dinesplit.presentation.personal.SpendingReminderScreen
 import com.example.dinesplit.presentation.personal.TransactionDetailScreen
 import com.example.dinesplit.presentation.personal.toHistoryItems
 import com.example.dinesplit.presentation.personal.toManagedCategories
 import com.example.dinesplit.presentation.personal.toTransactionType
-import com.example.dinesplit.presentation.split.BillDetailScreen
 import com.example.dinesplit.presentation.profile.EditProfileScreen
 import com.example.dinesplit.presentation.profile.OtherUserProfileScreen
 import com.example.dinesplit.presentation.profile.ProfileScreen
 import com.example.dinesplit.presentation.profile.ProfileUiEffect
 import com.example.dinesplit.presentation.profile.ProfileViewModel
+import com.example.dinesplit.presentation.split.BillDetailScreen
 import com.example.dinesplit.presentation.split.CreateBillScreen
 import com.example.dinesplit.presentation.split.CreateGroupScreen
 import com.example.dinesplit.presentation.split.GroupDetailScreen
 import com.example.dinesplit.presentation.split.GroupListScreen
 import com.example.dinesplit.presentation.split.SplitScreen
 import com.example.dinesplit.ui.theme.DineSplitTheme
-import com.example.dinesplit.core.ui.LoadingBlock
-import com.example.dinesplit.core.ui.ErrorStateBlock
-import com.example.dinesplit.core.ui.AppDimens
-import com.example.dinesplit.core.ui.HomeTopBar
 import kotlinx.coroutines.flow.collectLatest
-import androidx.compose.ui.input.nestedscroll.NestedScrollConnection
-import androidx.compose.ui.input.nestedscroll.NestedScrollSource
-import androidx.compose.ui.input.nestedscroll.nestedScroll
-import androidx.compose.ui.geometry.Offset
-import androidx.compose.ui.unit.IntOffset
-import androidx.compose.ui.platform.LocalDensity
-import androidx.compose.ui.unit.Dp
 import kotlin.math.roundToInt
 
 @Composable
@@ -77,7 +70,7 @@ fun MainContainerScreen(
     pendingRoute: String? = null,
     onOpenNotifications: () -> Unit,
     onOpenAssistant: () -> Unit,
-    onLogout: () -> Unit
+    onLogout: () -> Unit,
 ) {
     val mainNavController = rememberNavController()
     val profileViewModel: ProfileViewModel = viewModel()
@@ -89,11 +82,12 @@ fun MainContainerScreen(
     val personalReminders by personalViewModel.reminders.collectAsState()
     val navBackStackEntry by mainNavController.currentBackStackEntryAsState()
     val currentDestination = navBackStackEntry?.destination
-    val showBottomBar = BottomTab.items.any { tab ->
-        currentDestination
-            ?.hierarchy
-            ?.any { it.route == tab.route } == true
-    }
+    val showBottomBar =
+        BottomTab.items.any { tab ->
+            currentDestination
+                ?.hierarchy
+                ?.any { it.route == tab.route } == true
+        }
 
     val context = androidx.compose.ui.platform.LocalContext.current
     LaunchedEffect(profileViewModel) {
@@ -102,10 +96,18 @@ fun MainContainerScreen(
                 ProfileUiEffect.LogoutSuccess -> onLogout()
                 ProfileUiEffect.SaveSuccess -> mainNavController.navigateUp()
                 ProfileUiEffect.SeedSuccess -> {
-                    android.widget.Toast.makeText(context, "Gieo dữ liệu mẫu thành công! Hãy kiểm tra trang chủ và ví của bạn.", android.widget.Toast.LENGTH_LONG).show()
+                    android.widget.Toast.makeText(
+                        context,
+                        "Gieo dữ liệu mẫu thành công! Hãy kiểm tra trang chủ và ví của bạn.",
+                        android.widget.Toast.LENGTH_LONG,
+                    ).show()
                 }
                 is ProfileUiEffect.SeedError -> {
-                    android.widget.Toast.makeText(context, "Lỗi gieo dữ liệu mẫu: ${effect.message}", android.widget.Toast.LENGTH_LONG).show()
+                    android.widget.Toast.makeText(
+                        context,
+                        "Lỗi gieo dữ liệu mẫu: ${effect.message}",
+                        android.widget.Toast.LENGTH_LONG,
+                    ).show()
                 }
             }
         }
@@ -132,12 +134,14 @@ fun MainContainerScreen(
     val statusBarHeightPx = WindowInsets.statusBars.getTop(density)
     val navigationBarHeightPx = WindowInsets.navigationBars.getBottom(density)
 
-    val topBarHeightPx = remember(statusBarHeightPx) {
-        with(density) { 64.dp.toPx() } + statusBarHeightPx
-    }
-    val bottomBarHeightPx = remember(navigationBarHeightPx) {
-        with(density) { 72.dp.toPx() } + navigationBarHeightPx
-    }
+    val topBarHeightPx =
+        remember(statusBarHeightPx) {
+            with(density) { 64.dp.toPx() } + statusBarHeightPx
+        }
+    val bottomBarHeightPx =
+        remember(navigationBarHeightPx) {
+            with(density) { 72.dp.toPx() } + navigationBarHeightPx
+        }
 
     var topBarOffsetHeightPx by remember { mutableStateOf(0f) }
     var bottomBarOffsetHeightPx by remember { mutableStateOf(0f) }
@@ -145,25 +149,29 @@ fun MainContainerScreen(
     val currentRoute = currentDestination?.route
     val isFeedScreen = currentRoute == AppRoute.Feed.route
 
-    val nestedScrollConnection = remember(currentRoute, topBarHeightPx, bottomBarHeightPx) {
-        object : NestedScrollConnection {
-            override fun onPreScroll(available: Offset, source: NestedScrollSource): Offset {
-                if (!showBottomBar || !isFeedScreen) {
-                    topBarOffsetHeightPx = 0f
-                    bottomBarOffsetHeightPx = 0f
+    val nestedScrollConnection =
+        remember(currentRoute, topBarHeightPx, bottomBarHeightPx) {
+            object : NestedScrollConnection {
+                override fun onPreScroll(
+                    available: Offset,
+                    source: NestedScrollSource,
+                ): Offset {
+                    if (!showBottomBar || !isFeedScreen) {
+                        topBarOffsetHeightPx = 0f
+                        bottomBarOffsetHeightPx = 0f
+                        return Offset.Zero
+                    }
+                    val delta = available.y
+                    val newTopOffset = topBarOffsetHeightPx + delta
+                    topBarOffsetHeightPx = newTopOffset.coerceIn(-topBarHeightPx, 0f)
+
+                    val newBottomOffset = bottomBarOffsetHeightPx
+                    bottomBarOffsetHeightPx = newBottomOffset.coerceIn(0f, bottomBarHeightPx)
+
                     return Offset.Zero
                 }
-                val delta = available.y
-                val newTopOffset = topBarOffsetHeightPx + delta
-                topBarOffsetHeightPx = newTopOffset.coerceIn(-topBarHeightPx, 0f)
-
-                val newBottomOffset = bottomBarOffsetHeightPx
-                bottomBarOffsetHeightPx = newBottomOffset.coerceIn(0f, bottomBarHeightPx)
-
-                return Offset.Zero
             }
         }
-    }
 
     LaunchedEffect(currentRoute) {
         topBarOffsetHeightPx = 0f
@@ -171,29 +179,32 @@ fun MainContainerScreen(
     }
 
     val bottomBarOffsetHeightDp = with(density) { bottomBarOffsetHeightPx.toDp() }
-    val dynamicBottomPadding = remember(bottomBarOffsetHeightDp) {
-        maxOf(0.dp, 80.dp - bottomBarOffsetHeightDp)
-    }
+    val dynamicBottomPadding =
+        remember(bottomBarOffsetHeightDp) {
+            maxOf(0.dp, 80.dp - bottomBarOffsetHeightDp)
+        }
 
     Scaffold(
         contentWindowInsets = WindowInsets(0, 0, 0, 0),
-        modifier = Modifier
-            .fillMaxSize()
-            .nestedScroll(nestedScrollConnection)
+        modifier =
+            Modifier
+                .fillMaxSize()
+                .nestedScroll(nestedScrollConnection),
     ) { innerPadding ->
         Box(
-            modifier = Modifier
-                .fillMaxSize()
-                .background(MaterialTheme.colorScheme.background)
+            modifier =
+                Modifier
+                    .fillMaxSize()
+                    .background(MaterialTheme.colorScheme.background),
         ) {
             // Main content (NavHost)
             Box(
-                modifier = Modifier.fillMaxSize()
+                modifier = Modifier.fillMaxSize(),
             ) {
                 NavHost(
                     navController = mainNavController,
                     startDestination = AppRoute.Feed.route,
-                    modifier = Modifier.fillMaxSize()
+                    modifier = Modifier.fillMaxSize(),
                 ) {
                     composable(AppRoute.Feed.route) {
                         FeedScreen(
@@ -212,7 +223,7 @@ fun MainContainerScreen(
                             },
                             onSettleUp = { groupId, billId ->
                                 mainNavController.navigate(AppRoute.BillDetail.createRoute(groupId, billId))
-                            }
+                            },
                         )
                     }
                     composable(AppRoute.Split.route) {
@@ -229,7 +240,7 @@ fun MainContainerScreen(
                             },
                             onBillClick = { groupId, billId ->
                                 mainNavController.navigate(AppRoute.BillDetail.createRoute(groupId, billId))
-                            }
+                            },
                         )
                     }
 
@@ -239,7 +250,7 @@ fun MainContainerScreen(
                                 mainNavController.navigate(AppRoute.GroupDetail.createRoute(groupId))
                             },
                             onNavigateToCreateGroup = { mainNavController.navigate(AppRoute.CreateGroup.route) },
-                            onNavigateToAllGroups = { /* already here */ }
+                            onNavigateToAllGroups = { /* already here */ },
                         )
                     }
 
@@ -257,7 +268,7 @@ fun MainContainerScreen(
                             },
                             onNavigateToBillDetail = { billId ->
                                 mainNavController.navigate(AppRoute.BillDetail.createRoute(groupId, billId))
-                            }
+                            },
                         )
                     }
                     composable(AppRoute.Personal.route) {
@@ -277,20 +288,20 @@ fun MainContainerScreen(
                             onOpenPlans = { mainNavController.navigate(AppRoute.PersonalPlans.route) },
                             onOpenRecurringPlans = {
                                 mainNavController.navigate(
-                                    AppRoute.PersonalPlans.createRoute(AppRoute.PersonalPlans.FOCUS_RECURRING)
+                                    AppRoute.PersonalPlans.createRoute(AppRoute.PersonalPlans.FOCUS_RECURRING),
                                 )
                             },
                             onOpenGoalPlans = {
                                 mainNavController.navigate(
-                                    AppRoute.PersonalPlans.createRoute(AppRoute.PersonalPlans.FOCUS_GOALS)
+                                    AppRoute.PersonalPlans.createRoute(AppRoute.PersonalPlans.FOCUS_GOALS),
                                 )
                             },
                             onOpenWalletPlans = {
                                 mainNavController.navigate(
-                                    AppRoute.PersonalPlans.createRoute(AppRoute.PersonalPlans.FOCUS_WALLETS)
+                                    AppRoute.PersonalPlans.createRoute(AppRoute.PersonalPlans.FOCUS_WALLETS),
                                 )
                             },
-                            onRefresh = personalViewModel::refreshState
+                            onRefresh = personalViewModel::refreshState,
                         )
                     }
                     composable(AppRoute.AddTransaction.route) {
@@ -302,7 +313,7 @@ fun MainContainerScreen(
                             onSave = { transaction ->
                                 personalViewModel.addTransaction(transaction)
                                 mainNavController.navigateUp()
-                            }
+                            },
                         )
                     }
                     composable(AppRoute.TransactionHistory.route) {
@@ -311,24 +322,25 @@ fun MainContainerScreen(
                             transactions = personalUiState.transactions.toHistoryItems(personalUiState.categories),
                             onTransactionClick = { item ->
                                 mainNavController.navigate(AppRoute.TransactionDetail.createRoute(item.id))
-                            }
+                            },
                         )
                     }
                     composable(AppRoute.MonthlySummary.route) {
                         MonthlySummaryScreen(
                             onBack = { mainNavController.navigateUp() },
                             summary = personalChartState.monthlySummary,
-                            categorySpending = personalChartState.pieSlices
+                            categorySpending = personalChartState.pieSlices,
                         )
                     }
                     composable(AppRoute.TransactionDetail.routeWithArg) { backStackEntry ->
-                        val transactionId = backStackEntry.arguments
-                            ?.getString(AppRoute.TransactionDetail.ARG_ID)
-                            .orEmpty()
+                        val transactionId =
+                            backStackEntry.arguments
+                                ?.getString(AppRoute.TransactionDetail.ARG_ID)
+                                .orEmpty()
                         TransactionDetailScreen(
                             transactionId = transactionId,
                             transaction = personalUiState.transactions.firstOrNull { it.id == transactionId },
-                            onBack = { mainNavController.navigateUp() }
+                            onBack = { mainNavController.navigateUp() },
                         )
                     }
                     composable(AppRoute.CategoryManagement.route) {
@@ -340,7 +352,7 @@ fun MainContainerScreen(
                                     name = input.name,
                                     description = input.description,
                                     type = input.type.toTransactionType(),
-                                    isCustom = input.isCustom
+                                    isCustom = input.isCustom,
                                 )
                             },
                             onUpdateCategory = { category, input ->
@@ -350,13 +362,13 @@ fun MainContainerScreen(
                                     description = input.description,
                                     type = input.type.toTransactionType(),
                                     isCustom = input.isCustom,
-                                    isActive = category.isActive
+                                    isActive = category.isActive,
                                 )
                             },
                             onDeleteCategory = { category ->
                                 personalViewModel.deleteCategory(category.id)
                             },
-                            onBack = { mainNavController.navigateUp() }
+                            onBack = { mainNavController.navigateUp() },
                         )
                     }
                     composable(AppRoute.SpendingReminders.route) {
@@ -371,10 +383,10 @@ fun MainContainerScreen(
                                     categoryName = categoryName,
                                     budgetAmount = budget,
                                     threshold = threshold,
-                                    reminderType = type
+                                    reminderType = type,
                                 )
                             },
-                            onDeleteReminder = personalViewModel::deleteSpendingReminder
+                            onDeleteReminder = personalViewModel::deleteSpendingReminder,
                         )
                     }
                     composable(AppRoute.PersonalInsights.route) {
@@ -385,24 +397,26 @@ fun MainContainerScreen(
                             reminderCount = personalReminders.size,
                             onOpenHistory = { mainNavController.navigate(AppRoute.TransactionHistory.route) },
                             onOpenReminders = { mainNavController.navigate(AppRoute.SpendingReminders.route) },
-                            onOpenPlans = { mainNavController.navigate(AppRoute.PersonalPlans.route) }
+                            onOpenPlans = { mainNavController.navigate(AppRoute.PersonalPlans.route) },
                         )
                     }
                     composable(
                         route = AppRoute.PersonalPlans.routeWithFocus,
-                        arguments = listOf(
-                            navArgument(AppRoute.PersonalPlans.ARG_FOCUS) {
-                                type = NavType.StringType
-                                nullable = true
-                                defaultValue = null
-                            }
-                        )
+                        arguments =
+                            listOf(
+                                navArgument(AppRoute.PersonalPlans.ARG_FOCUS) {
+                                    type = NavType.StringType
+                                    nullable = true
+                                    defaultValue = null
+                                },
+                            ),
                     ) { backStackEntry ->
                         PersonalPlansScreen(
                             onBack = { mainNavController.navigateUp() },
-                            initialFocus = PersonalPlanFocus.fromRouteValue(
-                                backStackEntry.arguments?.getString(AppRoute.PersonalPlans.ARG_FOCUS)
-                            ),
+                            initialFocus =
+                                PersonalPlanFocus.fromRouteValue(
+                                    backStackEntry.arguments?.getString(AppRoute.PersonalPlans.ARG_FOCUS),
+                                ),
                             categories = personalUiState.categories,
                             recurringRules = personalUiState.recurringRules,
                             goals = personalUiState.goals,
@@ -412,33 +426,35 @@ fun MainContainerScreen(
                             onAddGoal = personalViewModel::addGoal,
                             onDeleteGoal = personalViewModel::deleteGoal,
                             onAddWallet = personalViewModel::addWallet,
-                            onDeleteWallet = personalViewModel::deleteWallet
+                            onDeleteWallet = personalViewModel::deleteWallet,
                         )
                     }
                     composable(AppRoute.Profile.route) {
                         when {
                             profileUiState.isLoading -> {
                                 Box(
-                                    modifier = Modifier
-                                        .fillMaxSize()
-                                        .padding(AppDimens.spaceLg),
-                                    contentAlignment = Alignment.Center
+                                    modifier =
+                                        Modifier
+                                            .fillMaxSize()
+                                            .padding(AppDimens.spaceLg),
+                                    contentAlignment = Alignment.Center,
                                 ) {
                                     LoadingBlock(message = "Loading profile...")
                                 }
                             }
                             profileUiState.errorMessage != null -> {
                                 Box(
-                                    modifier = Modifier
-                                        .fillMaxSize()
-                                        .padding(AppDimens.spaceLg),
-                                    contentAlignment = Alignment.Center
+                                    modifier =
+                                        Modifier
+                                            .fillMaxSize()
+                                            .padding(AppDimens.spaceLg),
+                                    contentAlignment = Alignment.Center,
                                 ) {
                                     ErrorStateBlock(
                                         title = "Không thể tải hồ sơ",
                                         subtitle = profileUiState.errorMessage ?: "Vui lòng kiểm tra mạng và thử lại.",
                                         retryText = "Thử lại",
-                                        onRetryClick = { profileViewModel.loadProfile() }
+                                        onRetryClick = { profileViewModel.loadProfile() },
                                     )
                                 }
                             }
@@ -454,7 +470,7 @@ fun MainContainerScreen(
                                     onEditProfile = { mainNavController.navigate(AppRoute.EditProfile.route) },
                                     onSeedDemoData = profileViewModel::seedDemoData,
                                     onOpenSearch = { mainNavController.navigate(AppRoute.Search.route) },
-                                    onLogout = profileViewModel::logout
+                                    onLogout = profileViewModel::logout,
                                 )
                             }
                         }
@@ -469,7 +485,7 @@ fun MainContainerScreen(
                             onAvatarClear = profileViewModel::onAvatarCleared,
                             onToggleDiningStyle = profileViewModel::toggleDiningStyle,
                             onSave = profileViewModel::saveProfile,
-                            onBack = { mainNavController.navigateUp() }
+                            onBack = { mainNavController.navigateUp() },
                         )
                     }
                     composable(AppRoute.Search.route) {
@@ -487,7 +503,7 @@ fun MainContainerScreen(
                         CreateBillScreen(
                             groupId = groupId,
                             onBack = { mainNavController.navigateUp() },
-                            onBillSavedForPersonal = personalViewModel::addSplitBillTransaction
+                            onBillSavedForPersonal = personalViewModel::addSplitBillTransaction,
                         )
                     }
                     composable(AppRoute.BillDetail.routeWithArg) { backStackEntry ->
@@ -496,7 +512,7 @@ fun MainContainerScreen(
                         BillDetailScreen(
                             groupId = groupId,
                             billId = billId,
-                            onBack = { mainNavController.navigateUp() }
+                            onBack = { mainNavController.navigateUp() },
                         )
                     }
                     composable(AppRoute.PostDetail.routeWithArg) { backStackEntry ->
@@ -512,19 +528,21 @@ fun MainContainerScreen(
 
             // Global HomeTopBar Overlay
             if (showBottomBar) {
-                val title = when {
-                    currentRoute?.contains(AppRoute.Feed.route) == true -> "DineSplit"
-                    currentRoute?.contains(AppRoute.Split.route) == true -> "Split Bill"
-                    currentRoute?.contains(AppRoute.Personal.route) == true -> "Ví cá nhân"
-                    currentRoute?.contains(AppRoute.Profile.route) == true -> profileUiState.profile?.displayName ?: "Profile"
-                    else -> "DineSplit"
-                }
+                val title =
+                    when {
+                        currentRoute?.contains(AppRoute.Feed.route) == true -> "DineSplit"
+                        currentRoute?.contains(AppRoute.Split.route) == true -> "Split Bill"
+                        currentRoute?.contains(AppRoute.Personal.route) == true -> "Ví cá nhân"
+                        currentRoute?.contains(AppRoute.Profile.route) == true -> profileUiState.profile?.displayName ?: "Profile"
+                        else -> "DineSplit"
+                    }
 
                 Box(
-                    modifier = Modifier
-                        .fillMaxWidth()
-                        .wrapContentHeight()
-                        .offset { IntOffset(0, topBarOffsetHeightPx.roundToInt()) }
+                    modifier =
+                        Modifier
+                            .fillMaxWidth()
+                            .wrapContentHeight()
+                            .offset { IntOffset(0, topBarOffsetHeightPx.roundToInt()) },
                 ) {
                     HomeTopBar(
                         userAvatarUrl = profileUiState.profile?.avatarUrl,
@@ -544,17 +562,18 @@ fun MainContainerScreen(
                             }
                         },
                         onOpenSearch = { mainNavController.navigate(AppRoute.Search.route) },
-                        onOpenNotifications = onOpenNotifications
+                        onOpenNotifications = onOpenNotifications,
                     )
                 }
 
                 // Global MainBottomBar Overlay
                 Box(
-                    modifier = Modifier
-                        .align(Alignment.BottomCenter)
-                        .fillMaxWidth()
-                        .wrapContentHeight()
-                        .offset { IntOffset(0, bottomBarOffsetHeightPx.roundToInt()) }
+                    modifier =
+                        Modifier
+                            .align(Alignment.BottomCenter)
+                            .fillMaxWidth()
+                            .wrapContentHeight()
+                            .offset { IntOffset(0, bottomBarOffsetHeightPx.roundToInt()) },
                 ) {
                     MainBottomBar(
                         isTabSelected = { tab ->
@@ -570,7 +589,7 @@ fun MainContainerScreen(
                                 launchSingleTop = true
                                 restoreState = true
                             }
-                        }
+                        },
                     )
                 }
             }
@@ -582,50 +601,54 @@ fun MainContainerScreen(
 private fun MainBottomBar(
     isTabSelected: (BottomTab) -> Boolean,
     onTabSelected: (BottomTab) -> Unit,
-    modifier: Modifier = Modifier
+    modifier: Modifier = Modifier,
 ) {
     val colorScheme = MaterialTheme.colorScheme
     Surface(
-        modifier = modifier
-            .fillMaxWidth()
-            .windowInsetsPadding(WindowInsets.navigationBars),
+        modifier =
+            modifier
+                .fillMaxWidth()
+                .windowInsetsPadding(WindowInsets.navigationBars),
         color = colorScheme.surfaceContainerLowest,
-        tonalElevation = 8.dp
+        tonalElevation = 8.dp,
     ) {
         Column {
             HorizontalDivider(color = colorScheme.outlineVariant.copy(alpha = 0.35f), thickness = 0.5.dp)
             Row(
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .height(72.dp),
+                modifier =
+                    Modifier
+                        .fillMaxWidth()
+                        .height(72.dp),
                 verticalAlignment = Alignment.CenterVertically,
-                horizontalArrangement = Arrangement.SpaceAround
+                horizontalArrangement = Arrangement.SpaceAround,
             ) {
                 BottomTab.items.forEach { tab ->
                     val selected = isTabSelected(tab)
 
                     Column(
-                        modifier = Modifier
-                            .weight(1f)
-                            .fillMaxHeight()
-                            .clickable { onTabSelected(tab) },
+                        modifier =
+                            Modifier
+                                .weight(1f)
+                                .fillMaxHeight()
+                                .clickable { onTabSelected(tab) },
                         horizontalAlignment = Alignment.CenterHorizontally,
-                        verticalArrangement = Arrangement.Center
+                        verticalArrangement = Arrangement.Center,
                     ) {
                         Icon(
                             imageVector = tab.icon,
                             contentDescription = tab.label,
                             tint = if (selected) colorScheme.primary else colorScheme.outlineVariant,
-                            modifier = Modifier.size(26.dp)
+                            modifier = Modifier.size(26.dp),
                         )
                         Spacer(modifier = Modifier.height(4.dp))
                         Text(
                             text = tab.label,
-                            style = MaterialTheme.typography.labelSmall.copy(
-                                fontWeight = if (selected) FontWeight.Bold else FontWeight.Medium,
-                                fontSize = 11.sp
-                            ),
-                            color = if (selected) colorScheme.primary else colorScheme.outlineVariant
+                            style =
+                                MaterialTheme.typography.labelSmall.copy(
+                                    fontWeight = if (selected) FontWeight.Bold else FontWeight.Medium,
+                                    fontSize = 11.sp,
+                                ),
+                            color = if (selected) colorScheme.primary else colorScheme.outlineVariant,
                         )
                     }
                 }
@@ -640,7 +663,7 @@ private fun MainBottomBarPreview() {
     DineSplitTheme {
         MainBottomBar(
             isTabSelected = { tab -> tab.route == AppRoute.Feed.route },
-            onTabSelected = {}
+            onTabSelected = {},
         )
     }
 }

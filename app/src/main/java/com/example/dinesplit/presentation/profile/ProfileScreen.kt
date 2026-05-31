@@ -10,25 +10,21 @@ import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.draw.clip
 import androidx.compose.ui.draw.drawBehind
 import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.vector.ImageVector
-import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.tooling.preview.Preview
+import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
-import androidx.compose.ui.unit.Dp
-import coil.compose.AsyncImage
 import com.example.dinesplit.core.ui.AppCard
 import com.example.dinesplit.core.ui.AppDimens
-import com.example.dinesplit.core.ui.HomeTopBar
 import com.example.dinesplit.core.ui.DineAvatarImage
 import com.example.dinesplit.core.ui.DineGridImage
 import com.example.dinesplit.ui.theme.DineSplitTheme
-import androidx.compose.ui.text.style.TextOverflow
 
 @Composable
 fun ProfileScreen(
@@ -43,7 +39,7 @@ fun ProfileScreen(
     onOpenSettings: () -> Unit = {},
     onSeedDemoData: () -> Unit = {},
     onOpenSearch: () -> Unit,
-    onLogout: () -> Unit
+    onLogout: () -> Unit,
 ) {
     val resolvedHandle = userHandle.ifBlank { "@" }
     val resolvedBio = userBio.ifBlank { "Add a bio so friends know who they are splitting with." }
@@ -72,7 +68,7 @@ fun ProfileScreen(
                     onClick = {
                         showLogoutConfirmation = false
                         onLogout()
-                    }
+                    },
                 ) {
                     Text("Đăng xuất")
                 }
@@ -80,11 +76,11 @@ fun ProfileScreen(
             dismissButton = {
                 TextButton(
                     enabled = !isLoggingOut,
-                    onClick = { showLogoutConfirmation = false }
+                    onClick = { showLogoutConfirmation = false },
                 ) {
                     Text("Hủy")
                 }
-            }
+            },
         )
     }
 
@@ -94,12 +90,12 @@ fun ProfileScreen(
             title = {
                 Row(
                     verticalAlignment = Alignment.CenterVertically,
-                    horizontalArrangement = Arrangement.spacedBy(8.dp)
+                    horizontalArrangement = Arrangement.spacedBy(8.dp),
                 ) {
                     Icon(
                         imageVector = Icons.Default.Settings,
                         contentDescription = null,
-                        tint = MaterialTheme.colorScheme.primary
+                        tint = MaterialTheme.colorScheme.primary,
                     )
                     Text("Cài đặt Nhà phát triển")
                 }
@@ -108,16 +104,20 @@ fun ProfileScreen(
                 Column(verticalArrangement = Arrangement.spacedBy(12.dp)) {
                     Text(
                         text = "Gieo dữ liệu mẫu để trải nghiệm đầy đủ các tính năng của ứng dụng (bao gồm giao dịch cá nhân, thông báo và các bài đăng trên Feed).",
-                        style = MaterialTheme.typography.bodyMedium
+                        style = MaterialTheme.typography.bodyMedium,
                     )
                     if (isSeeding) {
                         Row(
                             verticalAlignment = Alignment.CenterVertically,
                             horizontalArrangement = Arrangement.spacedBy(12.dp),
-                            modifier = Modifier.fillMaxWidth().padding(top = 8.dp)
+                            modifier = Modifier.fillMaxWidth().padding(top = 8.dp),
                         ) {
                             CircularProgressIndicator(modifier = Modifier.size(20.dp), strokeWidth = 2.dp)
-                            Text("Đang gieo dữ liệu mẫu vào Firestore...", style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.outline)
+                            Text(
+                                "Đang gieo dữ liệu mẫu vào Firestore...",
+                                style = MaterialTheme.typography.bodySmall,
+                                color = MaterialTheme.colorScheme.outline,
+                            )
                         }
                     }
                 }
@@ -126,7 +126,7 @@ fun ProfileScreen(
                 Button(
                     onClick = onSeedDemoData,
                     enabled = !isSeeding,
-                    colors = ButtonDefaults.buttonColors(containerColor = MaterialTheme.colorScheme.primary)
+                    colors = ButtonDefaults.buttonColors(containerColor = MaterialTheme.colorScheme.primary),
                 ) {
                     Text("Gieo dữ liệu", color = Color.White)
                 }
@@ -134,22 +134,22 @@ fun ProfileScreen(
             dismissButton = {
                 TextButton(
                     onClick = { showSettingsDialog = false },
-                    enabled = !isSeeding
+                    enabled = !isSeeding,
                 ) {
                     Text("Đóng")
                 }
-            }
+            },
         )
     }
 
-    Scaffold(
-    ) { padding ->
+    Scaffold { padding ->
         Column(
-            modifier = Modifier
-                .fillMaxSize()
-                .background(MaterialTheme.colorScheme.background)
-                .padding(padding)
-                .verticalScroll(rememberScrollState())
+            modifier =
+                Modifier
+                    .fillMaxSize()
+                    .background(MaterialTheme.colorScheme.background)
+                    .padding(padding)
+                    .verticalScroll(rememberScrollState()),
         ) {
             Spacer(modifier = Modifier.height(64.dp))
             ProfileHeader(
@@ -164,7 +164,7 @@ fun ProfileScreen(
                 onEditProfile = onEditProfile,
                 onOpenSettings = { showSettingsDialog = true },
                 isLoggingOut = isLoggingOut,
-                onLogout = { showLogoutConfirmation = true }
+                onLogout = { showLogoutConfirmation = true },
             )
 
             ProfileTabs(selectedTab = selectedTab, onTabSelected = { selectedTab = it })
@@ -174,20 +174,21 @@ fun ProfileScreen(
                 1 -> ProfileOverview()
                 2 -> {
                     Box(
-                        modifier = Modifier
-                            .fillMaxWidth()
-                            .padding(vertical = 32.dp),
-                        contentAlignment = Alignment.Center
+                        modifier =
+                            Modifier
+                                .fillMaxWidth()
+                                .padding(vertical = 32.dp),
+                        contentAlignment = Alignment.Center,
                     ) {
                         Text(
                             text = "Không có hoạt động được gắn thẻ",
                             style = MaterialTheme.typography.bodyMedium,
-                            color = MaterialTheme.colorScheme.outline
+                            color = MaterialTheme.colorScheme.outline,
                         )
                     }
                 }
             }
-            
+
             Spacer(modifier = Modifier.height(bottomPadding + 40.dp))
         }
     }
@@ -206,40 +207,51 @@ private fun ProfileHeader(
     onEditProfile: () -> Unit,
     onOpenSettings: () -> Unit,
     isLoggingOut: Boolean,
-    onLogout: () -> Unit
+    onLogout: () -> Unit,
 ) {
     Column(modifier = Modifier.padding(24.dp)) {
         Row(
             modifier = Modifier.fillMaxWidth(),
             verticalAlignment = Alignment.CenterVertically,
-            horizontalArrangement = Arrangement.spacedBy(24.dp)
+            horizontalArrangement = Arrangement.spacedBy(24.dp),
         ) {
             // Avatar with Gradient Ring
             Box(
-                modifier = Modifier
-                    .size(100.dp)
-                    .background(Brush.sweepGradient(listOf(MaterialTheme.colorScheme.primary, MaterialTheme.colorScheme.primaryContainer, MaterialTheme.colorScheme.primary)), CircleShape)
-                    .padding(3.dp)
+                modifier =
+                    Modifier
+                        .size(100.dp)
+                        .background(
+                            Brush.sweepGradient(
+                                listOf(
+                                    MaterialTheme.colorScheme.primary,
+                                    MaterialTheme.colorScheme.primaryContainer,
+                                    MaterialTheme.colorScheme.primary,
+                                ),
+                            ),
+                            CircleShape,
+                        )
+                        .padding(3.dp),
             ) {
                 DineAvatarImage(
                     imageUrl = avatarUrl,
                     name = displayName,
-                    modifier = Modifier
-                        .fillMaxSize()
-                        .border(4.dp, MaterialTheme.colorScheme.background, CircleShape),
-                    size = 94.dp
+                    modifier =
+                        Modifier
+                            .fillMaxSize()
+                            .border(4.dp, MaterialTheme.colorScheme.background, CircleShape),
+                    size = 94.dp,
                 )
             }
 
             Column(modifier = Modifier.weight(1f), verticalArrangement = Arrangement.spacedBy(16.dp)) {
                 Text(userName, style = MaterialTheme.typography.headlineSmall.copy(fontWeight = FontWeight.ExtraBold))
-                
+
                 Row(horizontalArrangement = Arrangement.spacedBy(12.dp)) {
                     Button(
                         onClick = onEditProfile,
                         shape = RoundedCornerShape(12.dp),
                         modifier = Modifier.weight(1f).height(40.dp),
-                        contentPadding = PaddingValues(0.dp)
+                        contentPadding = PaddingValues(0.dp),
                     ) {
                         Text("Edit Profile", style = MaterialTheme.typography.labelLarge.copy(fontWeight = FontWeight.Bold))
                     }
@@ -247,7 +259,7 @@ private fun ProfileHeader(
                         onClick = onOpenSettings,
                         shape = RoundedCornerShape(12.dp),
                         color = MaterialTheme.colorScheme.surfaceContainer,
-                        modifier = Modifier.size(40.dp)
+                        modifier = Modifier.size(40.dp),
                     ) {
                         Box(contentAlignment = Alignment.Center) {
                             Icon(Icons.Default.Settings, contentDescription = null, modifier = Modifier.size(20.dp))
@@ -262,7 +274,7 @@ private fun ProfileHeader(
         // Stats
         Row(
             modifier = Modifier.fillMaxWidth(),
-            horizontalArrangement = Arrangement.spacedBy(32.dp)
+            horizontalArrangement = Arrangement.spacedBy(32.dp),
         ) {
             StatItem(label = "Posts", value = posts)
             StatItem(label = "Followers", value = followers)
@@ -279,9 +291,13 @@ private fun ProfileHeader(
                 style = MaterialTheme.typography.bodyMedium,
                 color = MaterialTheme.colorScheme.onSurfaceVariant,
                 maxLines = 4,
-                overflow = TextOverflow.Ellipsis
+                overflow = TextOverflow.Ellipsis,
             )
-            Text(link, style = MaterialTheme.typography.labelLarge.copy(fontWeight = FontWeight.Bold), color = MaterialTheme.colorScheme.primary)
+            Text(
+                link,
+                style = MaterialTheme.typography.labelLarge.copy(fontWeight = FontWeight.Bold),
+                color = MaterialTheme.colorScheme.primary,
+            )
         }
 
         Spacer(modifier = Modifier.height(20.dp))
@@ -290,7 +306,7 @@ private fun ProfileHeader(
             onClick = onLogout,
             enabled = !isLoggingOut,
             modifier = Modifier.fillMaxWidth().height(46.dp),
-            shape = RoundedCornerShape(12.dp)
+            shape = RoundedCornerShape(12.dp),
         ) {
             if (isLoggingOut) {
                 CircularProgressIndicator(modifier = Modifier.size(18.dp), strokeWidth = 2.dp)
@@ -304,10 +320,17 @@ private fun ProfileHeader(
 }
 
 @Composable
-private fun StatItem(label: String, value: String) {
+private fun StatItem(
+    label: String,
+    value: String,
+) {
     Column {
         Text(value, style = MaterialTheme.typography.titleMedium.copy(fontWeight = FontWeight.Black))
-        Text(label.uppercase(), style = MaterialTheme.typography.labelSmall.copy(fontWeight = FontWeight.Bold, letterSpacing = 1.sp), color = MaterialTheme.colorScheme.outlineVariant)
+        Text(
+            label.uppercase(),
+            style = MaterialTheme.typography.labelSmall.copy(fontWeight = FontWeight.Bold, letterSpacing = 1.sp),
+            color = MaterialTheme.colorScheme.outlineVariant,
+        )
     }
 }
 
@@ -315,7 +338,7 @@ private fun StatItem(label: String, value: String) {
 private fun ProfileOverview() {
     Column(
         modifier = Modifier.padding(horizontal = 24.dp, vertical = 16.dp),
-        verticalArrangement = Arrangement.spacedBy(AppDimens.spaceMd)
+        verticalArrangement = Arrangement.spacedBy(AppDimens.spaceMd),
     ) {
         AppCard {
             Column(verticalArrangement = Arrangement.spacedBy(AppDimens.spaceSm)) {
@@ -323,7 +346,7 @@ private fun ProfileOverview() {
                 Text(
                     "Posts, saved meals, and tagged splits will appear here as real activity is added.",
                     style = MaterialTheme.typography.bodyMedium,
-                    color = MaterialTheme.colorScheme.onSurfaceVariant
+                    color = MaterialTheme.colorScheme.onSurfaceVariant,
                 )
             }
         }
@@ -333,13 +356,14 @@ private fun ProfileOverview() {
 @Composable
 private fun ProfileTabs(
     selectedTab: Int,
-    onTabSelected: (Int) -> Unit
+    onTabSelected: (Int) -> Unit,
 ) {
-    val tabs = listOf(
-        TabInfo("Grid", Icons.Default.GridView),
-        TabInfo("Saved", Icons.Default.BookmarkBorder),
-        TabInfo("Tagged", Icons.Default.AccountBox)
-    )
+    val tabs =
+        listOf(
+            TabInfo("Grid", Icons.Default.GridView),
+            TabInfo("Saved", Icons.Default.BookmarkBorder),
+            TabInfo("Tagged", Icons.Default.AccountBox),
+        )
     val primaryColor = MaterialTheme.colorScheme.primary
 
     Column {
@@ -347,27 +371,28 @@ private fun ProfileTabs(
             tabs.forEachIndexed { index, tab ->
                 val isSelected = selectedTab == index
                 Box(
-                    modifier = Modifier
-                        .weight(1f)
-                        .fillMaxHeight()
-                        .clickable { onTabSelected(index) }
-                        .drawBehind {
-                            if (isSelected) {
-                                drawLine(
-                                    color = primaryColor,
-                                    start = androidx.compose.ui.geometry.Offset(0f, 0f),
-                                    end = androidx.compose.ui.geometry.Offset(size.width, 0f),
-                                    strokeWidth = 2.dp.toPx()
-                                )
-                            }
-                        },
-                    contentAlignment = Alignment.Center
+                    modifier =
+                        Modifier
+                            .weight(1f)
+                            .fillMaxHeight()
+                            .clickable { onTabSelected(index) }
+                            .drawBehind {
+                                if (isSelected) {
+                                    drawLine(
+                                        color = primaryColor,
+                                        start = androidx.compose.ui.geometry.Offset(0f, 0f),
+                                        end = androidx.compose.ui.geometry.Offset(size.width, 0f),
+                                        strokeWidth = 2.dp.toPx(),
+                                    )
+                                }
+                            },
+                    contentAlignment = Alignment.Center,
                 ) {
                     Icon(
                         imageVector = tab.icon,
                         contentDescription = tab.label,
                         tint = if (isSelected) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.outlineVariant,
-                        modifier = Modifier.size(24.dp)
+                        modifier = Modifier.size(24.dp),
                     )
                 }
             }
@@ -386,7 +411,7 @@ private fun PhotoGrid(photos: List<String>) {
                     DineGridImage(
                         imageUrl = url,
                         contentDescription = null,
-                        modifier = Modifier.weight(1f).aspectRatio(1f)
+                        modifier = Modifier.weight(1f).aspectRatio(1f),
                     )
                 }
                 // Fill empty slots if last row has less than 3 photos
@@ -399,14 +424,16 @@ private fun PhotoGrid(photos: List<String>) {
 }
 
 data class TabInfo(val label: String, val icon: ImageVector)
-private val samplePhotos = listOf(
-    "https://lh3.googleusercontent.com/aida-public/AB6AXuDPo68lKRJUgLSRbIMyP8cKangAwx0j7hXe8PGwHVAeN_TDWusH8I8piDCWfw0boUfkdYsVUlUlUV1YD0w-MrFAyUSQZOSjFcFJ3NbqdUSOKrAk0ubOLr-Rb7iQTBtNH2gNKYkNca8ETj4zX1WjUd40GlfZOPbOWsxFuGpuAdi-99aZ5hRzAZisrBwQcfUUsqOZP-3qNcUYWf_t1vgCRaRczPZhkyd8-snCNxnXflJ5wz15MmXNLuTvCeyYY2MBT3AHVoVEv-t-s9s",
-    "https://lh3.googleusercontent.com/aida-public/AB6AXuAFcJh_WZqVCMMZv3NBDAbKn8TO2X9FTtTgdKQrSY01kiKSI0JS0mmvY-Fe4EL6Ku_O4yvkEXB2mXSAM7wcQbmJAcUYvX1382IgqqR9Sq9f-51QR9wlqbC-YeyL69KaKzKccU1OaWX881J_GofRqtcPQME54kWADXnILsPIK75U4kP07KJs8nLTmrED_azhBJdiCUAeamAiG3NyDKOIhuxuQ57cI9zzYj2xFFX2nG8A0bsHw61VTKaQLdAz_lkHX5HqB5piLy7y02U",
-    "https://lh3.googleusercontent.com/aida-public/AB6AXuBfGVqZEjq3TzaADMZ2buEd9tcHuiLkAoFK4FbRhL6Y9VkMGlV6y1zIRrYCn-olI46CLic4shUSoA5v49slK5WqMT6yMbuI-0_BmNRtEq3rJNb27iTHhck0QjS9faAp-Y14z_oJX4xAIAZ5NYCaYr8fO0gOgD3R0OXTMTEGuGB92iTGChFBAaMkmTpEsg_xoiZ0DRo-XPvIcOrSndlelqCjlo3RxgBFaT-BjHSpRZgHWrZA3pWRbPUd5qnxazk9I3bzJX4jBfI83JU",
-    "https://lh3.googleusercontent.com/aida-public/AB6AXuC32dimkr7Rmci-xva5bmegZsbng43iQe9X5By2wvKya393xmrteEaed26ylxNdfRDepdEL34vta7dPuvfZTCMFQF_kpvrRFV8ZowU6rmReLh3whaosUh0wGou5w0XIsDyiNATIMCHUMr5-icroJ9GN-ebRm083ZBZLIzxm8nIjgVenrYOO05IhtnzH9CG27mL127oQAbOKOb6vzde0yXhO4ZE4bSL-qsdbeLdmme2kRc1a7v8-lLD_L7ME3DqCIwtz4BaA3WjVFHs",
-    "https://lh3.googleusercontent.com/aida-public/AB6AXuCz15-drOE04YNhXjKak_xexU7l7z5yKLDOq2-rnnNIo-GY-Jn--zxEi9VmocpjT4cbiJ2W4ONCPbrnGQ15A7yhQkPpUiCKjHbDiEe-DJoHxAelIkVsh078_KRSnkSJKNdw5vDuKOtri72kPncg8pYkGE74MRIzjyHxbI255p7Y9oP6ogKpoJHhcwd_ZZAoc9SgtfaDvtY2e6-hTKygHmaToOL8LVHHLuzQyMMFqju90iv0rD9-926Dq-5DMAAzHncrfLvhnxKxpxs",
-    "https://lh3.googleusercontent.com/aida-public/AB6AXuDqhcDBDtkEkv9k095DhXUETbPEu2BmjWo0sOxInwgyuJ39Ctwm_V5bOa4Mc3_h0VxBNQYiFWMOOxMkJpGs2fiMOBjatAjj6NwFVyKXT2XM_WJikSgcUQLuShbh8jUgobtbfNkwVMUTRtPc1IxHED07NKI1wvZatqbjoBgMPYzHbRDff8KBFqKW4AQsdCpv5mmdCmMtV6C6-DZR2tIrs6eKMHv7sWF1JO-G8IQ0Eu68Hnc2tjAIuDd8Mq02nZPSHsIpd1dt6qW-r1k"
-)
+
+private val samplePhotos =
+    listOf(
+        "https://lh3.googleusercontent.com/aida-public/AB6AXuDPo68lKRJUgLSRbIMyP8cKangAwx0j7hXe8PGwHVAeN_TDWusH8I8piDCWfw0boUfkdYsVUlUlUV1YD0w-MrFAyUSQZOSjFcFJ3NbqdUSOKrAk0ubOLr-Rb7iQTBtNH2gNKYkNca8ETj4zX1WjUd40GlfZOPbOWsxFuGpuAdi-99aZ5hRzAZisrBwQcfUUsqOZP-3qNcUYWf_t1vgCRaRczPZhkyd8-snCNxnXflJ5wz15MmXNLuTvCeyYY2MBT3AHVoVEv-t-s9s",
+        "https://lh3.googleusercontent.com/aida-public/AB6AXuAFcJh_WZqVCMMZv3NBDAbKn8TO2X9FTtTgdKQrSY01kiKSI0JS0mmvY-Fe4EL6Ku_O4yvkEXB2mXSAM7wcQbmJAcUYvX1382IgqqR9Sq9f-51QR9wlqbC-YeyL69KaKzKccU1OaWX881J_GofRqtcPQME54kWADXnILsPIK75U4kP07KJs8nLTmrED_azhBJdiCUAeamAiG3NyDKOIhuxuQ57cI9zzYj2xFFX2nG8A0bsHw61VTKaQLdAz_lkHX5HqB5piLy7y02U",
+        "https://lh3.googleusercontent.com/aida-public/AB6AXuBfGVqZEjq3TzaADMZ2buEd9tcHuiLkAoFK4FbRhL6Y9VkMGlV6y1zIRrYCn-olI46CLic4shUSoA5v49slK5WqMT6yMbuI-0_BmNRtEq3rJNb27iTHhck0QjS9faAp-Y14z_oJX4xAIAZ5NYCaYr8fO0gOgD3R0OXTMTEGuGB92iTGChFBAaMkmTpEsg_xoiZ0DRo-XPvIcOrSndlelqCjlo3RxgBFaT-BjHSpRZgHWrZA3pWRbPUd5qnxazk9I3bzJX4jBfI83JU",
+        "https://lh3.googleusercontent.com/aida-public/AB6AXuC32dimkr7Rmci-xva5bmegZsbng43iQe9X5By2wvKya393xmrteEaed26ylxNdfRDepdEL34vta7dPuvfZTCMFQF_kpvrRFV8ZowU6rmReLh3whaosUh0wGou5w0XIsDyiNATIMCHUMr5-icroJ9GN-ebRm083ZBZLIzxm8nIjgVenrYOO05IhtnzH9CG27mL127oQAbOKOb6vzde0yXhO4ZE4bSL-qsdbeLdmme2kRc1a7v8-lLD_L7ME3DqCIwtz4BaA3WjVFHs",
+        "https://lh3.googleusercontent.com/aida-public/AB6AXuCz15-drOE04YNhXjKak_xexU7l7z5yKLDOq2-rnnNIo-GY-Jn--zxEi9VmocpjT4cbiJ2W4ONCPbrnGQ15A7yhQkPpUiCKjHbDiEe-DJoHxAelIkVsh078_KRSnkSJKNdw5vDuKOtri72kPncg8pYkGE74MRIzjyHxbI255p7Y9oP6ogKpoJHhcwd_ZZAoc9SgtfaDvtY2e6-hTKygHmaToOL8LVHHLuzQyMMFqju90iv0rD9-926Dq-5DMAAzHncrfLvhnxKxpxs",
+        "https://lh3.googleusercontent.com/aida-public/AB6AXuDqhcDBDtkEkv9k095DhXUETbPEu2BmjWo0sOxInwgyuJ39Ctwm_V5bOa4Mc3_h0VxBNQYiFWMOOxMkJpGs2fiMOBjatAjj6NwFVyKXT2XM_WJikSgcUQLuShbh8jUgobtbfNkwVMUTRtPc1IxHED07NKI1wvZatqbjoBgMPYzHbRDff8KBFqKW4AQsdCpv5mmdCmMtV6C6-DZR2tIrs6eKMHv7sWF1JO-G8IQ0Eu68Hnc2tjAIuDd8Mq02nZPSHsIpd1dt6qW-r1k",
+    )
 
 @Preview(showBackground = true)
 @Composable
@@ -419,7 +446,7 @@ fun ProfileScreenPreview() {
             onEditProfile = {},
             onOpenSettings = {},
             onOpenSearch = {},
-            onLogout = {}
+            onLogout = {},
         )
     }
 }

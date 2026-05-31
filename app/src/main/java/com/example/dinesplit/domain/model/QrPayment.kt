@@ -13,5 +13,5 @@ data class QrPayment(
     val qrContent: String = "",
     val status: String = "pending", // "pending" | "verified" | "failed"
     val verifiedAt: Date? = null,
-    val createdAt: Date? = null
+    val createdAt: Date? = null,
 )

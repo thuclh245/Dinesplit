@@ -16,37 +16,45 @@ import kotlin.coroutines.resume
 import kotlin.coroutines.resumeWithException
 
 class FirebaseAuthRepository private constructor(
-    @Suppress("UNUSED_PARAMETER") context: Context
+    @Suppress("UNUSED_PARAMETER") context: Context,
 ) : AuthRepository {
-
     private val auth: FirebaseAuth = FirebaseProviders.auth
 
     private val _sessionFlow = MutableStateFlow(auth.currentUser?.toUserSession())
     override val sessionFlow: StateFlow<UserSession?> = _sessionFlow.asStateFlow()
 
-    private val authStateListener = FirebaseAuth.AuthStateListener { firebaseAuth: FirebaseAuth ->
-        _sessionFlow.value = firebaseAuth.currentUser?.toUserSession()
-    }
+    private val authStateListener =
+        FirebaseAuth.AuthStateListener { firebaseAuth: FirebaseAuth ->
+            _sessionFlow.value = firebaseAuth.currentUser?.toUserSession()
+        }
 
     init {
         auth.addAuthStateListener(authStateListener)
     }
 
-    override suspend fun login(email: String, password: String): Result<UserSession> {
+    override suspend fun login(
+        email: String,
+        password: String,
+    ): Result<UserSession> {
         return runCatching {
             val result = auth.signInWithEmailAndPassword(email.trim(), password).awaitFirebase()
-            val session = result.toSession()
-                ?: error("Unable to resolve Firebase session")
+            val session =
+                result.toSession()
+                    ?: error("Unable to resolve Firebase session")
             _sessionFlow.value = session
             session
         }
     }
 
-    override suspend fun register(email: String, password: String): Result<UserSession> {
+    override suspend fun register(
+        email: String,
+        password: String,
+    ): Result<UserSession> {
         return runCatching {
             val result = auth.createUserWithEmailAndPassword(email.trim(), password).awaitFirebase()
-            val session = result.toSession()
-                ?: error("Unable to resolve Firebase session")
+            val session =
+                result.toSession()
+                    ?: error("Unable to resolve Firebase session")
             _sessionFlow.value = session
             session
         }
@@ -73,7 +81,7 @@ class FirebaseAuthRepository private constructor(
                     continuation.resume(task.result)
                 } else {
                     continuation.resumeWithException(
-                        task.exception ?: IllegalStateException("Firebase task failed")
+                        task.exception ?: IllegalStateException("Firebase task failed"),
                     )
                 }
             }
@@ -81,7 +89,6 @@ class FirebaseAuthRepository private constructor(
     }
 
     companion object {
-
         @Volatile
         private var INSTANCE: FirebaseAuthRepository? = null
 
@@ -92,5 +99,3 @@ class FirebaseAuthRepository private constructor(
         }
     }
 }
-
-

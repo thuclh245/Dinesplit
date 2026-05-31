@@ -22,29 +22,30 @@ fun OptimizedAsyncImage(
     contentDescription: String?,
     modifier: Modifier = Modifier,
     contentScale: ContentScale = ContentScale.Crop,
-    clipShape: RoundedCornerShape? = null
+    clipShape: RoundedCornerShape? = null,
 ) {
     if (model.isNullOrEmpty()) {
         Box(
-            modifier = modifier
-                .background(MaterialTheme.colorScheme.surfaceContainerHigh)
-                .let { if (clipShape != null) it.clip(clipShape) else it }
+            modifier =
+                modifier
+                    .background(MaterialTheme.colorScheme.surfaceContainerHigh)
+                    .let { if (clipShape != null) it.clip(clipShape) else it },
         )
         return
     }
 
     Box(
-        modifier = modifier.let { if (clipShape != null) it.clip(clipShape) else it }
+        modifier = modifier.let { if (clipShape != null) it.clip(clipShape) else it },
     ) {
         AsyncImage(
-            model = ImageRequest.Builder(LocalContext.current)
-                .data(model)
-                .crossfade(true)
-                .build(),
+            model =
+                ImageRequest.Builder(LocalContext.current)
+                    .data(model)
+                    .crossfade(true)
+                    .build(),
             contentDescription = contentDescription,
             modifier = Modifier.fillMaxSize(),
-            contentScale = contentScale
+            contentScale = contentScale,
         )
     }
 }
-

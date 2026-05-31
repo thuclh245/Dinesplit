@@ -14,7 +14,7 @@ data class SplashUiState(
     val isLoading: Boolean = true,
     val progress: Float = 0f,
     val destination: AppStartDestination? = null,
-    val errorMessage: String? = null
+    val errorMessage: String? = null,
 )
 
 class SplashViewModel(application: Application) : AndroidViewModel(application) {
@@ -33,7 +33,7 @@ class SplashViewModel(application: Application) : AndroidViewModel(application) 
             val duration = 2000L // 2 seconds
             val steps = 50
             val delayPerStep = duration / steps
-            
+
             for (i in 1..steps) {
                 kotlinx.coroutines.delay(delayPerStep)
                 _uiState.value = _uiState.value.copy(progress = i.toFloat() / steps)
@@ -44,13 +44,13 @@ class SplashViewModel(application: Application) : AndroidViewModel(application) 
             }.onSuccess { destination ->
                 _uiState.value = _uiState.value.copy(isLoading = false, destination = destination)
             }.onFailure { throwable ->
-                _uiState.value = _uiState.value.copy(
-                    isLoading = false,
-                    destination = AppStartDestination.AUTH,
-                    errorMessage = throwable.message ?: "Unable to restore session"
-                )
+                _uiState.value =
+                    _uiState.value.copy(
+                        isLoading = false,
+                        destination = AppStartDestination.AUTH,
+                        errorMessage = throwable.message ?: "Unable to restore session",
+                    )
             }
         }
     }
 }
-

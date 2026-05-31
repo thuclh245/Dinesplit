@@ -4,10 +4,12 @@ import com.example.dinesplit.domain.model.UserSession
 import com.example.dinesplit.domain.repository.AuthRepository
 
 class RegisterUseCase(
-    private val authRepository: AuthRepository
+    private val authRepository: AuthRepository,
 ) {
-    suspend operator fun invoke(email: String, password: String): Result<UserSession> {
+    suspend operator fun invoke(
+        email: String,
+        password: String,
+    ): Result<UserSession> {
         return authRepository.register(email = email, password = password)
     }
 }
-

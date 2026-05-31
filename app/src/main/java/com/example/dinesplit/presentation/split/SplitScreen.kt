@@ -24,7 +24,6 @@ import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowForwardIos
 import androidx.compose.material.icons.automirrored.filled.ReceiptLong
-import androidx.compose.material.icons.filled.Add
 import androidx.compose.material.icons.filled.CheckCircle
 import androidx.compose.material.icons.filled.GroupAdd
 import androidx.compose.material.icons.filled.Payments
@@ -32,7 +31,6 @@ import androidx.compose.material3.Button
 import androidx.compose.material3.ButtonDefaults
 import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
-import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.FloatingActionButton
 import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
@@ -53,15 +51,14 @@ import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.tooling.preview.Preview
+import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
-import androidx.compose.ui.unit.Dp
 import com.example.dinesplit.core.common.AppContainer
-import com.example.dinesplit.core.ui.HomeTopBar
-import com.example.dinesplit.core.ui.LoadingBlock
-import com.example.dinesplit.core.ui.ErrorStateBlock
 import com.example.dinesplit.core.ui.AppDimens
 import com.example.dinesplit.core.ui.AppShapes
+import com.example.dinesplit.core.ui.ErrorStateBlock
+import com.example.dinesplit.core.ui.LoadingBlock
 import com.example.dinesplit.domain.model.Bill
 import com.example.dinesplit.domain.model.Group
 import com.example.dinesplit.domain.model.SplitMethod
@@ -80,12 +77,13 @@ fun SplitScreen(
     onNewExpense: () -> Unit,
     onViewAllGroups: () -> Unit,
     onGroupClick: (String) -> Unit,
-    onBillClick: (groupId: String, billId: String) -> Unit = { _, _ -> }
+    onBillClick: (groupId: String, billId: String) -> Unit = { _, _ -> },
 ) {
     val context = LocalContext.current
-    val viewModel = remember {
-        SplitDashboardViewModel(AppContainer.splitRepository(context))
-    }
+    val viewModel =
+        remember {
+            SplitDashboardViewModel(AppContainer.splitRepository(context))
+        }
     val uiState by viewModel.uiState.collectAsState()
 
     Scaffold(
@@ -95,27 +93,29 @@ fun SplitScreen(
                 containerColor = MaterialTheme.colorScheme.primary,
                 contentColor = Color.White,
                 shape = CircleShape,
-                modifier = Modifier
-                    .padding(bottom = bottomPadding)
-                    .size(60.dp)
-                    .shadow(24.dp, CircleShape, spotColor = MaterialTheme.colorScheme.primary.copy(alpha = 0.4f))
+                modifier =
+                    Modifier
+                        .padding(bottom = bottomPadding)
+                        .size(60.dp)
+                        .shadow(24.dp, CircleShape, spotColor = MaterialTheme.colorScheme.primary.copy(alpha = 0.4f)),
             ) {
                 Icon(Icons.AutoMirrored.Filled.ReceiptLong, contentDescription = "Thêm hóa đơn", modifier = Modifier.size(30.dp))
             }
-        }
+        },
     ) { padding ->
         LazyColumn(
-            modifier = Modifier
-                .fillMaxSize()
-                .background(MaterialTheme.colorScheme.background)
-                .padding(padding),
+            modifier =
+                Modifier
+                    .fillMaxSize()
+                    .background(MaterialTheme.colorScheme.background)
+                    .padding(padding),
             contentPadding = PaddingValues(top = 72.dp, bottom = 120.dp),
-            verticalArrangement = Arrangement.spacedBy(32.dp)
+            verticalArrangement = Arrangement.spacedBy(32.dp),
         ) {
             item {
                 BalanceSummaryRow(
                     amountYouOwe = uiState.amountYouOwe,
-                    amountYouAreOwed = uiState.amountYouAreOwed
+                    amountYouAreOwed = uiState.amountYouAreOwed,
                 )
             }
 
@@ -123,7 +123,7 @@ fun SplitScreen(
                 item {
                     LoadingBlock(
                         message = "Đang tải dữ liệu nhóm...",
-                        modifier = Modifier.padding(horizontal = AppDimens.spaceLg)
+                        modifier = Modifier.padding(horizontal = AppDimens.spaceLg),
                     )
                 }
             } else if (uiState.error != null) {
@@ -132,7 +132,7 @@ fun SplitScreen(
                         title = "Không thể tải dữ liệu",
                         subtitle = uiState.error.orEmpty(),
                         onRetryClick = { /* ViewModel refresh if available */ },
-                        modifier = Modifier.padding(horizontal = AppDimens.spaceLg)
+                        modifier = Modifier.padding(horizontal = AppDimens.spaceLg),
                     )
                 }
             } else {
@@ -142,7 +142,7 @@ fun SplitScreen(
                         billsByGroup = uiState.billsByGroup,
                         onViewAllGroups = onViewAllGroups,
                         onNewGroup = onNewGroup,
-                        onGroupClick = onGroupClick
+                        onGroupClick = onGroupClick,
                     )
                 }
 
@@ -150,7 +150,7 @@ fun SplitScreen(
                     RecentBillsSection(
                         recentBills = uiState.recentBills,
                         currentUserId = uiState.currentUserId,
-                        onBillClick = onBillClick
+                        onBillClick = onBillClick,
                     )
                 }
             }
@@ -161,13 +161,14 @@ fun SplitScreen(
 @Composable
 private fun BalanceSummaryRow(
     amountYouOwe: Double,
-    amountYouAreOwed: Double
+    amountYouAreOwed: Double,
 ) {
     Row(
-        modifier = Modifier
-            .fillMaxWidth()
-            .padding(horizontal = AppDimens.screenHorizontal),
-        horizontalArrangement = Arrangement.spacedBy(16.dp)
+        modifier =
+            Modifier
+                .fillMaxWidth()
+                .padding(horizontal = AppDimens.screenHorizontal),
+        horizontalArrangement = Arrangement.spacedBy(16.dp),
     ) {
         BalanceCard(
             title = "BẠN ĐANG NỢ",
@@ -175,7 +176,7 @@ private fun BalanceSummaryRow(
             buttonText = "Settle Up",
             modifier = Modifier.weight(1f),
             containerColor = MaterialTheme.colorScheme.surfaceContainerLowest,
-            contentColor = MaterialTheme.colorScheme.primary
+            contentColor = MaterialTheme.colorScheme.primary,
         )
         BalanceCard(
             title = "BẠN ĐƯỢC TRẢ",
@@ -184,7 +185,7 @@ private fun BalanceSummaryRow(
             modifier = Modifier.weight(1f),
             containerColor = MaterialTheme.colorScheme.surfaceContainerLowest,
             contentColor = MaterialTheme.colorScheme.secondary,
-            showLeftBorder = true
+            showLeftBorder = true,
         )
     }
 }
@@ -195,25 +196,26 @@ private fun GroupsSection(
     billsByGroup: Map<String, List<Bill>>,
     onViewAllGroups: () -> Unit,
     onNewGroup: () -> Unit,
-    onGroupClick: (String) -> Unit
+    onGroupClick: (String) -> Unit,
 ) {
     Column {
         Row(
-            modifier = Modifier
-                .fillMaxWidth()
-                .padding(horizontal = AppDimens.screenHorizontal),
+            modifier =
+                Modifier
+                    .fillMaxWidth()
+                    .padding(horizontal = AppDimens.screenHorizontal),
             horizontalArrangement = Arrangement.SpaceBetween,
-            verticalAlignment = Alignment.Bottom
+            verticalAlignment = Alignment.Bottom,
         ) {
             Text(
                 "Nhóm của bạn",
-                style = MaterialTheme.typography.headlineSmall.copy(fontWeight = FontWeight.ExtraBold)
+                style = MaterialTheme.typography.headlineSmall.copy(fontWeight = FontWeight.ExtraBold),
             )
             Text(
                 "Xem tất cả",
                 style = MaterialTheme.typography.labelSmall.copy(fontWeight = FontWeight.Bold),
                 color = MaterialTheme.colorScheme.primary,
-                modifier = Modifier.clickable { onViewAllGroups() }
+                modifier = Modifier.clickable { onViewAllGroups() },
             )
         }
         Spacer(modifier = Modifier.height(16.dp))
@@ -221,7 +223,7 @@ private fun GroupsSection(
         LazyRow(
             modifier = Modifier.fillMaxWidth(),
             contentPadding = PaddingValues(horizontal = AppDimens.screenHorizontal),
-            horizontalArrangement = Arrangement.spacedBy(16.dp)
+            horizontalArrangement = Arrangement.spacedBy(16.dp),
         ) {
             if (groups.isEmpty()) {
                 item {
@@ -233,7 +235,7 @@ private fun GroupsSection(
                     GroupCard(
                         group = group,
                         bills = bills,
-                        onClick = { onGroupClick(group.id) }
+                        onClick = { onGroupClick(group.id) },
                     )
                 }
                 item {
@@ -248,21 +250,21 @@ private fun GroupsSection(
 private fun RecentBillsSection(
     recentBills: List<SplitDashboardRecentBill>,
     currentUserId: String?,
-    onBillClick: (groupId: String, billId: String) -> Unit
+    onBillClick: (groupId: String, billId: String) -> Unit,
 ) {
     Column(
         modifier = Modifier.padding(horizontal = AppDimens.screenHorizontal),
-        verticalArrangement = Arrangement.spacedBy(16.dp)
+        verticalArrangement = Arrangement.spacedBy(16.dp),
     ) {
         Text(
             "Hóa đơn gần đây",
-            style = MaterialTheme.typography.headlineSmall.copy(fontWeight = FontWeight.ExtraBold)
+            style = MaterialTheme.typography.headlineSmall.copy(fontWeight = FontWeight.ExtraBold),
         )
 
         if (recentBills.isEmpty()) {
             DashboardMessageCard(
                 title = "Chưa có hóa đơn",
-                message = "Tạo hóa đơn đầu tiên trong một nhóm để danh sách này tự cập nhật."
+                message = "Tạo hóa đơn đầu tiên trong một nhóm để danh sách này tự cập nhật.",
             )
         } else {
             Column(verticalArrangement = Arrangement.spacedBy(12.dp)) {
@@ -272,7 +274,7 @@ private fun RecentBillsSection(
                         currentUserId = currentUserId,
                         onClick = {
                             onBillClick(recentBill.bill.groupId, recentBill.bill.id)
-                        }
+                        },
                     )
                 }
             }
@@ -288,69 +290,75 @@ private fun BalanceCard(
     modifier: Modifier = Modifier,
     containerColor: Color,
     contentColor: Color,
-    showLeftBorder: Boolean = false
+    showLeftBorder: Boolean = false,
 ) {
     Card(
         modifier = modifier.height(160.dp),
         shape = AppShapes.xLarge,
         colors = CardDefaults.cardColors(containerColor = containerColor),
-        elevation = CardDefaults.cardElevation(defaultElevation = 2.dp)
+        elevation = CardDefaults.cardElevation(defaultElevation = 2.dp),
     ) {
         Box(modifier = Modifier.fillMaxSize()) {
             if (showLeftBorder) {
                 Box(
-                    modifier = Modifier
-                        .fillMaxHeight()
-                        .width(4.dp)
-                        .background(contentColor)
-                        .align(Alignment.CenterStart)
+                    modifier =
+                        Modifier
+                            .fillMaxHeight()
+                            .width(4.dp)
+                            .background(contentColor)
+                            .align(Alignment.CenterStart),
                 )
             }
             Column(
-                modifier = Modifier
-                    .padding(20.dp)
-                    .fillMaxSize(),
-                verticalArrangement = Arrangement.SpaceBetween
+                modifier =
+                    Modifier
+                        .padding(20.dp)
+                        .fillMaxSize(),
+                verticalArrangement = Arrangement.SpaceBetween,
             ) {
                 Column {
                     Text(
                         title,
                         style = MaterialTheme.typography.labelSmall.copy(fontWeight = FontWeight.Bold, letterSpacing = 1.sp),
-                        color = MaterialTheme.colorScheme.outlineVariant
+                        color = MaterialTheme.colorScheme.outlineVariant,
                     )
                     Row(verticalAlignment = Alignment.Bottom) {
                         Text(
                             amount,
                             style = MaterialTheme.typography.headlineMedium.copy(fontWeight = FontWeight.Black),
                             color = contentColor,
-                            maxLines = 2
+                            maxLines = 2,
                         )
                         Text(
                             "đ",
                             style = MaterialTheme.typography.labelLarge.copy(fontWeight = FontWeight.SemiBold),
                             color = contentColor,
-                            modifier = Modifier.padding(bottom = 4.dp, start = 2.dp)
+                            modifier = Modifier.padding(bottom = 4.dp, start = 2.dp),
                         )
                     }
                 }
                 Button(
                     onClick = { },
                     shape = CircleShape,
-                    colors = ButtonDefaults.buttonColors(
-                        containerColor = if (showLeftBorder) MaterialTheme.colorScheme.secondaryContainer else Color.Transparent,
-                        contentColor = if (showLeftBorder) MaterialTheme.colorScheme.onSecondaryContainer else Color.White
-                    ),
-                    modifier = Modifier.then(
-                        if (!showLeftBorder) {
-                            Modifier.background(
-                                Brush.linearGradient(listOf(MaterialTheme.colorScheme.primary, MaterialTheme.colorScheme.primaryContainer)),
-                                CircleShape
-                            )
-                        } else {
-                            Modifier
-                        }
-                    ),
-                    contentPadding = PaddingValues(horizontal = 16.dp, vertical = 8.dp)
+                    colors =
+                        ButtonDefaults.buttonColors(
+                            containerColor = if (showLeftBorder) MaterialTheme.colorScheme.secondaryContainer else Color.Transparent,
+                            contentColor = if (showLeftBorder) MaterialTheme.colorScheme.onSecondaryContainer else Color.White,
+                        ),
+                    modifier =
+                        Modifier.then(
+                            if (!showLeftBorder) {
+                                Modifier.background(
+                                    Brush.linearGradient(
+                                        listOf(MaterialTheme.colorScheme.primary, MaterialTheme.colorScheme.primaryContainer),
+                                    ),
+                                    CircleShape,
+                                )
+                            } else {
+                                Modifier
+                            },
+                        ),
+                    contentPadding = PaddingValues(horizontal = 16.dp, vertical = 8.dp),
                 ) {
                     Text(buttonText, style = MaterialTheme.typography.labelSmall.copy(fontWeight = FontWeight.Bold))
                 }
@@ -363,34 +371,39 @@ private fun BalanceCard(
 private fun GroupCard(
     group: Group,
     bills: List<Bill>,
-    onClick: () -> Unit
+    onClick: () -> Unit,
 ) {
     val isSettled = bills.isNotEmpty() && bills.all { it.isSettled() }
     val openCount = bills.count { !it.isSettled() }
-    val status = when {
-        bills.isEmpty() -> "Chưa có hóa đơn"
-        isSettled -> "Đã tất toán"
-        else -> "$openCount hóa đơn mở"
-    }
+    val status =
+        when {
+            bills.isEmpty() -> "Chưa có hóa đơn"
+            isSettled -> "Đã tất toán"
+            else -> "$openCount hóa đơn mở"
+        }
 
     Card(
-        modifier = Modifier
-            .width(240.dp)
-            .height(192.dp)
-            .clickable { onClick() },
+        modifier =
+            Modifier
+                .width(240.dp)
+                .height(192.dp)
+                .clickable { onClick() },
         shape = RoundedCornerShape(24.dp),
-        colors = CardDefaults.cardColors(
-            containerColor = if (isSettled) {
-                MaterialTheme.colorScheme.secondaryContainer.copy(alpha = 0.3f)
-            } else {
-                MaterialTheme.colorScheme.surfaceContainer
-            }
-        )
+        colors =
+            CardDefaults.cardColors(
+                containerColor =
+                    if (isSettled) {
+                        MaterialTheme.colorScheme.secondaryContainer.copy(alpha = 0.3f)
+                    } else {
+                        MaterialTheme.colorScheme.surfaceContainer
+                    },
+            ),
     ) {
         Box(
-            modifier = Modifier
-                .fillMaxSize()
-                .padding(20.dp)
+            modifier =
+                Modifier
+                    .fillMaxSize()
+                    .padding(20.dp),
         ) {
             Column(modifier = Modifier.fillMaxSize(), verticalArrangement = Arrangement.SpaceBetween) {
                 Column {
@@ -400,36 +413,36 @@ private fun GroupCard(
                         group.name,
                         style = MaterialTheme.typography.titleMedium.copy(fontWeight = FontWeight.Bold),
                         maxLines = 1,
-                        overflow = TextOverflow.Ellipsis
+                        overflow = TextOverflow.Ellipsis,
                     )
                     Text(
                         "${group.memberCount} thành viên",
                         style = MaterialTheme.typography.labelSmall,
-                        color = MaterialTheme.colorScheme.onSurfaceVariant
+                        color = MaterialTheme.colorScheme.onSurfaceVariant,
                     )
                 }
 
                 Row(
                     modifier = Modifier.fillMaxWidth(),
                     horizontalArrangement = Arrangement.SpaceBetween,
-                    verticalAlignment = Alignment.CenterVertically
+                    verticalAlignment = Alignment.CenterVertically,
                 ) {
                     Surface(
                         color = if (isSettled) MaterialTheme.colorScheme.secondaryContainer else MaterialTheme.colorScheme.surfaceContainerHighest,
-                        shape = RoundedCornerShape(8.dp)
+                        shape = RoundedCornerShape(8.dp),
                     ) {
                         Text(
                             status,
                             modifier = Modifier.padding(horizontal = 8.dp, vertical = 4.dp),
                             style = MaterialTheme.typography.labelSmall.copy(fontSize = 9.sp, fontWeight = FontWeight.Bold),
-                            color = if (isSettled) MaterialTheme.colorScheme.onSecondaryContainer else MaterialTheme.colorScheme.onSurface
+                            color = if (isSettled) MaterialTheme.colorScheme.onSecondaryContainer else MaterialTheme.colorScheme.onSurface,
                         )
                     }
                     Icon(
                         imageVector = if (isSettled) Icons.Default.CheckCircle else Icons.AutoMirrored.Filled.ArrowForwardIos,
                         contentDescription = null,
                         modifier = Modifier.size(16.dp),
-                        tint = if (isSettled) MaterialTheme.colorScheme.secondary else MaterialTheme.colorScheme.primary
+                        tint = if (isSettled) MaterialTheme.colorScheme.secondary else MaterialTheme.colorScheme.primary,
                     )
                 }
             }
@@ -444,34 +457,36 @@ private fun GroupInitialStack(group: Group) {
         val visibleCount = minOf(group.memberCount.coerceAtLeast(1), 3)
         repeat(visibleCount) { index ->
             Box(
-                modifier = Modifier
-                    .size(32.dp)
-                    .border(2.dp, surfaceColor, CircleShape)
-                    .clip(CircleShape)
-                    .background(
-                        listOf(
-                            MaterialTheme.colorScheme.primary,
-                            MaterialTheme.colorScheme.secondary,
-                            MaterialTheme.colorScheme.tertiary
-                        )[index % 3]
-                    ),
-                contentAlignment = Alignment.Center
+                modifier =
+                    Modifier
+                        .size(32.dp)
+                        .border(2.dp, surfaceColor, CircleShape)
+                        .clip(CircleShape)
+                        .background(
+                            listOf(
+                                MaterialTheme.colorScheme.primary,
+                                MaterialTheme.colorScheme.secondary,
+                                MaterialTheme.colorScheme.tertiary,
+                            )[index % 3],
+                        ),
+                contentAlignment = Alignment.Center,
             ) {
                 Text(
                     text = group.name.firstOrNull()?.uppercase().orEmpty(),
                     color = MaterialTheme.colorScheme.onPrimary,
-                    style = MaterialTheme.typography.labelSmall.copy(fontWeight = FontWeight.Bold)
+                    style = MaterialTheme.typography.labelSmall.copy(fontWeight = FontWeight.Bold),
                 )
             }
         }
         val extraMembers = group.memberCount - visibleCount
         if (extraMembers > 0) {
             Box(
-                modifier = Modifier
-                    .size(32.dp)
-                    .border(2.dp, surfaceColor, CircleShape)
-                    .background(MaterialTheme.colorScheme.surfaceVariant, CircleShape),
-                contentAlignment = Alignment.Center
+                modifier =
+                    Modifier
+                        .size(32.dp)
+                        .border(2.dp, surfaceColor, CircleShape)
+                        .background(MaterialTheme.colorScheme.surfaceVariant, CircleShape),
+                contentAlignment = Alignment.Center,
             ) {
                 Text("+$extraMembers", style = MaterialTheme.typography.labelSmall.copy(fontSize = 9.sp, fontWeight = FontWeight.Bold))
             }
@@ -482,17 +497,27 @@ private fun GroupInitialStack(group: Group) {
 @Composable
 private fun CreateGroupDashboardCard(onClick: () -> Unit) {
     Box(
-        modifier = Modifier
-            .width(240.dp)
-            .height(192.dp)
-            .border(2.dp, MaterialTheme.colorScheme.outlineVariant.copy(alpha = 0.3f), RoundedCornerShape(20.dp))
-            .clip(RoundedCornerShape(20.dp))
-            .clickable { onClick() },
-        contentAlignment = Alignment.Center
+        modifier =
+            Modifier
+                .width(240.dp)
+                .height(192.dp)
+                .border(2.dp, MaterialTheme.colorScheme.outlineVariant.copy(alpha = 0.3f), RoundedCornerShape(20.dp))
+                .clip(RoundedCornerShape(20.dp))
+                .clickable { onClick() },
+        contentAlignment = Alignment.Center,
     ) {
         Column(horizontalAlignment = Alignment.CenterHorizontally) {
-            Icon(Icons.Default.GroupAdd, contentDescription = null, modifier = Modifier.size(40.dp), tint = MaterialTheme.colorScheme.outlineVariant)
-            Text("Tạo nhóm mới", style = MaterialTheme.typography.labelMedium.copy(fontWeight = FontWeight.Bold), color = MaterialTheme.colorScheme.outlineVariant)
+            Icon(
+                Icons.Default.GroupAdd,
+                contentDescription = null,
+                modifier = Modifier.size(40.dp),
+                tint = MaterialTheme.colorScheme.outlineVariant,
+            )
+            Text(
+                "Tạo nhóm mới",
+                style = MaterialTheme.typography.labelMedium.copy(fontWeight = FontWeight.Bold),
+                color = MaterialTheme.colorScheme.outlineVariant,
+            )
         }
     }
 }
@@ -501,38 +526,40 @@ private fun CreateGroupDashboardCard(onClick: () -> Unit) {
 private fun BillItem(
     recentBill: SplitDashboardRecentBill,
     currentUserId: String?,
-    onClick: () -> Unit
+    onClick: () -> Unit,
 ) {
     val bill = recentBill.bill
     val amountInfo = bill.dashboardAmountLabel(currentUserId)
     Surface(
-        modifier = Modifier
-            .fillMaxWidth()
-            .clickable { onClick() },
+        modifier =
+            Modifier
+                .fillMaxWidth()
+                .clickable { onClick() },
         shape = AppShapes.large,
-        color = MaterialTheme.colorScheme.surfaceContainerLowest
+        color = MaterialTheme.colorScheme.surfaceContainerLowest,
     ) {
         Row(
             modifier = Modifier.padding(16.dp),
             verticalAlignment = Alignment.CenterVertically,
-            horizontalArrangement = Arrangement.SpaceBetween
+            horizontalArrangement = Arrangement.SpaceBetween,
         ) {
             Row(
                 modifier = Modifier.weight(1f),
                 verticalAlignment = Alignment.CenterVertically,
-                horizontalArrangement = Arrangement.spacedBy(16.dp)
+                horizontalArrangement = Arrangement.spacedBy(16.dp),
             ) {
                 Box(
-                    modifier = Modifier
-                        .size(48.dp)
-                        .background(MaterialTheme.colorScheme.primary.copy(alpha = 0.1f), RoundedCornerShape(16.dp)),
-                    contentAlignment = Alignment.Center
+                    modifier =
+                        Modifier
+                            .size(48.dp)
+                            .background(MaterialTheme.colorScheme.primary.copy(alpha = 0.1f), RoundedCornerShape(16.dp)),
+                    contentAlignment = Alignment.Center,
                 ) {
                     Icon(
                         if (bill.method == SplitMethod.ITEMIZED) Icons.Default.Payments else Icons.AutoMirrored.Filled.ReceiptLong,
                         contentDescription = null,
                         tint = MaterialTheme.colorScheme.primary,
-                        modifier = Modifier.size(24.dp)
+                        modifier = Modifier.size(24.dp),
                     )
                 }
                 Column {
@@ -540,14 +567,14 @@ private fun BillItem(
                         bill.name,
                         style = MaterialTheme.typography.labelLarge.copy(fontWeight = FontWeight.Bold),
                         maxLines = 1,
-                        overflow = TextOverflow.Ellipsis
+                        overflow = TextOverflow.Ellipsis,
                     )
                     Text(
                         "${formatDate(bill.date)} • ${recentBill.groupName}",
                         style = MaterialTheme.typography.labelSmall,
                         color = MaterialTheme.colorScheme.outlineVariant,
                         maxLines = 1,
-                        overflow = TextOverflow.Ellipsis
+                        overflow = TextOverflow.Ellipsis,
                     )
                 }
             }
@@ -555,17 +582,22 @@ private fun BillItem(
                 Text(
                     amountInfo.label,
                     style = MaterialTheme.typography.labelLarge.copy(fontWeight = FontWeight.Bold),
-                    color = amountInfo.color
+                    color = amountInfo.color,
                 )
                 Surface(
                     color = amountInfo.color.copy(alpha = 0.1f),
-                    shape = RoundedCornerShape(4.dp)
+                    shape = RoundedCornerShape(4.dp),
                 ) {
                     Text(
                         if (bill.isSettled()) "SETTLED" else "OPEN",
                         modifier = Modifier.padding(horizontal = 6.dp, vertical = 2.dp),
-                        style = MaterialTheme.typography.labelSmall.copy(fontSize = 8.sp, fontWeight = FontWeight.Black, letterSpacing = 0.5.sp),
-                        color = amountInfo.color
+                        style =
+                            MaterialTheme.typography.labelSmall.copy(
+                                fontSize = 8.sp,
+                                fontWeight = FontWeight.Black,
+                                letterSpacing = 0.5.sp,
+                            ),
+                        color = amountInfo.color,
                     )
                 }
             }
@@ -576,13 +608,13 @@ private fun BillItem(
 @Composable
 private fun DashboardMessageCard(
     title: String,
-    message: String
+    message: String,
 ) {
     Card(
         modifier = Modifier.fillMaxWidth(),
         colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surfaceContainerLowest),
         shape = AppShapes.large,
-        elevation = CardDefaults.cardElevation(defaultElevation = 1.dp)
+        elevation = CardDefaults.cardElevation(defaultElevation = 1.dp),
     ) {
         Column(modifier = Modifier.padding(18.dp)) {
             Text(title, fontWeight = FontWeight.Bold, color = MaterialTheme.colorScheme.onSurface)
@@ -590,7 +622,7 @@ private fun DashboardMessageCard(
             Text(
                 text = message,
                 style = MaterialTheme.typography.bodyMedium,
-                color = MaterialTheme.colorScheme.onSurfaceVariant
+                color = MaterialTheme.colorScheme.onSurfaceVariant,
             )
         }
     }
@@ -598,7 +630,7 @@ private fun DashboardMessageCard(
 
 private data class DashboardAmountLabel(
     val label: String,
-    val color: Color
+    val color: Color,
 )
 
 @Composable
@@ -607,19 +639,24 @@ private fun Bill.dashboardAmountLabel(currentUserId: String?): DashboardAmountLa
     val userId = currentUserId.orEmpty()
     val myShare = shares[userId] ?: 0.0
     val outstandingForMe = userId.isNotBlank() && payerId != userId && !paidMemberIds.contains(userId) && myShare > 0.0
-    val owedToMe = if (userId.isNotBlank() && payerId == userId) {
-        shares
-            .filterKeys { memberId -> memberId != userId && !paidMemberIds.contains(memberId) }
-            .values
-            .sum()
-    } else {
-        0.0
-    }
+    val owedToMe =
+        if (userId.isNotBlank() && payerId == userId) {
+            shares
+                .filterKeys { memberId -> memberId != userId && !paidMemberIds.contains(memberId) }
+                .values
+                .sum()
+        } else {
+            0.0
+        }
 
     return when {
         outstandingForMe -> DashboardAmountLabel("Bạn nợ ${formatShortAmount(myShare)}", colorScheme.error)
         owedToMe > 0.0 -> DashboardAmountLabel("Nhận ${formatShortAmount(owedToMe)}", colorScheme.secondary)
-        userId.isNotBlank() && paidMemberIds.contains(userId) -> DashboardAmountLabel("Đã trả ${formatShortAmount(myShare)}", colorScheme.secondary)
+        userId.isNotBlank() && paidMemberIds.contains(userId) ->
+            DashboardAmountLabel(
+                "Đã trả ${formatShortAmount(myShare)}",
+                colorScheme.secondary,
+            )
         else -> DashboardAmountLabel(formatShortAmount(totalAmount), colorScheme.primary)
     }
 }
@@ -658,7 +695,7 @@ fun SplitScreenPreview() {
             onNewGroup = {},
             onNewExpense = {},
             onViewAllGroups = {},
-            onGroupClick = {}
+            onGroupClick = {},
         )
     }
 }

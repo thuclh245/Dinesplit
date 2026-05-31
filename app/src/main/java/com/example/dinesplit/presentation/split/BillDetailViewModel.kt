@@ -19,16 +19,15 @@ data class BillDetailUiState(
     val isLoading: Boolean = true,
     val isUpdatingPayment: Boolean = false,
     val paymentMessage: String? = null,
-    val error: String? = null
+    val error: String? = null,
 )
 
 class BillDetailViewModel(
     private val repository: SplitRepository,
     private val groupId: String,
     private val billId: String,
-    private val currentUserId: String?
+    private val currentUserId: String?,
 ) : ViewModel() {
-
     private val _uiState = MutableStateFlow(BillDetailUiState())
     val uiState: StateFlow<BillDetailUiState> = _uiState.asStateFlow()
 
@@ -43,15 +42,16 @@ class BillDetailViewModel(
         if (memberId.isBlank() || memberId == bill.payerId || memberId in bill.paidMemberIds) return
 
         viewModelScope.launch {
-            val optimisticBill = bill.copy(
-                paidMemberIds = (bill.paidMemberIds + memberId).distinct()
-            )
+            val optimisticBill =
+                bill.copy(
+                    paidMemberIds = (bill.paidMemberIds + memberId).distinct(),
+                )
             _uiState.update {
                 it.copy(
                     bill = optimisticBill,
                     isUpdatingPayment = true,
                     paymentMessage = null,
-                    error = null
+                    error = null,
                 )
             }
 
@@ -60,14 +60,15 @@ class BillDetailViewModel(
                 if (result.isSuccess) {
                     it.copy(
                         isUpdatingPayment = false,
-                        paymentMessage = "Đã đánh dấu đã trả"
+                        paymentMessage = "Đã đánh dấu đã trả",
                     )
                 } else {
                     it.copy(
                         bill = bill,
                         isUpdatingPayment = false,
-                        paymentMessage = result.exceptionOrNull()?.message
-                            ?: "Không thể cập nhật trạng thái thanh toán"
+                        paymentMessage =
+                            result.exceptionOrNull()?.message
+                                ?: "Không thể cập nhật trạng thái thanh toán",
                     )
                 }
             }
@@ -83,7 +84,7 @@ class BillDetailViewModel(
             runCatching {
                 combine(
                     repository.getBill(groupId, billId),
-                    repository.getGroupMembers(groupId)
+                    repository.getGroupMembers(groupId),
                 ) { bill, members -> bill to members }
                     .collect { (bill, members) ->
                         val effectiveMembers = buildEffectiveMembers(members, bill)
@@ -94,7 +95,7 @@ class BillDetailViewModel(
                                 currentMemberId = resolveCurrentMemberId(effectiveMembers),
                                 isLoading = false,
                                 isUpdatingPayment = false,
-                                error = if (bill == null) "Không tìm thấy hóa đơn" else null
+                                error = if (bill == null) "Không tìm thấy hóa đơn" else null,
                             )
                         }
                     }
@@ -103,7 +104,7 @@ class BillDetailViewModel(
                     it.copy(
                         isLoading = false,
                         isUpdatingPayment = false,
-                        error = throwable.message ?: "Không thể tải chi tiết hóa đơn"
+                        error = throwable.message ?: "Không thể tải chi tiết hóa đơn",
                     )
                 }
             }
@@ -112,7 +113,7 @@ class BillDetailViewModel(
 
     private fun buildEffectiveMembers(
         firestoreMembers: List<Member>,
-        bill: Bill?
+        bill: Bill?,
     ): List<Member> {
         if (firestoreMembers.isNotEmpty()) {
             return firestoreMembers.map { member ->
@@ -121,9 +122,10 @@ class BillDetailViewModel(
         }
         if (bill == null) return emptyList()
 
-        val ids = (bill.shares.keys + bill.payerId)
-            .filter { it.isNotBlank() }
-            .distinct()
+        val ids =
+            (bill.shares.keys + bill.payerId)
+                .filter { it.isNotBlank() }
+                .distinct()
 
         return ids.map { id ->
             val name = fallbackMemberName(id)
@@ -131,7 +133,7 @@ class BillDetailViewModel(
                 id = id,
                 name = name,
                 initial = name.firstOrNull()?.uppercase().orEmpty(),
-                isMe = id == currentUserId
+                isMe = id == currentUserId,
             )
         }
     }

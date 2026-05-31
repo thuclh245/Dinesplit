@@ -51,7 +51,7 @@ fun SpendingReminderScreen(
     categories: List<StoredCategory> = emptyList(),
     errorMessage: String? = null,
     onCreateReminder: (String?, String, Double, Float, ReminderType) -> Unit = { _, _, _, _, _ -> },
-    onDeleteReminder: (String) -> Unit = {}
+    onDeleteReminder: (String) -> Unit = {},
 ) {
     var showCreateDialog by rememberSaveable { mutableStateOf(false) }
     var deletingReminder by remember { mutableStateOf<SpendingReminder?>(null) }
@@ -60,26 +60,27 @@ fun SpendingReminderScreen(
         title = "Spending Reminders",
         navigationIcon = {
             BackNavigationButton(onClick = onBack)
-        }
+        },
     ) {
         Column(
-            modifier = Modifier
-                .fillMaxSize()
-                .verticalScroll(rememberScrollState()),
-            verticalArrangement = Arrangement.spacedBy(AppDimens.spaceLg)
+            modifier =
+                Modifier
+                    .fillMaxSize()
+                    .verticalScroll(rememberScrollState()),
+            verticalArrangement = Arrangement.spacedBy(AppDimens.spaceLg),
         ) {
             Text(
                 text = "Spending Alerts.",
                 style = MaterialTheme.typography.displaySmall,
                 fontWeight = FontWeight.ExtraBold,
-                modifier = Modifier.padding(horizontal = AppDimens.screenHorizontal)
+                modifier = Modifier.padding(horizontal = AppDimens.screenHorizontal),
             )
 
             errorMessage?.let { message ->
                 ErrorStateBlock(
                     title = "Cannot update reminders",
                     subtitle = message,
-                    onRetryClick = {}
+                    onRetryClick = {},
                 )
             }
 
@@ -88,13 +89,13 @@ fun SpendingReminderScreen(
                     title = "No spending reminders yet",
                     subtitle = "Create a Firebase-backed budget alert for your real spending.",
                     actionText = "Create Reminder",
-                    onActionClick = { showCreateDialog = true }
+                    onActionClick = { showCreateDialog = true },
                 )
             } else {
                 reminders.forEach { reminder ->
                     ReminderCard(
                         reminder = reminder,
-                        onDelete = { deletingReminder = it }
+                        onDelete = { deletingReminder = it },
                     )
                 }
             }
@@ -102,7 +103,7 @@ fun SpendingReminderScreen(
             PrimaryButton(
                 text = "Add Spending Reminder",
                 onClick = { showCreateDialog = true },
-                modifier = Modifier.padding(horizontal = AppDimens.screenHorizontal)
+                modifier = Modifier.padding(horizontal = AppDimens.screenHorizontal),
             )
 
             Spacer(modifier = Modifier.height(AppDimens.spaceXl))
@@ -116,7 +117,7 @@ fun SpendingReminderScreen(
             onCreate = { categoryId, categoryName, budget, threshold, type ->
                 onCreateReminder(categoryId, categoryName, budget, threshold, type)
                 showCreateDialog = false
-            }
+            },
         )
     }
 
@@ -130,7 +131,7 @@ fun SpendingReminderScreen(
                     onClick = {
                         onDeleteReminder(reminder.id)
                         deletingReminder = null
-                    }
+                    },
                 ) {
                     Text("Delete")
                 }
@@ -139,7 +140,7 @@ fun SpendingReminderScreen(
                 TextButton(onClick = { deletingReminder = null }) {
                     Text("Cancel")
                 }
-            }
+            },
         )
     }
 }
@@ -147,7 +148,7 @@ fun SpendingReminderScreen(
 @Composable
 private fun ReminderCard(
     reminder: SpendingReminder,
-    onDelete: (SpendingReminder) -> Unit
+    onDelete: (SpendingReminder) -> Unit,
 ) {
     val progress = (reminder.currentSpent / reminder.budgetAmount).toFloat().coerceIn(0f, 1f)
     val isOverThreshold = reminder.currentSpent >= reminder.budgetAmount * reminder.threshold
@@ -156,43 +157,44 @@ private fun ReminderCard(
         Row(
             modifier = Modifier.fillMaxWidth(),
             horizontalArrangement = Arrangement.SpaceBetween,
-            verticalAlignment = Alignment.CenterVertically
+            verticalAlignment = Alignment.CenterVertically,
         ) {
             Column(
                 modifier = Modifier.weight(1f),
-                verticalArrangement = Arrangement.spacedBy(AppDimens.spaceXs)
+                verticalArrangement = Arrangement.spacedBy(AppDimens.spaceXs),
             ) {
                 Text(
                     text = reminder.categoryName,
                     style = MaterialTheme.typography.titleMedium,
-                    fontWeight = FontWeight.Bold
+                    fontWeight = FontWeight.Bold,
                 )
                 Text(
                     text = "Spent ${formatReminderMoney(reminder.currentSpent)} of ${formatReminderMoney(reminder.budgetAmount)}",
                     style = MaterialTheme.typography.bodySmall,
-                    color = MaterialTheme.colorScheme.onSurfaceVariant
+                    color = MaterialTheme.colorScheme.onSurfaceVariant,
                 )
                 LinearProgressIndicator(
                     progress = { progress },
                     modifier = Modifier.fillMaxWidth(),
-                    color = if (isOverThreshold) {
-                        MaterialTheme.colorScheme.error
-                    } else {
-                        MaterialTheme.colorScheme.primary
-                    },
-                    trackColor = MaterialTheme.colorScheme.surfaceVariant
+                    color =
+                        if (isOverThreshold) {
+                            MaterialTheme.colorScheme.error
+                        } else {
+                            MaterialTheme.colorScheme.primary
+                        },
+                    trackColor = MaterialTheme.colorScheme.surfaceVariant,
                 )
                 Text(
                     text = "${reminder.reminderType.name.lowercase().replaceFirstChar { it.uppercase() }} - alert at ${(reminder.threshold * 100).toInt()}%",
                     style = MaterialTheme.typography.labelSmall,
-                    color = MaterialTheme.colorScheme.outline
+                    color = MaterialTheme.colorScheme.outline,
                 )
             }
             IconButton(onClick = { onDelete(reminder) }) {
                 Icon(
                     imageVector = Icons.Filled.Delete,
                     contentDescription = "Delete reminder",
-                    tint = MaterialTheme.colorScheme.error
+                    tint = MaterialTheme.colorScheme.error,
                 )
             }
         }
@@ -203,11 +205,12 @@ private fun ReminderCard(
 private fun CreateReminderDialog(
     categories: List<StoredCategory>,
     onDismiss: () -> Unit,
-    onCreate: (String?, String, Double, Float, ReminderType) -> Unit
+    onCreate: (String?, String, Double, Float, ReminderType) -> Unit,
 ) {
-    val expenseCategories = remember(categories) {
-        categories.filter { it.type == TransactionType.EXPENSE }.sortedBy { it.name }
-    }
+    val expenseCategories =
+        remember(categories) {
+            categories.filter { it.type == TransactionType.EXPENSE }.sortedBy { it.name }
+        }
     var selectedCategoryId by rememberSaveable { mutableStateOf<String?>(null) }
     var budgetAmount by rememberSaveable { mutableStateOf("") }
     var thresholdPercent by rememberSaveable { mutableStateOf("80") }
@@ -223,7 +226,7 @@ private fun CreateReminderDialog(
                 ReminderScopeChips(
                     categories = expenseCategories,
                     selectedCategoryId = selectedCategoryId,
-                    onSelect = { selectedCategoryId = it }
+                    onSelect = { selectedCategoryId = it },
                 )
 
                 OutlinedTextField(
@@ -231,7 +234,7 @@ private fun CreateReminderDialog(
                     onValueChange = { budgetAmount = it },
                     label = { Text("Budget Amount") },
                     singleLine = true,
-                    modifier = Modifier.fillMaxWidth()
+                    modifier = Modifier.fillMaxWidth(),
                 )
 
                 OutlinedTextField(
@@ -239,19 +242,19 @@ private fun CreateReminderDialog(
                     onValueChange = { thresholdPercent = it },
                     label = { Text("Alert Threshold (%)") },
                     singleLine = true,
-                    modifier = Modifier.fillMaxWidth()
+                    modifier = Modifier.fillMaxWidth(),
                 )
 
                 Text("Reminder Type", style = MaterialTheme.typography.labelSmall)
                 Row(
                     modifier = Modifier.fillMaxWidth(),
-                    horizontalArrangement = Arrangement.spacedBy(AppDimens.spaceSm)
+                    horizontalArrangement = Arrangement.spacedBy(AppDimens.spaceSm),
                 ) {
                     ReminderType.entries.forEach { type ->
                         FilterChip(
                             selected = selectedType == type,
                             onClick = { selectedType = type },
-                            label = { Text(type.name.lowercase().replaceFirstChar { it.uppercase() }) }
+                            label = { Text(type.name.lowercase().replaceFirstChar { it.uppercase() }) },
                         )
                     }
                 }
@@ -260,7 +263,7 @@ private fun CreateReminderDialog(
                     Text(
                         text = message,
                         style = MaterialTheme.typography.bodySmall,
-                        color = MaterialTheme.colorScheme.error
+                        color = MaterialTheme.colorScheme.error,
                     )
                 }
             }
@@ -279,13 +282,13 @@ private fun CreateReminderDialog(
                             category?.name ?: "Overall Budget",
                             normalizedBudget,
                             normalizedThreshold / 100f,
-                            selectedType
+                            selectedType,
                         )
                         validationMessage = null
                     } catch (e: Exception) {
                         validationMessage = e.message ?: "Please enter valid reminder details."
                     }
-                }
+                },
             ) {
                 Text("Create")
             }
@@ -294,7 +297,7 @@ private fun CreateReminderDialog(
             TextButton(onClick = onDismiss) {
                 Text("Cancel")
             }
-        }
+        },
     )
 }
 
@@ -302,36 +305,36 @@ private fun CreateReminderDialog(
 private fun ReminderScopeChips(
     categories: List<StoredCategory>,
     selectedCategoryId: String?,
-    onSelect: (String?) -> Unit
+    onSelect: (String?) -> Unit,
 ) {
     Column(verticalArrangement = Arrangement.spacedBy(AppDimens.spaceSm)) {
         Row(
             modifier = Modifier.fillMaxWidth(),
-            horizontalArrangement = Arrangement.spacedBy(AppDimens.spaceSm)
+            horizontalArrangement = Arrangement.spacedBy(AppDimens.spaceSm),
         ) {
             FilterChip(
                 selected = selectedCategoryId == null,
                 onClick = { onSelect(null) },
-                label = { Text("Overall") }
+                label = { Text("Overall") },
             )
             categories.take(1).forEach { category ->
                 FilterChip(
                     selected = selectedCategoryId == category.id,
                     onClick = { onSelect(category.id) },
-                    label = { Text(category.name) }
+                    label = { Text(category.name) },
                 )
             }
         }
         categories.drop(1).chunked(2).forEach { rowItems ->
             Row(
                 modifier = Modifier.fillMaxWidth(),
-                horizontalArrangement = Arrangement.spacedBy(AppDimens.spaceSm)
+                horizontalArrangement = Arrangement.spacedBy(AppDimens.spaceSm),
             ) {
                 rowItems.forEach { category ->
                     FilterChip(
                         selected = selectedCategoryId == category.id,
                         onClick = { onSelect(category.id) },
-                        label = { Text(category.name) }
+                        label = { Text(category.name) },
                     )
                 }
             }

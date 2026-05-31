@@ -31,7 +31,6 @@ import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
 import androidx.compose.material3.CircularProgressIndicator
-import androidx.compose.material3.HorizontalDivider
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
@@ -69,7 +68,8 @@ import java.util.Locale
 import kotlin.math.abs
 
 private enum class GroupDetailTab {
-    Bills, Balances
+    Bills,
+    Balances,
 }
 
 @Composable
@@ -77,16 +77,17 @@ fun GroupDetailScreen(
     groupId: String,
     onBack: () -> Unit,
     onNavigateToCreateBill: () -> Unit,
-    onNavigateToBillDetail: (String) -> Unit
+    onNavigateToBillDetail: (String) -> Unit,
 ) {
     val context = LocalContext.current
-    val viewModel = remember(groupId) {
-        GroupDetailViewModel(
-            repository = AppContainer.splitRepository(context),
-            groupId = groupId,
-            currentUserId = FirebaseProviders.auth.currentUser?.uid
-        )
-    }
+    val viewModel =
+        remember(groupId) {
+            GroupDetailViewModel(
+                repository = AppContainer.splitRepository(context),
+                groupId = groupId,
+                currentUserId = FirebaseProviders.auth.currentUser?.uid,
+            )
+        }
     val uiState by viewModel.uiState.collectAsState()
     val colorScheme = MaterialTheme.colorScheme
     var selectedTab by remember { mutableStateOf(GroupDetailTab.Bills) }
@@ -108,7 +109,7 @@ fun GroupDetailScreen(
                     showLeaveDialog = false
                 }
             },
-            onConfirm = viewModel::leaveGroup
+            onConfirm = viewModel::leaveGroup,
         )
     }
 
@@ -121,7 +122,7 @@ fun GroupDetailScreen(
                     showDeleteDialog = false
                 }
             },
-            onConfirm = viewModel::deleteGroup
+            onConfirm = viewModel::deleteGroup,
         )
     }
 
@@ -134,65 +135,70 @@ fun GroupDetailScreen(
                 isOwner = uiState.isCurrentUserOwner,
                 onBack = onBack,
                 onLeaveClick = { showLeaveDialog = true },
-                onDeleteClick = { showDeleteDialog = true }
+                onDeleteClick = { showDeleteDialog = true },
             )
         },
         floatingActionButton = {
             Box(
-                modifier = Modifier
-                    .size(64.dp)
-                    .clip(CircleShape)
-                    .background(brush = Brush.linearGradient(listOf(BrandPrimaryContainer, BrandPrimary)))
-                    .clickable { onNavigateToCreateBill() },
-                contentAlignment = Alignment.Center
+                modifier =
+                    Modifier
+                        .size(64.dp)
+                        .clip(CircleShape)
+                        .background(brush = Brush.linearGradient(listOf(BrandPrimaryContainer, BrandPrimary)))
+                        .clickable { onNavigateToCreateBill() },
+                contentAlignment = Alignment.Center,
             ) {
                 Icon(
                     imageVector = Icons.Default.Add,
                     contentDescription = "Thêm hóa đơn",
                     tint = Color.White,
-                    modifier = Modifier.size(32.dp)
+                    modifier = Modifier.size(32.dp),
                 )
             }
-        }
+        },
     ) { paddingValues ->
         LazyColumn(
-            modifier = Modifier
-                .fillMaxSize()
-                .padding(paddingValues)
-                .padding(horizontal = 24.dp),
+            modifier =
+                Modifier
+                    .fillMaxSize()
+                    .padding(paddingValues)
+                    .padding(horizontal = 24.dp),
             contentPadding = PaddingValues(top = 18.dp, bottom = 104.dp),
-            verticalArrangement = Arrangement.spacedBy(20.dp)
+            verticalArrangement = Arrangement.spacedBy(20.dp),
         ) {
             when {
-                uiState.isLoading -> item {
-                    Box(
-                        modifier = Modifier
-                            .fillMaxWidth()
-                            .padding(top = 48.dp),
-                        contentAlignment = Alignment.Center
-                    ) {
-                        CircularProgressIndicator()
+                uiState.isLoading ->
+                    item {
+                        Box(
+                            modifier =
+                                Modifier
+                                    .fillMaxWidth()
+                                    .padding(top = 48.dp),
+                            contentAlignment = Alignment.Center,
+                        ) {
+                            CircularProgressIndicator()
+                        }
                     }
-                }
 
-                uiState.error != null -> item {
-                    DetailMessageCard(
-                        title = "Không thể tải nhóm",
-                        message = uiState.error.orEmpty()
-                    )
-                }
+                uiState.error != null ->
+                    item {
+                        DetailMessageCard(
+                            title = "Không thể tải nhóm",
+                            message = uiState.error.orEmpty(),
+                        )
+                    }
 
                 uiState.group != null -> {
                     item {
                         DetailSummaryCard(
                             totalExpense = uiState.totalExpense,
-                            yourBalance = uiState.yourBalance
+                            yourBalance = uiState.yourBalance,
                         )
                     }
                     item {
                         DetailTabNavigation(
                             selectedTab = selectedTab,
-                            onTabSelected = { tab -> selectedTab = tab }
+                            onTabSelected = { tab -> selectedTab = tab },
                         )
                     }
 
@@ -202,7 +208,7 @@ fun GroupDetailScreen(
                                 item {
                                     DetailMessageCard(
                                         title = "Chưa có hóa đơn",
-                                        message = "Bấm nút + để tạo hóa đơn đầu tiên cho nhóm này."
+                                        message = "Bấm nút + để tạo hóa đơn đầu tiên cho nhóm này.",
                                     )
                                 }
                             } else {
@@ -210,7 +216,7 @@ fun GroupDetailScreen(
                                 items(uiState.bills, key = { it.id }) { bill ->
                                     DetailBillCard(
                                         bill = bill,
-                                        onClick = { onNavigateToBillDetail(bill.id) }
+                                        onClick = { onNavigateToBillDetail(bill.id) },
                                     )
                                 }
                             }
@@ -221,7 +227,7 @@ fun GroupDetailScreen(
                                 item {
                                     DetailMessageCard(
                                         title = "Chưa có số dư",
-                                        message = "Tạo hóa đơn đầu tiên để DineSplit tính ai đang nợ ai."
+                                        message = "Tạo hóa đơn đầu tiên để DineSplit tính ai đang nợ ai.",
                                     )
                                 }
                             } else {
@@ -235,7 +241,7 @@ fun GroupDetailScreen(
                                     item {
                                         DetailMessageCard(
                                             title = "Nhóm đã cân bằng",
-                                            message = "Không có khoản nợ nào cần thanh toán."
+                                            message = "Không có khoản nợ nào cần thanh toán.",
                                         )
                                     }
                                 } else {
@@ -243,9 +249,10 @@ fun GroupDetailScreen(
                                         DetailSettlementCard(
                                             settlement = settlement,
                                             isYourPayment = settlement.fromMemberId == uiState.currentUserId,
-                                            onOpenBill = settlement.relatedBillId?.let { billId ->
-                                                { onNavigateToBillDetail(billId) }
-                                            }
+                                            onOpenBill =
+                                                settlement.relatedBillId?.let { billId ->
+                                                    { onNavigateToBillDetail(billId) }
+                                                },
                                         )
                                     }
                                 }
@@ -255,7 +262,6 @@ fun GroupDetailScreen(
                 }
             }
         }
-
     }
 }
 
@@ -266,30 +272,32 @@ private fun DetailTopBar(
     isOwner: Boolean,
     onBack: () -> Unit,
     onLeaveClick: () -> Unit,
-    onDeleteClick: () -> Unit
+    onDeleteClick: () -> Unit,
 ) {
     val colorScheme = MaterialTheme.colorScheme
 
     Row(
-        modifier = Modifier
-            .fillMaxWidth()
-            .statusBarsPadding()
-            .background(colorScheme.surfaceContainerLowest.copy(alpha = 0.98f))
-            .padding(horizontal = 12.dp, vertical = 12.dp),
-        verticalAlignment = Alignment.CenterVertically
+        modifier =
+            Modifier
+                .fillMaxWidth()
+                .statusBarsPadding()
+                .background(colorScheme.surfaceContainerLowest.copy(alpha = 0.98f))
+                .padding(horizontal = 12.dp, vertical = 12.dp),
+        verticalAlignment = Alignment.CenterVertically,
     ) {
         IconButton(onClick = onBack, modifier = Modifier.size(40.dp)) {
             Icon(
                 imageVector = Icons.AutoMirrored.Filled.ArrowBack,
                 contentDescription = "Quay lại",
-                tint = colorScheme.outline
+                tint = colorScheme.outline,
             )
         }
 
         Column(
-            modifier = Modifier
-                .weight(1f)
-                .padding(start = 4.dp, end = 8.dp)
+            modifier =
+                Modifier
+                    .weight(1f)
+                    .padding(start = 4.dp, end = 8.dp),
         ) {
             Text(
                 text = groupName,
@@ -297,27 +305,28 @@ private fun DetailTopBar(
                 fontWeight = FontWeight.ExtraBold,
                 color = colorScheme.primary,
                 maxLines = 1,
-                overflow = TextOverflow.Ellipsis
+                overflow = TextOverflow.Ellipsis,
             )
             Text(
                 text = "$memberCount thành viên",
                 fontSize = 12.sp,
                 color = colorScheme.onSurfaceVariant,
-                maxLines = 1
+                maxLines = 1,
             )
         }
 
         Row(
             modifier = Modifier.clickable(onClick = onLeaveClick),
-            verticalAlignment = Alignment.CenterVertically
+            verticalAlignment = Alignment.CenterVertically,
         ) {
             Row(horizontalArrangement = Arrangement.spacedBy((-12).dp)) {
                 repeat(minOf(3, memberCount.coerceAtLeast(1))) {
                     Box(
-                        modifier = Modifier
-                            .size(32.dp)
-                            .clip(CircleShape)
-                            .background(colorScheme.surfaceContainerHigh)
+                        modifier =
+                            Modifier
+                                .size(32.dp)
+                                .clip(CircleShape)
+                                .background(colorScheme.surfaceContainerHigh),
                     )
                 }
             }
@@ -326,7 +335,7 @@ private fun DetailTopBar(
                 imageVector = Icons.AutoMirrored.Filled.ExitToApp,
                 contentDescription = "Rời nhóm",
                 tint = colorScheme.outline,
-                modifier = Modifier.size(24.dp)
+                modifier = Modifier.size(24.dp),
             )
         }
 
@@ -336,7 +345,7 @@ private fun DetailTopBar(
                     imageVector = Icons.Default.Delete,
                     contentDescription = "Xóa nhóm",
                     tint = colorScheme.error,
-                    modifier = Modifier.size(22.dp)
+                    modifier = Modifier.size(22.dp),
                 )
             }
         }
@@ -348,7 +357,7 @@ private fun LeaveGroupConfirmDialog(
     groupName: String,
     isLeaving: Boolean,
     onDismiss: () -> Unit,
-    onConfirm: () -> Unit
+    onConfirm: () -> Unit,
 ) {
     val colorScheme = MaterialTheme.colorScheme
     val displayName = groupName.ifBlank { "nhóm này" }
@@ -359,30 +368,30 @@ private fun LeaveGroupConfirmDialog(
             Text(
                 text = "Rời nhóm?",
                 fontWeight = FontWeight.Bold,
-                color = colorScheme.onSurface
+                color = colorScheme.onSurface,
             )
         },
         text = {
             Text(
                 text = "Bạn sẽ rời khỏi nhóm \"$displayName\". Nhóm và hóa đơn vẫn được giữ lại cho các thành viên còn lại.",
-                color = colorScheme.onSurfaceVariant
+                color = colorScheme.onSurfaceVariant,
             )
         },
         confirmButton = {
             TextButton(
                 onClick = onConfirm,
-                enabled = !isLeaving
+                enabled = !isLeaving,
             ) {
                 if (isLeaving) {
                     CircularProgressIndicator(
                         modifier = Modifier.size(16.dp),
-                        strokeWidth = 2.dp
+                        strokeWidth = 2.dp,
                     )
                 } else {
                     Text(
                         text = "Rời nhóm",
                         color = colorScheme.error,
-                        fontWeight = FontWeight.Bold
+                        fontWeight = FontWeight.Bold,
                     )
                 }
             }
@@ -390,11 +399,11 @@ private fun LeaveGroupConfirmDialog(
         dismissButton = {
             TextButton(
                 onClick = onDismiss,
-                enabled = !isLeaving
+                enabled = !isLeaving,
             ) {
                 Text("Hủy")
             }
-        }
+        },
     )
 }
 
@@ -403,7 +412,7 @@ private fun DeleteGroupConfirmDialog(
     groupName: String,
     isDeleting: Boolean,
     onDismiss: () -> Unit,
-    onConfirm: () -> Unit
+    onConfirm: () -> Unit,
 ) {
     val colorScheme = MaterialTheme.colorScheme
     val displayName = groupName.ifBlank { "nhóm này" }
@@ -414,30 +423,30 @@ private fun DeleteGroupConfirmDialog(
             Text(
                 text = "Xóa nhóm?",
                 fontWeight = FontWeight.Bold,
-                color = colorScheme.onSurface
+                color = colorScheme.onSurface,
             )
         },
         text = {
             Text(
                 text = "Nhóm \"$displayName\" cùng toàn bộ hóa đơn và thành viên sẽ bị xóa khỏi Firebase.",
-                color = colorScheme.onSurfaceVariant
+                color = colorScheme.onSurfaceVariant,
             )
         },
         confirmButton = {
             TextButton(
                 onClick = onConfirm,
-                enabled = !isDeleting
+                enabled = !isDeleting,
             ) {
                 if (isDeleting) {
                     CircularProgressIndicator(
                         modifier = Modifier.size(16.dp),
-                        strokeWidth = 2.dp
+                        strokeWidth = 2.dp,
                     )
                 } else {
                     Text(
                         text = "Xóa",
                         color = colorScheme.error,
-                        fontWeight = FontWeight.Bold
+                        fontWeight = FontWeight.Bold,
                     )
                 }
             }
@@ -445,18 +454,18 @@ private fun DeleteGroupConfirmDialog(
         dismissButton = {
             TextButton(
                 onClick = onDismiss,
-                enabled = !isDeleting
+                enabled = !isDeleting,
             ) {
                 Text("Hủy")
             }
-        }
+        },
     )
 }
 
 @Composable
 private fun DetailSummaryCard(
     totalExpense: Double,
-    yourBalance: Double
+    yourBalance: Double,
 ) {
     val colorScheme = MaterialTheme.colorScheme
 
@@ -464,7 +473,7 @@ private fun DetailSummaryCard(
         modifier = Modifier.fillMaxWidth(),
         colors = CardDefaults.cardColors(containerColor = colorScheme.surfaceContainerLowest),
         elevation = CardDefaults.cardElevation(defaultElevation = 2.dp),
-        shape = RoundedCornerShape(28.dp)
+        shape = RoundedCornerShape(28.dp),
     ) {
         Column(modifier = Modifier.padding(28.dp)) {
             Text(
@@ -472,12 +481,12 @@ private fun DetailSummaryCard(
                 fontSize = 12.sp,
                 fontWeight = FontWeight.SemiBold,
                 color = colorScheme.onSurfaceVariant,
-                letterSpacing = 1.sp
+                letterSpacing = 1.sp,
             )
 
             Row(
                 modifier = Modifier.padding(top = 8.dp, bottom = 16.dp),
-                verticalAlignment = Alignment.Bottom
+                verticalAlignment = Alignment.Bottom,
             ) {
                 Text(
                     text = formatAmount(totalExpense),
@@ -485,34 +494,35 @@ private fun DetailSummaryCard(
                     fontWeight = FontWeight.ExtraBold,
                     color = colorScheme.onSurface,
                     maxLines = 1,
-                    overflow = TextOverflow.Ellipsis
+                    overflow = TextOverflow.Ellipsis,
                 )
                 Spacer(modifier = Modifier.width(8.dp))
                 Text(
                     text = "đ",
                     fontSize = 20.sp,
                     fontWeight = FontWeight.Bold,
-                    color = colorScheme.primary
+                    color = colorScheme.primary,
                 )
             }
 
             Surface(
-                color = if (yourBalance < 0.0) {
-                    colorScheme.errorContainer.copy(alpha = 0.2f)
-                } else {
-                    colorScheme.secondaryContainer.copy(alpha = 0.3f)
-                },
-                shape = RoundedCornerShape(50)
+                color =
+                    if (yourBalance < 0.0) {
+                        colorScheme.errorContainer.copy(alpha = 0.2f)
+                    } else {
+                        colorScheme.secondaryContainer.copy(alpha = 0.3f)
+                    },
+                shape = RoundedCornerShape(50),
             ) {
                 Row(
                     modifier = Modifier.padding(horizontal = 16.dp, vertical = 8.dp),
-                    verticalAlignment = Alignment.CenterVertically
+                    verticalAlignment = Alignment.CenterVertically,
                 ) {
                     Icon(
                         imageVector = Icons.Default.Info,
                         contentDescription = null,
                         tint = if (yourBalance < 0.0) colorScheme.error else colorScheme.secondary,
-                        modifier = Modifier.size(18.dp)
+                        modifier = Modifier.size(18.dp),
                     )
                     Spacer(modifier = Modifier.width(8.dp))
                     Text(
@@ -521,7 +531,7 @@ private fun DetailSummaryCard(
                         fontWeight = FontWeight.Bold,
                         fontSize = 14.sp,
                         maxLines = 1,
-                        overflow = TextOverflow.Ellipsis
+                        overflow = TextOverflow.Ellipsis,
                     )
                 }
             }
@@ -532,30 +542,30 @@ private fun DetailSummaryCard(
 @Composable
 private fun DetailTabNavigation(
     selectedTab: GroupDetailTab,
-    onTabSelected: (GroupDetailTab) -> Unit
+    onTabSelected: (GroupDetailTab) -> Unit,
 ) {
     val colorScheme = MaterialTheme.colorScheme
 
     Surface(
         color = colorScheme.surfaceContainerLow,
         shape = RoundedCornerShape(50),
-        modifier = Modifier.fillMaxWidth()
+        modifier = Modifier.fillMaxWidth(),
     ) {
         Row(
             modifier = Modifier.padding(6.dp),
-            verticalAlignment = Alignment.CenterVertically
+            verticalAlignment = Alignment.CenterVertically,
         ) {
             DetailTabButton(
                 text = "Hóa đơn",
                 selected = selectedTab == GroupDetailTab.Bills,
                 onClick = { onTabSelected(GroupDetailTab.Bills) },
-                modifier = Modifier.weight(1f)
+                modifier = Modifier.weight(1f),
             )
             DetailTabButton(
                 text = "Số dư",
                 selected = selectedTab == GroupDetailTab.Balances,
                 onClick = { onTabSelected(GroupDetailTab.Balances) },
-                modifier = Modifier.weight(1f)
+                modifier = Modifier.weight(1f),
             )
         }
     }
@@ -566,32 +576,33 @@ private fun DetailTabButton(
     text: String,
     selected: Boolean,
     onClick: () -> Unit,
-    modifier: Modifier = Modifier
+    modifier: Modifier = Modifier,
 ) {
     val colorScheme = MaterialTheme.colorScheme
 
     Box(
-        modifier = modifier
-            .clip(RoundedCornerShape(50))
-            .then(
-                if (selected) {
-                    Modifier.background(
-                        brush = Brush.linearGradient(listOf(BrandPrimaryContainer, BrandPrimary)),
-                        shape = RoundedCornerShape(50)
-                    )
-                } else {
-                    Modifier.background(Color.Transparent)
-                }
-            )
-            .clickable { onClick() }
-            .padding(vertical = 12.dp),
-        contentAlignment = Alignment.Center
+        modifier =
+            modifier
+                .clip(RoundedCornerShape(50))
+                .then(
+                    if (selected) {
+                        Modifier.background(
+                            brush = Brush.linearGradient(listOf(BrandPrimaryContainer, BrandPrimary)),
+                            shape = RoundedCornerShape(50),
+                        )
+                    } else {
+                        Modifier.background(Color.Transparent)
+                    },
+                )
+                .clickable { onClick() }
+                .padding(vertical = 12.dp),
+        contentAlignment = Alignment.Center,
     ) {
         Text(
             text = text,
             color = if (selected) Color.White else colorScheme.onSurfaceVariant,
             fontWeight = FontWeight.Bold,
-            fontSize = 14.sp
+            fontSize = 14.sp,
         )
     }
 }
@@ -605,43 +616,46 @@ private fun DetailSectionTitle(title: String) {
         fontSize = 16.sp,
         fontWeight = FontWeight.Bold,
         color = colorScheme.onSurface,
-        modifier = Modifier.padding(start = 4.dp)
+        modifier = Modifier.padding(start = 4.dp),
     )
 }
 
 @Composable
 private fun DetailBillCard(
     bill: Bill,
-    onClick: () -> Unit
+    onClick: () -> Unit,
 ) {
     val colorScheme = MaterialTheme.colorScheme
 
     Card(
-        modifier = Modifier
-            .fillMaxWidth()
-            .clickable { onClick() },
+        modifier =
+            Modifier
+                .fillMaxWidth()
+                .clickable { onClick() },
         colors = CardDefaults.cardColors(containerColor = colorScheme.surfaceContainerLowest),
         elevation = CardDefaults.cardElevation(defaultElevation = 1.dp),
-        shape = RoundedCornerShape(20.dp)
+        shape = RoundedCornerShape(20.dp),
     ) {
         Row(
-            modifier = Modifier
-                .fillMaxWidth()
-                .padding(16.dp),
-            verticalAlignment = Alignment.CenterVertically
+            modifier =
+                Modifier
+                    .fillMaxWidth()
+                    .padding(16.dp),
+            verticalAlignment = Alignment.CenterVertically,
         ) {
             Box(
-                modifier = Modifier
-                    .size(48.dp)
-                    .clip(RoundedCornerShape(16.dp))
-                    .background(colorScheme.primaryContainer.copy(alpha = 0.18f)),
-                contentAlignment = Alignment.Center
+                modifier =
+                    Modifier
+                        .size(48.dp)
+                        .clip(RoundedCornerShape(16.dp))
+                        .background(colorScheme.primaryContainer.copy(alpha = 0.18f)),
+                contentAlignment = Alignment.Center,
             ) {
                 Icon(
                     imageVector = Icons.AutoMirrored.Filled.ReceiptLong,
                     contentDescription = null,
                     tint = colorScheme.primary,
-                    modifier = Modifier.size(24.dp)
+                    modifier = Modifier.size(24.dp),
                 )
             }
 
@@ -654,7 +668,7 @@ private fun DetailBillCard(
                     fontWeight = FontWeight.Bold,
                     color = colorScheme.onSurface,
                     maxLines = 1,
-                    overflow = TextOverflow.Ellipsis
+                    overflow = TextOverflow.Ellipsis,
                 )
                 Spacer(modifier = Modifier.height(4.dp))
                 Text(
@@ -662,7 +676,7 @@ private fun DetailBillCard(
                     fontSize = 12.sp,
                     color = colorScheme.onSurfaceVariant,
                     maxLines = 1,
-                    overflow = TextOverflow.Ellipsis
+                    overflow = TextOverflow.Ellipsis,
                 )
             }
 
@@ -674,23 +688,24 @@ private fun DetailBillCard(
                     fontSize = 14.sp,
                     fontWeight = FontWeight.ExtraBold,
                     color = colorScheme.primary,
-                    maxLines = 1
+                    maxLines = 1,
                 )
                 Spacer(modifier = Modifier.height(4.dp))
                 Surface(
-                    color = if (bill.isSettled()) {
-                        colorScheme.secondaryContainer
-                    } else {
-                        colorScheme.primaryContainer.copy(alpha = 0.18f)
-                    },
-                    shape = RoundedCornerShape(50)
+                    color =
+                        if (bill.isSettled()) {
+                            colorScheme.secondaryContainer
+                        } else {
+                            colorScheme.primaryContainer.copy(alpha = 0.18f)
+                        },
+                    shape = RoundedCornerShape(50),
                 ) {
                     Text(
                         text = if (bill.isSettled()) "ĐÃ THANH TOÁN" else "OPEN",
                         fontSize = 9.sp,
                         fontWeight = FontWeight.Bold,
                         color = if (bill.isSettled()) colorScheme.secondary else colorScheme.primary,
-                        modifier = Modifier.padding(horizontal = 6.dp, vertical = 2.dp)
+                        modifier = Modifier.padding(horizontal = 6.dp, vertical = 2.dp),
                     )
                 }
             }
@@ -703,36 +718,39 @@ private fun DetailBalanceCard(balance: GroupMemberBalance) {
     val colorScheme = MaterialTheme.colorScheme
     val isPositive = balance.balance > 0.0
     val isNegative = balance.balance < 0.0
-    val amountColor = when {
-        isPositive -> colorScheme.secondary
-        isNegative -> colorScheme.error
-        else -> colorScheme.onSurfaceVariant
-    }
+    val amountColor =
+        when {
+            isPositive -> colorScheme.secondary
+            isNegative -> colorScheme.error
+            else -> colorScheme.onSurfaceVariant
+        }
 
     Card(
         modifier = Modifier.fillMaxWidth(),
         colors = CardDefaults.cardColors(containerColor = colorScheme.surfaceContainerLowest),
         elevation = CardDefaults.cardElevation(defaultElevation = 1.dp),
-        shape = RoundedCornerShape(20.dp)
+        shape = RoundedCornerShape(20.dp),
     ) {
         Row(
-            modifier = Modifier
-                .fillMaxWidth()
-                .padding(16.dp),
-            verticalAlignment = Alignment.CenterVertically
+            modifier =
+                Modifier
+                    .fillMaxWidth()
+                    .padding(16.dp),
+            verticalAlignment = Alignment.CenterVertically,
         ) {
             Box(
-                modifier = Modifier
-                    .size(46.dp)
-                    .clip(CircleShape)
-                    .background(if (balance.isMe) colorScheme.primary else colorScheme.outlineVariant),
-                contentAlignment = Alignment.Center
+                modifier =
+                    Modifier
+                        .size(46.dp)
+                        .clip(CircleShape)
+                        .background(if (balance.isMe) colorScheme.primary else colorScheme.outlineVariant),
+                contentAlignment = Alignment.Center,
             ) {
                 Text(
                     text = balance.initial,
                     color = colorScheme.surfaceContainerLowest,
                     fontSize = 16.sp,
-                    fontWeight = FontWeight.Bold
+                    fontWeight = FontWeight.Bold,
                 )
             }
 
@@ -745,29 +763,31 @@ private fun DetailBalanceCard(balance: GroupMemberBalance) {
                     fontWeight = FontWeight.Bold,
                     color = colorScheme.onSurface,
                     maxLines = 1,
-                    overflow = TextOverflow.Ellipsis
+                    overflow = TextOverflow.Ellipsis,
                 )
                 Text(
-                    text = when {
-                        isPositive -> "Được nhận"
-                        isNegative -> "Đang nợ"
-                        else -> "Đã cân bằng"
-                    },
+                    text =
+                        when {
+                            isPositive -> "Được nhận"
+                            isNegative -> "Đang nợ"
+                            else -> "Đã cân bằng"
+                        },
                     fontSize = 12.sp,
-                    color = colorScheme.onSurfaceVariant
+                    color = colorScheme.onSurfaceVariant,
                 )
             }
 
             Text(
-                text = when {
-                    isPositive -> "+${formatAmount(balance.balance)} đ"
-                    isNegative -> "-${formatAmount(abs(balance.balance))} đ"
-                    else -> "0 đ"
-                },
+                text =
+                    when {
+                        isPositive -> "+${formatAmount(balance.balance)} đ"
+                        isNegative -> "-${formatAmount(abs(balance.balance))} đ"
+                        else -> "0 đ"
+                    },
                 fontSize = 14.sp,
                 fontWeight = FontWeight.ExtraBold,
                 color = amountColor,
-                maxLines = 1
+                maxLines = 1,
             )
         }
     }
@@ -777,38 +797,40 @@ private fun DetailBalanceCard(balance: GroupMemberBalance) {
 private fun DetailSettlementCard(
     settlement: SettlementSuggestion,
     isYourPayment: Boolean,
-    onOpenBill: (() -> Unit)?
+    onOpenBill: (() -> Unit)?,
 ) {
     val colorScheme = MaterialTheme.colorScheme
 
     Card(
-        modifier = Modifier
-            .fillMaxWidth()
-            .then(
-                if (onOpenBill != null) {
-                    Modifier.clickable(onClick = onOpenBill)
-                } else {
-                    Modifier
-                }
-            ),
+        modifier =
+            Modifier
+                .fillMaxWidth()
+                .then(
+                    if (onOpenBill != null) {
+                        Modifier.clickable(onClick = onOpenBill)
+                    } else {
+                        Modifier
+                    },
+                ),
         colors = CardDefaults.cardColors(containerColor = colorScheme.surfaceContainerLowest),
         elevation = CardDefaults.cardElevation(defaultElevation = 1.dp),
-        shape = RoundedCornerShape(20.dp)
+        shape = RoundedCornerShape(20.dp),
     ) {
         Column(modifier = Modifier.padding(16.dp)) {
             Row(verticalAlignment = Alignment.CenterVertically) {
                 Box(
-                    modifier = Modifier
-                        .size(38.dp)
-                        .clip(CircleShape)
-                        .background(colorScheme.primaryContainer.copy(alpha = 0.22f)),
-                    contentAlignment = Alignment.Center
+                    modifier =
+                        Modifier
+                            .size(38.dp)
+                            .clip(CircleShape)
+                            .background(colorScheme.primaryContainer.copy(alpha = 0.22f)),
+                    contentAlignment = Alignment.Center,
                 ) {
                     Icon(
                         imageVector = Icons.Default.SwapHoriz,
                         contentDescription = null,
                         tint = colorScheme.primary,
-                        modifier = Modifier.size(22.dp)
+                        modifier = Modifier.size(22.dp),
                     )
                 }
                 Spacer(modifier = Modifier.width(12.dp))
@@ -819,19 +841,19 @@ private fun DetailSettlementCard(
                         fontWeight = FontWeight.Bold,
                         color = colorScheme.onSurface,
                         maxLines = 1,
-                        overflow = TextOverflow.Ellipsis
+                        overflow = TextOverflow.Ellipsis,
                     )
                     Text(
                         text = "Để cân bằng số dư nhóm",
                         fontSize = 12.sp,
-                        color = colorScheme.onSurfaceVariant
+                        color = colorScheme.onSurfaceVariant,
                     )
                 }
                 Text(
                     text = "${formatAmount(settlement.amount)} đ",
                     fontSize = 14.sp,
                     fontWeight = FontWeight.ExtraBold,
-                    color = colorScheme.primary
+                    color = colorScheme.primary,
                 )
             }
 
@@ -839,20 +861,22 @@ private fun DetailSettlementCard(
                 Spacer(modifier = Modifier.height(12.dp))
                 Surface(
                     color = colorScheme.primaryContainer.copy(alpha = 0.18f),
-                    shape = RoundedCornerShape(12.dp)
+                    shape = RoundedCornerShape(12.dp),
                 ) {
                     Text(
-                        text = if (isYourPayment) {
-                            "Chạm để mở hóa đơn và đánh dấu thanh toán"
-                        } else {
-                            "Chạm để xem hóa đơn chưa thanh toán liên quan"
-                        },
-                        modifier = Modifier
-                            .fillMaxWidth()
-                            .padding(horizontal = 12.dp, vertical = 10.dp),
+                        text =
+                            if (isYourPayment) {
+                                "Chạm để mở hóa đơn và đánh dấu thanh toán"
+                            } else {
+                                "Chạm để xem hóa đơn chưa thanh toán liên quan"
+                            },
+                        modifier =
+                            Modifier
+                                .fillMaxWidth()
+                                .padding(horizontal = 12.dp, vertical = 10.dp),
                         fontSize = 12.sp,
                         fontWeight = FontWeight.SemiBold,
-                        color = colorScheme.primary
+                        color = colorScheme.primary,
                     )
                 }
             }
@@ -863,7 +887,7 @@ private fun DetailSettlementCard(
 @Composable
 private fun DetailMessageCard(
     title: String,
-    message: String
+    message: String,
 ) {
     val colorScheme = MaterialTheme.colorScheme
 
@@ -871,20 +895,20 @@ private fun DetailMessageCard(
         modifier = Modifier.fillMaxWidth(),
         colors = CardDefaults.cardColors(containerColor = colorScheme.surfaceContainerLowest),
         elevation = CardDefaults.cardElevation(defaultElevation = 1.dp),
-        shape = RoundedCornerShape(24.dp)
+        shape = RoundedCornerShape(24.dp),
     ) {
         Column(modifier = Modifier.padding(20.dp)) {
             Text(
                 text = title,
                 fontSize = 16.sp,
                 fontWeight = FontWeight.Bold,
-                color = colorScheme.onSurface
+                color = colorScheme.onSurface,
             )
             Spacer(modifier = Modifier.height(6.dp))
             Text(
                 text = message,
                 fontSize = 13.sp,
-                color = colorScheme.onSurfaceVariant
+                color = colorScheme.onSurfaceVariant,
             )
         }
     }

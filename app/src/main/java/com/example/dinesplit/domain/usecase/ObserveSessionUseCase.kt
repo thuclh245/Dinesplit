@@ -5,10 +5,9 @@ import com.example.dinesplit.domain.repository.AuthRepository
 import kotlinx.coroutines.flow.StateFlow
 
 class ObserveSessionUseCase(
-    private val authRepository: AuthRepository
+    private val authRepository: AuthRepository,
 ) {
     operator fun invoke(): StateFlow<UserSession?> {
         return authRepository.sessionFlow
     }
 }
-

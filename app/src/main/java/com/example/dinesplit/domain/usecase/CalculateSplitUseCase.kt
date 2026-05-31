@@ -8,30 +8,31 @@ import kotlin.math.min
 data class SplitItem(
     val itemName: String,
     val price: Double,
-    val consumerIds: List<String> // Danh sách ID những người ăn món này
+    val consumerIds: List<String>, // Danh sách ID những người ăn món này
 )
 
 // 2. Model đại diện cho một khoản nợ thô (A nợ B 50k)
 data class RawDebt(
-    val debtorId: String,   // Người mắc nợ
+    val debtorId: String, // Người mắc nợ
     val creditorId: String, // Người cho nợ (người đã trả tiền)
-    val amount: Double
+    val amount: Double,
 )
 
 // 3. Model đại diện cho lệnh chuyển khoản chốt sổ cuối cùng
 data class Settlement(
     val fromUserId: String,
     val toUserId: String,
-    val amount: Double
+    val amount: Double,
 )
 
-
 class CalculateSplitUseCase {
-
     // ==========================================
     // 1. LOGIC CHIA ĐỀU (EQUAL SPLIT)
     // ==========================================
-    fun calculateEqualSplit(totalAmount: Double, memberCount: Int): Double {
+    fun calculateEqualSplit(
+        totalAmount: Double,
+        memberCount: Int,
+    ): Double {
         if (memberCount <= 0) return 0.0
         return totalAmount / memberCount
         // Lưu ý: Với dự án thực tế dùng VNĐ, bạn nên cân nhắc dùng kiểu Long
@@ -41,7 +42,10 @@ class CalculateSplitUseCase {
     // ==========================================
     // 2. LOGIC TỰ NHẬP (CUSTOM SPLIT)
     // ==========================================
-    fun validateCustomSplit(totalAmount: Double, memberAmounts: List<Double>): Boolean {
+    fun validateCustomSplit(
+        totalAmount: Double,
+        memberAmounts: List<Double>,
+    ): Boolean {
         val sum = memberAmounts.sum()
         // Dùng abs() để so sánh Double, tránh lỗi sai số thập phân (VD: 0.999999 != 1.0)
         return abs(totalAmount - sum) < 0.01
@@ -50,13 +54,14 @@ class CalculateSplitUseCase {
     // ==========================================
     // 3. LOGIC CHIA THEO MÓN (ITEMIZED SPLIT)
     // ==========================================
+
     /**
      * Tính tiền từng người dựa trên món họ ăn, cộng thêm thuế phí chia theo tỷ lệ.
      * Trả về Map<UserId, Số tiền phải trả>
      */
     fun calculateItemizedSplit(
         items: List<SplitItem>,
-        taxAndFee: Double
+        taxAndFee: Double,
     ): Map<String, Double> {
         val subTotal = items.sumOf { it.price }
         val userSubtotals = mutableMapOf<String, Double>()
@@ -87,6 +92,7 @@ class CalculateSplitUseCase {
     // ==========================================
     // 4. SMART SPLIT ENGINE (THUẬT TOÁN GREEDY MAPPING)
     // ==========================================
+
     /**
      * Gom nhóm nợ nần chéo ngoe (A nợ B, B nợ C) thành các lệnh chuyển khoản trực tiếp
      */
@@ -125,8 +131,8 @@ class CalculateSplitUseCase {
                 Settlement(
                     fromUserId = maxDebtor.first,
                     toUserId = maxCreditor.first,
-                    amount = settleAmount
-                )
+                    amount = settleAmount,
+                ),
             )
 
             // Cập nhật lại số dư sau khi đã bù trừ lệnh trên

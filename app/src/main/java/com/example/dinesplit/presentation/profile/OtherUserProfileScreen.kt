@@ -32,7 +32,7 @@ import com.example.dinesplit.core.ui.AppScaffold
 @Composable
 fun OtherUserProfileScreen(
     userName: String,
-    onBack: () -> Unit = {}
+    onBack: () -> Unit = {},
 ) {
     var isFollowing by remember { mutableStateOf(false) }
     val photoPlaceholders = List(12) { index -> "Photo ${index + 1}" }
@@ -43,29 +43,30 @@ fun OtherUserProfileScreen(
             TextButton(onClick = onBack) {
                 Text("Back")
             }
-        }
+        },
     ) {
         Column(
             modifier = Modifier.fillMaxSize(),
-            verticalArrangement = Arrangement.spacedBy(AppDimens.spaceLg)
+            verticalArrangement = Arrangement.spacedBy(AppDimens.spaceLg),
         ) {
             AppCard {
                 Column(verticalArrangement = Arrangement.spacedBy(AppDimens.spaceMd)) {
                     Row(
                         horizontalArrangement = Arrangement.spacedBy(AppDimens.spaceMd),
-                        verticalAlignment = Alignment.CenterVertically
+                        verticalAlignment = Alignment.CenterVertically,
                     ) {
                         Box(
-                            modifier = Modifier
-                                .clip(CircleShape)
-                                .background(MaterialTheme.colorScheme.primaryContainer)
-                                .padding(AppDimens.space2Xl),
-                            contentAlignment = Alignment.Center
+                            modifier =
+                                Modifier
+                                    .clip(CircleShape)
+                                    .background(MaterialTheme.colorScheme.primaryContainer)
+                                    .padding(AppDimens.space2Xl),
+                            contentAlignment = Alignment.Center,
                         ) {
                             Text(
                                 text = userName.take(1).uppercase(),
                                 style = MaterialTheme.typography.titleLarge,
-                                color = MaterialTheme.colorScheme.onPrimaryContainer
+                                color = MaterialTheme.colorScheme.onPrimaryContainer,
                             )
                         }
 
@@ -73,23 +74,23 @@ fun OtherUserProfileScreen(
                             Text(
                                 text = userName,
                                 style = MaterialTheme.typography.titleLarge,
-                                color = MaterialTheme.colorScheme.primary
+                                color = MaterialTheme.colorScheme.primary,
                             )
                             Text(
                                 text = "Coffee lover and split planner",
                                 style = MaterialTheme.typography.bodyMedium,
-                                color = MaterialTheme.colorScheme.onSurfaceVariant
+                                color = MaterialTheme.colorScheme.onSurfaceVariant,
                             )
                             Text(
                                 text = "1.2k followers",
-                                style = MaterialTheme.typography.labelLarge
+                                style = MaterialTheme.typography.labelLarge,
                             )
                         }
                     }
 
                     AppButton(
                         text = if (isFollowing) "Following" else "Follow",
-                        onClick = { isFollowing = !isFollowing }
+                        onClick = { isFollowing = !isFollowing },
                     )
                 }
             }
@@ -97,28 +98,29 @@ fun OtherUserProfileScreen(
             Text(
                 text = "Recent Posts",
                 style = MaterialTheme.typography.titleMedium,
-                color = MaterialTheme.colorScheme.primary
+                color = MaterialTheme.colorScheme.primary,
             )
 
             LazyVerticalGrid(
                 columns = GridCells.Fixed(3),
                 modifier = Modifier.fillMaxSize(),
                 horizontalArrangement = Arrangement.spacedBy(AppDimens.spaceSm),
-                verticalArrangement = Arrangement.spacedBy(AppDimens.spaceSm)
+                verticalArrangement = Arrangement.spacedBy(AppDimens.spaceSm),
             ) {
                 items(photoPlaceholders) { item ->
                     Box(
-                        modifier = Modifier
-                            .fillMaxWidth()
-                            .height(AppDimens.space2Xl * 2)
-                            .clip(MaterialTheme.shapes.medium)
-                            .background(MaterialTheme.colorScheme.primaryContainer),
-                        contentAlignment = Alignment.Center
+                        modifier =
+                            Modifier
+                                .fillMaxWidth()
+                                .height(AppDimens.space2Xl * 2)
+                                .clip(MaterialTheme.shapes.medium)
+                                .background(MaterialTheme.colorScheme.primaryContainer),
+                        contentAlignment = Alignment.Center,
                     ) {
                         Text(
                             text = item,
                             style = MaterialTheme.typography.bodySmall,
-                            color = MaterialTheme.colorScheme.onPrimaryContainer
+                            color = MaterialTheme.colorScheme.onPrimaryContainer,
                         )
                     }
                 }

@@ -11,7 +11,7 @@ object SplitCalculationEngine {
 
     fun calculateEqualShares(
         totalAmount: Double,
-        memberIds: List<String>
+        memberIds: List<String>,
     ): Result<Map<String, Double>> {
         val cleanMemberIds = memberIds.filter { it.isNotBlank() }.distinct()
         if (totalAmount <= 0.0) return Result.failure(IllegalArgumentException("Total amount must be positive"))
@@ -25,24 +25,25 @@ object SplitCalculationEngine {
             cleanMemberIds.mapIndexed { index, memberId ->
                 val amount = baseShare + if (index < remainder) 1 else 0
                 memberId to amount.toDouble()
-            }.toMap()
+            }.toMap(),
         )
     }
 
     fun calculateCustomShares(
         totalAmount: Double,
         memberIds: List<String>,
-        customAmounts: Map<String, Double>
+        customAmounts: Map<String, Double>,
     ): Result<Map<String, Double>> {
         val cleanMemberIds = memberIds.filter { it.isNotBlank() }.distinct()
         if (totalAmount <= 0.0) return Result.failure(IllegalArgumentException("Total amount must be positive"))
         if (cleanMemberIds.isEmpty()) return Result.failure(IllegalArgumentException("At least one member is required"))
 
-        val shares = cleanMemberIds.associateWith { memberId ->
-            customAmounts[memberId] ?: return Result.failure(
-                IllegalArgumentException("Each selected member needs a custom amount")
-            )
-        }
+        val shares =
+            cleanMemberIds.associateWith { memberId ->
+                customAmounts[memberId] ?: return Result.failure(
+                    IllegalArgumentException("Each selected member needs a custom amount"),
+                )
+            }
 
         if (shares.values.any { it < 0.0 }) {
             return Result.failure(IllegalArgumentException("Custom amounts cannot be negative"))
@@ -58,7 +59,7 @@ object SplitCalculationEngine {
 
     fun calculateItemizedShares(
         items: List<BillItem>,
-        memberIds: List<String>
+        memberIds: List<String>,
     ): Result<Map<String, Double>> {
         val cleanMemberIds = memberIds.filter { it.isNotBlank() }.distinct()
         if (cleanMemberIds.isEmpty()) return Result.failure(IllegalArgumentException("At least one member is required"))
@@ -91,7 +92,7 @@ object SplitCalculationEngine {
 
     fun calculateBalances(
         bills: List<Bill>,
-        memberIds: List<String>
+        memberIds: List<String>,
     ): Map<String, Double> {
         val balances = memberIds.filter { it.isNotBlank() }.distinct().associateWith { 0.0 }.toMutableMap()
 
@@ -114,14 +115,16 @@ object SplitCalculationEngine {
     }
 
     fun calculateSettlements(balances: Map<String, Double>): List<Settlement> {
-        val debtors = balances
-            .filter { it.value < -MONEY_EPSILON }
-            .map { it.key to abs(it.value) }
-            .toMutableList()
-        val creditors = balances
-            .filter { it.value > MONEY_EPSILON }
-            .map { it.key to it.value }
-            .toMutableList()
+        val debtors =
+            balances
+                .filter { it.value < -MONEY_EPSILON }
+                .map { it.key to abs(it.value) }
+                .toMutableList()
+        val creditors =
+            balances
+                .filter { it.value > MONEY_EPSILON }
+                .map { it.key to it.value }
+                .toMutableList()
         val settlements = mutableListOf<Settlement>()
 
         var debtorIndex = 0
@@ -132,11 +135,12 @@ object SplitCalculationEngine {
             val amount = minOf(debtor.second, creditor.second)
 
             if (amount > MONEY_EPSILON) {
-                settlements += Settlement(
-                    fromMemberId = debtor.first,
-                    toMemberId = creditor.first,
-                    amount = amount
-                )
+                settlements +=
+                    Settlement(
+                        fromMemberId = debtor.first,
+                        toMemberId = creditor.first,
+                        amount = amount,
+                    )
             }
 
             debtors[debtorIndex] = debtor.first to (debtor.second - amount)
@@ -149,7 +153,10 @@ object SplitCalculationEngine {
         return settlements
     }
 
-    fun moneyEquals(left: Double, right: Double): Boolean {
+    fun moneyEquals(
+        left: Double,
+        right: Double,
+    ): Boolean {
         return abs(left.roundToLong() - right.roundToLong()) <= 0
     }
 }

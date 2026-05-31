@@ -9,10 +9,10 @@ import com.example.dinesplit.domain.model.Member
 import com.example.dinesplit.domain.model.SplitMethod
 import com.example.dinesplit.domain.repository.SplitRepository
 import com.google.android.gms.tasks.Task
-import com.google.firebase.firestore.FirebaseFirestore
-import com.google.firebase.firestore.ListenerRegistration
 import com.google.firebase.firestore.DocumentSnapshot
 import com.google.firebase.firestore.FieldValue
+import com.google.firebase.firestore.FirebaseFirestore
+import com.google.firebase.firestore.ListenerRegistration
 import com.google.firebase.firestore.QuerySnapshot
 import com.google.firebase.firestore.SetOptions
 import kotlinx.coroutines.channels.awaitClose
@@ -23,77 +23,90 @@ import kotlin.coroutines.resume
 import kotlin.coroutines.resumeWithException
 
 class FirebaseSplitRepository(
-    private val firestore: FirebaseFirestore = FirebaseProviders.firestore
+    private val firestore: FirebaseFirestore = FirebaseProviders.firestore,
 ) : SplitRepository {
+    override fun getGroups(): Flow<List<Group>> =
+        callbackFlow {
+            val currentUserId = FirebaseProviders.auth.currentUser?.uid
+            if (currentUserId.isNullOrBlank()) {
+                trySend(emptyList())
+                close()
+                return@callbackFlow
+            }
 
-    override fun getGroups(): Flow<List<Group>> = callbackFlow {
-        val currentUserId = FirebaseProviders.auth.currentUser?.uid
-        if (currentUserId.isNullOrBlank()) {
-            trySend(emptyList())
-            close()
-            return@callbackFlow
+            val registration =
+                firestore.collection("groups")
+                    .whereArrayContains("memberIds", currentUserId)
+                    .addSnapshotListener { snapshot, error ->
+                        if (error != null) {
+                            close(error)
+                            return@addSnapshotListener
+                        }
+                        trySend(snapshot?.toVisibleGroups().orEmpty())
+                    }
+
+            awaitClose { registration.remove() }
         }
 
-        val registration = firestore.collection("groups")
-            .whereArrayContains("memberIds", currentUserId)
-            .addSnapshotListener { snapshot, error ->
-                if (error != null) {
-                    close(error)
-                    return@addSnapshotListener
-                }
-                trySend(snapshot?.toVisibleGroups().orEmpty())
-            }
+    override fun getGroup(groupId: String): Flow<Group?> =
+        callbackFlow {
+            val registration =
+                firestore.collection("groups")
+                    .document(groupId)
+                    .addSnapshotListener { snapshot, error ->
+                        if (error != null) {
+                            close(error)
+                            return@addSnapshotListener
+                        }
+                        trySend(snapshot?.toGroup())
+                    }
 
-        awaitClose { registration.remove() }
-    }
+            awaitClose { registration.remove() }
+        }
 
-    override fun getGroup(groupId: String): Flow<Group?> = callbackFlow {
-        val registration = firestore.collection("groups")
-            .document(groupId)
-            .addSnapshotListener { snapshot, error ->
-                if (error != null) {
-                    close(error)
-                    return@addSnapshotListener
-                }
-                trySend(snapshot?.toGroup())
-            }
+    override fun getBills(groupId: String): Flow<List<Bill>> =
+        callbackFlow {
+            val registration =
+                firestore.collection("groups")
+                    .document(groupId)
+                    .collection("bills")
+                    .orderBy("date", com.google.firebase.firestore.Query.Direction.DESCENDING)
+                    .addSnapshotListener { snapshot, error ->
+                        if (error != null) {
+                            close(error)
+                            return@addSnapshotListener
+                        }
+                        trySend(snapshot?.toBills().orEmpty())
+                    }
 
-        awaitClose { registration.remove() }
-    }
+            awaitClose { registration.remove() }
+        }
 
-    override fun getBills(groupId: String): Flow<List<Bill>> = callbackFlow {
-        val registration = firestore.collection("groups")
-            .document(groupId)
-            .collection("bills")
-            .orderBy("date", com.google.firebase.firestore.Query.Direction.DESCENDING)
-            .addSnapshotListener { snapshot, error ->
-                if (error != null) {
-                    close(error)
-                    return@addSnapshotListener
-                }
-                trySend(snapshot?.toBills().orEmpty())
-            }
+    override fun getBill(
+        groupId: String,
+        billId: String,
+    ): Flow<Bill?> =
+        callbackFlow {
+            val registration =
+                firestore.collection("groups")
+                    .document(groupId)
+                    .collection("bills")
+                    .document(billId)
+                    .addSnapshotListener { snapshot, error ->
+                        if (error != null) {
+                            close(error)
+                            return@addSnapshotListener
+                        }
+                        trySend(snapshot?.toBill())
+                    }
 
-        awaitClose { registration.remove() }
-    }
+            awaitClose { registration.remove() }
+        }
 
-    override fun getBill(groupId: String, billId: String): Flow<Bill?> = callbackFlow {
-        val registration = firestore.collection("groups")
-            .document(groupId)
-            .collection("bills")
-            .document(billId)
-            .addSnapshotListener { snapshot, error ->
-                if (error != null) {
-                    close(error)
-                    return@addSnapshotListener
-                }
-                trySend(snapshot?.toBill())
-            }
-
-        awaitClose { registration.remove() }
-    }
-
-    override suspend fun createGroup(group: Group, members: List<Member>) {
+    override suspend fun createGroup(
+        group: Group,
+        members: List<Member>,
+    ) {
         val groupRef = firestore.collection("groups").document(group.id)
         val batch = firestore.batch()
 
@@ -105,14 +118,18 @@ class FirebaseSplitRepository(
         batch.commit().awaitFirebase()
     }
 
-    override suspend fun deleteGroup(groupId: String, userId: String): Result<Unit> {
+    override suspend fun deleteGroup(
+        groupId: String,
+        userId: String,
+    ): Result<Unit> {
         return runCatching {
             require(userId.isNotBlank()) { "Bạn cần đăng nhập để xóa nhóm" }
 
             val groupRef = firestore.collection("groups").document(groupId)
             val groupSnapshot = groupRef.get().awaitFirebase()
-            val ownerId = groupSnapshot.getString("ownerId")
-                ?: groupSnapshot.getStringListField("memberIds").firstOrNull()
+            val ownerId =
+                groupSnapshot.getString("ownerId")
+                    ?: groupSnapshot.getStringListField("memberIds").firstOrNull()
             require(ownerId == userId) {
                 "Chỉ chủ nhóm mới có quyền xóa nhóm"
             }
@@ -132,7 +149,10 @@ class FirebaseSplitRepository(
         }
     }
 
-    override suspend fun leaveGroup(groupId: String, userId: String): Result<Unit> {
+    override suspend fun leaveGroup(
+        groupId: String,
+        userId: String,
+    ): Result<Unit> {
         return runCatching {
             require(userId.isNotBlank()) { "Bạn cần đăng nhập để rời nhóm" }
 
@@ -142,12 +162,13 @@ class FirebaseSplitRepository(
             val currentMemberIds = groupSnapshot.getStringListField("memberIds")
             val remainingMemberIds = currentMemberIds.filter { it != userId }
             val ownerId = groupSnapshot.getString("ownerId")
-            val groupUpdates = mutableMapOf<String, Any>(
-                "memberIds" to FieldValue.arrayRemove(userId),
-                "leftMemberIds" to FieldValue.arrayUnion(userId),
-                "memberCount" to FieldValue.increment(-1),
-                "updatedAt" to System.currentTimeMillis()
-            )
+            val groupUpdates =
+                mutableMapOf<String, Any>(
+                    "memberIds" to FieldValue.arrayRemove(userId),
+                    "leftMemberIds" to FieldValue.arrayUnion(userId),
+                    "memberCount" to FieldValue.increment(-1),
+                    "updatedAt" to System.currentTimeMillis(),
+                )
 
             if (ownerId == userId) {
                 groupUpdates["ownerId"] = remainingMemberIds.firstOrNull().orEmpty()
@@ -165,20 +186,22 @@ class FirebaseSplitRepository(
         // Joining by invite code will be wired once the invite collection is finalized.
     }
 
-    override fun getGroupMembers(groupId: String): Flow<List<Member>> = callbackFlow {
-        val membersColl = firestore.collection("groups").document(groupId).collection("members")
-        val registration: ListenerRegistration = membersColl.addSnapshotListener { snapshot, error ->
-            if (error != null) {
-                close(error)
-                return@addSnapshotListener
-            }
-            if (snapshot != null) {
-                trySend(snapshot.toMembers())
-            }
-        }
+    override fun getGroupMembers(groupId: String): Flow<List<Member>> =
+        callbackFlow {
+            val membersColl = firestore.collection("groups").document(groupId).collection("members")
+            val registration: ListenerRegistration =
+                membersColl.addSnapshotListener { snapshot, error ->
+                    if (error != null) {
+                        close(error)
+                        return@addSnapshotListener
+                    }
+                    if (snapshot != null) {
+                        trySend(snapshot.toMembers())
+                    }
+                }
 
-        awaitClose { registration.remove() }
-    }
+            awaitClose { registration.remove() }
+        }
 
     override suspend fun saveBill(bill: Bill): Result<Unit> {
         return runCatching {
@@ -189,8 +212,8 @@ class FirebaseSplitRepository(
             groupRef.update(
                 mapOf(
                     "totalExpense" to FieldValue.increment(bill.totalAmount),
-                    "updatedAt" to System.currentTimeMillis()
-                )
+                    "updatedAt" to System.currentTimeMillis(),
+                ),
             ).awaitFirebase()
         }
     }
@@ -198,7 +221,7 @@ class FirebaseSplitRepository(
     override suspend fun markBillMemberPaid(
         groupId: String,
         billId: String,
-        memberId: String
+        memberId: String,
     ): Result<Unit> {
         return runCatching {
             firestore.collection("groups")
@@ -208,8 +231,8 @@ class FirebaseSplitRepository(
                 .update(
                     mapOf(
                         "paidMemberIds" to FieldValue.arrayUnion(memberId),
-                        "updatedAt" to System.currentTimeMillis()
-                    )
+                        "updatedAt" to System.currentTimeMillis(),
+                    ),
                 )
                 .awaitFirebase()
         }
@@ -243,21 +266,23 @@ class FirebaseSplitRepository(
             totalExpense = getDouble("totalExpense") ?: 0.0,
             yourBalance = getDouble("yourBalance") ?: 0.0,
             createdAt = getLong("createdAt") ?: 0L,
-            ownerId = getString("ownerId") ?: getStringListField("memberIds").firstOrNull()
+            ownerId = getString("ownerId") ?: getStringListField("memberIds").firstOrNull(),
         )
     }
 
     private fun QuerySnapshot.toMembers(): List<Member> {
         val currentUserId = FirebaseProviders.auth.currentUser?.uid
-        val rawMembers = documents.mapNotNull { doc ->
-            val id = doc.getString("id") ?: doc.id
-            val name = doc.getString("name") ?: return@mapNotNull null
-            val initial = doc.getString("initial") ?: name.firstOrNull()?.toString().orEmpty()
-            val isMe = doc.getBoolean("isMe") ?: false
-            Member(id = id, name = name, initial = initial, isMe = isMe)
-        }
-        val hasCurrentUserMember = !currentUserId.isNullOrBlank() &&
-            rawMembers.any { it.id == currentUserId }
+        val rawMembers =
+            documents.mapNotNull { doc ->
+                val id = doc.getString("id") ?: doc.id
+                val name = doc.getString("name") ?: return@mapNotNull null
+                val initial = doc.getString("initial") ?: name.firstOrNull()?.toString().orEmpty()
+                val isMe = doc.getBoolean("isMe") ?: false
+                Member(id = id, name = name, initial = initial, isMe = isMe)
+            }
+        val hasCurrentUserMember =
+            !currentUserId.isNullOrBlank() &&
+                rawMembers.any { it.id == currentUserId }
 
         return rawMembers
             .filterNot { member ->
@@ -282,9 +307,10 @@ class FirebaseSplitRepository(
     private fun DocumentSnapshot.toBill(): Bill? {
         val groupId = getString("groupId") ?: reference.parent.parent?.id ?: return null
         val name = getString("name") ?: return null
-        val method = runCatching {
-            SplitMethod.valueOf(getString("method") ?: SplitMethod.EQUAL.name)
-        }.getOrDefault(SplitMethod.EQUAL)
+        val method =
+            runCatching {
+                SplitMethod.valueOf(getString("method") ?: SplitMethod.EQUAL.name)
+            }.getOrDefault(SplitMethod.EQUAL)
 
         return Bill(
             id = getString("id") ?: id,
@@ -296,7 +322,7 @@ class FirebaseSplitRepository(
             items = getBillItems(),
             shares = getShares(),
             paidMemberIds = getPaidMemberIds(),
-            date = getLong("date") ?: 0L
+            date = getLong("date") ?: 0L,
         )
     }
 
@@ -306,6 +332,7 @@ class FirebaseSplitRepository(
 
         return rawItems.mapNotNull { item ->
             val name = item["name"] as? String ?: return@mapNotNull null
+
             @Suppress("UNCHECKED_CAST")
             val sharedBy = item["sharedByMemberIds"] as? List<String> ?: emptyList()
 
@@ -313,7 +340,7 @@ class FirebaseSplitRepository(
                 id = item["id"] as? String ?: "",
                 name = name,
                 price = (item["price"] as? Number)?.toDouble() ?: 0.0,
-                sharedByMemberIds = sharedBy
+                sharedByMemberIds = sharedBy,
             )
         }
     }
@@ -328,9 +355,10 @@ class FirebaseSplitRepository(
     }
 
     private fun DocumentSnapshot.getPaidMemberIds(): List<String> {
-        val paidMemberIds = (get("paidMemberIds") as? List<*>)
-            ?.filterIsInstance<String>()
-            .orEmpty()
+        val paidMemberIds =
+            (get("paidMemberIds") as? List<*>)
+                ?.filterIsInstance<String>()
+                .orEmpty()
 
         return paidMemberIds.ifEmpty { listOfNotNull(getString("payerId")) }
     }
@@ -353,7 +381,7 @@ class FirebaseSplitRepository(
             "totalExpense" to totalExpense,
             "yourBalance" to yourBalance,
             "createdAt" to createdAt,
-            "updatedAt" to createdAt
+            "updatedAt" to createdAt,
         )
     }
 
@@ -368,7 +396,7 @@ class FirebaseSplitRepository(
             "items" to items.map { it.toMap() },
             "shares" to shares,
             "paidMemberIds" to paidMemberIds,
-            "date" to date
+            "date" to date,
         )
     }
 
@@ -377,7 +405,7 @@ class FirebaseSplitRepository(
             "id" to id,
             "name" to name,
             "price" to price,
-            "sharedByMemberIds" to sharedByMemberIds
+            "sharedByMemberIds" to sharedByMemberIds,
         )
     }
 
@@ -386,7 +414,7 @@ class FirebaseSplitRepository(
             "id" to id,
             "name" to name,
             "initial" to initial,
-            "isMe" to isMe
+            "isMe" to isMe,
         )
     }
 
@@ -406,7 +434,9 @@ class FirebaseSplitRepository(
         @Volatile
         private var INSTANCE: FirebaseSplitRepository? = null
 
-        fun getInstance(@Suppress("UNUSED_PARAMETER") context: Context): FirebaseSplitRepository {
+        fun getInstance(
+            @Suppress("UNUSED_PARAMETER") context: Context,
+        ): FirebaseSplitRepository {
             return INSTANCE ?: synchronized(this) {
                 INSTANCE ?: FirebaseSplitRepository().also { INSTANCE = it }
             }

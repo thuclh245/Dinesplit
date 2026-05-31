@@ -61,7 +61,7 @@ fun AddTransactionScreen(
     initialType: TransactionType? = null,
     currentUserId: String = "",
     availableCategoriesByType: Map<TransactionType, List<StoredCategory>> = emptyMap(),
-    onSave: (Transaction) -> Unit = {}
+    onSave: (Transaction) -> Unit = {},
 ) {
     var amountText by rememberSaveable { mutableStateOf("") }
     var selectedType by rememberSaveable { mutableStateOf(initialType ?: TransactionType.EXPENSE) }
@@ -71,12 +71,13 @@ fun AddTransactionScreen(
 
     val currentDateMillis = remember { System.currentTimeMillis() }
     val currentDate = remember(currentDateMillis) { currentDateLabel(currentDateMillis) }
-    val categoryOptions = remember(selectedType, availableCategoriesByType) {
-        categoryTilesForType(
-            type = selectedType,
-            availableCategories = availableCategoriesByType[selectedType].orEmpty()
-        )
-    }
+    val categoryOptions =
+        remember(selectedType, availableCategoriesByType) {
+            categoryTilesForType(
+                type = selectedType,
+                availableCategories = availableCategoriesByType[selectedType].orEmpty(),
+            )
+        }
 
     LaunchedEffect(selectedType) {
         if (selectedCategoryId.isNotBlank() && categoryOptions.none { it.id == selectedCategoryId }) {
@@ -86,17 +87,19 @@ fun AddTransactionScreen(
 
     val selectedCategoryName = categoryOptions.firstOrNull { it.id == selectedCategoryId }?.name.orEmpty()
 
-    val validation = TransactionFormValidator.validate(
-        input = TransactionFormInput(
-            amountText = amountText,
-            type = selectedType,
-            categoryId = selectedCategoryId,
-            categoryName = selectedCategoryName,
-            note = note,
-            dateMillis = currentDateMillis
-        ),
-        availableCategoryIds = categoryOptions.map { it.id }
-    )
+    val validation =
+        TransactionFormValidator.validate(
+            input =
+                TransactionFormInput(
+                    amountText = amountText,
+                    type = selectedType,
+                    categoryId = selectedCategoryId,
+                    categoryName = selectedCategoryName,
+                    note = note,
+                    dateMillis = currentDateMillis,
+                ),
+            availableCategoryIds = categoryOptions.map { it.id },
+        )
 
     val isAmountValid = validation.amountError == null
     val isTypeValid = validation.typeError == null
@@ -107,32 +110,33 @@ fun AddTransactionScreen(
         title = "New Entry",
         navigationIcon = {
             BackNavigationButton(onClick = onBack)
-        }
+        },
     ) {
         Column(
-            modifier = Modifier
-                .fillMaxSize()
-                .verticalScroll(rememberScrollState()),
-            verticalArrangement = Arrangement.spacedBy(AppDimens.spaceXl)
+            modifier =
+                Modifier
+                    .fillMaxSize()
+                    .verticalScroll(rememberScrollState()),
+            verticalArrangement = Arrangement.spacedBy(AppDimens.spaceXl),
         ) {
             Text(
                 text = "New Entry.",
                 style = MaterialTheme.typography.displaySmall,
-                fontWeight = FontWeight.ExtraBold
+                fontWeight = FontWeight.ExtraBold,
             )
 
             AmountInputBlock(
                 value = amountText,
                 onValueChange = { amountText = it },
                 isError = isSubmitAttempted && !isAmountValid,
-                supportingText = validation.amountError
+                supportingText = validation.amountError,
             )
 
             Column(verticalArrangement = Arrangement.spacedBy(AppDimens.spaceSm)) {
                 Text(
                     text = "Type",
                     style = MaterialTheme.typography.labelMedium,
-                    color = MaterialTheme.colorScheme.onSurfaceVariant
+                    color = MaterialTheme.colorScheme.onSurfaceVariant,
                 )
 
                 Row(horizontalArrangement = Arrangement.spacedBy(AppDimens.spaceSm)) {
@@ -140,7 +144,7 @@ fun AddTransactionScreen(
                         FilterChip(
                             selected = selectedType == typeOption,
                             onClick = { selectedType = typeOption },
-                            label = { Text(typeOption.displayLabel()) }
+                            label = { Text(typeOption.displayLabel()) },
                         )
                     }
                 }
@@ -149,7 +153,7 @@ fun AddTransactionScreen(
                     Text(
                         text = validation.typeError,
                         style = MaterialTheme.typography.bodySmall,
-                        color = MaterialTheme.colorScheme.error
+                        color = MaterialTheme.colorScheme.error,
                     )
                 }
             }
@@ -158,13 +162,13 @@ fun AddTransactionScreen(
                 Text(
                     text = "Select Category",
                     style = MaterialTheme.typography.labelMedium,
-                    color = MaterialTheme.colorScheme.onSurfaceVariant
+                    color = MaterialTheme.colorScheme.onSurfaceVariant,
                 )
 
                 categoryOptions.chunked(4).forEach { rowItems ->
                     Row(
                         modifier = Modifier.fillMaxWidth(),
-                        horizontalArrangement = Arrangement.spacedBy(AppDimens.spaceSm)
+                        horizontalArrangement = Arrangement.spacedBy(AppDimens.spaceSm),
                     ) {
                         rowItems.forEach { item ->
                             CategoryTileButton(
@@ -173,7 +177,7 @@ fun AddTransactionScreen(
                                 selected = selectedCategoryId == item.id,
                                 onClick = {
                                     selectedCategoryId = item.id
-                                }
+                                },
                             )
                         }
 
@@ -187,7 +191,7 @@ fun AddTransactionScreen(
                     Text(
                         text = "No categories available. Create categories first.",
                         style = MaterialTheme.typography.bodySmall,
-                        color = MaterialTheme.colorScheme.onSurfaceVariant
+                        color = MaterialTheme.colorScheme.onSurfaceVariant,
                     )
                 }
 
@@ -195,7 +199,7 @@ fun AddTransactionScreen(
                     Text(
                         text = validation.categoryError,
                         style = MaterialTheme.typography.bodySmall,
-                        color = MaterialTheme.colorScheme.error
+                        color = MaterialTheme.colorScheme.error,
                     )
                 }
             }
@@ -205,7 +209,7 @@ fun AddTransactionScreen(
                 value = currentDate,
                 onValueChange = {},
                 readOnly = true,
-                label = { Text("Date") }
+                label = { Text("Date") },
             )
 
             OutlinedTextField(
@@ -215,9 +219,10 @@ fun AddTransactionScreen(
                 label = { Text("Note (optional)") },
                 placeholder = { Text("Add a note...") },
                 minLines = 2,
-                keyboardOptions = KeyboardOptions(
-                    capitalization = KeyboardCapitalization.Sentences
-                )
+                keyboardOptions =
+                    KeyboardOptions(
+                        capitalization = KeyboardCapitalization.Sentences,
+                    ),
             )
 
             PrimaryButton(
@@ -230,17 +235,17 @@ fun AddTransactionScreen(
                     onSave(
                         validInput.toTransaction(
                             id = UUID.randomUUID().toString(),
-                            userId = currentUserId
-                        )
+                            userId = currentUserId,
+                        ),
                     )
                     onBack()
                 },
-                enabled = isFormValid && currentUserId.isNotBlank()
+                enabled = isFormValid && currentUserId.isNotBlank(),
             )
 
             SecondaryButton(
                 text = "Cancel",
-                onClick = onBack
+                onClick = onBack,
             )
         }
     }
@@ -249,12 +254,12 @@ fun AddTransactionScreen(
 private data class CategoryTile(
     val id: String,
     val name: String,
-    val iconCode: String
+    val iconCode: String,
 )
 
 private fun categoryTilesForType(
     type: TransactionType?,
-    availableCategories: List<StoredCategory>
+    availableCategories: List<StoredCategory>,
 ): List<CategoryTile> {
     return availableCategories.map { category ->
         CategoryTile(id = category.id, name = category.name, iconCode = category.icon)
@@ -266,57 +271,60 @@ private fun AmountInputBlock(
     value: String,
     onValueChange: (String) -> Unit,
     isError: Boolean,
-    supportingText: String?
+    supportingText: String?,
 ) {
     Column(verticalArrangement = Arrangement.spacedBy(AppDimens.spaceXs)) {
         Row(
             modifier = Modifier.fillMaxWidth(),
             verticalAlignment = Alignment.Bottom,
-            horizontalArrangement = Arrangement.spacedBy(AppDimens.spaceSm)
+            horizontalArrangement = Arrangement.spacedBy(AppDimens.spaceSm),
         ) {
             Text(
                 text = "VND",
                 style = MaterialTheme.typography.displaySmall,
-                color = MaterialTheme.colorScheme.outline
+                color = MaterialTheme.colorScheme.outline,
             )
 
             BasicTextField(
                 value = value,
                 onValueChange = onValueChange,
                 singleLine = true,
-                textStyle = MaterialTheme.typography.displayLarge.copy(
-                    color = MaterialTheme.colorScheme.onSurface,
-                    fontSize = 56.sp
-                ),
+                textStyle =
+                    MaterialTheme.typography.displayLarge.copy(
+                        color = MaterialTheme.colorScheme.onSurface,
+                        fontSize = 56.sp,
+                    ),
                 keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Decimal),
                 cursorBrush = SolidColor(MaterialTheme.colorScheme.primary),
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .padding(bottom = 2.dp),
+                modifier =
+                    Modifier
+                        .fillMaxWidth()
+                        .padding(bottom = 2.dp),
                 decorationBox = { innerField ->
                     if (value.isBlank()) {
                         Text(
                             text = "0.00",
-                            style = MaterialTheme.typography.displayLarge.copy(
-                                color = MaterialTheme.colorScheme.outline,
-                                fontSize = 56.sp
-                            )
+                            style =
+                                MaterialTheme.typography.displayLarge.copy(
+                                    color = MaterialTheme.colorScheme.outline,
+                                    fontSize = 56.sp,
+                                ),
                         )
                     }
                     innerField()
-                }
+                },
             )
         }
 
         HorizontalDivider(
-            color = if (isError) MaterialTheme.colorScheme.error else MaterialTheme.colorScheme.outlineVariant
+            color = if (isError) MaterialTheme.colorScheme.error else MaterialTheme.colorScheme.outlineVariant,
         )
 
         if (isError && !supportingText.isNullOrBlank()) {
             Text(
                 text = supportingText,
                 style = MaterialTheme.typography.bodySmall,
-                color = MaterialTheme.colorScheme.error
+                color = MaterialTheme.colorScheme.error,
             )
         }
     }
@@ -327,18 +335,20 @@ private fun CategoryTileButton(
     modifier: Modifier = Modifier,
     tile: CategoryTile,
     selected: Boolean,
-    onClick: () -> Unit
+    onClick: () -> Unit,
 ) {
-    val background = if (selected) {
-        MaterialTheme.colorScheme.primary
-    } else {
-        MaterialTheme.colorScheme.surface
-    }
-    val contentColor = if (selected) {
-        MaterialTheme.colorScheme.onPrimary
-    } else {
-        MaterialTheme.colorScheme.onSurface
-    }
+    val background =
+        if (selected) {
+            MaterialTheme.colorScheme.primary
+        } else {
+            MaterialTheme.colorScheme.surface
+        }
+    val contentColor =
+        if (selected) {
+            MaterialTheme.colorScheme.onPrimary
+        } else {
+            MaterialTheme.colorScheme.onSurface
+        }
 
     Surface(
         modifier = modifier,
@@ -346,36 +356,40 @@ private fun CategoryTileButton(
         shape = MaterialTheme.shapes.large,
         color = background,
         contentColor = contentColor,
-        border = if (selected) null else BorderStroke(1.dp, MaterialTheme.colorScheme.outlineVariant)
+        border = if (selected) null else BorderStroke(1.dp, MaterialTheme.colorScheme.outlineVariant),
     ) {
         Column(
-            modifier = Modifier
-                .fillMaxWidth()
-                .padding(vertical = AppDimens.spaceMd),
+            modifier =
+                Modifier
+                    .fillMaxWidth()
+                    .padding(vertical = AppDimens.spaceMd),
             horizontalAlignment = Alignment.CenterHorizontally,
-            verticalArrangement = Arrangement.spacedBy(AppDimens.spaceXs)
+            verticalArrangement = Arrangement.spacedBy(AppDimens.spaceXs),
         ) {
             Box(
-                modifier = Modifier
-                    .size(32.dp)
-                    .background(
-                        color = if (selected) {
-                            MaterialTheme.colorScheme.onPrimary.copy(alpha = 0.18f)
-                        } else {
-                            MaterialTheme.colorScheme.primaryContainer
-                        },
-                        shape = MaterialTheme.shapes.small
-                    ),
-                contentAlignment = Alignment.Center
+                modifier =
+                    Modifier
+                        .size(32.dp)
+                        .background(
+                            color =
+                                if (selected) {
+                                    MaterialTheme.colorScheme.onPrimary.copy(alpha = 0.18f)
+                                } else {
+                                    MaterialTheme.colorScheme.primaryContainer
+                                },
+                            shape = MaterialTheme.shapes.small,
+                        ),
+                contentAlignment = Alignment.Center,
             ) {
                 Text(
                     text = tile.iconCode,
                     style = MaterialTheme.typography.labelMedium,
-                    color = if (selected) {
-                        MaterialTheme.colorScheme.onPrimary
-                    } else {
-                        MaterialTheme.colorScheme.onPrimaryContainer
-                    }
+                    color =
+                        if (selected) {
+                            MaterialTheme.colorScheme.onPrimary
+                        } else {
+                            MaterialTheme.colorScheme.onPrimaryContainer
+                        },
                 )
             }
 
@@ -383,7 +397,7 @@ private fun CategoryTileButton(
                 text = tile.name,
                 style = MaterialTheme.typography.labelSmall,
                 maxLines = 1,
-                overflow = TextOverflow.Ellipsis
+                overflow = TextOverflow.Ellipsis,
             )
         }
     }

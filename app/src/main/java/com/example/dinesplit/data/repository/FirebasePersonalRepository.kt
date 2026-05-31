@@ -25,19 +25,20 @@ import kotlin.coroutines.resumeWithException
 
 class FirebasePersonalRepository private constructor(
     @Suppress("UNUSED_PARAMETER") context: Context,
-    private val firestore: FirebaseFirestore = FirebaseProviders.firestore
+    private val firestore: FirebaseFirestore = FirebaseProviders.firestore,
 ) : PersonalRepository {
     private val storage = FirebaseProviders.storage
 
     override suspend fun getAllTransactions(): List<Transaction> {
         val uid = requireCurrentUserId()
-        val snapshot = firestore
-            .collection(COLLECTION_USER_PERSONAL)
-            .document(uid)
-            .collection(COLLECTION_TRANSACTIONS)
-            .orderBy(FIELD_DATE, com.google.firebase.firestore.Query.Direction.DESCENDING)
-            .get()
-            .awaitFirebase()
+        val snapshot =
+            firestore
+                .collection(COLLECTION_USER_PERSONAL)
+                .document(uid)
+                .collection(COLLECTION_TRANSACTIONS)
+                .orderBy(FIELD_DATE, com.google.firebase.firestore.Query.Direction.DESCENDING)
+                .get()
+                .awaitFirebase()
 
         return snapshot.documents.mapNotNull { document ->
             document.toTransaction(uid)
@@ -48,12 +49,13 @@ class FirebasePersonalRepository private constructor(
         val uid = requireCurrentUserId()
         ensureDefaultCategories(uid)
 
-        val snapshot = firestore
-            .collection(COLLECTION_USER_PERSONAL)
-            .document(uid)
-            .collection(COLLECTION_CATEGORIES)
-            .get()
-            .awaitFirebase()
+        val snapshot =
+            firestore
+                .collection(COLLECTION_USER_PERSONAL)
+                .document(uid)
+                .collection(COLLECTION_CATEGORIES)
+                .get()
+                .awaitFirebase()
 
         return snapshot.documents
             .mapNotNull { document -> document.toStoredCategory() }
@@ -76,7 +78,10 @@ class FirebasePersonalRepository private constructor(
         insertTransaction(transaction)
     }
 
-    override suspend fun uploadReceiptImage(transactionId: String, receiptUri: Uri): Result<String> {
+    override suspend fun uploadReceiptImage(
+        transactionId: String,
+        receiptUri: Uri,
+    ): Result<String> {
         return runCatching {
             val uid = requireCurrentUserId()
             val receiptReference = storage.reference.child("receipts/$uid/$transactionId.jpg")
@@ -120,12 +125,13 @@ class FirebasePersonalRepository private constructor(
 
     override suspend fun getSpendingReminders(): List<SpendingReminder> {
         val uid = requireCurrentUserId()
-        val snapshot = firestore
-            .collection(COLLECTION_USER_PERSONAL)
-            .document(uid)
-            .collection(COLLECTION_REMINDERS)
-            .get()
-            .awaitFirebase()
+        val snapshot =
+            firestore
+                .collection(COLLECTION_USER_PERSONAL)
+                .document(uid)
+                .collection(COLLECTION_REMINDERS)
+                .get()
+                .awaitFirebase()
 
         return snapshot.documents.mapNotNull { it.toSpendingReminder() }
     }
@@ -158,12 +164,13 @@ class FirebasePersonalRepository private constructor(
 
     override suspend fun getRecurringRules(): List<RecurringRule> {
         val uid = requireCurrentUserId()
-        val snapshot = firestore
-            .collection(COLLECTION_USER_PERSONAL)
-            .document(uid)
-            .collection(COLLECTION_RECURRING_RULES)
-            .get()
-            .awaitFirebase()
+        val snapshot =
+            firestore
+                .collection(COLLECTION_USER_PERSONAL)
+                .document(uid)
+                .collection(COLLECTION_RECURRING_RULES)
+                .get()
+                .awaitFirebase()
 
         return snapshot.documents
             .mapNotNull { it.toRecurringRule(uid) }
@@ -199,12 +206,13 @@ class FirebasePersonalRepository private constructor(
 
     override suspend fun getGoals(): List<PersonalGoal> {
         val uid = requireCurrentUserId()
-        val snapshot = firestore
-            .collection(COLLECTION_USER_PERSONAL)
-            .document(uid)
-            .collection(COLLECTION_GOALS)
-            .get()
-            .awaitFirebase()
+        val snapshot =
+            firestore
+                .collection(COLLECTION_USER_PERSONAL)
+                .document(uid)
+                .collection(COLLECTION_GOALS)
+                .get()
+                .awaitFirebase()
 
         return snapshot.documents
             .mapNotNull { it.toPersonalGoal(uid) }
@@ -240,12 +248,13 @@ class FirebasePersonalRepository private constructor(
 
     override suspend fun getWallets(): List<PersonalWallet> {
         val uid = requireCurrentUserId()
-        val snapshot = firestore
-            .collection(COLLECTION_USER_PERSONAL)
-            .document(uid)
-            .collection(COLLECTION_WALLETS)
-            .get()
-            .awaitFirebase()
+        val snapshot =
+            firestore
+                .collection(COLLECTION_USER_PERSONAL)
+                .document(uid)
+                .collection(COLLECTION_WALLETS)
+                .get()
+                .awaitFirebase()
 
         return snapshot.documents
             .mapNotNull { it.toPersonalWallet(uid) }
@@ -280,10 +289,11 @@ class FirebasePersonalRepository private constructor(
     }
 
     private suspend fun ensureDefaultCategories(uid: String) {
-        val categoriesRef = firestore
-            .collection(COLLECTION_USER_PERSONAL)
-            .document(uid)
-            .collection(COLLECTION_CATEGORIES)
+        val categoriesRef =
+            firestore
+                .collection(COLLECTION_USER_PERSONAL)
+                .document(uid)
+                .collection(COLLECTION_CATEGORIES)
         val existing = categoriesRef.limit(1).get().awaitFirebase()
 
         if (!existing.isEmpty) return
@@ -302,12 +312,14 @@ class FirebasePersonalRepository private constructor(
 
     private fun DocumentSnapshot.toTransaction(uid: String): Transaction? {
         val idValue = getString(FIELD_ID) ?: id
-        val type = getString(FIELD_TYPE)?.let { value ->
-            TransactionType.entries.firstOrNull { it.name == value }
-        } ?: return null
-        val source = getString(FIELD_SOURCE)?.let { value ->
-            TransactionSource.entries.firstOrNull { it.name == value }
-        } ?: TransactionSource.MANUAL
+        val type =
+            getString(FIELD_TYPE)?.let { value ->
+                TransactionType.entries.firstOrNull { it.name == value }
+            } ?: return null
+        val source =
+            getString(FIELD_SOURCE)?.let { value ->
+                TransactionSource.entries.firstOrNull { it.name == value }
+            } ?: TransactionSource.MANUAL
 
         return Transaction(
             id = idValue,
@@ -324,14 +336,15 @@ class FirebasePersonalRepository private constructor(
             sourceBillId = getString(FIELD_SOURCE_BILL_ID)?.takeIf { it.isNotBlank() },
             recurringRuleId = getString(FIELD_RECURRING_RULE_ID)?.takeIf { it.isNotBlank() },
             receiptImageUrl = getString(FIELD_RECEIPT_IMAGE_URL)?.takeIf { it.isNotBlank() },
-            walletId = getString(FIELD_WALLET_ID)?.takeIf { it.isNotBlank() }
+            walletId = getString(FIELD_WALLET_ID)?.takeIf { it.isNotBlank() },
         )
     }
 
     private fun DocumentSnapshot.toStoredCategory(): StoredCategory? {
-        val type = getString(FIELD_TYPE)?.let { value ->
-            TransactionType.entries.firstOrNull { it.name == value }
-        } ?: return null
+        val type =
+            getString(FIELD_TYPE)?.let { value ->
+                TransactionType.entries.firstOrNull { it.name == value }
+            } ?: return null
 
         return StoredCategory(
             id = getString(FIELD_ID) ?: id,
@@ -342,14 +355,15 @@ class FirebasePersonalRepository private constructor(
             description = getString(FIELD_DESCRIPTION) ?: "",
             amountLabel = getString(FIELD_AMOUNT_LABEL) ?: "0 VND",
             progress = getNumberDouble(FIELD_PROGRESS)?.toFloat() ?: 0f,
-            isActive = getBoolean(FIELD_IS_ACTIVE) ?: false
+            isActive = getBoolean(FIELD_IS_ACTIVE) ?: false,
         )
     }
 
     private fun DocumentSnapshot.toSpendingReminder(): SpendingReminder? {
-        val type = getString(FIELD_REMINDER_TYPE)?.let { value ->
-            ReminderType.entries.firstOrNull { it.name == value }
-        } ?: ReminderType.MONTHLY
+        val type =
+            getString(FIELD_REMINDER_TYPE)?.let { value ->
+                ReminderType.entries.firstOrNull { it.name == value }
+            } ?: ReminderType.MONTHLY
 
         return SpendingReminder(
             id = getString(FIELD_ID) ?: id,
@@ -363,17 +377,19 @@ class FirebasePersonalRepository private constructor(
             isEnabled = getBoolean(FIELD_IS_ENABLED) ?: true,
             lastAlertedAt = getLong(FIELD_LAST_ALERTED_AT),
             createdAt = getLong(FIELD_CREATED_AT) ?: 0L,
-            updatedAt = getLong(FIELD_UPDATED_AT) ?: 0L
+            updatedAt = getLong(FIELD_UPDATED_AT) ?: 0L,
         )
     }
 
     private fun DocumentSnapshot.toRecurringRule(uid: String): RecurringRule? {
-        val type = getString(FIELD_TYPE)?.let { value ->
-            TransactionType.entries.firstOrNull { it.name == value }
-        } ?: TransactionType.EXPENSE
-        val cadence = getString(FIELD_CADENCE)?.let { value ->
-            RecurringCadence.entries.firstOrNull { it.name == value }
-        } ?: RecurringCadence.MONTHLY
+        val type =
+            getString(FIELD_TYPE)?.let { value ->
+                TransactionType.entries.firstOrNull { it.name == value }
+            } ?: TransactionType.EXPENSE
+        val cadence =
+            getString(FIELD_CADENCE)?.let { value ->
+                RecurringCadence.entries.firstOrNull { it.name == value }
+            } ?: RecurringCadence.MONTHLY
 
         return RecurringRule(
             id = getString(FIELD_ID) ?: id,
@@ -388,14 +404,15 @@ class FirebasePersonalRepository private constructor(
             nextRunAt = getLong(FIELD_NEXT_RUN_AT) ?: 0L,
             isEnabled = getBoolean(FIELD_IS_ENABLED) ?: true,
             createdAt = getLong(FIELD_CREATED_AT) ?: 0L,
-            updatedAt = getLong(FIELD_UPDATED_AT) ?: 0L
+            updatedAt = getLong(FIELD_UPDATED_AT) ?: 0L,
         )
     }
 
     private fun DocumentSnapshot.toPersonalGoal(uid: String): PersonalGoal? {
-        val status = getString(FIELD_STATUS)?.let { value ->
-            GoalStatus.entries.firstOrNull { it.name == value }
-        } ?: GoalStatus.ACTIVE
+        val status =
+            getString(FIELD_STATUS)?.let { value ->
+                GoalStatus.entries.firstOrNull { it.name == value }
+            } ?: GoalStatus.ACTIVE
 
         return PersonalGoal(
             id = getString(FIELD_ID) ?: id,
@@ -407,14 +424,15 @@ class FirebasePersonalRepository private constructor(
             deadlineAt = getLong(FIELD_DEADLINE_AT) ?: 0L,
             status = status,
             createdAt = getLong(FIELD_CREATED_AT) ?: 0L,
-            updatedAt = getLong(FIELD_UPDATED_AT) ?: 0L
+            updatedAt = getLong(FIELD_UPDATED_AT) ?: 0L,
         )
     }
 
     private fun DocumentSnapshot.toPersonalWallet(uid: String): PersonalWallet? {
-        val type = getString(FIELD_WALLET_TYPE)?.let { value ->
-            WalletType.entries.firstOrNull { it.name == value }
-        } ?: WalletType.CASH
+        val type =
+            getString(FIELD_WALLET_TYPE)?.let { value ->
+                WalletType.entries.firstOrNull { it.name == value }
+            } ?: WalletType.CASH
 
         return PersonalWallet(
             id = getString(FIELD_ID) ?: id,
@@ -425,7 +443,7 @@ class FirebasePersonalRepository private constructor(
             color = getString(FIELD_COLOR) ?: "#AB2D00",
             isArchived = getBoolean(FIELD_IS_ARCHIVED) ?: false,
             createdAt = getLong(FIELD_CREATED_AT) ?: 0L,
-            updatedAt = getLong(FIELD_UPDATED_AT) ?: 0L
+            updatedAt = getLong(FIELD_UPDATED_AT) ?: 0L,
         )
     }
 
@@ -451,7 +469,7 @@ class FirebasePersonalRepository private constructor(
             FIELD_SOURCE_BILL_ID to sourceBillId.orEmpty(),
             FIELD_RECURRING_RULE_ID to recurringRuleId.orEmpty(),
             FIELD_RECEIPT_IMAGE_URL to receiptImageUrl.orEmpty(),
-            FIELD_WALLET_ID to walletId.orEmpty()
+            FIELD_WALLET_ID to walletId.orEmpty(),
         )
     }
 
@@ -468,7 +486,7 @@ class FirebasePersonalRepository private constructor(
             FIELD_PROGRESS to progress.toDouble(),
             FIELD_IS_ACTIVE to isActive,
             FIELD_CREATED_AT to now,
-            FIELD_UPDATED_AT to now
+            FIELD_UPDATED_AT to now,
         )
     }
 
@@ -485,7 +503,7 @@ class FirebasePersonalRepository private constructor(
             FIELD_IS_ENABLED to isEnabled,
             FIELD_LAST_ALERTED_AT to (lastAlertedAt ?: 0L),
             FIELD_CREATED_AT to createdAt,
-            FIELD_UPDATED_AT to System.currentTimeMillis()
+            FIELD_UPDATED_AT to System.currentTimeMillis(),
         )
     }
 
@@ -503,7 +521,7 @@ class FirebasePersonalRepository private constructor(
             FIELD_NEXT_RUN_AT to nextRunAt,
             FIELD_IS_ENABLED to isEnabled,
             FIELD_CREATED_AT to createdAt,
-            FIELD_UPDATED_AT to System.currentTimeMillis()
+            FIELD_UPDATED_AT to System.currentTimeMillis(),
         )
     }
 
@@ -518,7 +536,7 @@ class FirebasePersonalRepository private constructor(
             FIELD_DEADLINE_AT to deadlineAt,
             FIELD_STATUS to status.name,
             FIELD_CREATED_AT to createdAt,
-            FIELD_UPDATED_AT to System.currentTimeMillis()
+            FIELD_UPDATED_AT to System.currentTimeMillis(),
         )
     }
 
@@ -532,7 +550,7 @@ class FirebasePersonalRepository private constructor(
             FIELD_COLOR to color,
             FIELD_IS_ARCHIVED to isArchived,
             FIELD_CREATED_AT to createdAt,
-            FIELD_UPDATED_AT to System.currentTimeMillis()
+            FIELD_UPDATED_AT to System.currentTimeMillis(),
         )
     }
 
@@ -543,7 +561,7 @@ class FirebasePersonalRepository private constructor(
                     continuation.resume(task.result)
                 } else {
                     continuation.resumeWithException(
-                        task.exception ?: IllegalStateException("Firebase task failed")
+                        task.exception ?: IllegalStateException("Firebase task failed"),
                     )
                 }
             }
@@ -620,7 +638,7 @@ class FirebasePersonalRepository private constructor(
                 StoredCategory("c_salary", "Salary", "SL", TransactionType.INCOME, false, "Monthly fixed salary income.", "0 VND", 0f, true),
                 StoredCategory("c_bonus", "Bonus", "BN", TransactionType.INCOME, false, "Project and performance rewards.", "0 VND", 0f, false),
                 StoredCategory("c_gift", "Gift", "GF", TransactionType.INCOME, true, "Personal gifts and contributions.", "0 VND", 0f, false),
-                StoredCategory("c_other_income", "Other", "OT", TransactionType.INCOME, true, "Other incoming cash flows.", "0 VND", 0f, false)
+                StoredCategory("c_other_income", "Other", "OT", TransactionType.INCOME, true, "Other incoming cash flows.", "0 VND", 0f, false),
             )
         }
     }

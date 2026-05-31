@@ -4,8 +4,10 @@ import com.example.dinesplit.domain.model.Comment
 import com.example.dinesplit.domain.repository.FeedRepository
 
 class AddCommentUseCase(
-    private val repository: FeedRepository
+    private val repository: FeedRepository,
 ) {
-    suspend operator fun invoke(postId: String, comment: Comment) = 
-        repository.addComment(postId, comment)
+    suspend operator fun invoke(
+        postId: String,
+        comment: Comment,
+    ) = repository.addComment(postId, comment)
 }

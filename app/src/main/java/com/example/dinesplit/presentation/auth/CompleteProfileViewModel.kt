@@ -6,10 +6,11 @@ import androidx.lifecycle.AndroidViewModel
 import androidx.lifecycle.viewModelScope
 import com.example.dinesplit.core.common.AppContainer
 import com.example.dinesplit.core.firebase.FirebaseErrorMapper
+import com.example.dinesplit.data.seeder.DemoDataSeeder
 import com.example.dinesplit.domain.exception.UsernameAlreadyExistsException
 import com.example.dinesplit.domain.model.UserProfile
-import java.util.Date
 import com.example.dinesplit.domain.validation.ProfileInputValidator
+import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.flow.MutableSharedFlow
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.SharedFlow
@@ -17,8 +18,7 @@ import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asSharedFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.launch
-import kotlinx.coroutines.Dispatchers
-import com.example.dinesplit.data.seeder.DemoDataSeeder
+import java.util.Date
 
 data class CompleteProfileUiState(
     val displayName: String = "",
@@ -32,7 +32,7 @@ data class CompleteProfileUiState(
     val usernameError: String? = null,
     val isSubmitting: Boolean = false,
     val submitError: String? = null,
-    val selectedStyles: List<String> = emptyList()
+    val selectedStyles: List<String> = emptyList(),
 )
 
 sealed interface CompleteProfileUiEffect {
@@ -40,7 +40,6 @@ sealed interface CompleteProfileUiEffect {
 }
 
 class CompleteProfileViewModel(application: Application) : AndroidViewModel(application) {
-
     private val observeSessionUseCase = AppContainer.observeSessionUseCase(application)
     private val updateProfileUseCase = AppContainer.updateProfileUseCase(application)
     private val uploadAvatarUseCase = AppContainer.uploadAvatarUseCase(application)
@@ -64,30 +63,33 @@ class CompleteProfileViewModel(application: Application) : AndroidViewModel(appl
     }
 
     fun onAvatarSelected(value: Uri) {
-        _uiState.value = _uiState.value.copy(
-            avatarUrl = value.toString(),
-            avatarLocalUri = value.toString(),
-            avatarError = null,
-            submitError = null
-        )
+        _uiState.value =
+            _uiState.value.copy(
+                avatarUrl = value.toString(),
+                avatarLocalUri = value.toString(),
+                avatarError = null,
+                submitError = null,
+            )
     }
 
     fun onAvatarCleared() {
-        _uiState.value = _uiState.value.copy(
-            avatarUrl = "",
-            avatarLocalUri = null,
-            avatarError = null,
-            submitError = null
-        )
+        _uiState.value =
+            _uiState.value.copy(
+                avatarUrl = "",
+                avatarLocalUri = null,
+                avatarError = null,
+                submitError = null,
+            )
     }
 
     fun toggleDiningStyle(style: String) {
         val currentSelected = _uiState.value.selectedStyles
-        val updated = if (currentSelected.contains(style)) {
-            currentSelected - style
-        } else {
-            currentSelected + style
-        }
+        val updated =
+            if (currentSelected.contains(style)) {
+                currentSelected - style
+            } else {
+                currentSelected + style
+            }
         _uiState.value = _uiState.value.copy(selectedStyles = updated)
     }
 
@@ -109,28 +111,31 @@ class CompleteProfileViewModel(application: Application) : AndroidViewModel(appl
         }
 
         viewModelScope.launch {
-            _uiState.value = _uiState.value.copy(
-                isSubmitting = true,
-                isAvatarUploading = false,
-                submitError = null,
-                avatarError = null
-            )
+            _uiState.value =
+                _uiState.value.copy(
+                    isSubmitting = true,
+                    isAvatarUploading = false,
+                    submitError = null,
+                    avatarError = null,
+                )
 
             val now = System.currentTimeMillis()
-            val finalAvatarUrl = uploadAvatarIfNeeded(session.uid, current.avatarLocalUri)
-                ?: return@launch
+            val finalAvatarUrl =
+                uploadAvatarIfNeeded(session.uid, current.avatarLocalUri)
+                    ?: return@launch
 
-            val profile = UserProfile(
-                uid = session.uid,
-                displayName = current.displayName.trim(),
-                username = current.username.trim(),
-                email = session.email,
-                avatarUrl = finalAvatarUrl,
-                bio = current.bio.trim(),
-                diningStyles = current.selectedStyles,
-                createdAt = Date(now),
-                updatedAt = Date(now)
-            )
+            val profile =
+                UserProfile(
+                    uid = session.uid,
+                    displayName = current.displayName.trim(),
+                    username = current.username.trim(),
+                    email = session.email,
+                    avatarUrl = finalAvatarUrl,
+                    bio = current.bio.trim(),
+                    diningStyles = current.selectedStyles,
+                    createdAt = Date(now),
+                    updatedAt = Date(now),
+                )
 
             updateProfileUseCase(profile)
                 .onSuccess {
@@ -141,7 +146,7 @@ class CompleteProfileViewModel(application: Application) : AndroidViewModel(appl
                             val notificationRepo = AppContainer.notificationRepository(getApplication())
                             val feedRepo = AppContainer.feedRepository()
                             val splitRepo = AppContainer.splitRepository()
-                            
+
                             DemoDataSeeder.seedDemoTransactions(personalRepo, profile.uid)
                             DemoDataSeeder.seedDemoNotifications(notificationRepo, profile.uid)
                             DemoDataSeeder.seedDemoSplit(splitRepo, profile.uid)
@@ -151,34 +156,39 @@ class CompleteProfileViewModel(application: Application) : AndroidViewModel(appl
                         }
                     }
 
-                    _uiState.value = _uiState.value.copy(
-                        isSubmitting = false,
-                        isAvatarUploading = false,
-                        avatarUrl = finalAvatarUrl,
-                        avatarLocalUri = null
-                    )
+                    _uiState.value =
+                        _uiState.value.copy(
+                            isSubmitting = false,
+                            isAvatarUploading = false,
+                            avatarUrl = finalAvatarUrl,
+                            avatarLocalUri = null,
+                        )
                     _effect.emit(CompleteProfileUiEffect.NavigateToMain)
                 }
                 .onFailure { throwable ->
-                    _uiState.value = if (throwable is UsernameAlreadyExistsException) {
-                        _uiState.value.copy(
-                            isSubmitting = false,
-                            isAvatarUploading = false,
-                            usernameError = FirebaseErrorMapper.toUserMessage(throwable),
-                            submitError = null
-                        )
-                    } else {
-                        _uiState.value.copy(
-                            isSubmitting = false,
-                            isAvatarUploading = false,
-                            submitError = "Không thể lưu hồ sơ: ${FirebaseErrorMapper.toUserMessage(throwable)}"
-                        )
-                    }
+                    _uiState.value =
+                        if (throwable is UsernameAlreadyExistsException) {
+                            _uiState.value.copy(
+                                isSubmitting = false,
+                                isAvatarUploading = false,
+                                usernameError = FirebaseErrorMapper.toUserMessage(throwable),
+                                submitError = null,
+                            )
+                        } else {
+                            _uiState.value.copy(
+                                isSubmitting = false,
+                                isAvatarUploading = false,
+                                submitError = "Không thể lưu hồ sơ: ${FirebaseErrorMapper.toUserMessage(throwable)}",
+                            )
+                        }
                 }
         }
     }
 
-    private suspend fun uploadAvatarIfNeeded(uid: String, avatarLocalUri: String?): String? {
+    private suspend fun uploadAvatarIfNeeded(
+        uid: String,
+        avatarLocalUri: String?,
+    ): String? {
         if (avatarLocalUri.isNullOrBlank()) {
             return _uiState.value.avatarUrl.trim()
         }
@@ -186,20 +196,21 @@ class CompleteProfileViewModel(application: Application) : AndroidViewModel(appl
         _uiState.value = _uiState.value.copy(isAvatarUploading = true)
         return uploadAvatarUseCase(uid, Uri.parse(avatarLocalUri))
             .onSuccess { uploadedAvatarUrl ->
-                _uiState.value = _uiState.value.copy(
-                    avatarUrl = uploadedAvatarUrl,
-                    avatarLocalUri = null,
-                    isAvatarUploading = false
-                )
+                _uiState.value =
+                    _uiState.value.copy(
+                        avatarUrl = uploadedAvatarUrl,
+                        avatarLocalUri = null,
+                        isAvatarUploading = false,
+                    )
             }
             .onFailure { throwable ->
-                _uiState.value = _uiState.value.copy(
-                    isSubmitting = false,
-                    isAvatarUploading = false,
-                    avatarError = FirebaseErrorMapper.toUserMessage(throwable)
-                )
+                _uiState.value =
+                    _uiState.value.copy(
+                        isSubmitting = false,
+                        isAvatarUploading = false,
+                        avatarError = FirebaseErrorMapper.toUserMessage(throwable),
+                    )
             }
             .getOrNull()
     }
 }
-

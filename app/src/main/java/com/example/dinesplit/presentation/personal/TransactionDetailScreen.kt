@@ -24,23 +24,23 @@ import java.util.Locale
 fun TransactionDetailScreen(
     transactionId: String,
     transaction: Transaction?,
-    onBack: () -> Unit
+    onBack: () -> Unit,
 ) {
     AppScaffold(
         title = "Transaction Detail",
         navigationIcon = {
             BackNavigationButton(onClick = onBack)
-        }
+        },
     ) {
         Column(
             modifier = Modifier.fillMaxSize(),
-            verticalArrangement = Arrangement.spacedBy(AppDimens.spaceLg)
+            verticalArrangement = Arrangement.spacedBy(AppDimens.spaceLg),
         ) {
             if (transaction == null) {
                 AppCard {
                     Text(
                         text = "Transaction not found: $transactionId",
-                        style = MaterialTheme.typography.bodyLarge
+                        style = MaterialTheme.typography.bodyLarge,
                     )
                 }
             } else {
@@ -48,37 +48,38 @@ fun TransactionDetailScreen(
                     Column(verticalArrangement = Arrangement.spacedBy(AppDimens.spaceSm)) {
                         Text(
                             text = transaction.category,
-                            style = MaterialTheme.typography.headlineSmall
+                            style = MaterialTheme.typography.headlineSmall,
                         )
                         Text(
                             text = formatDetailAmount(transaction),
                             style = MaterialTheme.typography.displaySmall,
-                            color = if (transaction.type == TransactionType.INCOME) {
-                                MaterialTheme.colorScheme.primary
-                            } else {
-                                MaterialTheme.colorScheme.onSurface
-                            }
+                            color =
+                                if (transaction.type == TransactionType.INCOME) {
+                                    MaterialTheme.colorScheme.primary
+                                } else {
+                                    MaterialTheme.colorScheme.onSurface
+                                },
                         )
                         Text(
                             text = "Type: ${transaction.type.name.lowercase().replaceFirstChar { it.uppercase() }}",
                             style = MaterialTheme.typography.bodyMedium,
-                            color = MaterialTheme.colorScheme.onSurfaceVariant
+                            color = MaterialTheme.colorScheme.onSurfaceVariant,
                         )
                         Text(
                             text = "Date: ${formatDateTime(transaction.date)}",
                             style = MaterialTheme.typography.bodyMedium,
-                            color = MaterialTheme.colorScheme.onSurfaceVariant
+                            color = MaterialTheme.colorScheme.onSurfaceVariant,
                         )
                         if (!transaction.note.isNullOrBlank()) {
                             Text(
                                 text = "Note: ${transaction.note}",
-                                style = MaterialTheme.typography.bodyMedium
+                                style = MaterialTheme.typography.bodyMedium,
                             )
                         }
                         Text(
                             text = "Id: ${transaction.id}",
                             style = MaterialTheme.typography.bodySmall,
-                            color = MaterialTheme.colorScheme.outline
+                            color = MaterialTheme.colorScheme.outline,
                         )
                     }
                 }
@@ -104,18 +105,19 @@ private fun TransactionDetailScreenPreview() {
     DineSplitTheme {
         TransactionDetailScreen(
             transactionId = "tx_1",
-            transaction = Transaction(
-                id = "tx_1",
-                userId = "user_1",
-                amount = 525000.0,
-                type = TransactionType.EXPENSE,
-                categoryId = "c_food",
-                category = "Dining Out",
-                note = "Dinner with team",
-                date = System.currentTimeMillis(),
-                createdAt = System.currentTimeMillis()
-            ),
-            onBack = {}
+            transaction =
+                Transaction(
+                    id = "tx_1",
+                    userId = "user_1",
+                    amount = 525000.0,
+                    type = TransactionType.EXPENSE,
+                    categoryId = "c_food",
+                    category = "Dining Out",
+                    note = "Dinner with team",
+                    date = System.currentTimeMillis(),
+                    createdAt = System.currentTimeMillis(),
+                ),
+            onBack = {},
         )
     }
 }

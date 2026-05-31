@@ -10,30 +10,30 @@ import androidx.compose.ui.graphics.vector.ImageVector
 sealed class BottomTab(
     val route: String,
     val label: String,
-    val icon: ImageVector
+    val icon: ImageVector,
 ) {
     data object Feed : BottomTab(
         route = AppRoute.Feed.route,
         label = "Feed",
-        icon = Icons.Outlined.Home
+        icon = Icons.Outlined.Home,
     )
 
     data object Split : BottomTab(
         route = AppRoute.Split.route,
         label = "Split",
-        icon = Icons.AutoMirrored.Outlined.ReceiptLong
+        icon = Icons.AutoMirrored.Outlined.ReceiptLong,
     )
 
     data object Personal : BottomTab(
         route = AppRoute.Personal.route,
         label = "Personal",
-        icon = Icons.Outlined.AccountBalanceWallet
+        icon = Icons.Outlined.AccountBalanceWallet,
     )
 
     data object Profile : BottomTab(
         route = AppRoute.Profile.route,
         label = "Profile",
-        icon = Icons.Outlined.Person
+        icon = Icons.Outlined.Person,
     )
 
     companion object {

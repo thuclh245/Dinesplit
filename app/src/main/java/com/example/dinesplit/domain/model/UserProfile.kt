@@ -15,10 +15,9 @@ data class UserProfile(
     val postsCount: Int = 0,
     val fcmToken: String = "",
     val createdAt: Date? = null,
-    val updatedAt: Date? = null
+    val updatedAt: Date? = null,
 ) {
     fun isComplete(): Boolean {
         return displayName.isNotBlank() && username.isNotBlank()
     }
 }
-

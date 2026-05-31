@@ -30,11 +30,8 @@ import androidx.compose.material.icons.filled.DateRange
 import androidx.compose.material.icons.filled.Edit
 import androidx.compose.material.icons.filled.Info
 import androidx.compose.material.icons.filled.KeyboardArrowDown
-import androidx.compose.material3.Button
-import androidx.compose.material3.ButtonDefaults
 import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
-import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.DropdownMenu
 import androidx.compose.material3.DropdownMenuItem
 import androidx.compose.material3.HorizontalDivider
@@ -57,6 +54,7 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
+import androidx.compose.ui.focus.onFocusChanged
 import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.platform.LocalContext
@@ -66,9 +64,6 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.example.dinesplit.core.common.AppContainer
 import com.example.dinesplit.core.ui.PrimaryButton
-import com.example.dinesplit.core.ui.AppShapes
-import com.example.dinesplit.core.ui.AppDimens
-import androidx.compose.ui.focus.onFocusChanged
 import com.example.dinesplit.domain.model.Bill
 import com.example.dinesplit.domain.model.BillItem
 import com.example.dinesplit.domain.model.Member
@@ -80,12 +75,13 @@ fun CreateBillScreen(
     onBack: () -> Unit,
     groupId: String = "g1",
     viewModel: CreateBillViewModel? = null,
-    onBillSavedForPersonal: (Bill) -> Unit = {}
+    onBillSavedForPersonal: (Bill) -> Unit = {},
 ) {
     val context = LocalContext.current
-    val vm = viewModel ?: remember(groupId) {
-        CreateBillViewModel(repository = AppContainer.splitRepository(context), groupId = groupId)
-    }
+    val vm =
+        viewModel ?: remember(groupId) {
+            CreateBillViewModel(repository = AppContainer.splitRepository(context), groupId = groupId)
+        }
     val uiState by vm.uiState.collectAsState()
     val snackbarHostState = remember { SnackbarHostState() }
     val coroutineScope = rememberCoroutineScope()
@@ -96,20 +92,21 @@ fun CreateBillScreen(
             CreateBillTopBar(
                 onBack = onBack,
                 onSave = vm::saveBill,
-                isLoading = uiState.isLoading
+                isLoading = uiState.isLoading,
             )
         },
-        snackbarHost = { SnackbarHost(snackbarHostState) }
+        snackbarHost = { SnackbarHost(snackbarHostState) },
     ) { paddingValues ->
         Box(
-            modifier = Modifier
-                .fillMaxSize()
-                .padding(paddingValues)
+            modifier =
+                Modifier
+                    .fillMaxSize()
+                    .padding(paddingValues),
         ) {
             LazyColumn(
                 modifier = Modifier.fillMaxSize(),
                 contentPadding = PaddingValues(start = 24.dp, end = 24.dp, top = 16.dp, bottom = 132.dp),
-                verticalArrangement = Arrangement.spacedBy(24.dp)
+                verticalArrangement = Arrangement.spacedBy(24.dp),
             ) {
                 if (uiState.isUsingFallbackMembers) {
                     item { FallbackMembersNotice() }
@@ -120,53 +117,57 @@ fun CreateBillScreen(
                     CreateBillMainInfoCard(
                         billName = uiState.billName,
                         onNameChange = vm::onBillNameChange,
-                        totalAmount = if (uiState.selectedMethod == SplitMethod.ITEMIZED) {
-                            itemizedTotal
-                        } else {
-                            uiState.totalAmountStr
-                        },
+                        totalAmount =
+                            if (uiState.selectedMethod == SplitMethod.ITEMIZED) {
+                                itemizedTotal
+                            } else {
+                                uiState.totalAmountStr
+                            },
                         onTotalAmountChange = vm::onTotalAmountChange,
-                        isTotalAmountEditable = uiState.selectedMethod != SplitMethod.ITEMIZED
+                        isTotalAmountEditable = uiState.selectedMethod != SplitMethod.ITEMIZED,
                     )
                 }
                 item {
                     CreateBillPayerSection(
                         members = uiState.members,
                         currentPayerId = uiState.payerId,
-                        onSelectPayer = vm::setPayer
+                        onSelectPayer = vm::setPayer,
                     )
                 }
                 item {
                     CreateBillSplitMethodTabs(
                         selectedMethod = uiState.selectedMethod,
-                        onMethodSelect = vm::onMethodSelect
+                        onMethodSelect = vm::onMethodSelect,
                     )
                 }
                 item {
                     when (uiState.selectedMethod) {
-                        SplitMethod.EQUAL -> EqualSplitDetailsList(
-                            members = uiState.members,
-                            selectedIds = uiState.selectedMemberIds,
-                            payerId = uiState.payerId,
-                            onToggle = vm::toggleMemberSelection,
-                            onSelectPayer = vm::setPayer
-                        )
+                        SplitMethod.EQUAL ->
+                            EqualSplitDetailsList(
+                                members = uiState.members,
+                                selectedIds = uiState.selectedMemberIds,
+                                payerId = uiState.payerId,
+                                onToggle = vm::toggleMemberSelection,
+                                onSelectPayer = vm::setPayer,
+                            )
 
-                        SplitMethod.CUSTOM -> CustomSplitDetailsList(
-                            members = uiState.members,
-                            selectedIds = uiState.selectedMemberIds,
-                            customAmounts = vm.customAmounts,
-                            onToggle = vm::toggleMemberSelection,
-                            onAmountChange = vm::onCustomAmountChange
-                        )
+                        SplitMethod.CUSTOM ->
+                            CustomSplitDetailsList(
+                                members = uiState.members,
+                                selectedIds = uiState.selectedMemberIds,
+                                customAmounts = vm.customAmounts,
+                                onToggle = vm::toggleMemberSelection,
+                                onAmountChange = vm::onCustomAmountChange,
+                            )
 
-                        SplitMethod.ITEMIZED -> ItemizedSplitDetailsList(
-                            members = uiState.members,
-                            billItems = vm.billItems,
-                            onAddItem = vm::addItem,
-                            onRemoveItem = vm::removeItem,
-                            onUpdateItem = vm::updateItem
-                        )
+                        SplitMethod.ITEMIZED ->
+                            ItemizedSplitDetailsList(
+                                members = uiState.members,
+                                billItems = vm.billItems,
+                                onAddItem = vm::addItem,
+                                onRemoveItem = vm::removeItem,
+                                onUpdateItem = vm::updateItem,
+                            )
                     }
                 }
             }
@@ -174,7 +175,7 @@ fun CreateBillScreen(
             Box(modifier = Modifier.align(Alignment.BottomCenter)) {
                 CreateBillBottomAction(
                     isLoading = uiState.isLoading,
-                    onConfirm = vm::saveBill
+                    onConfirm = vm::saveBill,
                 )
             }
         }
@@ -198,17 +199,18 @@ fun CreateBillScreen(
 private fun CreateBillTopBar(
     onBack: () -> Unit,
     onSave: () -> Unit,
-    isLoading: Boolean
+    isLoading: Boolean,
 ) {
     val colorScheme = MaterialTheme.colorScheme
     Row(
-        modifier = Modifier
-            .fillMaxWidth()
-            .statusBarsPadding()
-            .background(colorScheme.surfaceContainerLowest.copy(alpha = 0.96f))
-            .padding(horizontal = 24.dp, vertical = 14.dp),
+        modifier =
+            Modifier
+                .fillMaxWidth()
+                .statusBarsPadding()
+                .background(colorScheme.surfaceContainerLowest.copy(alpha = 0.96f))
+                .padding(horizontal = 24.dp, vertical = 14.dp),
         verticalAlignment = Alignment.CenterVertically,
-        horizontalArrangement = Arrangement.SpaceBetween
+        horizontalArrangement = Arrangement.SpaceBetween,
     ) {
         IconButton(onClick = onBack, modifier = Modifier.size(32.dp)) {
             Icon(Icons.AutoMirrored.Filled.ArrowBack, contentDescription = "Quay lại", tint = colorScheme.primary)
@@ -218,7 +220,7 @@ private fun CreateBillTopBar(
             text = "Tạo hóa đơn",
             style = MaterialTheme.typography.titleMedium,
             fontWeight = FontWeight.ExtraBold,
-            color = colorScheme.primary
+            color = colorScheme.primary,
         )
 
         Text(
@@ -226,7 +228,7 @@ private fun CreateBillTopBar(
             style = MaterialTheme.typography.titleSmall,
             fontWeight = FontWeight.Bold,
             color = if (isLoading) colorScheme.outline else colorScheme.primary,
-            modifier = Modifier.clickable(enabled = !isLoading) { onSave() }
+            modifier = Modifier.clickable(enabled = !isLoading) { onSave() },
         )
     }
 }
@@ -238,18 +240,18 @@ private fun FallbackMembersNotice() {
         modifier = Modifier.fillMaxWidth(),
         colors = CardDefaults.cardColors(containerColor = colorScheme.surfaceContainerLow),
         shape = RoundedCornerShape(16.dp),
-        elevation = CardDefaults.cardElevation(defaultElevation = 0.dp)
+        elevation = CardDefaults.cardElevation(defaultElevation = 0.dp),
     ) {
         Row(
             modifier = Modifier.padding(14.dp),
-            verticalAlignment = Alignment.CenterVertically
+            verticalAlignment = Alignment.CenterVertically,
         ) {
             Icon(Icons.Default.Info, contentDescription = null, tint = colorScheme.primary, modifier = Modifier.size(18.dp))
             Spacer(modifier = Modifier.width(10.dp))
             Text(
                 text = "Nhóm cũ chưa có danh sách thành viên thật, app đang dùng danh sách mặc định để tiếp tục tạo hóa đơn.",
                 fontSize = 12.sp,
-                color = colorScheme.onSurfaceVariant
+                color = colorScheme.onSurfaceVariant,
             )
         }
     }
@@ -261,37 +263,48 @@ private fun CreateBillMainInfoCard(
     onNameChange: (String) -> Unit,
     totalAmount: String,
     onTotalAmountChange: (String) -> Unit,
-    isTotalAmountEditable: Boolean
+    isTotalAmountEditable: Boolean,
 ) {
     val colorScheme = MaterialTheme.colorScheme
     Card(
         modifier = Modifier.fillMaxWidth(),
         colors = CardDefaults.cardColors(containerColor = colorScheme.surfaceContainerLowest),
         elevation = CardDefaults.cardElevation(defaultElevation = 2.dp),
-        shape = RoundedCornerShape(16.dp)
+        shape = RoundedCornerShape(16.dp),
     ) {
         Column(modifier = Modifier.padding(20.dp)) {
             var isNameFocused by remember { mutableStateOf(false) }
             Row(
                 verticalAlignment = Alignment.CenterVertically,
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .border(
-                        width = if (isNameFocused) 1.5.dp else 1.dp,
-                        color = if (isNameFocused) colorScheme.primary else colorScheme.outlineVariant.copy(alpha = 0.4f),
-                        shape = RoundedCornerShape(12.dp)
-                    )
-                    .background(
-                        color = if (isNameFocused) colorScheme.surfaceContainerLowest else colorScheme.surfaceContainerLow,
-                        shape = RoundedCornerShape(12.dp)
-                    )
-                    .padding(horizontal = 12.dp, vertical = 10.dp)
+                modifier =
+                    Modifier
+                        .fillMaxWidth()
+                        .border(
+                            width = if (isNameFocused) 1.5.dp else 1.dp,
+                            color = if (isNameFocused) colorScheme.primary else colorScheme.outlineVariant.copy(alpha = 0.4f),
+                            shape = RoundedCornerShape(12.dp),
+                        )
+                        .background(
+                            color = if (isNameFocused) colorScheme.surfaceContainerLowest else colorScheme.surfaceContainerLow,
+                            shape = RoundedCornerShape(12.dp),
+                        )
+                        .padding(horizontal = 12.dp, vertical = 10.dp),
             ) {
-                Icon(Icons.Default.Edit, contentDescription = null, tint = if (isNameFocused) colorScheme.primary else colorScheme.onSurfaceVariant, modifier = Modifier.size(20.dp))
+                Icon(
+                    Icons.Default.Edit,
+                    contentDescription = null,
+                    tint = if (isNameFocused) colorScheme.primary else colorScheme.onSurfaceVariant,
+                    modifier = Modifier.size(20.dp),
+                )
                 Spacer(modifier = Modifier.width(12.dp))
                 Box(modifier = Modifier.weight(1f)) {
                     if (billName.isEmpty()) {
-                        Text("Tên hóa đơn (VD: Lẩu Haidilao)", color = colorScheme.outline, fontSize = 16.sp, fontWeight = FontWeight.Medium)
+                        Text(
+                            "Tên hóa đơn (VD: Lẩu Haidilao)",
+                            color = colorScheme.outline,
+                            fontSize = 16.sp,
+                            fontWeight = FontWeight.Medium,
+                        )
                     }
                     BasicTextField(
                         value = billName,
@@ -299,9 +312,10 @@ private fun CreateBillMainInfoCard(
                         singleLine = true,
                         maxLines = 1,
                         textStyle = TextStyle(fontSize = 16.sp, fontWeight = FontWeight.Medium, color = colorScheme.onSurface),
-                        modifier = Modifier
-                            .fillMaxWidth()
-                            .onFocusChanged { isNameFocused = it.isFocused }
+                        modifier =
+                            Modifier
+                                .fillMaxWidth()
+                                .onFocusChanged { isNameFocused = it.isFocused },
                     )
                 }
             }
@@ -313,24 +327,25 @@ private fun CreateBillMainInfoCard(
                     style = MaterialTheme.typography.labelMedium,
                     fontWeight = FontWeight.Bold,
                     color = colorScheme.onSurfaceVariant.copy(alpha = 0.6f),
-                    letterSpacing = 1.sp
+                    letterSpacing = 1.sp,
                 )
                 Spacer(modifier = Modifier.height(6.dp))
                 var isAmountFocused by remember { mutableStateOf(false) }
                 Row(
                     verticalAlignment = Alignment.CenterVertically,
-                    modifier = Modifier
-                        .fillMaxWidth()
-                        .border(
-                            width = if (isAmountFocused) 1.5.dp else 1.dp,
-                            color = if (isAmountFocused) colorScheme.primary else colorScheme.outlineVariant.copy(alpha = 0.4f),
-                            shape = RoundedCornerShape(12.dp)
-                        )
-                        .background(
-                            color = if (isAmountFocused) colorScheme.surfaceContainerLowest else colorScheme.surfaceContainerLow,
-                            shape = RoundedCornerShape(12.dp)
-                        )
-                        .padding(horizontal = 16.dp, vertical = 12.dp)
+                    modifier =
+                        Modifier
+                            .fillMaxWidth()
+                            .border(
+                                width = if (isAmountFocused) 1.5.dp else 1.dp,
+                                color = if (isAmountFocused) colorScheme.primary else colorScheme.outlineVariant.copy(alpha = 0.4f),
+                                shape = RoundedCornerShape(12.dp),
+                            )
+                            .background(
+                                color = if (isAmountFocused) colorScheme.surfaceContainerLowest else colorScheme.surfaceContainerLow,
+                                shape = RoundedCornerShape(12.dp),
+                            )
+                            .padding(horizontal = 16.dp, vertical = 12.dp),
                 ) {
                     BasicTextField(
                         value = formatCurrencyInput(totalAmount),
@@ -338,9 +353,10 @@ private fun CreateBillMainInfoCard(
                         singleLine = true,
                         maxLines = 1,
                         textStyle = TextStyle(fontSize = 32.sp, fontWeight = FontWeight.ExtraBold, color = colorScheme.primary),
-                        modifier = Modifier
-                            .fillMaxWidth()
-                            .onFocusChanged { isAmountFocused = it.isFocused }
+                        modifier =
+                            Modifier
+                                .fillMaxWidth()
+                                .onFocusChanged { isAmountFocused = it.isFocused },
                     )
                 }
             } else {
@@ -350,7 +366,7 @@ private fun CreateBillMainInfoCard(
                     style = MaterialTheme.typography.labelMedium,
                     fontWeight = FontWeight.Bold,
                     color = colorScheme.onSurfaceVariant.copy(alpha = 0.6f),
-                    letterSpacing = 1.sp
+                    letterSpacing = 1.sp,
                 )
                 Spacer(modifier = Modifier.height(6.dp))
                 Text(
@@ -358,18 +374,24 @@ private fun CreateBillMainInfoCard(
                     fontSize = 32.sp,
                     fontWeight = FontWeight.ExtraBold,
                     color = colorScheme.primary,
-                    modifier = Modifier.padding(start = 4.dp)
+                    modifier = Modifier.padding(start = 4.dp),
                 )
             }
 
             Spacer(modifier = Modifier.height(16.dp))
             Row(
                 verticalAlignment = Alignment.CenterVertically,
-                modifier = Modifier
-                    .background(colorScheme.surfaceContainerLow, RoundedCornerShape(12.dp))
-                    .padding(horizontal = 16.dp, vertical = 8.dp)
+                modifier =
+                    Modifier
+                        .background(colorScheme.surfaceContainerLow, RoundedCornerShape(12.dp))
+                        .padding(horizontal = 16.dp, vertical = 8.dp),
             ) {
-                Icon(Icons.Default.DateRange, contentDescription = null, tint = colorScheme.onSurfaceVariant, modifier = Modifier.size(16.dp))
+                Icon(
+                    Icons.Default.DateRange,
+                    contentDescription = null,
+                    tint = colorScheme.onSurfaceVariant,
+                    modifier = Modifier.size(16.dp),
+                )
                 Spacer(modifier = Modifier.width(8.dp))
                 Text(text = "Hôm nay", fontSize = 14.sp, fontWeight = FontWeight.SemiBold, color = colorScheme.onSurfaceVariant)
             }
@@ -381,7 +403,7 @@ private fun CreateBillMainInfoCard(
 private fun CreateBillPayerSection(
     members: List<Member>,
     currentPayerId: String,
-    onSelectPayer: (String) -> Unit
+    onSelectPayer: (String) -> Unit,
 ) {
     val colorScheme = MaterialTheme.colorScheme
     var expanded by remember { mutableStateOf(false) }
@@ -393,32 +415,34 @@ private fun CreateBillPayerSection(
             style = MaterialTheme.typography.labelSmall,
             fontWeight = FontWeight.Bold,
             color = colorScheme.onSurfaceVariant.copy(alpha = 0.7f),
-            modifier = Modifier.padding(start = 4.dp, bottom = 8.dp)
+            modifier = Modifier.padding(start = 4.dp, bottom = 8.dp),
         )
 
         Card(
             modifier = Modifier.fillMaxWidth(),
             colors = CardDefaults.cardColors(containerColor = colorScheme.surfaceContainerLowest),
             shape = RoundedCornerShape(16.dp),
-            border = BorderStroke(1.dp, colorScheme.outlineVariant.copy(alpha = 0.3f))
+            border = BorderStroke(1.dp, colorScheme.outlineVariant.copy(alpha = 0.3f)),
         ) {
             Row(
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .clickable { expanded = true }
-                    .padding(16.dp),
+                modifier =
+                    Modifier
+                        .fillMaxWidth()
+                        .clickable { expanded = true }
+                        .padding(16.dp),
                 verticalAlignment = Alignment.CenterVertically,
-                horizontalArrangement = Arrangement.SpaceBetween
+                horizontalArrangement = Arrangement.SpaceBetween,
             ) {
                 Row(verticalAlignment = Alignment.CenterVertically) {
                     Box(
-                        modifier = Modifier
-                            .size(40.dp)
-                            .border(2.dp, colorScheme.primaryContainer, CircleShape)
-                            .padding(2.dp)
-                            .clip(CircleShape)
-                            .background(colorScheme.primary),
-                        contentAlignment = Alignment.Center
+                        modifier =
+                            Modifier
+                                .size(40.dp)
+                                .border(2.dp, colorScheme.primaryContainer, CircleShape)
+                                .padding(2.dp)
+                                .clip(CircleShape)
+                                .background(colorScheme.primary),
+                        contentAlignment = Alignment.Center,
                     ) {
                         Text(payer?.initial ?: "-", color = colorScheme.surfaceContainerLowest, fontWeight = FontWeight.Bold)
                     }
@@ -437,7 +461,7 @@ private fun CreateBillPayerSection(
                         onClick = {
                             onSelectPayer(member.id)
                             expanded = false
-                        }
+                        },
                     )
                 }
             }
@@ -448,45 +472,47 @@ private fun CreateBillPayerSection(
 @Composable
 private fun CreateBillSplitMethodTabs(
     selectedMethod: SplitMethod,
-    onMethodSelect: (SplitMethod) -> Unit
+    onMethodSelect: (SplitMethod) -> Unit,
 ) {
     val colorScheme = MaterialTheme.colorScheme
-    val tabs = listOf(
-        SplitMethod.EQUAL to "Chia đều",
-        SplitMethod.CUSTOM to "Tự nhập",
-        SplitMethod.ITEMIZED to "Theo món"
-    )
+    val tabs =
+        listOf(
+            SplitMethod.EQUAL to "Chia đều",
+            SplitMethod.CUSTOM to "Tự nhập",
+            SplitMethod.ITEMIZED to "Theo món",
+        )
 
     Surface(
         color = colorScheme.surfaceContainerLow,
         shape = RoundedCornerShape(50),
-        modifier = Modifier.fillMaxWidth()
+        modifier = Modifier.fillMaxWidth(),
     ) {
         Row(modifier = Modifier.padding(4.dp), verticalAlignment = Alignment.CenterVertically) {
             tabs.forEach { (method, label) ->
                 val selected = method == selectedMethod
                 Box(
-                    modifier = Modifier
-                        .weight(1f)
-                        .then(
-                            if (selected) {
-                                Modifier.background(
-                                    brush = Brush.verticalGradient(listOf(colorScheme.primaryContainer, colorScheme.primary)),
-                                    shape = RoundedCornerShape(50)
-                                )
-                            } else {
-                                Modifier
-                            }
-                        )
-                        .clickable { onMethodSelect(method) }
-                        .padding(vertical = 10.dp),
-                    contentAlignment = Alignment.Center
+                    modifier =
+                        Modifier
+                            .weight(1f)
+                            .then(
+                                if (selected) {
+                                    Modifier.background(
+                                        brush = Brush.verticalGradient(listOf(colorScheme.primaryContainer, colorScheme.primary)),
+                                        shape = RoundedCornerShape(50),
+                                    )
+                                } else {
+                                    Modifier
+                                },
+                            )
+                            .clickable { onMethodSelect(method) }
+                            .padding(vertical = 10.dp),
+                    contentAlignment = Alignment.Center,
                 ) {
                     Text(
                         label,
                         color = if (selected) colorScheme.surfaceContainerLowest else colorScheme.onSurfaceVariant.copy(alpha = 0.7f),
                         fontWeight = FontWeight.Bold,
-                        fontSize = 13.sp
+                        fontSize = 13.sp,
                     )
                 }
             }
@@ -500,14 +526,14 @@ private fun EqualSplitDetailsList(
     selectedIds: Set<String>,
     payerId: String,
     onToggle: (String) -> Unit,
-    onSelectPayer: (String) -> Unit
+    onSelectPayer: (String) -> Unit,
 ) {
     SplitMemberListCard(
         members = members,
         selectedIds = selectedIds,
         payerId = payerId,
         onToggle = onToggle,
-        onSelectPayer = onSelectPayer
+        onSelectPayer = onSelectPayer,
     )
 }
 
@@ -520,31 +546,32 @@ private fun DineInteractiveInputBox(
     placeholder: String = "",
     textStyle: TextStyle = TextStyle.Default,
     singleLine: Boolean = true,
-    maxLines: Int = 1
+    maxLines: Int = 1,
 ) {
     val colorScheme = MaterialTheme.colorScheme
     var isFocused by remember { mutableStateOf(false) }
-    
+
     Box(
-        modifier = modifier
-            .border(
-                width = if (isFocused) 1.5.dp else 1.dp,
-                color = if (isFocused) colorScheme.primary else colorScheme.outlineVariant.copy(alpha = 0.4f),
-                shape = RoundedCornerShape(12.dp)
-            )
-            .background(
-                color = if (isFocused) colorScheme.surfaceContainerLowest else colorScheme.surfaceContainerLow,
-                shape = RoundedCornerShape(12.dp)
-            )
-            .padding(horizontal = 12.dp, vertical = 10.dp)
+        modifier =
+            modifier
+                .border(
+                    width = if (isFocused) 1.5.dp else 1.dp,
+                    color = if (isFocused) colorScheme.primary else colorScheme.outlineVariant.copy(alpha = 0.4f),
+                    shape = RoundedCornerShape(12.dp),
+                )
+                .background(
+                    color = if (isFocused) colorScheme.surfaceContainerLowest else colorScheme.surfaceContainerLow,
+                    shape = RoundedCornerShape(12.dp),
+                )
+                .padding(horizontal = 12.dp, vertical = 10.dp),
     ) {
         if (value.isEmpty() && placeholder.isNotEmpty()) {
             Text(
                 text = placeholder,
-                style = textStyle.copy(color = colorScheme.outline)
+                style = textStyle.copy(color = colorScheme.outline),
             )
         }
-        
+
         BasicTextField(
             value = value,
             onValueChange = onValueChange,
@@ -552,9 +579,10 @@ private fun DineInteractiveInputBox(
             textStyle = textStyle,
             singleLine = singleLine,
             maxLines = maxLines,
-            modifier = Modifier
-                .fillMaxWidth()
-                .onFocusChanged { isFocused = it.isFocused }
+            modifier =
+                Modifier
+                    .fillMaxWidth()
+                    .onFocusChanged { isFocused = it.isFocused },
         )
     }
 }
@@ -565,36 +593,42 @@ private fun CustomSplitDetailsList(
     selectedIds: Set<String>,
     customAmounts: Map<String, String>,
     onToggle: (String) -> Unit,
-    onAmountChange: (String, String) -> Unit
+    onAmountChange: (String, String) -> Unit,
 ) {
     val colorScheme = MaterialTheme.colorScheme
     Card(
         modifier = Modifier.fillMaxWidth(),
         colors = CardDefaults.cardColors(containerColor = colorScheme.surfaceContainerLowest),
         elevation = CardDefaults.cardElevation(defaultElevation = 2.dp),
-        shape = RoundedCornerShape(16.dp)
+        shape = RoundedCornerShape(16.dp),
     ) {
         Column {
             members.forEach { member ->
                 val included = selectedIds.contains(member.id)
                 Row(
-                    modifier = Modifier
-                        .fillMaxWidth()
-                        .padding(16.dp),
+                    modifier =
+                        Modifier
+                            .fillMaxWidth()
+                            .padding(16.dp),
                     verticalAlignment = Alignment.CenterVertically,
-                    horizontalArrangement = Arrangement.SpaceBetween
+                    horizontalArrangement = Arrangement.SpaceBetween,
                 ) {
                     Row(
-                        modifier = Modifier
-                            .weight(1f)
-                            .clickable { onToggle(member.id) },
-                        verticalAlignment = Alignment.CenterVertically
+                        modifier =
+                            Modifier
+                                .weight(1f)
+                                .clickable { onToggle(member.id) },
+                        verticalAlignment = Alignment.CenterVertically,
                     ) {
                         AvatarBubble(member = member, selected = included)
                         Spacer(modifier = Modifier.width(12.dp))
                         Column {
                             Text(member.name, fontWeight = FontWeight.Bold, color = colorScheme.onSurface)
-                            Text(if (included) "Tính vào hóa đơn" else "Không tham gia", fontSize = 12.sp, color = colorScheme.onSurfaceVariant)
+                            Text(
+                                if (included) "Tính vào hóa đơn" else "Không tham gia",
+                                fontSize = 12.sp,
+                                color = colorScheme.onSurfaceVariant,
+                            )
                         }
                     }
                     val customAmount = customAmounts[member.id].orEmpty()
@@ -604,7 +638,7 @@ private fun CustomSplitDetailsList(
                         enabled = included,
                         placeholder = "0 đ",
                         textStyle = TextStyle(fontSize = 14.sp, fontWeight = FontWeight.Bold, color = colorScheme.primary),
-                        modifier = Modifier.width(104.dp)
+                        modifier = Modifier.width(104.dp),
                     )
                 }
                 HorizontalDivider(color = colorScheme.outlineVariant.copy(alpha = 0.2f))
@@ -619,33 +653,34 @@ private fun ItemizedSplitDetailsList(
     billItems: List<BillItem>,
     onAddItem: () -> Unit,
     onRemoveItem: (BillItem) -> Unit,
-    onUpdateItem: (BillItem) -> Unit
+    onUpdateItem: (BillItem) -> Unit,
 ) {
     val colorScheme = MaterialTheme.colorScheme
     Card(
         modifier = Modifier.fillMaxWidth(),
         colors = CardDefaults.cardColors(containerColor = colorScheme.surfaceContainerLowest),
         elevation = CardDefaults.cardElevation(defaultElevation = 2.dp),
-        shape = RoundedCornerShape(16.dp)
+        shape = RoundedCornerShape(16.dp),
     ) {
         Column(modifier = Modifier.padding(16.dp), verticalArrangement = Arrangement.spacedBy(14.dp)) {
             billItems.forEachIndexed { index, item ->
                 Column(
-                    modifier = Modifier
-                        .fillMaxWidth()
-                        .background(colorScheme.surfaceContainerLow, RoundedCornerShape(14.dp))
-                        .padding(14.dp)
+                    modifier =
+                        Modifier
+                            .fillMaxWidth()
+                            .background(colorScheme.surfaceContainerLow, RoundedCornerShape(14.dp))
+                            .padding(14.dp),
                 ) {
                     Row(
                         verticalAlignment = Alignment.CenterVertically,
-                        horizontalArrangement = Arrangement.spacedBy(12.dp)
+                        horizontalArrangement = Arrangement.spacedBy(12.dp),
                     ) {
                         DineInteractiveInputBox(
                             value = item.name,
                             onValueChange = { onUpdateItem(item.copy(name = it)) },
                             placeholder = "Tên món ăn",
                             textStyle = TextStyle(fontSize = 15.sp, fontWeight = FontWeight.Bold, color = colorScheme.onSurface),
-                            modifier = Modifier.weight(1f)
+                            modifier = Modifier.weight(1f),
                         )
 
                         DineInteractiveInputBox(
@@ -655,35 +690,36 @@ private fun ItemizedSplitDetailsList(
                             },
                             placeholder = "0 đ",
                             textStyle = TextStyle(fontSize = 15.sp, fontWeight = FontWeight.Bold, color = colorScheme.primary),
-                            modifier = Modifier.width(112.dp)
+                            modifier = Modifier.width(112.dp),
                         )
                     }
                     Text(
                         text = "Nhập giá món và chọn người cùng ăn món này",
                         fontSize = 11.sp,
                         color = colorScheme.onSurfaceVariant,
-                        modifier = Modifier.padding(top = 8.dp)
+                        modifier = Modifier.padding(top = 8.dp),
                     )
                     Spacer(modifier = Modifier.height(10.dp))
                     Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
                         members.forEach { member ->
                             val selected = item.sharedByMemberIds.contains(member.id)
                             Box(
-                                modifier = Modifier
-                                    .clip(RoundedCornerShape(50))
-                                    .background(if (selected) colorScheme.primary else colorScheme.surfaceContainerHigh)
-                                    .clickable {
-                                        val ids = item.sharedByMemberIds.toMutableList()
-                                        if (selected) ids.remove(member.id) else ids.add(member.id)
-                                        onUpdateItem(item.copy(sharedByMemberIds = ids))
-                                    }
-                                    .padding(horizontal = 10.dp, vertical = 6.dp)
+                                modifier =
+                                    Modifier
+                                        .clip(RoundedCornerShape(50))
+                                        .background(if (selected) colorScheme.primary else colorScheme.surfaceContainerHigh)
+                                        .clickable {
+                                            val ids = item.sharedByMemberIds.toMutableList()
+                                            if (selected) ids.remove(member.id) else ids.add(member.id)
+                                            onUpdateItem(item.copy(sharedByMemberIds = ids))
+                                        }
+                                        .padding(horizontal = 10.dp, vertical = 6.dp),
                             ) {
                                 Text(
                                     member.initial,
                                     color = if (selected) colorScheme.surfaceContainerLowest else colorScheme.onSurfaceVariant,
                                     fontSize = 12.sp,
-                                    fontWeight = FontWeight.Bold
+                                    fontWeight = FontWeight.Bold,
                                 )
                             }
                         }
@@ -695,20 +731,21 @@ private fun ItemizedSplitDetailsList(
                             color = colorScheme.error,
                             fontSize = 12.sp,
                             fontWeight = FontWeight.Bold,
-                            modifier = Modifier.clickable { onRemoveItem(item) }
+                            modifier = Modifier.clickable { onRemoveItem(item) },
                         )
                     }
                 }
             }
 
             Row(
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .clip(RoundedCornerShape(14.dp))
-                    .clickable { onAddItem() }
-                    .padding(14.dp),
+                modifier =
+                    Modifier
+                        .fillMaxWidth()
+                        .clip(RoundedCornerShape(14.dp))
+                        .clickable { onAddItem() }
+                        .padding(14.dp),
                 horizontalArrangement = Arrangement.Center,
-                verticalAlignment = Alignment.CenterVertically
+                verticalAlignment = Alignment.CenterVertically,
             ) {
                 Icon(Icons.Default.Add, contentDescription = null, tint = colorScheme.primary, modifier = Modifier.size(20.dp))
                 Spacer(modifier = Modifier.width(8.dp))
@@ -724,34 +761,44 @@ private fun SplitMemberListCard(
     selectedIds: Set<String>,
     payerId: String,
     onToggle: (String) -> Unit,
-    onSelectPayer: (String) -> Unit
+    onSelectPayer: (String) -> Unit,
 ) {
     val colorScheme = MaterialTheme.colorScheme
     Card(
         modifier = Modifier.fillMaxWidth(),
         colors = CardDefaults.cardColors(containerColor = colorScheme.surfaceContainerLowest),
         elevation = CardDefaults.cardElevation(defaultElevation = 2.dp),
-        shape = RoundedCornerShape(16.dp)
+        shape = RoundedCornerShape(16.dp),
     ) {
         Column {
             members.forEach { member ->
                 val included = selectedIds.contains(member.id)
                 Row(
-                    modifier = Modifier
-                        .fillMaxWidth()
-                        .background(if (member.isMe) colorScheme.primaryContainer.copy(alpha = 0.15f) else Color.Transparent)
-                        .padding(16.dp),
+                    modifier =
+                        Modifier
+                            .fillMaxWidth()
+                            .background(if (member.isMe) colorScheme.primaryContainer.copy(alpha = 0.15f) else Color.Transparent)
+                            .padding(16.dp),
                     verticalAlignment = Alignment.CenterVertically,
-                    horizontalArrangement = Arrangement.SpaceBetween
+                    horizontalArrangement = Arrangement.SpaceBetween,
                 ) {
                     Row(verticalAlignment = Alignment.CenterVertically) {
                         Box(
-                            modifier = Modifier
-                                .size(40.dp)
-                                .clip(CircleShape)
-                                .background(if (member.id == payerId) colorScheme.primary else if (member.isMe) colorScheme.primary else colorScheme.outlineVariant)
-                                .clickable { onSelectPayer(member.id) },
-                            contentAlignment = Alignment.Center
+                            modifier =
+                                Modifier
+                                    .size(40.dp)
+                                    .clip(CircleShape)
+                                    .background(
+                                        if (member.id == payerId) {
+                                            colorScheme.primary
+                                        } else if (member.isMe) {
+                                            colorScheme.primary
+                                        } else {
+                                            colorScheme.outlineVariant
+                                        },
+                                    )
+                                    .clickable { onSelectPayer(member.id) },
+                            contentAlignment = Alignment.Center,
                         ) {
                             Text(member.initial, color = colorScheme.surfaceContainerLowest, fontWeight = FontWeight.Bold)
                         }
@@ -762,19 +809,25 @@ private fun SplitMemberListCard(
                                 text = if (included) "Đang tham gia" else "Không tham gia",
                                 fontSize = 12.sp,
                                 fontWeight = FontWeight.Medium,
-                                color = if (member.isMe) colorScheme.primary else colorScheme.onSurfaceVariant
+                                color = if (member.isMe) colorScheme.primary else colorScheme.onSurfaceVariant,
                             )
                         }
                     }
                     Box(
-                        modifier = Modifier
-                            .size(24.dp)
-                            .clip(CircleShape)
-                            .background(if (included) colorScheme.primary else colorScheme.surfaceContainerHigh)
-                            .clickable { onToggle(member.id) },
-                        contentAlignment = Alignment.Center
+                        modifier =
+                            Modifier
+                                .size(24.dp)
+                                .clip(CircleShape)
+                                .background(if (included) colorScheme.primary else colorScheme.surfaceContainerHigh)
+                                .clickable { onToggle(member.id) },
+                        contentAlignment = Alignment.Center,
                     ) {
-                        Icon(Icons.Default.Check, contentDescription = null, tint = if (included) colorScheme.surfaceContainerLowest else colorScheme.onSurfaceVariant, modifier = Modifier.size(16.dp))
+                        Icon(
+                            Icons.Default.Check,
+                            contentDescription = null,
+                            tint = if (included) colorScheme.surfaceContainerLowest else colorScheme.onSurfaceVariant,
+                            modifier = Modifier.size(16.dp),
+                        )
                     }
                 }
                 HorizontalDivider(color = colorScheme.outlineVariant.copy(alpha = 0.2f))
@@ -784,14 +837,18 @@ private fun SplitMemberListCard(
 }
 
 @Composable
-private fun AvatarBubble(member: Member, selected: Boolean) {
+private fun AvatarBubble(
+    member: Member,
+    selected: Boolean,
+) {
     val colorScheme = MaterialTheme.colorScheme
     Box(
-        modifier = Modifier
-            .size(40.dp)
-            .clip(CircleShape)
-            .background(if (selected) colorScheme.primary else colorScheme.outlineVariant),
-        contentAlignment = Alignment.Center
+        modifier =
+            Modifier
+                .size(40.dp)
+                .clip(CircleShape)
+                .background(if (selected) colorScheme.primary else colorScheme.outlineVariant),
+        contentAlignment = Alignment.Center,
     ) {
         Text(member.initial, color = colorScheme.surfaceContainerLowest, fontWeight = FontWeight.Bold)
     }
@@ -800,28 +857,30 @@ private fun AvatarBubble(member: Member, selected: Boolean) {
 @Composable
 private fun CreateBillBottomAction(
     isLoading: Boolean = false,
-    onConfirm: () -> Unit
+    onConfirm: () -> Unit,
 ) {
     val colorScheme = MaterialTheme.colorScheme
     Box(
-        modifier = Modifier
-            .fillMaxWidth()
-            .background(
-                brush = Brush.verticalGradient(
-                    colors = listOf(Color.Transparent, colorScheme.surface, colorScheme.surface),
-                    startY = 0f,
-                    endY = 100f
+        modifier =
+            Modifier
+                .fillMaxWidth()
+                .background(
+                    brush =
+                        Brush.verticalGradient(
+                            colors = listOf(Color.Transparent, colorScheme.surface, colorScheme.surface),
+                            startY = 0f,
+                            endY = 100f,
+                        ),
                 )
-            )
-            .padding(horizontal = 24.dp, vertical = 24.dp)
-            .navigationBarsPadding()
+                .padding(horizontal = 24.dp, vertical = 24.dp)
+                .navigationBarsPadding(),
     ) {
         PrimaryButton(
             text = "Xác nhận hóa đơn",
             onClick = onConfirm,
             enabled = !isLoading,
             isLoading = isLoading,
-            modifier = Modifier.fillMaxWidth()
+            modifier = Modifier.fillMaxWidth(),
         )
     }
 }

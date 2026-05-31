@@ -8,20 +8,20 @@ import java.util.Calendar
 data class PieCategorySlice(
     val category: String,
     val amount: Double,
-    val percentage: Float
+    val percentage: Float,
 )
 
 /** Chart-ready input for a daily expense bar chart in a month. */
 data class DailyExpenseBar(
     val dayOfMonth: Int,
-    val amount: Double
+    val amount: Double,
 )
 
 /** Monthly totals used across dashboard, chart summary, and notifications. */
 data class MonthlySummary(
     val totalIncome: Double,
     val totalExpense: Double,
-    val balance: Double
+    val balance: Double,
 )
 
 /** Combined chart state for Personal dashboard. Helps keep data transformation centralized and reusable. */
@@ -30,32 +30,32 @@ data class PersonalChartState(
     val dailyExpenseBars: List<DailyExpenseBar> = emptyList(),
     val monthlySummary: MonthlySummary = MonthlySummary(0.0, 0.0, 0.0),
     val insights: List<PersonalInsight> = emptyList(),
-    val safeToSpend: SafeToSpendForecast = SafeToSpendForecast()
+    val safeToSpend: SafeToSpendForecast = SafeToSpendForecast(),
 )
 
 enum class PersonalInsightTone {
     POSITIVE,
     WARNING,
-    INFO
+    INFO,
 }
 
 data class PersonalInsight(
     val title: String,
     val message: String,
-    val tone: PersonalInsightTone = PersonalInsightTone.INFO
+    val tone: PersonalInsightTone = PersonalInsightTone.INFO,
 )
 
 enum class SafeToSpendStatus {
     HEALTHY,
     WATCH,
-    OVER
+    OVER,
 }
 
 data class SafeToSpendForecast(
     val dailyAmount: Double = 0.0,
     val daysLeft: Int = 0,
     val status: SafeToSpendStatus = SafeToSpendStatus.WATCH,
-    val message: String = "Add income and expenses to unlock daily guidance."
+    val message: String = "Add income and expenses to unlock daily guidance.",
 )
 
 fun List<Transaction>.toMonthlySummary(): MonthlySummary {
@@ -64,7 +64,7 @@ fun List<Transaction>.toMonthlySummary(): MonthlySummary {
     return MonthlySummary(
         totalIncome = income,
         totalExpense = expense,
-        balance = income - expense
+        balance = income - expense,
     )
 }
 
@@ -72,8 +72,9 @@ fun List<Transaction>.toPieCategorySlices(): List<PieCategorySlice> {
     val expenseTransactions = filter { it.type == TransactionType.EXPENSE }
     if (expenseTransactions.isEmpty()) return emptyList()
 
-    val totalsByCategory = expenseTransactions.groupBy { it.category }
-        .mapValues { (_, items) -> items.sumOf { it.amount } }
+    val totalsByCategory =
+        expenseTransactions.groupBy { it.category }
+            .mapValues { (_, items) -> items.sumOf { it.amount } }
 
     val totalAmount = totalsByCategory.values.sum()
     if (totalAmount <= 0.0) return emptyList()
@@ -84,7 +85,7 @@ fun List<Transaction>.toPieCategorySlices(): List<PieCategorySlice> {
             PieCategorySlice(
                 category = category,
                 amount = amount,
-                percentage = ((amount / totalAmount) * 100.0).toFloat()
+                percentage = ((amount / totalAmount) * 100.0).toFloat(),
             )
         }
 }
@@ -92,19 +93,20 @@ fun List<Transaction>.toPieCategorySlices(): List<PieCategorySlice> {
 fun List<Transaction>.toDailyExpenseBars(): List<DailyExpenseBar> {
     if (isEmpty()) return emptyList()
 
-    val expenseByDay = filter { it.type == TransactionType.EXPENSE }
-        .groupBy { transaction ->
-            Calendar.getInstance().apply { timeInMillis = transaction.date }
-                .get(Calendar.DAY_OF_MONTH)
-        }
-        .mapValues { (_, items) -> items.sumOf { it.amount } }
+    val expenseByDay =
+        filter { it.type == TransactionType.EXPENSE }
+            .groupBy { transaction ->
+                Calendar.getInstance().apply { timeInMillis = transaction.date }
+                    .get(Calendar.DAY_OF_MONTH)
+            }
+            .mapValues { (_, items) -> items.sumOf { it.amount } }
 
     return expenseByDay.entries
         .sortedBy { it.key }
         .map { (day, amount) ->
             DailyExpenseBar(
                 dayOfMonth = day,
-                amount = amount
+                amount = amount,
             )
         }
 }
@@ -119,19 +121,20 @@ fun List<Transaction>.toMonthlyInsights(referenceMillis: Long = System.currentTi
     if (previousSummary.totalExpense > 0.0) {
         val delta = currentSummary.totalExpense - previousSummary.totalExpense
         val percent = (kotlin.math.abs(delta) / previousSummary.totalExpense * 100.0).toInt()
-        insights += if (delta > 0.0) {
-            PersonalInsight(
-                title = "Expense is up",
-                message = "You have spent $percent% more than last month so far.",
-                tone = PersonalInsightTone.WARNING
-            )
-        } else {
-            PersonalInsight(
-                title = "Expense is down",
-                message = "You have spent $percent% less than last month so far.",
-                tone = PersonalInsightTone.POSITIVE
-            )
-        }
+        insights +=
+            if (delta > 0.0) {
+                PersonalInsight(
+                    title = "Expense is up",
+                    message = "You have spent $percent% more than last month so far.",
+                    tone = PersonalInsightTone.WARNING,
+                )
+            } else {
+                PersonalInsight(
+                    title = "Expense is down",
+                    message = "You have spent $percent% less than last month so far.",
+                    tone = PersonalInsightTone.POSITIVE,
+                )
+            }
     }
 
     currentMonth
@@ -140,43 +143,49 @@ fun List<Transaction>.toMonthlyInsights(referenceMillis: Long = System.currentTi
         .mapValues { (_, items) -> items.sumOf { it.amount } }
         .maxByOrNull { it.value }
         ?.let { (category, amount) ->
-            insights += PersonalInsight(
-                title = "Top category",
-                message = "$category is your largest spend this month.",
-                tone = if (amount > currentSummary.totalIncome && currentSummary.totalIncome > 0.0) {
-                    PersonalInsightTone.WARNING
-                } else {
-                    PersonalInsightTone.INFO
-                }
-            )
+            insights +=
+                PersonalInsight(
+                    title = "Top category",
+                    message = "$category is your largest spend this month.",
+                    tone =
+                        if (amount > currentSummary.totalIncome && currentSummary.totalIncome > 0.0) {
+                            PersonalInsightTone.WARNING
+                        } else {
+                            PersonalInsightTone.INFO
+                        },
+                )
         }
 
-    val splitExpense = currentMonth
-        .filter { it.type == TransactionType.EXPENSE && it.source.name == "SPLIT" }
-        .sumOf { it.amount }
+    val splitExpense =
+        currentMonth
+            .filter { it.type == TransactionType.EXPENSE && it.source.name == "SPLIT" }
+            .sumOf { it.amount }
     if (splitExpense > 0.0 && currentSummary.totalExpense > 0.0) {
         val percent = (splitExpense / currentSummary.totalExpense * 100.0).toInt()
-        insights += PersonalInsight(
-            title = "Split impact",
-            message = "Split bills make up $percent% of your monthly expenses.",
-            tone = PersonalInsightTone.INFO
-        )
+        insights +=
+            PersonalInsight(
+                title = "Split impact",
+                message = "Split bills make up $percent% of your monthly expenses.",
+                tone = PersonalInsightTone.INFO,
+            )
     }
 
-    val biggestDay = currentMonth
-        .filter { it.type == TransactionType.EXPENSE }
-        .groupBy { transaction ->
-            Calendar.getInstance().apply { timeInMillis = transaction.date }.get(Calendar.DAY_OF_WEEK)
-        }
-        .mapValues { (_, items) -> items.sumOf { it.amount } }
-        .maxByOrNull { it.value }
+    val biggestDay =
+        currentMonth
+            .filter { it.type == TransactionType.EXPENSE }
+            .groupBy { transaction ->
+                Calendar.getInstance().apply { timeInMillis = transaction.date }.get(Calendar.DAY_OF_WEEK)
+            }
+            .mapValues { (_, items) -> items.sumOf { it.amount } }
+            .maxByOrNull { it.value }
 
     if (biggestDay != null) {
-        insights += PersonalInsight(
-            title = "Spending pattern",
-            message = "${dayName(biggestDay.key)} is your highest-spend day this month.",
-            tone = PersonalInsightTone.INFO
-        )
+        insights +=
+            PersonalInsight(
+                title = "Spending pattern",
+                message = "${dayName(biggestDay.key)} is your highest-spend day this month.",
+                tone = PersonalInsightTone.INFO,
+            )
     }
 
     return insights.take(3).ifEmpty {
@@ -184,8 +193,8 @@ fun List<Transaction>.toMonthlyInsights(referenceMillis: Long = System.currentTi
             PersonalInsight(
                 title = "Start tracking",
                 message = "Add a few more entries to unlock monthly patterns.",
-                tone = PersonalInsightTone.INFO
-            )
+                tone = PersonalInsightTone.INFO,
+            ),
         )
     }
 }
@@ -193,7 +202,7 @@ fun List<Transaction>.toMonthlyInsights(referenceMillis: Long = System.currentTi
 fun List<Transaction>.toSafeToSpendForecast(
     referenceMillis: Long = System.currentTimeMillis(),
     upcomingRecurringExpense: Double = 0.0,
-    savingsGoal: Double = 0.0
+    savingsGoal: Double = 0.0,
 ): SafeToSpendForecast {
     val monthTransactions = filterByMonthOffset(referenceMillis, 0)
     val summary = monthTransactions.toMonthlySummary()
@@ -201,30 +210,36 @@ fun List<Transaction>.toSafeToSpendForecast(
     val daysLeft = calendar.getActualMaximum(Calendar.DAY_OF_MONTH) - calendar.get(Calendar.DAY_OF_MONTH) + 1
     val available = summary.totalIncome - summary.totalExpense - upcomingRecurringExpense - savingsGoal
     val daily = if (daysLeft > 0) (available / daysLeft).coerceAtLeast(0.0) else 0.0
-    val status = when {
-        available <= 0.0 -> SafeToSpendStatus.OVER
-        daily < 100_000.0 -> SafeToSpendStatus.WATCH
-        else -> SafeToSpendStatus.HEALTHY
-    }
-    val message = when (status) {
-        SafeToSpendStatus.HEALTHY -> "You have room to spend while staying on track."
-        SafeToSpendStatus.WATCH -> "Keep purchases tight for the rest of the month."
-        SafeToSpendStatus.OVER -> "You are past the monthly buffer. Pause non-essential spend."
-    }
+    val status =
+        when {
+            available <= 0.0 -> SafeToSpendStatus.OVER
+            daily < 100_000.0 -> SafeToSpendStatus.WATCH
+            else -> SafeToSpendStatus.HEALTHY
+        }
+    val message =
+        when (status) {
+            SafeToSpendStatus.HEALTHY -> "You have room to spend while staying on track."
+            SafeToSpendStatus.WATCH -> "Keep purchases tight for the rest of the month."
+            SafeToSpendStatus.OVER -> "You are past the monthly buffer. Pause non-essential spend."
+        }
 
     return SafeToSpendForecast(
         dailyAmount = daily,
         daysLeft = daysLeft,
         status = status,
-        message = message
+        message = message,
     )
 }
 
-private fun List<Transaction>.filterByMonthOffset(referenceMillis: Long, offset: Int): List<Transaction> {
-    val target = Calendar.getInstance().apply {
-        timeInMillis = referenceMillis
-        add(Calendar.MONTH, offset)
-    }
+private fun List<Transaction>.filterByMonthOffset(
+    referenceMillis: Long,
+    offset: Int,
+): List<Transaction> {
+    val target =
+        Calendar.getInstance().apply {
+            timeInMillis = referenceMillis
+            add(Calendar.MONTH, offset)
+        }
     val targetMonth = target.get(Calendar.MONTH)
     val targetYear = target.get(Calendar.YEAR)
 

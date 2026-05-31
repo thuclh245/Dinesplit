@@ -23,9 +23,11 @@ object AuthInputValidator {
         return null
     }
 
-    fun validateConfirmPassword(password: String, confirmPassword: String): String? {
+    fun validateConfirmPassword(
+        password: String,
+        confirmPassword: String,
+    ): String? {
         if (confirmPassword != password) return "Password confirmation does not match"
         return null
     }
 }
-

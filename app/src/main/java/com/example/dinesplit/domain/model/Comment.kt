@@ -8,5 +8,5 @@ data class Comment(
     val authorName: String = "",
     val authorAvatar: String = "",
     val content: String = "",
-    val createdAt: Date? = null
+    val createdAt: Date? = null,
 )

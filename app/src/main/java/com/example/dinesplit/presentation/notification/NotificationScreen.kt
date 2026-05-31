@@ -63,7 +63,7 @@ import com.example.dinesplit.domain.model.NotificationType
 @Composable
 fun NotificationScreen(
     onBack: () -> Unit = {},
-    onNotificationClick: (Notification) -> Unit = {}
+    onNotificationClick: (Notification) -> Unit = {},
 ) {
     val viewModel: NotificationViewModel = viewModel()
     val notifications by viewModel.notifications.collectAsState()
@@ -82,24 +82,24 @@ fun NotificationScreen(
             IconButton(onClick = viewModel::refreshNotifications) {
                 Icon(
                     imageVector = Icons.Default.Refresh,
-                    contentDescription = "Refresh notifications"
+                    contentDescription = "Refresh notifications",
                 )
             }
             IconButton(
                 onClick = viewModel::markAllAsRead,
-                enabled = uiState.unreadCount > 0
+                enabled = uiState.unreadCount > 0,
             ) {
                 Icon(
                     imageVector = Icons.Default.DoneAll,
-                    contentDescription = "Mark all notifications as read"
+                    contentDescription = "Mark all notifications as read",
                 )
             }
-        }
+        },
     ) {
         LazyColumn(
             modifier = Modifier.fillMaxSize(),
             contentPadding = PaddingValues(bottom = AppDimens.spaceXl),
-            verticalArrangement = Arrangement.spacedBy(AppDimens.spaceLg)
+            verticalArrangement = Arrangement.spacedBy(AppDimens.spaceLg),
         ) {
             if (uiState.isLoading) {
                 item {
@@ -111,7 +111,7 @@ fun NotificationScreen(
                         ErrorStateBlock(
                             title = "Cannot load notifications",
                             subtitle = message,
-                            onRetryClick = { viewModel.refreshNotifications() }
+                            onRetryClick = { viewModel.refreshNotifications() },
                         )
                     }
                 }
@@ -122,7 +122,7 @@ fun NotificationScreen(
                         totalCount = notifications.size,
                         personalCount = notifications.count { it.isPersonalAlert() },
                         splitCount = notifications.count { it.isSplitAlert() },
-                        activityCount = notifications.count { it.type == NotificationType.ACTIVITY_UPDATE }
+                        activityCount = notifications.count { it.type == NotificationType.ACTIVITY_UPDATE },
                     )
                 }
 
@@ -130,7 +130,7 @@ fun NotificationScreen(
                     NotificationFilterBar(
                         selectedFilter = selectedFilter,
                         onFilterSelected = { selectedFilter = it },
-                        notifications = notifications
+                        notifications = notifications,
                     )
                 }
 
@@ -138,7 +138,7 @@ fun NotificationScreen(
                     item {
                         EmptyStateBlock(
                             title = emptyTitleFor(selectedFilter),
-                            subtitle = "Personal alerts, split events, and social updates will appear here when they are generated."
+                            subtitle = "Personal alerts, split events, and social updates will appear here when they are generated.",
                         )
                     }
                 } else {
@@ -147,7 +147,7 @@ fun NotificationScreen(
                             title = "New",
                             notifications = newNotifications,
                             viewModel = viewModel,
-                            onNotificationClick = onNotificationClick
+                            onNotificationClick = onNotificationClick,
                         )
                     }
 
@@ -156,7 +156,7 @@ fun NotificationScreen(
                             title = "Earlier",
                             notifications = earlierNotifications,
                             viewModel = viewModel,
-                            onNotificationClick = onNotificationClick
+                            onNotificationClick = onNotificationClick,
                         )
                     }
                 }
@@ -171,42 +171,43 @@ private fun NotificationOverviewCard(
     totalCount: Int,
     personalCount: Int,
     splitCount: Int,
-    activityCount: Int
+    activityCount: Int,
 ) {
     AppCard {
         Column(verticalArrangement = Arrangement.spacedBy(AppDimens.spaceMd)) {
             Row(
                 modifier = Modifier.fillMaxWidth(),
                 horizontalArrangement = Arrangement.spacedBy(AppDimens.spaceMd),
-                verticalAlignment = Alignment.CenterVertically
+                verticalAlignment = Alignment.CenterVertically,
             ) {
                 Box(
-                    modifier = Modifier
-                        .size(48.dp)
-                        .clip(CircleShape)
-                        .background(MaterialTheme.colorScheme.primary.copy(alpha = 0.12f)),
-                    contentAlignment = Alignment.Center
+                    modifier =
+                        Modifier
+                            .size(48.dp)
+                            .clip(CircleShape)
+                            .background(MaterialTheme.colorScheme.primary.copy(alpha = 0.12f)),
+                    contentAlignment = Alignment.Center,
                 ) {
                     Icon(
                         imageVector = Icons.Filled.NotificationsActive,
                         contentDescription = null,
-                        tint = MaterialTheme.colorScheme.primary
+                        tint = MaterialTheme.colorScheme.primary,
                     )
                 }
 
                 Column(
                     modifier = Modifier.weight(1f),
-                    verticalArrangement = Arrangement.spacedBy(AppDimens.spaceXs)
+                    verticalArrangement = Arrangement.spacedBy(AppDimens.spaceXs),
                 ) {
                     Text(
                         text = "Inbox status",
                         style = MaterialTheme.typography.titleLarge,
-                        fontWeight = FontWeight.ExtraBold
+                        fontWeight = FontWeight.ExtraBold,
                     )
                     Text(
                         text = "$unreadCount unread out of $totalCount notifications",
                         style = MaterialTheme.typography.bodyMedium,
-                        color = MaterialTheme.colorScheme.onSurfaceVariant
+                        color = MaterialTheme.colorScheme.onSurfaceVariant,
                     )
                 }
             }
@@ -216,13 +217,13 @@ private fun NotificationOverviewCard(
                     modifier = Modifier.weight(1f),
                     label = "Personal",
                     value = personalCount.toString(),
-                    color = MaterialTheme.colorScheme.secondary
+                    color = MaterialTheme.colorScheme.secondary,
                 )
                 NotificationMetric(
                     modifier = Modifier.weight(1f),
                     label = "Split",
                     value = splitCount.toString(),
-                    color = MaterialTheme.colorScheme.tertiary
+                    color = MaterialTheme.colorScheme.tertiary,
                 )
             }
 
@@ -231,13 +232,13 @@ private fun NotificationOverviewCard(
                     modifier = Modifier.weight(1f),
                     label = "Social",
                     value = activityCount.toString(),
-                    color = MaterialTheme.colorScheme.primary
+                    color = MaterialTheme.colorScheme.primary,
                 )
                 NotificationMetric(
                     modifier = Modifier.weight(1f),
                     label = "Unread",
                     value = unreadCount.toString(),
-                    color = MaterialTheme.colorScheme.error
+                    color = MaterialTheme.colorScheme.error,
                 )
             }
         }
@@ -249,29 +250,29 @@ private fun NotificationMetric(
     modifier: Modifier,
     label: String,
     value: String,
-    color: Color
+    color: Color,
 ) {
     Surface(
         modifier = modifier,
         shape = AppShapes.large,
-        color = color.copy(alpha = 0.10f)
+        color = color.copy(alpha = 0.10f),
     ) {
         Column(
             modifier = Modifier.padding(AppDimens.spaceMd),
-            verticalArrangement = Arrangement.spacedBy(AppDimens.spaceXs)
+            verticalArrangement = Arrangement.spacedBy(AppDimens.spaceXs),
         ) {
             Text(
                 text = label,
                 style = MaterialTheme.typography.labelSmall,
                 color = MaterialTheme.colorScheme.onSurfaceVariant,
                 maxLines = 1,
-                overflow = TextOverflow.Ellipsis
+                overflow = TextOverflow.Ellipsis,
             )
             Text(
                 text = value,
                 style = MaterialTheme.typography.titleLarge,
                 fontWeight = FontWeight.ExtraBold,
-                color = color
+                color = color,
             )
         }
     }
@@ -281,24 +282,24 @@ private fun NotificationMetric(
 private fun NotificationFilterBar(
     selectedFilter: NotificationFilter,
     onFilterSelected: (NotificationFilter) -> Unit,
-    notifications: List<Notification>
+    notifications: List<Notification>,
 ) {
     Column(verticalArrangement = Arrangement.spacedBy(AppDimens.spaceSm)) {
         Text(
             text = "Filter",
             style = MaterialTheme.typography.labelMedium,
-            color = MaterialTheme.colorScheme.onSurfaceVariant
+            color = MaterialTheme.colorScheme.onSurfaceVariant,
         )
         LazyRow(
             modifier = Modifier.fillMaxWidth(),
-            horizontalArrangement = Arrangement.spacedBy(AppDimens.spaceSm)
+            horizontalArrangement = Arrangement.spacedBy(AppDimens.spaceSm),
         ) {
             items(NotificationFilter.entries) { filter ->
                 NotificationFilterChip(
                     filter = filter,
                     selected = selectedFilter == filter,
                     count = notifications.count { it.matches(filter) },
-                    onClick = { onFilterSelected(filter) }
+                    onClick = { onFilterSelected(filter) },
                 )
             }
         }
@@ -310,12 +311,12 @@ private fun NotificationFilterChip(
     filter: NotificationFilter,
     selected: Boolean,
     count: Int,
-    onClick: () -> Unit
+    onClick: () -> Unit,
 ) {
     FilterChip(
         selected = selected,
         onClick = onClick,
-        label = { Text("${filter.label} $count") }
+        label = { Text("${filter.label} $count") },
     )
 }
 
@@ -323,7 +324,7 @@ private fun LazyListScope.notificationSection(
     title: String,
     notifications: List<Notification>,
     viewModel: NotificationViewModel,
-    onNotificationClick: (Notification) -> Unit
+    onNotificationClick: (Notification) -> Unit,
 ) {
     item(key = "${title}_header") {
         NotificationSectionHeader(title = title, count = notifications.size)
@@ -344,7 +345,7 @@ private fun LazyListScope.notificationSection(
                     viewModel.markAsRead(notification.id)
                 }
                 onNotificationClick(notification)
-            }
+            },
         )
     }
 }
@@ -352,25 +353,26 @@ private fun LazyListScope.notificationSection(
 @Composable
 private fun NotificationSectionHeader(
     title: String,
-    count: Int
+    count: Int,
 ) {
     Row(
-        modifier = Modifier
-            .fillMaxWidth()
-            .padding(top = AppDimens.spaceXs),
+        modifier =
+            Modifier
+                .fillMaxWidth()
+                .padding(top = AppDimens.spaceXs),
         horizontalArrangement = Arrangement.SpaceBetween,
-        verticalAlignment = Alignment.CenterVertically
+        verticalAlignment = Alignment.CenterVertically,
     ) {
         Text(
             text = title,
             style = MaterialTheme.typography.titleSmall,
             fontWeight = FontWeight.ExtraBold,
-            color = MaterialTheme.colorScheme.onSurface
+            color = MaterialTheme.colorScheme.onSurface,
         )
         Text(
             text = count.toString(),
             style = MaterialTheme.typography.labelMedium,
-            color = MaterialTheme.colorScheme.onSurfaceVariant
+            color = MaterialTheme.colorScheme.onSurfaceVariant,
         )
     }
 }
@@ -379,79 +381,85 @@ private fun NotificationSectionHeader(
 private fun NotificationItemCard(
     notification: Notification,
     onToggleRead: () -> Unit,
-    onClick: () -> Unit
+    onClick: () -> Unit,
 ) {
     val isUnread = !notification.isRead
     val icon = notificationIcon(notification.type)
     val accentColor = notificationAccentColor(notification)
-    val containerColor = if (isUnread) {
-        MaterialTheme.colorScheme.surfaceContainerLowest
-    } else {
-        MaterialTheme.colorScheme.surfaceContainer
-    }
-    val titleColor = if (isUnread) {
-        MaterialTheme.colorScheme.onSurface
-    } else {
-        MaterialTheme.colorScheme.onSurfaceVariant
-    }
+    val containerColor =
+        if (isUnread) {
+            MaterialTheme.colorScheme.surfaceContainerLowest
+        } else {
+            MaterialTheme.colorScheme.surfaceContainer
+        }
+    val titleColor =
+        if (isUnread) {
+            MaterialTheme.colorScheme.onSurface
+        } else {
+            MaterialTheme.colorScheme.onSurfaceVariant
+        }
 
     Surface(
         modifier = Modifier.fillMaxWidth(),
         shape = AppShapes.large,
         color = containerColor,
-        tonalElevation = if (isUnread) 2.dp else 0.dp
+        tonalElevation = if (isUnread) 2.dp else 0.dp,
     ) {
         Box(
-            modifier = Modifier
-                .fillMaxWidth()
-                .clickable(onClick = onClick)
+            modifier =
+                Modifier
+                    .fillMaxWidth()
+                    .clickable(onClick = onClick),
         ) {
             if (isUnread) {
                 Box(
-                    modifier = Modifier
-                        .align(Alignment.CenterStart)
-                        .width(4.dp)
-                        .height(72.dp)
-                        .clip(AppShapes.full)
-                        .background(accentColor)
+                    modifier =
+                        Modifier
+                            .align(Alignment.CenterStart)
+                            .width(4.dp)
+                            .height(72.dp)
+                            .clip(AppShapes.full)
+                            .background(accentColor),
                 )
             }
 
             Row(
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .padding(
-                        start = AppDimens.spaceLg,
-                        top = AppDimens.spaceMd,
-                        end = AppDimens.spaceMd,
-                        bottom = AppDimens.spaceMd
-                    ),
+                modifier =
+                    Modifier
+                        .fillMaxWidth()
+                        .padding(
+                            start = AppDimens.spaceLg,
+                            top = AppDimens.spaceMd,
+                            end = AppDimens.spaceMd,
+                            bottom = AppDimens.spaceMd,
+                        ),
                 verticalAlignment = Alignment.Top,
-                horizontalArrangement = Arrangement.spacedBy(AppDimens.spaceMd)
+                horizontalArrangement = Arrangement.spacedBy(AppDimens.spaceMd),
             ) {
                 Box(
-                    modifier = Modifier
-                        .size(48.dp)
-                        .clip(CircleShape)
-                        .background(accentColor.copy(alpha = if (isUnread) 0.14f else 0.10f)),
-                    contentAlignment = Alignment.Center
+                    modifier =
+                        Modifier
+                            .size(48.dp)
+                            .clip(CircleShape)
+                            .background(accentColor.copy(alpha = if (isUnread) 0.14f else 0.10f)),
+                    contentAlignment = Alignment.Center,
                 ) {
                     Icon(
                         imageVector = icon,
                         contentDescription = null,
                         tint = accentColor,
-                        modifier = Modifier.size(24.dp)
+                        modifier = Modifier.size(24.dp),
                     )
                 }
 
                 Column(
                     modifier = Modifier.weight(1f),
-                    verticalArrangement = Arrangement.spacedBy(AppDimens.spaceSm)
+                    verticalArrangement = Arrangement.spacedBy(AppDimens.spaceSm),
                 ) {
                     Row(
                         modifier = Modifier.fillMaxWidth(),
                         horizontalArrangement = Arrangement.spacedBy(AppDimens.spaceSm),
-                        verticalAlignment = Alignment.Top
+                        verticalAlignment = Alignment.Top,
                     ) {
                         Text(
                             modifier = Modifier.weight(1f),
@@ -460,12 +468,12 @@ private fun NotificationItemCard(
                             fontWeight = if (isUnread) FontWeight.ExtraBold else FontWeight.SemiBold,
                             color = titleColor,
                             maxLines = 2,
-                            overflow = TextOverflow.Ellipsis
+                            overflow = TextOverflow.Ellipsis,
                         )
                         Text(
                             text = formatTimeAgo(notification.createdAt),
                             style = MaterialTheme.typography.labelSmall,
-                            color = MaterialTheme.colorScheme.onSurfaceVariant
+                            color = MaterialTheme.colorScheme.onSurfaceVariant,
                         )
                     }
 
@@ -474,35 +482,37 @@ private fun NotificationItemCard(
                         style = MaterialTheme.typography.bodySmall,
                         color = MaterialTheme.colorScheme.onSurfaceVariant,
                         maxLines = 2,
-                        overflow = TextOverflow.Ellipsis
+                        overflow = TextOverflow.Ellipsis,
                     )
 
                     Row(
                         modifier = Modifier.fillMaxWidth(),
                         horizontalArrangement = Arrangement.SpaceBetween,
-                        verticalAlignment = Alignment.CenterVertically
+                        verticalAlignment = Alignment.CenterVertically,
                     ) {
                         NotificationTypePill(
                             label = notificationTypeLabel(notification),
                             isUnread = isUnread,
-                            color = accentColor
+                            color = accentColor,
                         )
                         IconButton(
                             onClick = onToggleRead,
-                            modifier = Modifier.size(40.dp)
+                            modifier = Modifier.size(40.dp),
                         ) {
                             Icon(
-                                imageVector = if (notification.isRead) {
-                                    Icons.Default.MarkEmailUnread
-                                } else {
-                                    Icons.Default.MarkEmailRead
-                                },
-                                contentDescription = if (notification.isRead) {
-                                    "Mark notification as unread"
-                                } else {
-                                    "Mark notification as read"
-                                },
-                                tint = MaterialTheme.colorScheme.onSurfaceVariant
+                                imageVector =
+                                    if (notification.isRead) {
+                                        Icons.Default.MarkEmailUnread
+                                    } else {
+                                        Icons.Default.MarkEmailRead
+                                    },
+                                contentDescription =
+                                    if (notification.isRead) {
+                                        "Mark notification as unread"
+                                    } else {
+                                        "Mark notification as read"
+                                    },
+                                tint = MaterialTheme.colorScheme.onSurfaceVariant,
                             )
                         }
                     }
@@ -516,24 +526,25 @@ private fun NotificationItemCard(
 private fun NotificationTypePill(
     label: String,
     isUnread: Boolean,
-    color: Color
+    color: Color,
 ) {
     Surface(
         shape = AppShapes.full,
         color = color.copy(alpha = 0.10f),
-        contentColor = color
+        contentColor = color,
     ) {
         Row(
             modifier = Modifier.padding(horizontal = AppDimens.spaceMd, vertical = AppDimens.spaceSm),
             horizontalArrangement = Arrangement.spacedBy(AppDimens.spaceSm),
-            verticalAlignment = Alignment.CenterVertically
+            verticalAlignment = Alignment.CenterVertically,
         ) {
             if (isUnread) {
                 Box(
-                    modifier = Modifier
-                        .size(7.dp)
-                        .clip(CircleShape)
-                        .background(color)
+                    modifier =
+                        Modifier
+                            .size(7.dp)
+                            .clip(CircleShape)
+                            .background(color),
                 )
             }
             Text(
@@ -541,7 +552,7 @@ private fun NotificationTypePill(
                 style = MaterialTheme.typography.labelMedium,
                 fontWeight = FontWeight.SemiBold,
                 maxLines = 1,
-                overflow = TextOverflow.Ellipsis
+                overflow = TextOverflow.Ellipsis,
             )
         }
     }
@@ -584,7 +595,7 @@ private enum class NotificationFilter(val label: String) {
     UNREAD("Unread"),
     PERSONAL("Personal"),
     SPLIT("Split"),
-    SOCIAL("Social")
+    SOCIAL("Social"),
 }
 
 private fun Notification.matches(filter: NotificationFilter): Boolean {
@@ -602,12 +613,13 @@ private fun Notification.isPersonalAlert(): Boolean {
 }
 
 private fun Notification.isSplitAlert(): Boolean {
-    return type in setOf(
-        NotificationType.PAYMENT_COMPLETED,
-        NotificationType.PAYMENT_PENDING,
-        NotificationType.BILL_CREATED,
-        NotificationType.SPLIT_COMPLETED
-    )
+    return type in
+        setOf(
+            NotificationType.PAYMENT_COMPLETED,
+            NotificationType.PAYMENT_PENDING,
+            NotificationType.BILL_CREATED,
+            NotificationType.SPLIT_COMPLETED,
+        )
 }
 
 private fun emptyTitleFor(filter: NotificationFilter): String {

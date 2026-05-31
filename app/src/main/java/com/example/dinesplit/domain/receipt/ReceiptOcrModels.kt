@@ -5,12 +5,12 @@ import com.example.dinesplit.domain.model.TransactionType
 data class ReceiptCategoryOption(
     val id: String,
     val name: String,
-    val type: TransactionType
+    val type: TransactionType,
 )
 
 data class ReceiptOcrResult(
     val rawText: String,
     val amount: Double?,
     val category: ReceiptCategoryOption?,
-    val merchantName: String?
+    val merchantName: String?,
 )

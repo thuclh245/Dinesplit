@@ -35,7 +35,7 @@ import com.example.dinesplit.ui.theme.DineSplitTheme
 fun CompleteProfileScreen(
     onBack: () -> Unit,
     onCompleteProfileSuccess: () -> Unit,
-    viewModel: CompleteProfileViewModel = viewModel()
+    viewModel: CompleteProfileViewModel = viewModel(),
 ) {
     val uiState by viewModel.uiState.collectAsState()
 
@@ -55,7 +55,7 @@ fun CompleteProfileScreen(
         onAvatarSelected = viewModel::onAvatarSelected,
         onToggleDiningStyle = viewModel::toggleDiningStyle,
         onSubmit = viewModel::submit,
-        onBack = onBack
+        onBack = onBack,
     )
 }
 
@@ -68,100 +68,110 @@ private fun CompleteProfileContent(
     onAvatarSelected: (Uri) -> Unit,
     onToggleDiningStyle: (String) -> Unit,
     onSubmit: () -> Unit,
-    onBack: () -> Unit
+    onBack: () -> Unit,
 ) {
-    val launcher = rememberLauncherForActivityResult(
-        contract = ActivityResultContracts.GetContent()
-    ) { uri: Uri? ->
-        uri?.let { onAvatarSelected(it) }
-    }
+    val launcher =
+        rememberLauncherForActivityResult(
+            contract = ActivityResultContracts.GetContent(),
+        ) { uri: Uri? ->
+            uri?.let { onAvatarSelected(it) }
+        }
 
     Box(modifier = Modifier.fillMaxSize().background(MaterialTheme.colorScheme.surface)) {
         Column(modifier = Modifier.fillMaxSize()) {
             // --- Top App Bar ---
             Row(
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .statusBarsPadding()
-                    .height(64.dp)
-                    .padding(horizontal = 16.dp),
+                modifier =
+                    Modifier
+                        .fillMaxWidth()
+                        .statusBarsPadding()
+                        .height(64.dp)
+                        .padding(horizontal = 16.dp),
                 verticalAlignment = Alignment.CenterVertically,
-                horizontalArrangement = Arrangement.SpaceBetween
+                horizontalArrangement = Arrangement.SpaceBetween,
             ) {
                 Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(16.dp)) {
                     IconButton(onClick = onBack) {
                         Icon(
                             imageVector = Icons.Default.ArrowBack,
                             contentDescription = "Back",
-                            tint = MaterialTheme.colorScheme.primary
+                            tint = MaterialTheme.colorScheme.primary,
                         )
                     }
                     Text(
                         text = "DineSplit",
-                        style = MaterialTheme.typography.titleLarge.copy(
-                            fontWeight = FontWeight.ExtraBold,
-                            letterSpacing = (-1).sp
-                        ),
-                        color = MaterialTheme.colorScheme.onSurface
+                        style =
+                            MaterialTheme.typography.titleLarge.copy(
+                                fontWeight = FontWeight.ExtraBold,
+                                letterSpacing = (-1).sp,
+                            ),
+                        color = MaterialTheme.colorScheme.onSurface,
                     )
                 }
                 TextButton(onClick = { /* Help */ }) {
                     Text(
                         "Help",
                         style = MaterialTheme.typography.labelMedium.copy(fontWeight = FontWeight.Bold),
-                        color = MaterialTheme.colorScheme.primary
+                        color = MaterialTheme.colorScheme.primary,
                     )
                 }
             }
 
             // --- Scrollable Form ---
             Column(
-                modifier = Modifier
-                    .fillMaxSize()
-                    .padding(horizontal = 24.dp)
-                    .verticalScroll(rememberScrollState()),
-                horizontalAlignment = Alignment.CenterHorizontally
+                modifier =
+                    Modifier
+                        .fillMaxSize()
+                        .padding(horizontal = 24.dp)
+                        .verticalScroll(rememberScrollState()),
+                horizontalAlignment = Alignment.CenterHorizontally,
             ) {
                 Spacer(modifier = Modifier.height(24.dp))
 
                 // Header Section
                 Text(
                     text = "Create Profile",
-                    style = MaterialTheme.typography.headlineMedium.copy(
-                        fontWeight = FontWeight.ExtraBold,
-                        letterSpacing = (-1).sp
-                    ),
-                    color = MaterialTheme.colorScheme.onSurface
+                    style =
+                        MaterialTheme.typography.headlineMedium.copy(
+                            fontWeight = FontWeight.ExtraBold,
+                            letterSpacing = (-1).sp,
+                        ),
+                    color = MaterialTheme.colorScheme.onSurface,
                 )
                 Text(
                     text = "Set the table for your next social meal.",
                     style = MaterialTheme.typography.bodyLarge.copy(fontWeight = FontWeight.Medium),
                     color = MaterialTheme.colorScheme.onSurfaceVariant,
-                    modifier = Modifier.padding(top = 8.dp)
+                    modifier = Modifier.padding(top = 8.dp),
                 )
 
                 Spacer(modifier = Modifier.height(40.dp))
 
                 // Profile Picture Upload
                 Box(
-                    modifier = Modifier
-                        .size(128.dp)
-                        .clickable { launcher.launch("image/*") }
+                    modifier =
+                        Modifier
+                            .size(128.dp)
+                            .clickable { launcher.launch("image/*") },
                 ) {
                     Surface(
                         modifier = Modifier.fillMaxSize(),
                         shape = CircleShape,
                         color = MaterialTheme.colorScheme.surfaceContainerHigh,
-                        shadowElevation = 12.dp
+                        shadowElevation = 12.dp,
                     ) {
                         AsyncImage(
-                            model = uiState.avatarLocalUri ?: uiState.avatarUrl.takeIf { it.isNotBlank() } ?: "https://lh3.googleusercontent.com/aida-public/AB6AXuDkuNXrcHfy46qqNVzH5WCEMMztgKNUW2-ZOvk2egw6QipHOKcqkdsMrYhwVldG3RyNp2J_ynP-LohRwu6ULWERiYrbC2g7RmLkGuWLso2o_e-Ih5dkbAdQkYMU1NCL0f3GyqwqtWC4UKRnw1-eIBLnXiHjNNKv69qf9izVTIhsz1aIAcNZavl4boZLKJ8IYMeulPgr8YSnqrrnXm0sss_MaGHOfbqT1WwmwPOWvwDP_byDQUeg20yimOvxiMksj47rY7JckyClSnY",
+                            model =
+                                uiState.avatarLocalUri ?: uiState.avatarUrl.takeIf {
+                                    it.isNotBlank()
+                                } ?: "https://lh3.googleusercontent.com/aida-public/AB6AXuDkuNXrcHfy46qqNVzH5WCEMMztgKNUW2-ZOvk2egw6QipHOKcqkdsMrYhwVldG3RyNp2J_ynP-LohRwu6ULWERiYrbC2g7RmLkGuWLso2o_e-Ih5dkbAdQkYMU1NCL0f3GyqwqtWC4UKRnw1-eIBLnXiHjNNKv69qf9izVTIhsz1aIAcNZavl4boZLKJ8IYMeulPgr8YSnqrrnXm0sss_MaGHOfbqT1WwmwPOWvwDP_byDQUeg20yimOvxiMksj47rY7JckyClSnY",
                             contentDescription = "Avatar",
-                            modifier = Modifier
-                                .fillMaxSize()
-                                .clip(CircleShape),
+                            modifier =
+                                Modifier
+                                    .fillMaxSize()
+                                    .clip(CircleShape),
                             contentScale = ContentScale.Crop,
-                            alpha = if (uiState.avatarLocalUri == null && uiState.avatarUrl.isBlank()) 0.6f else 1.0f
+                            alpha = if (uiState.avatarLocalUri == null && uiState.avatarUrl.isBlank()) 0.6f else 1.0f,
                         )
                         if (uiState.avatarLocalUri == null && uiState.avatarUrl.isBlank()) {
                             Box(modifier = Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
@@ -169,25 +179,26 @@ private fun CompleteProfileContent(
                                     imageVector = Icons.Default.AddAPhoto,
                                     contentDescription = null,
                                     tint = MaterialTheme.colorScheme.onSurfaceVariant,
-                                    modifier = Modifier.size(36.dp)
+                                    modifier = Modifier.size(36.dp),
                                 )
                             }
                         }
                     }
                     Box(
-                        modifier = Modifier
-                            .align(Alignment.BottomEnd)
-                            .size(36.dp)
-                            .shadow(8.dp, CircleShape)
-                            .background(MaterialTheme.colorScheme.primaryContainer, CircleShape)
-                            .border(4.dp, MaterialTheme.colorScheme.surface, CircleShape),
-                        contentAlignment = Alignment.Center
+                        modifier =
+                            Modifier
+                                .align(Alignment.BottomEnd)
+                                .size(36.dp)
+                                .shadow(8.dp, CircleShape)
+                                .background(MaterialTheme.colorScheme.primaryContainer, CircleShape)
+                                .border(4.dp, MaterialTheme.colorScheme.surface, CircleShape),
+                        contentAlignment = Alignment.Center,
                     ) {
                         Icon(
                             imageVector = Icons.Default.Edit,
                             contentDescription = null,
                             tint = MaterialTheme.colorScheme.onPrimaryContainer,
-                            modifier = Modifier.size(16.dp)
+                            modifier = Modifier.size(16.dp),
                         )
                     }
                 }
@@ -198,7 +209,7 @@ private fun CompleteProfileContent(
                         text = "Không thể tải ảnh đại diện: ${uiState.avatarError}",
                         style = MaterialTheme.typography.bodySmall,
                         color = MaterialTheme.colorScheme.error,
-                        textAlign = TextAlign.Center
+                        textAlign = TextAlign.Center,
                     )
                 }
 
@@ -211,7 +222,7 @@ private fun CompleteProfileContent(
                         onValueChange = onDisplayNameChange,
                         label = "DISPLAY NAME",
                         placeholder = "e.g. Alex Thompson",
-                        error = uiState.displayNameError
+                        error = uiState.displayNameError,
                     )
 
                     Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
@@ -219,31 +230,43 @@ private fun CompleteProfileContent(
                             text = "USERNAME",
                             style = MaterialTheme.typography.labelSmall.copy(fontWeight = FontWeight.Bold, letterSpacing = 1.sp),
                             color = MaterialTheme.colorScheme.onSurfaceVariant,
-                            modifier = Modifier.padding(start = 4.dp)
+                            modifier = Modifier.padding(start = 4.dp),
                         )
                         OutlinedTextField(
                             value = uiState.username,
                             onValueChange = onUsernameChange,
                             modifier = Modifier.fillMaxWidth(),
                             placeholder = { Text("alexsplit", color = MaterialTheme.colorScheme.outline.copy(alpha = 0.5f)) },
-                            leadingIcon = { Text("@", style = MaterialTheme.typography.bodyLarge.copy(fontWeight = FontWeight.Bold), color = MaterialTheme.colorScheme.onSurfaceVariant) },
+                            leadingIcon = {
+                                Text(
+                                    "@",
+                                    style = MaterialTheme.typography.bodyLarge.copy(fontWeight = FontWeight.Bold),
+                                    color = MaterialTheme.colorScheme.onSurfaceVariant,
+                                )
+                            },
                             isError = uiState.usernameError != null,
                             singleLine = true,
                             shape = RoundedCornerShape(12.dp),
-                            colors = OutlinedTextFieldDefaults.colors(
-                                unfocusedBorderColor = Color.Transparent,
-                                focusedBorderColor = MaterialTheme.colorScheme.primaryContainer,
-                                unfocusedContainerColor = MaterialTheme.colorScheme.surfaceContainerHighest,
-                                focusedContainerColor = MaterialTheme.colorScheme.surfaceContainerHighest,
-                                errorContainerColor = MaterialTheme.colorScheme.surfaceContainerHighest
-                            )
+                            colors =
+                                OutlinedTextFieldDefaults.colors(
+                                    unfocusedBorderColor = Color.Transparent,
+                                    focusedBorderColor = MaterialTheme.colorScheme.primaryContainer,
+                                    unfocusedContainerColor = MaterialTheme.colorScheme.surfaceContainerHighest,
+                                    focusedContainerColor = MaterialTheme.colorScheme.surfaceContainerHighest,
+                                    errorContainerColor = MaterialTheme.colorScheme.surfaceContainerHighest,
+                                ),
                         )
                         Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(4.dp)) {
-                            Icon(Icons.Default.Info, contentDescription = null, modifier = Modifier.size(14.dp), tint = MaterialTheme.colorScheme.onSurfaceVariant)
+                            Icon(
+                                Icons.Default.Info,
+                                contentDescription = null,
+                                modifier = Modifier.size(14.dp),
+                                tint = MaterialTheme.colorScheme.onSurfaceVariant,
+                            )
                             Text(
                                 text = uiState.usernameError ?: "Unique handle for splitting bills",
                                 style = MaterialTheme.typography.labelSmall,
-                                color = if (uiState.usernameError != null) MaterialTheme.colorScheme.error else MaterialTheme.colorScheme.onSurfaceVariant
+                                color = if (uiState.usernameError != null) MaterialTheme.colorScheme.error else MaterialTheme.colorScheme.onSurfaceVariant,
                             )
                         }
                     }
@@ -254,7 +277,7 @@ private fun CompleteProfileContent(
                         label = "SHORT BIO",
                         placeholder = "Foodie, coffee lover, and weekend brunch enthusiast...",
                         singleLine = false,
-                        maxLines = 3
+                        maxLines = 3,
                     )
 
                     // Dining Style Section
@@ -263,12 +286,42 @@ private fun CompleteProfileContent(
                             text = "DINING STYLE",
                             style = MaterialTheme.typography.labelSmall.copy(fontWeight = FontWeight.Bold, letterSpacing = 1.sp),
                             color = MaterialTheme.colorScheme.onSurfaceVariant,
-                            modifier = Modifier.padding(start = 4.dp)
+                            modifier = Modifier.padding(start = 4.dp),
                         )
                         Row(horizontalArrangement = Arrangement.spacedBy(8.dp), modifier = Modifier.fillMaxWidth()) {
-                            StyleChip(label = "Fine Dining", icon = Icons.Default.Restaurant, selected = uiState.selectedStyles.contains("Fine Dining"), onClick = { onToggleDiningStyle("Fine Dining") })
-                            StyleChip(label = "Cafe Hopper", icon = Icons.Default.Coffee, selected = uiState.selectedStyles.contains("Cafe Hopper"), onClick = { onToggleDiningStyle("Cafe Hopper") })
-                            StyleChip(label = "Nightlife", icon = Icons.Default.LocalBar, selected = uiState.selectedStyles.contains("Nightlife"), onClick = { onToggleDiningStyle("Nightlife") })
+                            StyleChip(
+                                label = "Fine Dining",
+                                icon = Icons.Default.Restaurant,
+                                selected =
+                                    uiState.selectedStyles.contains(
+                                        "Fine Dining",
+                                    ),
+                                onClick = {
+                                    onToggleDiningStyle("Fine Dining")
+                                },
+                            )
+                            StyleChip(
+                                label = "Cafe Hopper",
+                                icon = Icons.Default.Coffee,
+                                selected =
+                                    uiState.selectedStyles.contains(
+                                        "Cafe Hopper",
+                                    ),
+                                onClick = {
+                                    onToggleDiningStyle("Cafe Hopper")
+                                },
+                            )
+                            StyleChip(
+                                label = "Nightlife",
+                                icon = Icons.Default.LocalBar,
+                                selected =
+                                    uiState.selectedStyles.contains(
+                                        "Nightlife",
+                                    ),
+                                onClick = {
+                                    onToggleDiningStyle("Nightlife")
+                                },
+                            )
                         }
                     }
                 }
@@ -283,36 +336,38 @@ private fun CompleteProfileContent(
                             style = MaterialTheme.typography.bodySmall,
                             color = MaterialTheme.colorScheme.error,
                             textAlign = TextAlign.Center,
-                            modifier = Modifier.fillMaxWidth()
+                            modifier = Modifier.fillMaxWidth(),
                         )
                     }
 
                     Button(
                         onClick = onSubmit,
-                        modifier = Modifier
-                            .fillMaxWidth()
-                            .height(64.dp)
-                            .shadow(16.dp, RoundedCornerShape(32.dp), spotColor = MaterialTheme.colorScheme.primary.copy(alpha = 0.2f)),
+                        modifier =
+                            Modifier
+                                .fillMaxWidth()
+                                .height(64.dp)
+                                .shadow(16.dp, RoundedCornerShape(32.dp), spotColor = MaterialTheme.colorScheme.primary.copy(alpha = 0.2f)),
                         shape = RoundedCornerShape(32.dp),
                         colors = ButtonDefaults.buttonColors(containerColor = Color.Transparent),
                         contentPadding = PaddingValues(0.dp),
-                        enabled = !uiState.isSubmitting
+                        enabled = !uiState.isSubmitting,
                     ) {
                         Box(
-                            modifier = Modifier
-                                .fillMaxSize()
-                                .background(
-                                    Brush.linearGradient(
-                                        listOf(MaterialTheme.colorScheme.primary, MaterialTheme.colorScheme.primaryContainer)
-                                    )
-                                ),
-                            contentAlignment = Alignment.Center
+                            modifier =
+                                Modifier
+                                    .fillMaxSize()
+                                    .background(
+                                        Brush.linearGradient(
+                                            listOf(MaterialTheme.colorScheme.primary, MaterialTheme.colorScheme.primaryContainer),
+                                        ),
+                                    ),
+                            contentAlignment = Alignment.Center,
                         ) {
                             Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(12.dp)) {
                                 Text(
                                     text = if (uiState.isSubmitting) "Completing..." else "Complete Profile",
                                     style = MaterialTheme.typography.titleMedium.copy(fontWeight = FontWeight.Bold),
-                                    color = MaterialTheme.colorScheme.onPrimary
+                                    color = MaterialTheme.colorScheme.onPrimary,
                                 )
                                 if (!uiState.isSubmitting) {
                                     Icon(Icons.Default.ChevronRight, contentDescription = null, tint = MaterialTheme.colorScheme.onPrimary)
@@ -323,16 +378,23 @@ private fun CompleteProfileContent(
 
                     val primaryColor = MaterialTheme.colorScheme.primary
                     Text(
-                        text = buildAnnotatedString {
-                            append("By continuing, you agree to our ")
-                            withStyle(SpanStyle(color = primaryColor, fontWeight = FontWeight.Bold, textDecoration = androidx.compose.ui.text.style.TextDecoration.Underline)) {
-                                append("Terms of Service")
-                            }
-                        },
+                        text =
+                            buildAnnotatedString {
+                                append("By continuing, you agree to our ")
+                                withStyle(
+                                    SpanStyle(
+                                        color = primaryColor,
+                                        fontWeight = FontWeight.Bold,
+                                        textDecoration = androidx.compose.ui.text.style.TextDecoration.Underline,
+                                    ),
+                                ) {
+                                    append("Terms of Service")
+                                }
+                            },
                         style = MaterialTheme.typography.bodySmall,
                         color = MaterialTheme.colorScheme.onSurfaceVariant,
                         textAlign = TextAlign.Center,
-                        modifier = Modifier.padding(bottom = 32.dp)
+                        modifier = Modifier.padding(bottom = 32.dp),
                     )
                 }
             }
@@ -348,14 +410,14 @@ private fun ProfileTextField(
     placeholder: String,
     error: String? = null,
     singleLine: Boolean = true,
-    maxLines: Int = 1
+    maxLines: Int = 1,
 ) {
     Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
         Text(
             text = label,
             style = MaterialTheme.typography.labelSmall.copy(fontWeight = FontWeight.Bold, letterSpacing = 1.sp),
             color = MaterialTheme.colorScheme.onSurfaceVariant,
-            modifier = Modifier.padding(start = 4.dp)
+            modifier = Modifier.padding(start = 4.dp),
         )
         OutlinedTextField(
             value = value,
@@ -366,20 +428,21 @@ private fun ProfileTextField(
             singleLine = singleLine,
             maxLines = maxLines,
             shape = RoundedCornerShape(12.dp),
-            colors = OutlinedTextFieldDefaults.colors(
-                unfocusedBorderColor = Color.Transparent,
-                focusedBorderColor = MaterialTheme.colorScheme.primaryContainer,
-                unfocusedContainerColor = MaterialTheme.colorScheme.surfaceContainerHighest,
-                focusedContainerColor = MaterialTheme.colorScheme.surfaceContainerHighest,
-                errorContainerColor = MaterialTheme.colorScheme.surfaceContainerHighest
-            )
+            colors =
+                OutlinedTextFieldDefaults.colors(
+                    unfocusedBorderColor = Color.Transparent,
+                    focusedBorderColor = MaterialTheme.colorScheme.primaryContainer,
+                    unfocusedContainerColor = MaterialTheme.colorScheme.surfaceContainerHighest,
+                    focusedContainerColor = MaterialTheme.colorScheme.surfaceContainerHighest,
+                    errorContainerColor = MaterialTheme.colorScheme.surfaceContainerHighest,
+                ),
         )
         if (error != null) {
             Text(
                 text = error,
                 style = MaterialTheme.typography.labelSmall,
                 color = MaterialTheme.colorScheme.error,
-                modifier = Modifier.padding(start = 4.dp)
+                modifier = Modifier.padding(start = 4.dp),
             )
         }
     }
@@ -390,28 +453,28 @@ private fun StyleChip(
     label: String,
     icon: ImageVector,
     selected: Boolean,
-    onClick: () -> Unit
+    onClick: () -> Unit,
 ) {
     Surface(
         color = if (selected) MaterialTheme.colorScheme.secondaryContainer else MaterialTheme.colorScheme.surfaceContainerHighest,
         shape = CircleShape,
-        modifier = Modifier.clickable { onClick() }
+        modifier = Modifier.clickable { onClick() },
     ) {
         Row(
             modifier = Modifier.padding(horizontal = 16.dp, vertical = 8.dp),
             verticalAlignment = Alignment.CenterVertically,
-            horizontalArrangement = Arrangement.spacedBy(8.dp)
+            horizontalArrangement = Arrangement.spacedBy(8.dp),
         ) {
             Icon(
                 imageVector = icon,
                 contentDescription = null,
                 modifier = Modifier.size(14.dp),
-                tint = if (selected) MaterialTheme.colorScheme.onSecondaryContainer else MaterialTheme.colorScheme.onSurfaceVariant
+                tint = if (selected) MaterialTheme.colorScheme.onSecondaryContainer else MaterialTheme.colorScheme.onSurfaceVariant,
             )
             Text(
                 text = label,
                 style = MaterialTheme.typography.labelSmall.copy(fontWeight = FontWeight.Bold),
-                color = if (selected) MaterialTheme.colorScheme.onSecondaryContainer else MaterialTheme.colorScheme.onSurfaceVariant
+                color = if (selected) MaterialTheme.colorScheme.onSecondaryContainer else MaterialTheme.colorScheme.onSurfaceVariant,
             )
         }
     }
@@ -422,17 +485,18 @@ private fun StyleChip(
 fun CompleteProfileScreenPreview() {
     DineSplitTheme(darkTheme = false) {
         CompleteProfileContent(
-            uiState = CompleteProfileUiState(
-                displayName = "Alex Thompson",
-                username = "alexsplit"
-            ),
+            uiState =
+                CompleteProfileUiState(
+                    displayName = "Alex Thompson",
+                    username = "alexsplit",
+                ),
             onDisplayNameChange = {},
             onUsernameChange = {},
             onBioChange = {},
             onAvatarSelected = {},
             onToggleDiningStyle = {},
             onSubmit = {},
-            onBack = {}
+            onBack = {},
         )
     }
 }

@@ -40,7 +40,7 @@ import java.util.UUID
 @Composable
 fun CreatePostScreen(
     postId: String? = null,
-    onBack: () -> Unit = {}
+    onBack: () -> Unit = {},
 ) {
     var restaurantName by remember { mutableStateOf("") }
     var caption by remember { mutableStateOf("") }
@@ -48,21 +48,22 @@ fun CreatePostScreen(
     var selectedImageUri by remember { mutableStateOf<Uri?>(null) }
     var isLoadingExistingPost by remember { mutableStateOf(false) }
     var existingPost by remember { mutableStateOf<Post?>(null) }
-    
+
     val scope = rememberCoroutineScope()
     val context = LocalContext.current
     val application = context.applicationContext as Application
 
     // Select a beautiful random placeholder food photo as initial fallback
-    val mockImage = remember {
-        listOf(
-            "https://images.unsplash.com/photo-1565299624946-b28f40a0ae38?w=800&auto=format&fit=crop",
-            "https://images.unsplash.com/photo-1482049016688-2d3e1b311543?w=800&auto=format&fit=crop",
-            "https://images.unsplash.com/photo-1467003909585-2f8a72700288?w=800&auto=format&fit=crop",
-            "https://images.unsplash.com/photo-1504674900247-0877df9cc836?w=800&auto=format&fit=crop",
-            "https://images.unsplash.com/photo-1546069901-ba9599a7e63c?w=800&auto=format&fit=crop"
-        ).random()
-    }
+    val mockImage =
+        remember {
+            listOf(
+                "https://images.unsplash.com/photo-1565299624946-b28f40a0ae38?w=800&auto=format&fit=crop",
+                "https://images.unsplash.com/photo-1482049016688-2d3e1b311543?w=800&auto=format&fit=crop",
+                "https://images.unsplash.com/photo-1467003909585-2f8a72700288?w=800&auto=format&fit=crop",
+                "https://images.unsplash.com/photo-1504674900247-0877df9cc836?w=800&auto=format&fit=crop",
+                "https://images.unsplash.com/photo-1546069901-ba9599a7e63c?w=800&auto=format&fit=crop",
+            ).random()
+        }
 
     // Load existing post if in edit mode
     LaunchedEffect(postId) {
@@ -87,67 +88,72 @@ fun CreatePostScreen(
         }
     }
 
-    val galleryLauncher = rememberLauncherForActivityResult(
-        contract = ActivityResultContracts.GetContent()
-    ) { uri: Uri? ->
-        if (uri != null) {
-            selectedImageUri = uri
+    val galleryLauncher =
+        rememberLauncherForActivityResult(
+            contract = ActivityResultContracts.GetContent(),
+        ) { uri: Uri? ->
+            if (uri != null) {
+                selectedImageUri = uri
+            }
         }
-    }
 
     Scaffold(
         topBar = {
             CenterAlignedTopAppBar(
-                title = { 
+                title = {
                     Text(
-                        if (!postId.isNullOrBlank()) "Chỉnh sửa bài viết" else "Đăng bài viết mới", 
-                        style = MaterialTheme.typography.titleMedium.copy(fontWeight = FontWeight.Bold)
-                    ) 
+                        if (!postId.isNullOrBlank()) "Chỉnh sửa bài viết" else "Đăng bài viết mới",
+                        style = MaterialTheme.typography.titleMedium.copy(fontWeight = FontWeight.Bold),
+                    )
                 },
                 navigationIcon = {
                     IconButton(onClick = onBack) {
                         Icon(Icons.AutoMirrored.Filled.ArrowBack, contentDescription = "Quay lại")
                     }
                 },
-                colors = TopAppBarDefaults.centerAlignedTopAppBarColors(
-                    containerColor = MaterialTheme.colorScheme.background
-                )
+                colors =
+                    TopAppBarDefaults.centerAlignedTopAppBarColors(
+                        containerColor = MaterialTheme.colorScheme.background,
+                    ),
             )
-        }
+        },
     ) { padding ->
         if (isLoadingExistingPost) {
             Box(
-                modifier = Modifier
-                    .fillMaxSize()
-                    .padding(padding),
-                contentAlignment = Alignment.Center
+                modifier =
+                    Modifier
+                        .fillMaxSize()
+                        .padding(padding),
+                contentAlignment = Alignment.Center,
             ) {
                 CircularProgressIndicator()
             }
         } else {
             Column(
-                modifier = Modifier
-                    .fillMaxSize()
-                    .background(MaterialTheme.colorScheme.background)
-                    .verticalScroll(rememberScrollState())
-                    .padding(padding)
-                    .padding(horizontal = 24.dp, vertical = 16.dp),
-                verticalArrangement = Arrangement.spacedBy(20.dp)
+                modifier =
+                    Modifier
+                        .fillMaxSize()
+                        .background(MaterialTheme.colorScheme.background)
+                        .verticalScroll(rememberScrollState())
+                        .padding(padding)
+                        .padding(horizontal = 24.dp, vertical = 16.dp),
+                verticalArrangement = Arrangement.spacedBy(20.dp),
             ) {
                 // Elegant Image Picker Block
                 Box(
-                    modifier = Modifier
-                        .fillMaxWidth()
-                        .aspectRatio(1.33f)
-                        .clip(RoundedCornerShape(24.dp))
-                        .background(MaterialTheme.colorScheme.surfaceContainerHigh)
-                        .border(
-                            width = 1.5.dp,
-                            color = MaterialTheme.colorScheme.outlineVariant.copy(alpha = 0.5f),
-                            shape = RoundedCornerShape(24.dp)
-                        )
-                        .clickable { galleryLauncher.launch("image/*") },
-                    contentAlignment = Alignment.Center
+                    modifier =
+                        Modifier
+                            .fillMaxWidth()
+                            .aspectRatio(1.33f)
+                            .clip(RoundedCornerShape(24.dp))
+                            .background(MaterialTheme.colorScheme.surfaceContainerHigh)
+                            .border(
+                                width = 1.5.dp,
+                                color = MaterialTheme.colorScheme.outlineVariant.copy(alpha = 0.5f),
+                                shape = RoundedCornerShape(24.dp),
+                            )
+                            .clickable { galleryLauncher.launch("image/*") },
+                    contentAlignment = Alignment.Center,
                 ) {
                     if (selectedImageUri != null) {
                         // Show custom chosen image from gallery or Firestore
@@ -155,23 +161,33 @@ fun CreatePostScreen(
                             model = selectedImageUri,
                             contentDescription = "Selected image",
                             modifier = Modifier.fillMaxSize(),
-                            contentScale = ContentScale.Crop
+                            contentScale = ContentScale.Crop,
                         )
                         // Glassmorphic change indicator pill at top right
                         Surface(
                             color = Color.Black.copy(alpha = 0.55f),
                             shape = RoundedCornerShape(12.dp),
-                            modifier = Modifier
-                                .align(Alignment.BottomEnd)
-                                .padding(12.dp)
+                            modifier =
+                                Modifier
+                                    .align(Alignment.BottomEnd)
+                                    .padding(12.dp),
                         ) {
                             Row(
                                 modifier = Modifier.padding(horizontal = 10.dp, vertical = 6.dp),
                                 verticalAlignment = Alignment.CenterVertically,
-                                horizontalArrangement = Arrangement.spacedBy(4.dp)
+                                horizontalArrangement = Arrangement.spacedBy(4.dp),
                             ) {
-                                Icon(Icons.Default.PhotoLibrary, contentDescription = null, tint = Color.White, modifier = Modifier.size(12.dp))
-                                Text("Đổi ảnh thư viện", color = Color.White, style = MaterialTheme.typography.labelSmall.copy(fontSize = 10.sp, fontWeight = FontWeight.Bold))
+                                Icon(
+                                    Icons.Default.PhotoLibrary,
+                                    contentDescription = null,
+                                    tint = Color.White,
+                                    modifier = Modifier.size(12.dp),
+                                )
+                                Text(
+                                    "Đổi ảnh thư viện",
+                                    color = Color.White,
+                                    style = MaterialTheme.typography.labelSmall.copy(fontSize = 10.sp, fontWeight = FontWeight.Bold),
+                                )
                             }
                         }
                     } else {
@@ -180,37 +196,43 @@ fun CreatePostScreen(
                             model = mockImage,
                             contentDescription = "Mock image",
                             modifier = Modifier.fillMaxSize(),
-                            contentScale = ContentScale.Crop
+                            contentScale = ContentScale.Crop,
                         )
                         // Overlay tint
                         Box(modifier = Modifier.fillMaxSize().background(Color.Black.copy(alpha = 0.4f)))
-                        
+
                         // Call to Action
                         Column(
                             horizontalAlignment = Alignment.CenterHorizontally,
                             verticalArrangement = Arrangement.spacedBy(8.dp),
-                            modifier = Modifier.padding(16.dp)
+                            modifier = Modifier.padding(16.dp),
                         ) {
                             Box(
-                                modifier = Modifier
-                                    .size(48.dp)
-                                    .background(Color.White.copy(0.2f), CircleShape)
-                                    .border(1.5.dp, Color.White, CircleShape),
-                                contentAlignment = Alignment.Center
+                                modifier =
+                                    Modifier
+                                        .size(48.dp)
+                                        .background(Color.White.copy(0.2f), CircleShape)
+                                        .border(1.5.dp, Color.White, CircleShape),
+                                contentAlignment = Alignment.Center,
                             ) {
-                                Icon(Icons.Default.AddPhotoAlternate, contentDescription = null, tint = Color.White, modifier = Modifier.size(24.dp))
+                                Icon(
+                                    Icons.Default.AddPhotoAlternate,
+                                    contentDescription = null,
+                                    tint = Color.White,
+                                    modifier = Modifier.size(24.dp),
+                                )
                             }
                             Text(
                                 text = "Nhấp để chọn ảnh từ gallery của bạn 📸",
                                 color = Color.White,
                                 style = MaterialTheme.typography.labelLarge.copy(fontWeight = FontWeight.Bold),
-                                textAlign = TextAlign.Center
+                                textAlign = TextAlign.Center,
                             )
                             Text(
                                 text = "Hoặc sử dụng ảnh món ăn ngẫu nhiên có sẵn",
                                 color = Color.White.copy(0.7f),
                                 style = MaterialTheme.typography.labelSmall,
-                                textAlign = TextAlign.Center
+                                textAlign = TextAlign.Center,
                             )
                         }
                     }
@@ -220,7 +242,11 @@ fun CreatePostScreen(
                 Column(verticalArrangement = Arrangement.spacedBy(16.dp)) {
                     Text(
                         text = "Thông tin ẩm thực",
-                        style = MaterialTheme.typography.titleSmall.copy(fontWeight = FontWeight.Bold, color = MaterialTheme.colorScheme.primary)
+                        style =
+                            MaterialTheme.typography.titleSmall.copy(
+                                fontWeight = FontWeight.Bold,
+                                color = MaterialTheme.colorScheme.primary,
+                            ),
                     )
 
                     OutlinedTextField(
@@ -230,27 +256,35 @@ fun CreatePostScreen(
                         placeholder = { Text("Ví dụ: Phở Thìn Lò Đúc, Pizza 4P's...", style = MaterialTheme.typography.bodyMedium) },
                         modifier = Modifier.fillMaxWidth(),
                         shape = RoundedCornerShape(16.dp),
-                        colors = OutlinedTextFieldDefaults.colors(
-                            focusedBorderColor = MaterialTheme.colorScheme.primary,
-                            unfocusedBorderColor = MaterialTheme.colorScheme.outlineVariant
-                        ),
-                        singleLine = true
+                        colors =
+                            OutlinedTextFieldDefaults.colors(
+                                focusedBorderColor = MaterialTheme.colorScheme.primary,
+                                unfocusedBorderColor = MaterialTheme.colorScheme.outlineVariant,
+                            ),
+                        singleLine = true,
                     )
 
                     OutlinedTextField(
                         value = caption,
                         onValueChange = { caption = it },
                         label = { Text("Cảm nghĩ của bạn về bữa ăn", style = MaterialTheme.typography.bodyMedium) },
-                        placeholder = { Text("Hôm nay bạn ăn gì? Trải nghiệm hương vị ra sao? Hãy chia sẻ cho cộng đồng nhé!", style = MaterialTheme.typography.bodyMedium) },
-                        modifier = Modifier
-                            .fillMaxWidth()
-                            .height(120.dp),
+                        placeholder = {
+                            Text(
+                                "Hôm nay bạn ăn gì? Trải nghiệm hương vị ra sao? Hãy chia sẻ cho cộng đồng nhé!",
+                                style = MaterialTheme.typography.bodyMedium,
+                            )
+                        },
+                        modifier =
+                            Modifier
+                                .fillMaxWidth()
+                                .height(120.dp),
                         shape = RoundedCornerShape(16.dp),
-                        colors = OutlinedTextFieldDefaults.colors(
-                            focusedBorderColor = MaterialTheme.colorScheme.primary,
-                            unfocusedBorderColor = MaterialTheme.colorScheme.outlineVariant
-                        ),
-                        singleLine = false
+                        colors =
+                            OutlinedTextFieldDefaults.colors(
+                                focusedBorderColor = MaterialTheme.colorScheme.primary,
+                                unfocusedBorderColor = MaterialTheme.colorScheme.outlineVariant,
+                            ),
+                        singleLine = false,
                     )
                 }
 
@@ -264,12 +298,13 @@ fun CreatePostScreen(
                             try {
                                 val session = AppContainer.observeSessionUseCase(application).invoke().value
                                 val uid = session?.uid
-                                val profile = if (uid != null) {
-                                    AppContainer.getCurrentUserProfileUseCase(application).invoke(uid)
-                                } else {
-                                    null
-                                }
-                                
+                                val profile =
+                                    if (uid != null) {
+                                        AppContainer.getCurrentUserProfileUseCase(application).invoke(uid)
+                                    } else {
+                                        null
+                                    }
+
                                 val targetPostId = existingPost?.id ?: UUID.randomUUID().toString()
                                 var finalImageUrl = mockImage
                                 if (selectedImageUri != null) {
@@ -281,29 +316,31 @@ fun CreatePostScreen(
                                         finalImageUrl = uriStr
                                     }
                                 }
-                                
+
                                 if (existingPost != null) {
                                     // Update existing post
-                                    val updatedPost = existingPost!!.copy(
-                                        caption = caption.trim(),
-                                        imageUrls = listOf(finalImageUrl),
-                                        location = restaurantName.trim(),
-                                        updatedAt = Date()
-                                    )
+                                    val updatedPost =
+                                        existingPost!!.copy(
+                                            caption = caption.trim(),
+                                            imageUrls = listOf(finalImageUrl),
+                                            location = restaurantName.trim(),
+                                            updatedAt = Date(),
+                                        )
                                     AppContainer.feedRepository().updatePost(updatedPost)
                                 } else {
                                     // Create brand new post
-                                    val newPost = Post(
-                                        id = targetPostId,
-                                        authorUid = profile?.uid ?: "",
-                                        authorName = profile?.displayName ?: "User",
-                                        authorAvatar = profile?.avatarUrl ?: "",
-                                        caption = caption.trim(),
-                                        imageUrls = listOf(finalImageUrl),
-                                        location = restaurantName.trim(),
-                                        createdAt = Date(),
-                                        updatedAt = Date()
-                                    )
+                                    val newPost =
+                                        Post(
+                                            id = targetPostId,
+                                            authorUid = profile?.uid ?: "",
+                                            authorName = profile?.displayName ?: "User",
+                                            authorAvatar = profile?.avatarUrl ?: "",
+                                            caption = caption.trim(),
+                                            imageUrls = listOf(finalImageUrl),
+                                            location = restaurantName.trim(),
+                                            createdAt = Date(),
+                                            updatedAt = Date(),
+                                        )
                                     AppContainer.feedRepository().createPost(newPost)
                                 }
                                 onBack()
@@ -313,22 +350,24 @@ fun CreatePostScreen(
                             }
                         }
                     },
-                    modifier = Modifier
-                        .fillMaxWidth()
-                        .height(52.dp),
+                    modifier =
+                        Modifier
+                            .fillMaxWidth()
+                            .height(52.dp),
                     shape = RoundedCornerShape(26.dp),
-                    colors = ButtonDefaults.buttonColors(
-                        containerColor = MaterialTheme.colorScheme.primary,
-                        contentColor = Color.White
-                    ),
-                    enabled = restaurantName.isNotBlank() && caption.isNotBlank() && !isPosting
+                    colors =
+                        ButtonDefaults.buttonColors(
+                            containerColor = MaterialTheme.colorScheme.primary,
+                            contentColor = Color.White,
+                        ),
+                    enabled = restaurantName.isNotBlank() && caption.isNotBlank() && !isPosting,
                 ) {
                     if (isPosting) {
                         CircularProgressIndicator(modifier = Modifier.size(24.dp), strokeWidth = 2.5.dp, color = Color.White)
                     } else {
                         Text(
-                            if (existingPost != null) "Cập nhật bài viết" else "Đăng bài viết", 
-                            style = MaterialTheme.typography.titleMedium.copy(fontWeight = FontWeight.Bold)
+                            if (existingPost != null) "Cập nhật bài viết" else "Đăng bài viết",
+                            style = MaterialTheme.typography.titleMedium.copy(fontWeight = FontWeight.Bold),
                         )
                     }
                 }

@@ -50,7 +50,9 @@ import com.example.dinesplit.core.common.AppContainer
 import com.example.dinesplit.core.firebase.FirebaseProviders
 
 private enum class SettlementRelation {
-    YouPay, YouReceive, GroupTransfer
+    YouPay,
+    YouReceive,
+    GroupTransfer,
 }
 
 private data class SettlementDisplayItem(
@@ -59,68 +61,80 @@ private data class SettlementDisplayItem(
     val toName: String,
     val toInitial: String,
     val amount: Double,
-    val relation: SettlementRelation
+    val relation: SettlementRelation,
 )
 
 @Composable
 fun SettleSummaryScreen(
     groupId: String,
-    onBack: () -> Unit
+    onBack: () -> Unit,
 ) {
     val context = LocalContext.current
-    val viewModel = remember(groupId) {
-        GroupDetailViewModel(
-            repository = AppContainer.splitRepository(context),
-            groupId = groupId,
-            currentUserId = FirebaseProviders.auth.currentUser?.uid
-        )
-    }
+    val viewModel =
+        remember(groupId) {
+            GroupDetailViewModel(
+                repository = AppContainer.splitRepository(context),
+                groupId = groupId,
+                currentUserId = FirebaseProviders.auth.currentUser?.uid,
+            )
+        }
     val uiState by viewModel.uiState.collectAsState()
     val currentUserId = uiState.currentUserId
-    val settlements = uiState.settlements.map { suggestion ->
-        val fromMember = uiState.members.firstOrNull { it.id == suggestion.fromMemberId }
-        val toMember = uiState.members.firstOrNull { it.id == suggestion.toMemberId }
-        val relation = when {
-            suggestion.fromMemberId == currentUserId -> SettlementRelation.YouPay
-            suggestion.toMemberId == currentUserId -> SettlementRelation.YouReceive
-            else -> SettlementRelation.GroupTransfer
+    val settlements =
+        uiState.settlements.map { suggestion ->
+            val fromMember = uiState.members.firstOrNull { it.id == suggestion.fromMemberId }
+            val toMember = uiState.members.firstOrNull { it.id == suggestion.toMemberId }
+            val relation =
+                when {
+                    suggestion.fromMemberId == currentUserId -> SettlementRelation.YouPay
+                    suggestion.toMemberId == currentUserId -> SettlementRelation.YouReceive
+                    else -> SettlementRelation.GroupTransfer
+                }
+            SettlementDisplayItem(
+                fromName = if (suggestion.fromMemberId == currentUserId) "Bạn" else suggestion.fromName,
+                fromInitial =
+                    if (suggestion.fromMemberId == currentUserId) {
+                        "B"
+                    } else {
+                        fromMember?.initial ?: suggestion.fromName.firstOrNull()?.uppercase().orEmpty()
+                    },
+                toName = if (suggestion.toMemberId == currentUserId) "Bạn" else suggestion.toName,
+                toInitial =
+                    if (suggestion.toMemberId == currentUserId) {
+                        "B"
+                    } else {
+                        toMember?.initial ?: suggestion.toName.firstOrNull()?.uppercase().orEmpty()
+                    },
+                amount = suggestion.amount,
+                relation = relation,
+            )
         }
-        SettlementDisplayItem(
-            fromName = if (suggestion.fromMemberId == currentUserId) "Bạn" else suggestion.fromName,
-            fromInitial = if (suggestion.fromMemberId == currentUserId) "B" else {
-                fromMember?.initial ?: suggestion.fromName.firstOrNull()?.uppercase().orEmpty()
-            },
-            toName = if (suggestion.toMemberId == currentUserId) "Bạn" else suggestion.toName,
-            toInitial = if (suggestion.toMemberId == currentUserId) "B" else {
-                toMember?.initial ?: suggestion.toName.firstOrNull()?.uppercase().orEmpty()
-            },
-            amount = suggestion.amount,
-            relation = relation
-        )
-    }
-    val totalYouPay = settlements
-        .filter { it.relation == SettlementRelation.YouPay }
-        .sumOf { it.amount }
-    val totalYouReceive = settlements
-        .filter { it.relation == SettlementRelation.YouReceive }
-        .sumOf { it.amount }
+    val totalYouPay =
+        settlements
+            .filter { it.relation == SettlementRelation.YouPay }
+            .sumOf { it.amount }
+    val totalYouReceive =
+        settlements
+            .filter { it.relation == SettlementRelation.YouReceive }
+            .sumOf { it.amount }
 
     Scaffold(
         containerColor = MaterialTheme.colorScheme.surface,
         topBar = {
             SettleTopBar(
                 groupName = uiState.group?.name,
-                onBack = onBack
+                onBack = onBack,
             )
-        }
+        },
     ) { paddingValues ->
         when {
             uiState.isLoading -> {
                 Box(
-                    modifier = Modifier
-                        .fillMaxSize()
-                        .padding(paddingValues),
-                    contentAlignment = Alignment.Center
+                    modifier =
+                        Modifier
+                            .fillMaxSize()
+                            .padding(paddingValues),
+                    contentAlignment = Alignment.Center,
                 ) {
                     CircularProgressIndicator()
                 }
@@ -128,23 +142,25 @@ fun SettleSummaryScreen(
 
             uiState.error != null -> {
                 SettleMessage(
-                    modifier = Modifier
-                        .fillMaxSize()
-                        .padding(paddingValues)
-                        .padding(horizontal = 24.dp),
+                    modifier =
+                        Modifier
+                            .fillMaxSize()
+                            .padding(paddingValues)
+                            .padding(horizontal = 24.dp),
                     title = "Không thể tải số dư",
-                    message = uiState.error.orEmpty()
+                    message = uiState.error.orEmpty(),
                 )
             }
 
             else -> {
                 LazyColumn(
-                    modifier = Modifier
-                        .fillMaxSize()
-                        .padding(paddingValues)
-                        .padding(horizontal = 20.dp),
+                    modifier =
+                        Modifier
+                            .fillMaxSize()
+                            .padding(paddingValues)
+                            .padding(horizontal = 20.dp),
                     contentPadding = PaddingValues(top = 20.dp, bottom = 28.dp),
-                    horizontalAlignment = Alignment.CenterHorizontally
+                    horizontalAlignment = Alignment.CenterHorizontally,
                 ) {
                     item {
                         SettleHeroSection(settlementCount = settlements.size)
@@ -157,7 +173,7 @@ fun SettleSummaryScreen(
                     item {
                         SettleStatsCard(
                             totalYouPay = totalYouPay,
-                            totalYouReceive = totalYouReceive
+                            totalYouReceive = totalYouReceive,
                         )
                     }
                     item { Spacer(modifier = Modifier.height(20.dp)) }
@@ -167,7 +183,7 @@ fun SettleSummaryScreen(
                             fontSize = 12.sp,
                             color = MaterialTheme.colorScheme.onSurfaceVariant,
                             textAlign = TextAlign.Center,
-                            modifier = Modifier.padding(horizontal = 12.dp)
+                            modifier = Modifier.padding(horizontal = 12.dp),
                         )
                     }
                 }
@@ -179,36 +195,38 @@ fun SettleSummaryScreen(
 @Composable
 private fun SettleTopBar(
     groupName: String?,
-    onBack: () -> Unit
+    onBack: () -> Unit,
 ) {
     val colorScheme = MaterialTheme.colorScheme
     Row(
-        modifier = Modifier
-            .fillMaxWidth()
-            .background(colorScheme.surfaceContainerLowest)
-            .statusBarsPadding()
-            .padding(horizontal = 12.dp, vertical = 10.dp),
-        verticalAlignment = Alignment.CenterVertically
+        modifier =
+            Modifier
+                .fillMaxWidth()
+                .background(colorScheme.surfaceContainerLowest)
+                .statusBarsPadding()
+                .padding(horizontal = 12.dp, vertical = 10.dp),
+        verticalAlignment = Alignment.CenterVertically,
     ) {
         IconButton(onClick = onBack, modifier = Modifier.size(40.dp)) {
             Icon(
                 imageVector = Icons.AutoMirrored.Filled.ArrowBack,
                 contentDescription = "Quay lại",
-                tint = colorScheme.primary
+                tint = colorScheme.primary,
             )
         }
 
         Column(
-            modifier = Modifier
-                .weight(1f)
-                .padding(horizontal = 8.dp),
-            horizontalAlignment = Alignment.CenterHorizontally
+            modifier =
+                Modifier
+                    .weight(1f)
+                    .padding(horizontal = 8.dp),
+            horizontalAlignment = Alignment.CenterHorizontally,
         ) {
             Text(
                 text = "Chốt sổ",
                 fontSize = 18.sp,
                 fontWeight = FontWeight.Bold,
-                color = colorScheme.onSurface
+                color = colorScheme.onSurface,
             )
             if (!groupName.isNullOrBlank()) {
                 Text(
@@ -216,7 +234,7 @@ private fun SettleTopBar(
                     fontSize = 12.sp,
                     color = colorScheme.onSurfaceVariant,
                     maxLines = 1,
-                    overflow = TextOverflow.Ellipsis
+                    overflow = TextOverflow.Ellipsis,
                 )
             }
         }
@@ -229,25 +247,27 @@ private fun SettleTopBar(
 private fun SettleHeroSection(settlementCount: Int) {
     val colorScheme = MaterialTheme.colorScheme
     val title = if (settlementCount == 0) "Đã cân bằng!" else "Các khoản cần đối soát"
-    val subtitle = if (settlementCount == 0) {
-        "Hiện tại nhóm không còn khoản nợ chưa thanh toán."
-    } else {
-        "Còn $settlementCount giao dịch để cân bằng số dư của nhóm."
-    }
+    val subtitle =
+        if (settlementCount == 0) {
+            "Hiện tại nhóm không còn khoản nợ chưa thanh toán."
+        } else {
+            "Còn $settlementCount giao dịch để cân bằng số dư của nhóm."
+        }
 
     Column(horizontalAlignment = Alignment.CenterHorizontally) {
         Box(
-            modifier = Modifier
-                .size(56.dp)
-                .clip(CircleShape)
-                .background(colorScheme.primaryContainer.copy(alpha = 0.16f)),
-            contentAlignment = Alignment.Center
+            modifier =
+                Modifier
+                    .size(56.dp)
+                    .clip(CircleShape)
+                    .background(colorScheme.primaryContainer.copy(alpha = 0.16f)),
+            contentAlignment = Alignment.Center,
         ) {
             Icon(
                 imageVector = Icons.Default.Star,
                 contentDescription = null,
                 tint = colorScheme.primary,
-                modifier = Modifier.size(28.dp)
+                modifier = Modifier.size(28.dp),
             )
         }
 
@@ -258,7 +278,7 @@ private fun SettleHeroSection(settlementCount: Int) {
             fontSize = 24.sp,
             fontWeight = FontWeight.ExtraBold,
             color = colorScheme.onSurface,
-            textAlign = TextAlign.Center
+            textAlign = TextAlign.Center,
         )
 
         Spacer(modifier = Modifier.height(8.dp))
@@ -267,7 +287,7 @@ private fun SettleHeroSection(settlementCount: Int) {
             text = subtitle,
             fontSize = 13.sp,
             color = colorScheme.onSurfaceVariant,
-            textAlign = TextAlign.Center
+            textAlign = TextAlign.Center,
         )
     }
 }
@@ -282,14 +302,14 @@ private fun SettleDebtList(debts: List<SettlementDisplayItem>) {
             fontWeight = FontWeight.Bold,
             color = colorScheme.onSurfaceVariant,
             letterSpacing = 1.2.sp,
-            modifier = Modifier.padding(start = 8.dp, bottom = 12.dp)
+            modifier = Modifier.padding(start = 8.dp, bottom = 12.dp),
         )
 
         if (debts.isEmpty()) {
             SettleMessage(
                 modifier = Modifier.fillMaxWidth(),
                 title = "Không có khoản cần thanh toán",
-                message = "Mọi khoản chia tiền trong nhóm đã được cân bằng."
+                message = "Mọi khoản chia tiền trong nhóm đã được cân bằng.",
             )
             return
         }
@@ -298,7 +318,7 @@ private fun SettleDebtList(debts: List<SettlementDisplayItem>) {
             modifier = Modifier.fillMaxWidth(),
             colors = CardDefaults.cardColors(containerColor = colorScheme.surfaceContainerLowest),
             elevation = CardDefaults.cardElevation(defaultElevation = 2.dp),
-            shape = RoundedCornerShape(20.dp)
+            shape = RoundedCornerShape(20.dp),
         ) {
             Column {
                 debts.forEachIndexed { index, debt ->
@@ -315,63 +335,67 @@ private fun SettleDebtList(debts: List<SettlementDisplayItem>) {
 @Composable
 private fun SettlementRow(debt: SettlementDisplayItem) {
     val colorScheme = MaterialTheme.colorScheme
-    val accentColor = when (debt.relation) {
-        SettlementRelation.YouPay -> colorScheme.primary
-        SettlementRelation.YouReceive -> colorScheme.secondary
-        SettlementRelation.GroupTransfer -> colorScheme.onSurfaceVariant
-    }
-    val relationLabel = when (debt.relation) {
-        SettlementRelation.YouPay -> "Bạn cần trả"
-        SettlementRelation.YouReceive -> "Bạn sẽ nhận"
-        SettlementRelation.GroupTransfer -> "Đối soát trong nhóm"
-    }
+    val accentColor =
+        when (debt.relation) {
+            SettlementRelation.YouPay -> colorScheme.primary
+            SettlementRelation.YouReceive -> colorScheme.secondary
+            SettlementRelation.GroupTransfer -> colorScheme.onSurfaceVariant
+        }
+    val relationLabel =
+        when (debt.relation) {
+            SettlementRelation.YouPay -> "Bạn cần trả"
+            SettlementRelation.YouReceive -> "Bạn sẽ nhận"
+            SettlementRelation.GroupTransfer -> "Đối soát trong nhóm"
+        }
 
     Column(
-        modifier = Modifier
-            .fillMaxWidth()
-            .padding(horizontal = 16.dp, vertical = 14.dp)
+        modifier =
+            Modifier
+                .fillMaxWidth()
+                .padding(horizontal = 16.dp, vertical = 14.dp),
     ) {
         Row(
             modifier = Modifier.fillMaxWidth(),
-            verticalAlignment = Alignment.CenterVertically
+            verticalAlignment = Alignment.CenterVertically,
         ) {
             SettlementMember(
                 modifier = Modifier.weight(1f),
                 name = debt.fromName,
                 initial = debt.fromInitial,
-                isCurrentUser = debt.relation == SettlementRelation.YouPay
+                isCurrentUser = debt.relation == SettlementRelation.YouPay,
             )
             Column(
                 modifier = Modifier.padding(horizontal = 8.dp),
-                horizontalAlignment = Alignment.CenterHorizontally
+                horizontalAlignment = Alignment.CenterHorizontally,
             ) {
                 Text(
                     text = "${formatSettleAmount(debt.amount)} đ",
                     fontSize = 14.sp,
                     fontWeight = FontWeight.ExtraBold,
                     color = accentColor,
-                    maxLines = 1
+                    maxLines = 1,
                 )
                 HorizontalDivider(
                     modifier = Modifier.width(54.dp),
                     color = colorScheme.surfaceContainerHigh,
-                    thickness = 2.dp
+                    thickness = 2.dp,
                 )
                 Icon(
                     imageVector = Icons.AutoMirrored.Filled.ArrowForward,
                     contentDescription = null,
                     tint = accentColor,
-                    modifier = Modifier
-                        .offset(y = (-10).dp)
-                        .size(18.dp)
-                        .background(colorScheme.surfaceContainerLowest)
+                    modifier =
+                        Modifier
+                            .offset(y = (-10).dp)
+                            .size(18.dp)
+                            .background(colorScheme.surfaceContainerLowest),
                 )
             }
             SettlementMember(
                 modifier = Modifier.weight(1f),
                 name = debt.toName,
                 initial = debt.toInitial,
-                isCurrentUser = debt.relation == SettlementRelation.YouReceive
+                isCurrentUser = debt.relation == SettlementRelation.YouReceive,
             )
         }
 
@@ -380,7 +404,7 @@ private fun SettlementRow(debt: SettlementDisplayItem) {
         Surface(
             modifier = Modifier.fillMaxWidth(),
             color = accentColor.copy(alpha = 0.10f),
-            shape = RoundedCornerShape(16.dp)
+            shape = RoundedCornerShape(16.dp),
         ) {
             Text(
                 text = relationLabel,
@@ -388,7 +412,7 @@ private fun SettlementRow(debt: SettlementDisplayItem) {
                 textAlign = TextAlign.Center,
                 fontSize = 13.sp,
                 fontWeight = FontWeight.Bold,
-                color = accentColor
+                color = accentColor,
             )
         }
     }
@@ -399,25 +423,26 @@ private fun SettlementMember(
     modifier: Modifier,
     name: String,
     initial: String,
-    isCurrentUser: Boolean
+    isCurrentUser: Boolean,
 ) {
     val colorScheme = MaterialTheme.colorScheme
     Column(
         modifier = modifier,
-        horizontalAlignment = Alignment.CenterHorizontally
+        horizontalAlignment = Alignment.CenterHorizontally,
     ) {
         Box(
-            modifier = Modifier
-                .size(42.dp)
-                .clip(CircleShape)
-                .background(if (isCurrentUser) colorScheme.primary else colorScheme.outlineVariant),
-            contentAlignment = Alignment.Center
+            modifier =
+                Modifier
+                    .size(42.dp)
+                    .clip(CircleShape)
+                    .background(if (isCurrentUser) colorScheme.primary else colorScheme.outlineVariant),
+            contentAlignment = Alignment.Center,
         ) {
             Text(
                 text = initial,
                 color = colorScheme.surfaceContainerLowest,
                 fontWeight = FontWeight.Bold,
-                fontSize = 16.sp
+                fontSize = 16.sp,
             )
         }
         Spacer(modifier = Modifier.height(6.dp))
@@ -427,7 +452,7 @@ private fun SettlementMember(
             fontWeight = FontWeight.Bold,
             color = colorScheme.onSurface,
             maxLines = 1,
-            overflow = TextOverflow.Ellipsis
+            overflow = TextOverflow.Ellipsis,
         )
     }
 }
@@ -435,26 +460,26 @@ private fun SettlementMember(
 @Composable
 private fun SettleStatsCard(
     totalYouPay: Double,
-    totalYouReceive: Double
+    totalYouReceive: Double,
 ) {
     val colorScheme = MaterialTheme.colorScheme
     Row(
         modifier = Modifier.fillMaxWidth(),
-        horizontalArrangement = Arrangement.spacedBy(12.dp)
+        horizontalArrangement = Arrangement.spacedBy(12.dp),
     ) {
         SettleStat(
             modifier = Modifier.weight(1f),
             title = "TỔNG BẠN TRẢ",
             amount = totalYouPay,
             containerColor = colorScheme.errorContainer.copy(alpha = 0.35f),
-            contentColor = colorScheme.primary
+            contentColor = colorScheme.primary,
         )
         SettleStat(
             modifier = Modifier.weight(1f),
             title = "TỔNG NHẬN VỀ",
             amount = totalYouReceive,
             containerColor = colorScheme.secondaryContainer,
-            contentColor = colorScheme.secondary
+            contentColor = colorScheme.secondary,
         )
     }
 }
@@ -465,20 +490,20 @@ private fun SettleStat(
     title: String,
     amount: Double,
     containerColor: Color,
-    contentColor: Color
+    contentColor: Color,
 ) {
     Card(
         modifier = modifier,
         colors = CardDefaults.cardColors(containerColor = containerColor),
         elevation = CardDefaults.cardElevation(defaultElevation = 0.dp),
-        shape = RoundedCornerShape(16.dp)
+        shape = RoundedCornerShape(16.dp),
     ) {
         Column(modifier = Modifier.padding(horizontal = 14.dp, vertical = 16.dp)) {
             Text(
                 text = title,
                 fontSize = 10.sp,
                 fontWeight = FontWeight.Bold,
-                color = contentColor
+                color = contentColor,
             )
             Spacer(modifier = Modifier.height(8.dp))
             Text(
@@ -486,7 +511,7 @@ private fun SettleStat(
                 fontSize = 19.sp,
                 fontWeight = FontWeight.Black,
                 color = contentColor,
-                maxLines = 1
+                maxLines = 1,
             )
         }
     }
@@ -496,35 +521,36 @@ private fun SettleStat(
 private fun SettleMessage(
     modifier: Modifier,
     title: String,
-    message: String
+    message: String,
 ) {
     Box(
         modifier = modifier,
-        contentAlignment = Alignment.Center
+        contentAlignment = Alignment.Center,
     ) {
         Card(
             modifier = Modifier.fillMaxWidth(),
-            colors = CardDefaults.cardColors(
-                containerColor = MaterialTheme.colorScheme.surfaceContainerLowest
-            ),
-            shape = RoundedCornerShape(20.dp)
+            colors =
+                CardDefaults.cardColors(
+                    containerColor = MaterialTheme.colorScheme.surfaceContainerLowest,
+                ),
+            shape = RoundedCornerShape(20.dp),
         ) {
             Column(
                 modifier = Modifier.padding(20.dp),
-                horizontalAlignment = Alignment.CenterHorizontally
+                horizontalAlignment = Alignment.CenterHorizontally,
             ) {
                 Text(
                     text = title,
                     fontWeight = FontWeight.Bold,
                     color = MaterialTheme.colorScheme.onSurface,
-                    textAlign = TextAlign.Center
+                    textAlign = TextAlign.Center,
                 )
                 Spacer(modifier = Modifier.height(6.dp))
                 Text(
                     text = message,
                     fontSize = 13.sp,
                     color = MaterialTheme.colorScheme.onSurfaceVariant,
-                    textAlign = TextAlign.Center
+                    textAlign = TextAlign.Center,
                 )
             }
         }

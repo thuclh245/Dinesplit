@@ -7,28 +7,28 @@ import com.example.dinesplit.core.firebase.FirestoreCollections
 import com.example.dinesplit.domain.exception.UsernameAlreadyExistsException
 import com.example.dinesplit.domain.model.UserProfile
 import com.example.dinesplit.domain.repository.ProfileRepository
-import java.util.Date
 import com.google.android.gms.tasks.Task
 import com.google.firebase.firestore.DocumentSnapshot
 import com.google.firebase.firestore.SetOptions
 import kotlinx.coroutines.suspendCancellableCoroutine
+import java.util.Date
 import kotlin.coroutines.resume
 import kotlin.coroutines.resumeWithException
 
 class FirebaseProfileRepository private constructor(
-    @Suppress("UNUSED_PARAMETER") context: Context
+    @Suppress("UNUSED_PARAMETER") context: Context,
 ) : ProfileRepository {
-
     private val firestore = FirebaseProviders.firestore
     private val storage = FirebaseProviders.storage
 
     override suspend fun getProfile(uid: String): UserProfile? {
         return try {
-            val snapshot = firestore
-                .collection(COLLECTION_USERS)
-                .document(uid)
-                .get()
-                .awaitFirebase()
+            val snapshot =
+                firestore
+                    .collection(COLLECTION_USERS)
+                    .document(uid)
+                    .get()
+                    .awaitFirebase()
 
             snapshot.toUserProfile(uid)
         } catch (e: Exception) {
@@ -37,26 +37,30 @@ class FirebaseProfileRepository private constructor(
         }
     }
 
-    override suspend fun searchProfiles(query: String, limit: Long): Result<List<UserProfile>> {
+    override suspend fun searchProfiles(
+        query: String,
+        limit: Long,
+    ): Result<List<UserProfile>> {
         return runCatching {
             val normalizedQuery = normalizeUsername(query)
             val usersRef = firestore.collection(COLLECTION_USERS)
 
-            val snapshot = if (normalizedQuery.isBlank()) {
-                usersRef
-                    .orderBy(FIELD_UPDATED_AT, com.google.firebase.firestore.Query.Direction.DESCENDING)
-                    .limit(limit)
-                    .get()
-                    .awaitFirebase()
-            } else {
-                usersRef
-                    .orderBy(FIELD_USERNAME_LOWER)
-                    .startAt(normalizedQuery)
-                    .endAt(normalizedQuery + "\uf8ff")
-                    .limit(limit)
-                    .get()
-                    .awaitFirebase()
-            }
+            val snapshot =
+                if (normalizedQuery.isBlank()) {
+                    usersRef
+                        .orderBy(FIELD_UPDATED_AT, com.google.firebase.firestore.Query.Direction.DESCENDING)
+                        .limit(limit)
+                        .get()
+                        .awaitFirebase()
+                } else {
+                    usersRef
+                        .orderBy(FIELD_USERNAME_LOWER)
+                        .startAt(normalizedQuery)
+                        .endAt(normalizedQuery + "\uf8ff")
+                        .limit(limit)
+                        .get()
+                        .awaitFirebase()
+                }
 
             snapshot.documents.mapNotNull { document ->
                 document.toUserProfile(document.id)
@@ -85,12 +89,12 @@ class FirebaseProfileRepository private constructor(
             batch.set(
                 profileRef,
                 profile.toFirestoreMap(normalizedUsername),
-                SetOptions.merge()
+                SetOptions.merge(),
             )
             batch.set(
                 claimRef,
                 profile.toUsernameClaimMap(normalizedUsername),
-                SetOptions.merge()
+                SetOptions.merge(),
             )
 
             // Release the previous username in the same atomic write.
@@ -102,7 +106,10 @@ class FirebaseProfileRepository private constructor(
         }
     }
 
-    override suspend fun uploadAvatar(uid: String, avatarUri: Uri): Result<String> {
+    override suspend fun uploadAvatar(
+        uid: String,
+        avatarUri: Uri,
+    ): Result<String> {
         return runCatching {
             val avatarReference = avatarDocument(uid)
             avatarReference.putFile(avatarUri).awaitFirebase()
@@ -112,11 +119,9 @@ class FirebaseProfileRepository private constructor(
 
     private fun profileDocument(uid: String) = firestore.collection(COLLECTION_USERS).document(uid)
 
-    private fun usernameClaimDocument(usernameLower: String) =
-        firestore.collection(COLLECTION_USERNAME_CLAIMS).document(usernameLower)
+    private fun usernameClaimDocument(usernameLower: String) = firestore.collection(COLLECTION_USERNAME_CLAIMS).document(usernameLower)
 
-    private fun avatarDocument(uid: String) =
-        storage.reference.child("avatars/$uid/profile_avatar.jpg")
+    private fun avatarDocument(uid: String) = storage.reference.child("avatars/$uid/profile_avatar.jpg")
 
     private fun UserProfile.toFirestoreMap(normalizedUsername: String): Map<String, Any> {
         return mapOf(
@@ -133,7 +138,7 @@ class FirebaseProfileRepository private constructor(
             FIELD_POSTS_COUNT to postsCount,
             FIELD_FCM_TOKEN to fcmToken,
             FIELD_CREATED_AT to (createdAt?.time ?: 0L),
-            FIELD_UPDATED_AT to (updatedAt?.time ?: System.currentTimeMillis())
+            FIELD_UPDATED_AT to (updatedAt?.time ?: System.currentTimeMillis()),
         )
     }
 
@@ -144,7 +149,7 @@ class FirebaseProfileRepository private constructor(
             FIELD_USERNAME to displayNameUsernameSafe(username),
             FIELD_USERNAME_LOWER to normalizedUsername,
             FIELD_CLAIMED_AT to now,
-            FIELD_UPDATED_AT to now
+            FIELD_UPDATED_AT to now,
         )
     }
 
@@ -181,7 +186,7 @@ class FirebaseProfileRepository private constructor(
             postsCount = postsCount,
             fcmToken = fcmToken,
             createdAt = createdAt,
-            updatedAt = updatedAt
+            updatedAt = updatedAt,
         )
     }
 
@@ -201,7 +206,7 @@ class FirebaseProfileRepository private constructor(
                     continuation.resume(task.result)
                 } else {
                     continuation.resumeWithException(
-                        task.exception ?: IllegalStateException("Firebase task failed")
+                        task.exception ?: IllegalStateException("Firebase task failed"),
                     )
                 }
             }
@@ -237,5 +242,3 @@ class FirebaseProfileRepository private constructor(
         }
     }
 }
-
-

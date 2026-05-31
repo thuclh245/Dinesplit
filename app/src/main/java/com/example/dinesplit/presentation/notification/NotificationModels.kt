@@ -12,7 +12,7 @@ data class NotificationItemUi(
     val title: String,
     val subtitle: String,
     val trailingText: String,
-    val isRead: Boolean = false
+    val isRead: Boolean = false,
 )
 
 /**
@@ -22,6 +22,5 @@ data class NotificationItemUi(
 data class NotificationListState(
     val notifications: List<NotificationItemUi> = emptyList(),
     val isLoading: Boolean = false,
-    val errorMessage: String? = null
+    val errorMessage: String? = null,
 )
-

@@ -43,7 +43,7 @@ import kotlinx.coroutines.launch
 
 enum class CategoryTypeFilter(val label: String) {
     EXPENSE("Expense"),
-    INCOME("Income")
+    INCOME("Income"),
 }
 
 data class ManagedCategory(
@@ -55,14 +55,14 @@ data class ManagedCategory(
     val description: String,
     val amountLabel: String,
     val progress: Float,
-    val isActive: Boolean
+    val isActive: Boolean,
 )
 
 data class CategoryEditorInput(
     val name: String,
     val description: String,
     val isCustom: Boolean,
-    val type: CategoryTypeFilter
+    val type: CategoryTypeFilter,
 )
 
 @Composable
@@ -72,7 +72,7 @@ fun CategoryManagementScreen(
     onAddCategory: (CategoryEditorInput) -> Unit = {},
     onUpdateCategory: (ManagedCategory, CategoryEditorInput) -> Unit = { _, _ -> },
     onDeleteCategory: (ManagedCategory) -> Unit = {},
-    onBack: () -> Unit
+    onBack: () -> Unit,
 ) {
     val configuration = LocalConfiguration.current
     val isCompact = configuration.screenWidthDp < 600
@@ -85,9 +85,10 @@ fun CategoryManagementScreen(
     val snackbarHostState = remember { SnackbarHostState() }
     val coroutineScope = rememberCoroutineScope()
 
-    val filteredCategories = remember(categories, selectedType) {
-        categories.filter { it.type == selectedType }
-    }
+    val filteredCategories =
+        remember(categories, selectedType) {
+            categories.filter { it.type == selectedType }
+        }
     val featuredCategory = filteredCategories.firstOrNull()
     val sideCategories = filteredCategories.drop(1)
 
@@ -95,13 +96,14 @@ fun CategoryManagementScreen(
         title = "Category Management",
         navigationIcon = {
             BackNavigationButton(onClick = onBack)
-        }
+        },
     ) {
         Column(
-            modifier = Modifier
-                .fillMaxSize()
-                .verticalScroll(rememberScrollState()),
-            verticalArrangement = Arrangement.spacedBy(AppDimens.spaceLg)
+            modifier =
+                Modifier
+                    .fillMaxSize()
+                    .verticalScroll(rememberScrollState()),
+            verticalArrangement = Arrangement.spacedBy(AppDimens.spaceLg),
         ) {
             SnackbarHost(hostState = snackbarHostState)
 
@@ -113,14 +115,14 @@ fun CategoryManagementScreen(
                         onClick = {
                             creatingType = selectedType.name
                             isCreateDialogOpen = true
-                        }
+                        },
                     )
                 }
             } else {
                 Row(
                     modifier = Modifier.fillMaxWidth(),
                     horizontalArrangement = Arrangement.SpaceBetween,
-                    verticalAlignment = Alignment.Bottom
+                    verticalAlignment = Alignment.Bottom,
                 ) {
                     CategoryHeaderTitle()
                     NewCategoryActionCard(
@@ -128,20 +130,20 @@ fun CategoryManagementScreen(
                         onClick = {
                             creatingType = selectedType.name
                             isCreateDialogOpen = true
-                        }
+                        },
                     )
                 }
             }
 
             Row(
                 modifier = Modifier.fillMaxWidth(),
-                horizontalArrangement = Arrangement.spacedBy(AppDimens.spaceSm)
+                horizontalArrangement = Arrangement.spacedBy(AppDimens.spaceSm),
             ) {
                 CategoryTypeFilter.entries.forEach { type ->
                     FilterChip(
                         selected = selectedType == type,
                         onClick = { selectedType = type },
-                        label = { Text(type.label) }
+                        label = { Text(type.label) },
                     )
                 }
             }
@@ -150,21 +152,21 @@ fun CategoryManagementScreen(
                 FeaturedCategoryCard(
                     category = category,
                     onEdit = { editingCategory = category },
-                    onDelete = { deletingCategory = category }
+                    onDelete = { deletingCategory = category },
                 )
             }
 
             sideCategories.chunked(2).forEach { rowItems ->
                 Row(
                     modifier = Modifier.fillMaxWidth(),
-                    horizontalArrangement = Arrangement.spacedBy(AppDimens.spaceMd)
+                    horizontalArrangement = Arrangement.spacedBy(AppDimens.spaceMd),
                 ) {
                     rowItems.forEach { category ->
                         CategoryTileCard(
                             modifier = Modifier.weight(1f),
                             category = category,
                             onEdit = { editingCategory = category },
-                            onDelete = { deletingCategory = category }
+                            onDelete = { deletingCategory = category },
                         )
                     }
                     repeat(2 - rowItems.size) {
@@ -179,36 +181,38 @@ fun CategoryManagementScreen(
         if (isCreateDialogOpen) {
             CategoryEditorDialog(
                 title = "Create Category",
-                initialValue = CategoryEditorInput(
-                    name = "",
-                    description = "",
-                    isCustom = true,
-                    type = CategoryTypeFilter.valueOf(creatingType)
-                ),
+                initialValue =
+                    CategoryEditorInput(
+                        name = "",
+                        description = "",
+                        isCustom = true,
+                        type = CategoryTypeFilter.valueOf(creatingType),
+                    ),
                 onDismiss = { isCreateDialogOpen = false },
                 onConfirm = { input ->
                     onAddCategory(input)
                     isCreateDialogOpen = false
                     coroutineScope.launch { snackbarHostState.showSnackbar("Category created") }
-                }
+                },
             )
         }
 
         editingCategory?.let { category ->
             CategoryEditorDialog(
                 title = "Edit Category",
-                initialValue = CategoryEditorInput(
-                    name = category.name,
-                    description = category.description,
-                    isCustom = category.isCustom,
-                    type = category.type
-                ),
+                initialValue =
+                    CategoryEditorInput(
+                        name = category.name,
+                        description = category.description,
+                        isCustom = category.isCustom,
+                        type = category.type,
+                    ),
                 onDismiss = { editingCategory = null },
                 onConfirm = { input ->
                     onUpdateCategory(category, input)
                     editingCategory = null
                     coroutineScope.launch { snackbarHostState.showSnackbar("Category updated") }
-                }
+                },
             )
         }
 
@@ -230,7 +234,7 @@ fun CategoryManagementScreen(
                             onDeleteCategory(category)
                             deletingCategory = null
                             coroutineScope.launch { snackbarHostState.showSnackbar("Category deleted") }
-                        }
+                        },
                     ) {
                         Text("Delete")
                     }
@@ -239,7 +243,7 @@ fun CategoryManagementScreen(
                     TextButton(onClick = { deletingCategory = null }) {
                         Text("Cancel")
                     }
-                }
+                },
             )
         }
     }
@@ -251,11 +255,11 @@ private fun CategoryHeaderTitle() {
         Text(
             text = "Category Management",
             style = MaterialTheme.typography.labelMedium,
-            color = MaterialTheme.colorScheme.onSurfaceVariant
+            color = MaterialTheme.colorScheme.onSurfaceVariant,
         )
         Text(
             text = "Taxonomies.",
-            style = MaterialTheme.typography.displayMedium
+            style = MaterialTheme.typography.displayMedium,
         )
     }
 }
@@ -263,41 +267,42 @@ private fun CategoryHeaderTitle() {
 @Composable
 private fun NewCategoryActionCard(
     modifier: Modifier,
-    onClick: () -> Unit
+    onClick: () -> Unit,
 ) {
     AppCard(
         modifier = modifier,
-        contentPadding = PaddingValues(AppDimens.spaceMd)
+        contentPadding = PaddingValues(AppDimens.spaceMd),
     ) {
         Row(
             horizontalArrangement = Arrangement.spacedBy(AppDimens.spaceSm),
-            verticalAlignment = Alignment.CenterVertically
+            verticalAlignment = Alignment.CenterVertically,
         ) {
             Column(modifier = Modifier.weight(1f)) {
                 Text(
                     text = "New Category",
                     style = MaterialTheme.typography.labelSmall,
-                    color = MaterialTheme.colorScheme.onSurfaceVariant
+                    color = MaterialTheme.colorScheme.onSurfaceVariant,
                 )
                 Text(
                     text = "Expand Classification",
-                    style = MaterialTheme.typography.bodySmall
+                    style = MaterialTheme.typography.bodySmall,
                 )
             }
             Box(
-                modifier = Modifier
-                    .size(36.dp)
-                    .clickable(onClick = onClick)
-                    .background(
-                        color = MaterialTheme.colorScheme.primary,
-                        shape = MaterialTheme.shapes.medium
-                    ),
-                contentAlignment = Alignment.Center
+                modifier =
+                    Modifier
+                        .size(36.dp)
+                        .clickable(onClick = onClick)
+                        .background(
+                            color = MaterialTheme.colorScheme.primary,
+                            shape = MaterialTheme.shapes.medium,
+                        ),
+                contentAlignment = Alignment.Center,
             ) {
                 Text(
                     text = "+",
                     style = MaterialTheme.typography.titleLarge,
-                    color = MaterialTheme.colorScheme.onPrimary
+                    color = MaterialTheme.colorScheme.onPrimary,
                 )
             }
         }
@@ -308,34 +313,42 @@ private fun NewCategoryActionCard(
 private fun FeaturedCategoryCard(
     category: ManagedCategory,
     onEdit: () -> Unit,
-    onDelete: () -> Unit
+    onDelete: () -> Unit,
 ) {
     AppCard {
         Column(verticalArrangement = Arrangement.spacedBy(AppDimens.spaceMd)) {
             Row(
                 modifier = Modifier.fillMaxWidth(),
                 horizontalArrangement = Arrangement.SpaceBetween,
-                verticalAlignment = Alignment.Top
+                verticalAlignment = Alignment.Top,
             ) {
                 Box(
-                    modifier = Modifier
-                        .size(56.dp)
-                        .background(
-                            color = MaterialTheme.colorScheme.surfaceVariant,
-                            shape = MaterialTheme.shapes.large
-                        ),
-                    contentAlignment = Alignment.Center
+                    modifier =
+                        Modifier
+                            .size(56.dp)
+                            .background(
+                                color = MaterialTheme.colorScheme.surfaceVariant,
+                                shape = MaterialTheme.shapes.large,
+                            ),
+                    contentAlignment = Alignment.Center,
                 ) {
                     Text(
                         text = category.icon,
-                        style = MaterialTheme.typography.titleMedium
+                        style = MaterialTheme.typography.titleMedium,
                     )
                 }
 
                 Text(
-                    text = if (category.isActive) "Active" else if (category.isCustom) "Custom" else "Default",
+                    text =
+                        if (category.isActive) {
+                            "Active"
+                        } else if (category.isCustom) {
+                            "Custom"
+                        } else {
+                            "Default"
+                        },
                     style = MaterialTheme.typography.labelSmall,
-                    color = MaterialTheme.colorScheme.onSurfaceVariant
+                    color = MaterialTheme.colorScheme.onSurfaceVariant,
                 )
             }
 
@@ -343,33 +356,35 @@ private fun FeaturedCategoryCard(
             Text(
                 text = category.description,
                 style = MaterialTheme.typography.bodyMedium,
-                color = MaterialTheme.colorScheme.onSurfaceVariant
+                color = MaterialTheme.colorScheme.onSurfaceVariant,
             )
             Text(text = category.amountLabel, style = MaterialTheme.typography.displaySmall)
 
             Box(
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .height(8.dp)
-                    .background(
-                        color = MaterialTheme.colorScheme.surfaceVariant,
-                        shape = MaterialTheme.shapes.small
-                    )
-            ) {
-                Box(
-                    modifier = Modifier
-                        .fillMaxWidth(category.progress.coerceIn(0f, 1f))
+                modifier =
+                    Modifier
+                        .fillMaxWidth()
                         .height(8.dp)
                         .background(
-                            color = MaterialTheme.colorScheme.tertiary,
-                            shape = MaterialTheme.shapes.small
-                        )
+                            color = MaterialTheme.colorScheme.surfaceVariant,
+                            shape = MaterialTheme.shapes.small,
+                        ),
+            ) {
+                Box(
+                    modifier =
+                        Modifier
+                            .fillMaxWidth(category.progress.coerceIn(0f, 1f))
+                            .height(8.dp)
+                            .background(
+                                color = MaterialTheme.colorScheme.tertiary,
+                                shape = MaterialTheme.shapes.small,
+                            ),
                 )
             }
 
             Row(
                 modifier = Modifier.fillMaxWidth(),
-                horizontalArrangement = Arrangement.End
+                horizontalArrangement = Arrangement.End,
             ) {
                 TextButton(onClick = onEdit) { Text("Edit") }
                 TextButton(onClick = onDelete) { Text("Delete") }
@@ -383,18 +398,19 @@ private fun CategoryTileCard(
     modifier: Modifier = Modifier,
     category: ManagedCategory,
     onEdit: () -> Unit,
-    onDelete: () -> Unit
+    onDelete: () -> Unit,
 ) {
     AppCard(modifier = modifier) {
         Column(verticalArrangement = Arrangement.spacedBy(AppDimens.spaceSm)) {
             Box(
-                modifier = Modifier
-                    .size(44.dp)
-                    .background(
-                        color = MaterialTheme.colorScheme.surfaceVariant,
-                        shape = MaterialTheme.shapes.medium
-                    ),
-                contentAlignment = Alignment.Center
+                modifier =
+                    Modifier
+                        .size(44.dp)
+                        .background(
+                            color = MaterialTheme.colorScheme.surfaceVariant,
+                            shape = MaterialTheme.shapes.medium,
+                        ),
+                contentAlignment = Alignment.Center,
             ) {
                 Text(text = category.icon, style = MaterialTheme.typography.labelLarge)
             }
@@ -403,35 +419,37 @@ private fun CategoryTileCard(
             Text(
                 text = category.description,
                 style = MaterialTheme.typography.bodySmall,
-                color = MaterialTheme.colorScheme.onSurfaceVariant
+                color = MaterialTheme.colorScheme.onSurfaceVariant,
             )
             Text(text = category.amountLabel, style = MaterialTheme.typography.titleLarge)
 
             if (category.progress > 0f) {
                 Box(
-                    modifier = Modifier
-                        .fillMaxWidth()
-                        .height(6.dp)
-                        .background(
-                            color = MaterialTheme.colorScheme.surfaceVariant,
-                            shape = MaterialTheme.shapes.small
-                        )
-                ) {
-                    Box(
-                        modifier = Modifier
-                            .fillMaxWidth(category.progress.coerceIn(0f, 1f))
+                    modifier =
+                        Modifier
+                            .fillMaxWidth()
                             .height(6.dp)
                             .background(
-                                color = MaterialTheme.colorScheme.secondary,
-                                shape = MaterialTheme.shapes.small
-                            )
+                                color = MaterialTheme.colorScheme.surfaceVariant,
+                                shape = MaterialTheme.shapes.small,
+                            ),
+                ) {
+                    Box(
+                        modifier =
+                            Modifier
+                                .fillMaxWidth(category.progress.coerceIn(0f, 1f))
+                                .height(6.dp)
+                                .background(
+                                    color = MaterialTheme.colorScheme.secondary,
+                                    shape = MaterialTheme.shapes.small,
+                                ),
                     )
                 }
             }
 
             Row(
                 modifier = Modifier.fillMaxWidth(),
-                horizontalArrangement = Arrangement.End
+                horizontalArrangement = Arrangement.End,
             ) {
                 TextButton(onClick = onEdit) { Text("Edit") }
                 TextButton(onClick = onDelete) { Text("Delete") }
@@ -445,7 +463,7 @@ private fun CategoryEditorDialog(
     title: String,
     initialValue: CategoryEditorInput,
     onDismiss: () -> Unit,
-    onConfirm: (CategoryEditorInput) -> Unit
+    onConfirm: (CategoryEditorInput) -> Unit,
 ) {
     var name by remember(initialValue) { mutableStateOf(initialValue.name) }
     var description by remember(initialValue) { mutableStateOf(initialValue.description) }
@@ -461,26 +479,26 @@ private fun CategoryEditorDialog(
                     value = name,
                     onValueChange = { name = it },
                     label = { Text("Name") },
-                    singleLine = true
+                    singleLine = true,
                 )
                 OutlinedTextField(
                     value = description,
                     onValueChange = { description = it },
-                    label = { Text("Description") }
+                    label = { Text("Description") },
                 )
                 Row(horizontalArrangement = Arrangement.spacedBy(AppDimens.spaceSm)) {
                     CategoryTypeFilter.entries.forEach { type ->
                         FilterChip(
                             selected = selectedType == type,
                             onClick = { selectedType = type },
-                            label = { Text(type.label) }
+                            label = { Text(type.label) },
                         )
                     }
                 }
                 FilterChip(
                     selected = isCustom,
                     onClick = { isCustom = !isCustom },
-                    label = { Text(if (isCustom) "Custom" else "Default") }
+                    label = { Text(if (isCustom) "Custom" else "Default") },
                 )
             }
         },
@@ -493,15 +511,15 @@ private fun CategoryEditorDialog(
                             name = name.trim(),
                             description = description.trim(),
                             isCustom = isCustom,
-                            type = selectedType
-                        )
+                            type = selectedType,
+                        ),
                     )
-                }
+                },
             ) { Text("Save") }
         },
         dismissButton = {
             TextButton(onClick = onDismiss) { Text("Cancel") }
-        }
+        },
     )
 }
 
@@ -516,7 +534,7 @@ private fun previewManagedCategories(): List<ManagedCategory> {
             description = "Restaurants, cafes, and delivery.",
             amountLabel = "1,450,000 VND",
             progress = 0.65f,
-            isActive = true
+            isActive = true,
         ),
         ManagedCategory(
             id = "c_grocery",
@@ -527,7 +545,7 @@ private fun previewManagedCategories(): List<ManagedCategory> {
             description = "Supermarkets and local markets.",
             amountLabel = "820,000 VND",
             progress = 0.40f,
-            isActive = false
+            isActive = false,
         ),
         ManagedCategory(
             id = "c_transit",
@@ -538,7 +556,7 @@ private fun previewManagedCategories(): List<ManagedCategory> {
             description = "Rideshares and public transport.",
             amountLabel = "340,000 VND",
             progress = 0.0f,
-            isActive = false
+            isActive = false,
         ),
         ManagedCategory(
             id = "c_salary",
@@ -549,8 +567,8 @@ private fun previewManagedCategories(): List<ManagedCategory> {
             description = "Monthly fixed salary income.",
             amountLabel = "3,500,000 VND",
             progress = 0.72f,
-            isActive = true
-        )
+            isActive = true,
+        ),
     )
 }
 

@@ -26,7 +26,7 @@ data class RegisterUiState(
     val confirmPasswordError: String? = null,
     val isSubmitting: Boolean = false,
     val submitError: String? = null,
-    val isTermsAccepted: Boolean = false
+    val isTermsAccepted: Boolean = false,
 )
 
 sealed interface RegisterUiEffect {
@@ -34,7 +34,6 @@ sealed interface RegisterUiEffect {
 }
 
 class RegisterViewModel(application: Application) : AndroidViewModel(application) {
-
     private val registerUseCase = AppContainer.registerUseCase(application)
 
     private val _uiState = MutableStateFlow(RegisterUiState())
@@ -52,12 +51,13 @@ class RegisterViewModel(application: Application) : AndroidViewModel(application
     }
 
     fun onPasswordChange(value: String) {
-        _uiState.value = _uiState.value.copy(
-            password = value,
-            passwordError = null,
-            confirmPasswordError = null,
-            submitError = null
-        )
+        _uiState.value =
+            _uiState.value.copy(
+                password = value,
+                passwordError = null,
+                confirmPasswordError = null,
+                submitError = null,
+            )
     }
 
     fun onConfirmPasswordChange(value: String) {
@@ -78,19 +78,21 @@ class RegisterViewModel(application: Application) : AndroidViewModel(application
         val confirmError = AuthInputValidator.validateConfirmPassword(current.password, current.confirmPassword)
 
         if (displayNameError != null || emailError != null || passwordError != null || confirmError != null) {
-            _uiState.value = current.copy(
-                displayNameError = displayNameError,
-                emailError = emailError,
-                passwordError = passwordError,
-                confirmPasswordError = confirmError
-            )
+            _uiState.value =
+                current.copy(
+                    displayNameError = displayNameError,
+                    emailError = emailError,
+                    passwordError = passwordError,
+                    confirmPasswordError = confirmError,
+                )
             return
         }
 
         if (!current.isTermsAccepted) {
-            _uiState.value = current.copy(
-                submitError = "You must accept the Terms of Service and Privacy Policy to continue."
-            )
+            _uiState.value =
+                current.copy(
+                    submitError = "You must accept the Terms of Service and Privacy Policy to continue.",
+                )
             return
         }
 
@@ -102,10 +104,11 @@ class RegisterViewModel(application: Application) : AndroidViewModel(application
                     _effect.emit(RegisterUiEffect.NavigateToCompleteProfile)
                 }
                 .onFailure { throwable ->
-                    _uiState.value = _uiState.value.copy(
-                        isSubmitting = false,
-                        submitError = FirebaseErrorMapper.toUserMessage(throwable)
-                    )
+                    _uiState.value =
+                        _uiState.value.copy(
+                            isSubmitting = false,
+                            submitError = FirebaseErrorMapper.toUserMessage(throwable),
+                        )
                 }
         }
     }

@@ -10,6 +10,7 @@ import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.verticalScroll
@@ -17,7 +18,6 @@ import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.ArrowDownward
 import androidx.compose.material.icons.filled.ArrowUpward
 import androidx.compose.material.icons.filled.AutoGraph
-import androidx.compose.foundation.layout.size
 import androidx.compose.material3.Icon
 import androidx.compose.material3.LinearProgressIndicator
 import androidx.compose.material3.MaterialTheme
@@ -51,30 +51,32 @@ fun MonthlySummaryScreen(
     summary: MonthlySummary = MonthlySummary(0.0, 0.0, 0.0),
     categorySpending: List<PieCategorySlice> = emptyList(),
     month: Int = Calendar.getInstance().get(Calendar.MONTH) + 1,
-    year: Int = Calendar.getInstance().get(Calendar.YEAR)
+    year: Int = Calendar.getInstance().get(Calendar.YEAR),
 ) {
-    val monthName = SimpleDateFormat("MMMM", Locale.getDefault()).format(
-        Calendar.getInstance().apply {
-            set(Calendar.MONTH, month - 1)
-            set(Calendar.YEAR, year)
-        }.time
-    )
+    val monthName =
+        SimpleDateFormat("MMMM", Locale.getDefault()).format(
+            Calendar.getInstance().apply {
+                set(Calendar.MONTH, month - 1)
+                set(Calendar.YEAR, year)
+            }.time,
+        )
 
     AppScaffold(
         title = "Monthly Summary",
         navigationIcon = {
             BackNavigationButton(onClick = onBack)
-        }
+        },
     ) {
         Column(
-            modifier = Modifier
-                .fillMaxSize()
-                .verticalScroll(rememberScrollState()),
-            verticalArrangement = Arrangement.spacedBy(AppDimens.spaceLg)
+            modifier =
+                Modifier
+                    .fillMaxSize()
+                    .verticalScroll(rememberScrollState()),
+            verticalArrangement = Arrangement.spacedBy(AppDimens.spaceLg),
         ) {
             SummaryHeroCard(
                 monthLabel = "$monthName $year",
-                summary = summary
+                summary = summary,
             )
 
             if (categorySpending.isNotEmpty()) {
@@ -83,12 +85,12 @@ fun MonthlySummaryScreen(
                         Text(
                             text = "Spending breakdown",
                             style = MaterialTheme.typography.titleMedium,
-                            fontWeight = FontWeight.Bold
+                            fontWeight = FontWeight.Bold,
                         )
                         categorySpending.forEachIndexed { index, slice ->
                             CategorySpendRow(
                                 slice = slice,
-                                color = summaryToneColor(index)
+                                color = summaryToneColor(index),
                             )
                         }
                     }
@@ -101,48 +103,52 @@ fun MonthlySummaryScreen(
 @Composable
 private fun SummaryHeroCard(
     monthLabel: String,
-    summary: MonthlySummary
+    summary: MonthlySummary,
 ) {
     val onAccent = MaterialTheme.colorScheme.onPrimary
-    val balanceColor = if (summary.balance >= 0.0) {
-        MaterialTheme.colorScheme.secondary
-    } else {
-        MaterialTheme.colorScheme.error
-    }
+    val balanceColor =
+        if (summary.balance >= 0.0) {
+            MaterialTheme.colorScheme.secondary
+        } else {
+            MaterialTheme.colorScheme.error
+        }
 
     Surface(
         modifier = Modifier.fillMaxWidth(),
         shape = AppShapes.xLarge,
         color = Color.Transparent,
-        shadowElevation = AppDimens.cardElevation
+        shadowElevation = AppDimens.cardElevation,
     ) {
         Column(
-            modifier = Modifier
-                .background(
-                    brush = Brush.linearGradient(
-                        colors = listOf(
-                            MaterialTheme.colorScheme.primary,
-                            MaterialTheme.colorScheme.secondary
-                        )
-                    ),
-                    shape = AppShapes.xLarge
-                )
-                .padding(AppDimens.spaceLg),
-            verticalArrangement = Arrangement.spacedBy(AppDimens.spaceLg)
+            modifier =
+                Modifier
+                    .background(
+                        brush =
+                            Brush.linearGradient(
+                                colors =
+                                    listOf(
+                                        MaterialTheme.colorScheme.primary,
+                                        MaterialTheme.colorScheme.secondary,
+                                    ),
+                            ),
+                        shape = AppShapes.xLarge,
+                    )
+                    .padding(AppDimens.spaceLg),
+            verticalArrangement = Arrangement.spacedBy(AppDimens.spaceLg),
         ) {
             Row(
                 modifier = Modifier.fillMaxWidth(),
                 horizontalArrangement = Arrangement.SpaceBetween,
-                verticalAlignment = Alignment.Top
+                verticalAlignment = Alignment.Top,
             ) {
                 Column(
                     modifier = Modifier.weight(1f),
-                    verticalArrangement = Arrangement.spacedBy(AppDimens.spaceXs)
+                    verticalArrangement = Arrangement.spacedBy(AppDimens.spaceXs),
                 ) {
                     Text(
                         text = monthLabel,
                         style = MaterialTheme.typography.labelMedium,
-                        color = onAccent.copy(alpha = 0.78f)
+                        color = onAccent.copy(alpha = 0.78f),
                     )
                     Text(
                         text = formatCurrency(summary.balance),
@@ -150,20 +156,21 @@ private fun SummaryHeroCard(
                         fontWeight = FontWeight.ExtraBold,
                         color = onAccent,
                         maxLines = 1,
-                        overflow = TextOverflow.Ellipsis
+                        overflow = TextOverflow.Ellipsis,
                     )
                 }
                 Surface(
                     shape = CircleShape,
-                    color = balanceColor.copy(alpha = 0.24f)
+                    color = balanceColor.copy(alpha = 0.24f),
                 ) {
                     Icon(
                         imageVector = Icons.Default.AutoGraph,
                         contentDescription = null,
                         tint = onAccent,
-                        modifier = Modifier
-                            .padding(AppDimens.spaceMd)
-                            .size(22.dp)
+                        modifier =
+                            Modifier
+                                .padding(AppDimens.spaceMd)
+                                .size(22.dp),
                     )
                 }
             }
@@ -174,14 +181,14 @@ private fun SummaryHeroCard(
                     icon = Icons.Filled.ArrowDownward,
                     title = "Income",
                     amount = summary.totalIncome,
-                    color = onAccent
+                    color = onAccent,
                 )
                 MetricPill(
                     modifier = Modifier.weight(1f),
                     icon = Icons.Filled.ArrowUpward,
                     title = "Expense",
                     amount = summary.totalExpense,
-                    color = onAccent
+                    color = onAccent,
                 )
             }
         }
@@ -191,19 +198,20 @@ private fun SummaryHeroCard(
 @Composable
 private fun CategorySpendRow(
     slice: PieCategorySlice,
-    color: Color
+    color: Color,
 ) {
-    val animatedProgress = animateFloatAsState(
-        targetValue = (slice.percentage / 100f).coerceIn(0f, 1f),
-        animationSpec = tween(durationMillis = 650),
-        label = "categorySpend"
-    ).value
+    val animatedProgress =
+        animateFloatAsState(
+            targetValue = (slice.percentage / 100f).coerceIn(0f, 1f),
+            animationSpec = tween(durationMillis = 650),
+            label = "categorySpend",
+        ).value
 
     Column(verticalArrangement = Arrangement.spacedBy(AppDimens.spaceXs)) {
         Row(
             modifier = Modifier.fillMaxWidth(),
             horizontalArrangement = Arrangement.SpaceBetween,
-            verticalAlignment = Alignment.CenterVertically
+            verticalAlignment = Alignment.CenterVertically,
         ) {
             Column(modifier = Modifier.weight(1f)) {
                 Text(
@@ -211,12 +219,12 @@ private fun CategorySpendRow(
                     style = MaterialTheme.typography.titleSmall,
                     fontWeight = FontWeight.Bold,
                     maxLines = 1,
-                    overflow = TextOverflow.Ellipsis
+                    overflow = TextOverflow.Ellipsis,
                 )
                 Text(
                     text = "${slice.percentage.toInt()}%",
                     style = MaterialTheme.typography.bodySmall,
-                    color = MaterialTheme.colorScheme.onSurfaceVariant
+                    color = MaterialTheme.colorScheme.onSurfaceVariant,
                 )
             }
             Text(
@@ -225,16 +233,17 @@ private fun CategorySpendRow(
                 fontWeight = FontWeight.Bold,
                 color = color,
                 maxLines = 1,
-                overflow = TextOverflow.Ellipsis
+                overflow = TextOverflow.Ellipsis,
             )
         }
         LinearProgressIndicator(
             progress = { animatedProgress },
-            modifier = Modifier
-                .fillMaxWidth()
-                .height(7.dp),
+            modifier =
+                Modifier
+                    .fillMaxWidth()
+                    .height(7.dp),
             color = color,
-            trackColor = color.copy(alpha = 0.16f)
+            trackColor = color.copy(alpha = 0.16f),
         )
     }
 }
@@ -250,36 +259,36 @@ private fun MetricPill(
     icon: androidx.compose.ui.graphics.vector.ImageVector,
     title: String,
     amount: Double,
-    color: androidx.compose.ui.graphics.Color
+    color: androidx.compose.ui.graphics.Color,
 ) {
     Surface(
         modifier = modifier,
         shape = MaterialTheme.shapes.large,
-        color = color.copy(alpha = 0.12f)
+        color = color.copy(alpha = 0.12f),
     ) {
         Row(
             modifier = Modifier.padding(AppDimens.spaceMd),
             horizontalArrangement = Arrangement.spacedBy(AppDimens.spaceSm),
-            verticalAlignment = Alignment.CenterVertically
+            verticalAlignment = Alignment.CenterVertically,
         ) {
             Icon(
                 imageVector = icon,
                 contentDescription = null,
                 tint = color,
-                modifier = Modifier.size(20.dp)
+                modifier = Modifier.size(20.dp),
             )
             Column {
                 Text(
                     text = title,
                     style = MaterialTheme.typography.labelSmall,
-                    color = color.copy(alpha = 0.76f)
+                    color = color.copy(alpha = 0.76f),
                 )
                 Text(
                     text = formatCurrency(amount),
                     style = MaterialTheme.typography.titleSmall,
                     color = color,
                     maxLines = 1,
-                    overflow = TextOverflow.Ellipsis
+                    overflow = TextOverflow.Ellipsis,
                 )
             }
         }
@@ -294,4 +303,3 @@ private fun summaryToneColor(index: Int): Color {
         else -> MaterialTheme.colorScheme.tertiary
     }
 }
-

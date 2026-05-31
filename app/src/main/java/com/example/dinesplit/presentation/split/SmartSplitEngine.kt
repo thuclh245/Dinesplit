@@ -1,31 +1,29 @@
 package com.example.dinesplit.presentation.split
 
-
 data class SplitMember(
     val id: String,
     val name: String,
     val initial: String,
-    val isMe: Boolean = false
+    val isMe: Boolean = false,
 )
 
 data class BillItemInput(
     val id: String,
     val name: String,
     val price: Long,
-    val sharedByMemberIds: List<String>
+    val sharedByMemberIds: List<String>,
 )
 
 data class SettlementResult(
     val fromUserId: String,
     val toUserId: String,
-    val amount: Long
+    val amount: Long,
 )
 
 object SmartSplitEngine {
-
     fun calculateEqualSplit(
         totalAmount: Long,
-        memberIds: List<String>
+        memberIds: List<String>,
     ): Map<String, Long> {
         if (memberIds.isEmpty()) return emptyMap()
 
@@ -40,7 +38,7 @@ object SmartSplitEngine {
 
     fun calculateCustomSplit(
         totalAmount: Long,
-        customAmounts: Map<String, Long>
+        customAmounts: Map<String, Long>,
     ): Result<Map<String, Long>> {
         val customTotal = customAmounts.values.sum()
 
@@ -48,14 +46,14 @@ object SmartSplitEngine {
             Result.success(customAmounts)
         } else {
             Result.failure(
-                IllegalArgumentException("Tổng tiền custom phải bằng tổng hóa đơn")
+                IllegalArgumentException("Tổng tiền custom phải bằng tổng hóa đơn"),
             )
         }
     }
 
     fun calculateItemizedSplit(
         items: List<BillItemInput>,
-        memberIds: List<String>
+        memberIds: List<String>,
     ): Map<String, Long> {
         val result = memberIds.associateWith { 0L }.toMutableMap()
 
@@ -77,7 +75,7 @@ object SmartSplitEngine {
 
     fun calculateSettlement(
         payerId: String,
-        shares: Map<String, Long>
+        shares: Map<String, Long>,
     ): List<SettlementResult> {
         return shares
             .filter { (memberId, amount) ->
@@ -87,14 +85,14 @@ object SmartSplitEngine {
                 SettlementResult(
                     fromUserId = memberId,
                     toUserId = payerId,
-                    amount = amount
+                    amount = amount,
                 )
             }
     }
 
     fun validateCustomSplit(
         totalAmount: Long,
-        customAmounts: Map<String, Long>
+        customAmounts: Map<String, Long>,
     ): Boolean {
         return customAmounts.values.sum() == totalAmount
     }

@@ -24,4 +24,3 @@ fun transactionTypeFromRoute(value: String?): TransactionType? {
         else -> TransactionType.entries.firstOrNull { it.name.equals(value, ignoreCase = true) }
     }
 }
-

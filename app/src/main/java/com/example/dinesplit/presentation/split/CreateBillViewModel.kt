@@ -27,21 +27,21 @@ data class CreateBillUiState(
     val isSaved: Boolean = false,
     val savedBill: Bill? = null,
     val error: String? = null,
-    val isUsingFallbackMembers: Boolean = false
+    val isUsingFallbackMembers: Boolean = false,
 )
 
-private val fallbackBillMembers = listOf(
-    Member(id = "me", name = "Ban", initial = "B", isMe = true),
-    Member(id = "minh", name = "Minh", initial = "M"),
-    Member(id = "thanh_hang", name = "Thanh Hang", initial = "T")
-)
+private val fallbackBillMembers =
+    listOf(
+        Member(id = "me", name = "Ban", initial = "B", isMe = true),
+        Member(id = "minh", name = "Minh", initial = "M"),
+        Member(id = "thanh_hang", name = "Thanh Hang", initial = "T"),
+    )
 
 class CreateBillViewModel(
     private val repository: SplitRepository,
     private val groupId: String,
-    private val autoLoadMembers: Boolean = true
+    private val autoLoadMembers: Boolean = true,
 ) : ViewModel() {
-
     private val _uiState = MutableStateFlow(CreateBillUiState())
     val uiState: StateFlow<CreateBillUiState> = _uiState.asStateFlow()
 
@@ -71,7 +71,7 @@ class CreateBillViewModel(
 
     private fun applyMembers(
         members: List<Member>,
-        isFallback: Boolean = false
+        isFallback: Boolean = false,
     ) {
         val selectedIds = members.map { it.id }.toSet()
         val payerId = members.firstOrNull { it.isMe }?.id ?: members.firstOrNull()?.id.orEmpty()
@@ -80,7 +80,7 @@ class CreateBillViewModel(
                 members = members,
                 selectedMemberIds = selectedIds,
                 payerId = payerId,
-                isUsingFallbackMembers = isFallback
+                isUsingFallbackMembers = isFallback,
             )
         }
     }
@@ -134,7 +134,10 @@ class CreateBillViewModel(
         }
     }
 
-    fun onCustomAmountChange(memberId: String, amount: String) {
+    fun onCustomAmountChange(
+        memberId: String,
+        amount: String,
+    ) {
         customAmounts[memberId] = amount.onlyDigits()
     }
 
@@ -154,21 +157,23 @@ class CreateBillViewModel(
         }
 
         val totalAmount = calculateTotalAmount(currentState)
-        val shares = calculateShares(totalAmount, currentState).getOrElse { throwable ->
-            val message = throwable.message ?: "Không thể tính tiền chia"
-            _uiState.update { it.copy(error = message) }
-            return Result.failure(IllegalArgumentException(message))
-        }
-        val bill = Bill(
-            groupId = groupId,
-            name = billName,
-            totalAmount = totalAmount,
-            payerId = currentState.payerId,
-            method = currentState.selectedMethod,
-            items = if (currentState.selectedMethod == SplitMethod.ITEMIZED) billItems.toList() else emptyList(),
-            shares = shares,
-            paidMemberIds = listOf(currentState.payerId)
-        )
+        val shares =
+            calculateShares(totalAmount, currentState).getOrElse { throwable ->
+                val message = throwable.message ?: "Không thể tính tiền chia"
+                _uiState.update { it.copy(error = message) }
+                return Result.failure(IllegalArgumentException(message))
+            }
+        val bill =
+            Bill(
+                groupId = groupId,
+                name = billName,
+                totalAmount = totalAmount,
+                payerId = currentState.payerId,
+                method = currentState.selectedMethod,
+                items = if (currentState.selectedMethod == SplitMethod.ITEMIZED) billItems.toList() else emptyList(),
+                shares = shares,
+                paidMemberIds = listOf(currentState.payerId),
+            )
 
         _uiState.update { it.copy(isLoading = true, error = null) }
         val result = repository.saveBill(bill)
@@ -227,23 +232,26 @@ class CreateBillViewModel(
 
     private fun calculateShares(
         totalAmount: Double,
-        state: CreateBillUiState
+        state: CreateBillUiState,
     ): Result<Map<String, Double>> {
         val selectedMemberIds = state.selectedMemberIds.toList()
         return when (state.selectedMethod) {
-            SplitMethod.EQUAL -> SplitCalculationEngine.calculateEqualShares(
-                totalAmount = totalAmount,
-                memberIds = selectedMemberIds
-            )
-            SplitMethod.CUSTOM -> SplitCalculationEngine.calculateCustomShares(
-                totalAmount = totalAmount,
-                memberIds = selectedMemberIds,
-                customAmounts = customAmountsForSelected(selectedMemberIds)
-            )
-            SplitMethod.ITEMIZED -> SplitCalculationEngine.calculateItemizedShares(
-                items = billItems.toList(),
-                memberIds = selectedMemberIds
-            )
+            SplitMethod.EQUAL ->
+                SplitCalculationEngine.calculateEqualShares(
+                    totalAmount = totalAmount,
+                    memberIds = selectedMemberIds,
+                )
+            SplitMethod.CUSTOM ->
+                SplitCalculationEngine.calculateCustomShares(
+                    totalAmount = totalAmount,
+                    memberIds = selectedMemberIds,
+                    customAmounts = customAmountsForSelected(selectedMemberIds),
+                )
+            SplitMethod.ITEMIZED ->
+                SplitCalculationEngine.calculateItemizedShares(
+                    items = billItems.toList(),
+                    memberIds = selectedMemberIds,
+                )
         }
     }
 

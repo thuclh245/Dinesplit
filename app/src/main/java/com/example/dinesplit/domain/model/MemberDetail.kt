@@ -9,5 +9,5 @@ data class MemberDetail(
     val role: String = "member", // "admin" | "member"
     val joinedAt: Date? = null,
     val totalOwed: Double = 0.0,
-    val totalPaid: Double = 0.0
+    val totalPaid: Double = 0.0,
 )

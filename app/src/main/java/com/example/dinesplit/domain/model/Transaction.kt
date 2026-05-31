@@ -19,14 +19,12 @@ data class Transaction(
     val sourceBillId: String? = null,
     val recurringRuleId: String? = null,
     val receiptImageUrl: String? = null,
-    val walletId: String? = null
+    val walletId: String? = null,
 )
 
 enum class TransactionSource {
     MANUAL,
     SPLIT,
     RECURRING,
-    RECEIPT
+    RECEIPT,
 }
-
-

@@ -11,20 +11,19 @@ import coil.memory.MemoryCache
 object CoilConfiguration {
     fun createImageLoader(context: Context): ImageLoader {
         return ImageLoader.Builder(context)
-            .crossfade(200)  // Smooth transition instead of immediate swap
+            .crossfade(200) // Smooth transition instead of immediate swap
             .memoryCache {
                 MemoryCache.Builder(context)
-                    .maxSizePercent(0.15)  // Use 15% of available memory for cache
+                    .maxSizePercent(0.15) // Use 15% of available memory for cache
                     .build()
             }
             .diskCache {
                 DiskCache.Builder()
                     .directory(context.cacheDir.resolve("image_cache"))
-                    .maxSizeBytes(100 * 1024 * 1024L)  // 100MB max
+                    .maxSizeBytes(100 * 1024 * 1024L) // 100MB max
                     .build()
             }
-            .respectCacheHeaders(false)  // Ignore cache headers to reduce network calls
+            .respectCacheHeaders(false) // Ignore cache headers to reduce network calls
             .build()
     }
 }
-

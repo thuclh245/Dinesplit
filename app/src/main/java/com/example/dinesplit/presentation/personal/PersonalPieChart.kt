@@ -8,7 +8,6 @@ import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
-import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
@@ -16,7 +15,6 @@ import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
-import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.StrokeCap
 import androidx.compose.ui.graphics.drawscope.Stroke
 import androidx.compose.ui.unit.dp
@@ -25,50 +23,54 @@ import com.example.dinesplit.core.ui.AppDimens
 @Composable
 fun PersonalPieChart(
     slices: List<PieCategorySlice>,
-    modifier: Modifier = Modifier
+    modifier: Modifier = Modifier,
 ) {
     val validSlices = slices.filter { it.percentage > 0f }
     val total = validSlices.sumOf { it.percentage.toDouble() }.toFloat()
 
     if (validSlices.isEmpty() || total <= 0f) {
         Box(
-            modifier = modifier
-                .height(180.dp)
-                .clip(MaterialTheme.shapes.large)
-                .background(MaterialTheme.colorScheme.surfaceVariant),
-            contentAlignment = Alignment.Center
+            modifier =
+                modifier
+                    .height(180.dp)
+                    .clip(MaterialTheme.shapes.large)
+                    .background(MaterialTheme.colorScheme.surfaceVariant),
+            contentAlignment = Alignment.Center,
         ) {
             Text(
                 text = "No chart data",
                 style = MaterialTheme.typography.bodyMedium,
-                color = MaterialTheme.colorScheme.onSurfaceVariant
+                color = MaterialTheme.colorScheme.onSurfaceVariant,
             )
         }
         return
     }
 
-    val palette = listOf(
-        MaterialTheme.colorScheme.primary,
-        MaterialTheme.colorScheme.tertiary,
-        MaterialTheme.colorScheme.secondary,
-        MaterialTheme.colorScheme.error,
-        MaterialTheme.colorScheme.tertiary,
-        MaterialTheme.colorScheme.tertiaryContainer
-    )
+    val palette =
+        listOf(
+            MaterialTheme.colorScheme.primary,
+            MaterialTheme.colorScheme.tertiary,
+            MaterialTheme.colorScheme.secondary,
+            MaterialTheme.colorScheme.error,
+            MaterialTheme.colorScheme.tertiary,
+            MaterialTheme.colorScheme.tertiaryContainer,
+        )
 
-    val coloredSlices = validSlices.mapIndexed { index, item ->
-        item to palette[index % palette.size]
-    }
+    val coloredSlices =
+        validSlices.mapIndexed { index, item ->
+            item to palette[index % palette.size]
+        }
 
     Column(
         modifier = modifier,
-        verticalArrangement = Arrangement.spacedBy(AppDimens.spaceMd)
+        verticalArrangement = Arrangement.spacedBy(AppDimens.spaceMd),
     ) {
         Box(
-            modifier = Modifier
-                .fillMaxWidth()
-                .height(180.dp),
-            contentAlignment = Alignment.Center
+            modifier =
+                Modifier
+                    .fillMaxWidth()
+                    .height(180.dp),
+            contentAlignment = Alignment.Center,
         ) {
             Canvas(modifier = Modifier.size(160.dp)) {
                 val stroke = Stroke(width = 36.dp.toPx(), cap = StrokeCap.Butt)
@@ -80,7 +82,7 @@ fun PersonalPieChart(
                         startAngle = startAngle,
                         sweepAngle = sweep,
                         useCenter = false,
-                        style = stroke
+                        style = stroke,
                     )
                     startAngle += sweep
                 }
@@ -89,42 +91,42 @@ fun PersonalPieChart(
             Text(
                 text = "100%",
                 style = MaterialTheme.typography.titleMedium,
-                color = MaterialTheme.colorScheme.onSurface
+                color = MaterialTheme.colorScheme.onSurface,
             )
         }
 
         Column(
-            verticalArrangement = Arrangement.spacedBy(AppDimens.spaceSm)
+            verticalArrangement = Arrangement.spacedBy(AppDimens.spaceSm),
         ) {
             coloredSlices.forEach { (slice, color) ->
                 Row(
                     modifier = Modifier.fillMaxWidth(),
                     horizontalArrangement = Arrangement.SpaceBetween,
-                    verticalAlignment = Alignment.CenterVertically
+                    verticalAlignment = Alignment.CenterVertically,
                 ) {
                     Row(
                         horizontalArrangement = Arrangement.spacedBy(AppDimens.spaceSm),
-                        verticalAlignment = Alignment.CenterVertically
+                        verticalAlignment = Alignment.CenterVertically,
                     ) {
                         Box(
-                            modifier = Modifier
-                                .size(10.dp)
-                                .clip(MaterialTheme.shapes.small)
-                                .background(color)
+                            modifier =
+                                Modifier
+                                    .size(10.dp)
+                                    .clip(MaterialTheme.shapes.small)
+                                    .background(color),
                         )
                         Text(
                             text = slice.category,
-                            style = MaterialTheme.typography.bodyMedium
+                            style = MaterialTheme.typography.bodyMedium,
                         )
                     }
                     Text(
                         text = "${slice.percentage.toInt()}%",
                         style = MaterialTheme.typography.bodyMedium,
-                        color = MaterialTheme.colorScheme.onSurfaceVariant
+                        color = MaterialTheme.colorScheme.onSurfaceVariant,
                     )
                 }
             }
         }
     }
 }
-
