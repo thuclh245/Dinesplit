@@ -150,7 +150,6 @@ class CompleteProfileViewModel(application: Application) : AndroidViewModel(appl
                             DemoDataSeeder.seedDemoTransactions(personalRepo, profile.uid)
                             DemoDataSeeder.seedDemoNotifications(notificationRepo, profile.uid)
                             DemoDataSeeder.seedDemoSplit(splitRepo, profile.uid)
-                            DemoDataSeeder.seedDemoPosts(feedRepo, profile)
                         } catch (e: Exception) {
                             e.printStackTrace()
                         }

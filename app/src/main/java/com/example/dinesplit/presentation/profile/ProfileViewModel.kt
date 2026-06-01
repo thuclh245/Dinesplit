@@ -287,7 +287,6 @@ class ProfileViewModel(application: Application) : AndroidViewModel(application)
                     DemoDataSeeder.seedDemoTransactions(personalRepo, profile.uid)
                     DemoDataSeeder.seedDemoNotifications(notificationRepo, profile.uid)
                     DemoDataSeeder.seedDemoSplit(splitRepo, profile.uid)
-                    DemoDataSeeder.seedDemoPosts(feedRepo, profile)
                 }
                 _effect.emit(ProfileUiEffect.SeedSuccess)
             } catch (e: Exception) {

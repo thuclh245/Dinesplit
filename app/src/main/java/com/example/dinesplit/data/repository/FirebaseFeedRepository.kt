@@ -36,8 +36,16 @@ class FirebaseFeedRepository(
                                 }.getOrNull()
                             } ?: emptyList()
 
+                        // Filter out mock posts
+                        val realPosts = posts.filter { post ->
+                            !post.id.startsWith("demo_post_") &&
+                                    post.authorUid != "chef_hoang_uid" &&
+                                    post.authorUid != "foodie_lan_uid" &&
+                                    post.authorUid != "cafe_huy_uid"
+                        }
+
                         if (currentUserId.isNullOrBlank()) {
-                            trySend(posts.filter { it.visibility == "public" })
+                            trySend(realPosts.filter { it.visibility == "public" })
                         } else {
                             firestore.collection("users")
                                 .document(currentUserId)
@@ -51,7 +59,7 @@ class FirebaseFeedRepository(
                                         .addOnSuccessListener { followingSnap ->
                                             val subFollowedUids = followingSnap.documents.map { it.id }
                                             val followedUids = (docFollowedUids + subFollowedUids).distinct()
-                                            val filtered = posts.filter { post ->
+                                            val filtered = realPosts.filter { post ->
                                                 post.visibility == "public" ||
                                                     post.authorUid == currentUserId ||
                                                     (post.visibility == "followers_only" && followedUids.contains(post.authorUid))
@@ -59,7 +67,7 @@ class FirebaseFeedRepository(
                                             trySend(filtered)
                                         }
                                         .addOnFailureListener {
-                                            val filtered = posts.filter { post ->
+                                            val filtered = realPosts.filter { post ->
                                                 post.visibility == "public" ||
                                                     post.authorUid == currentUserId ||
                                                     (post.visibility == "followers_only" && docFollowedUids.contains(post.authorUid))
@@ -68,7 +76,7 @@ class FirebaseFeedRepository(
                                         }
                                 }
                                 .addOnFailureListener {
-                                    val filtered = posts.filter { it.visibility == "public" || it.authorUid == currentUserId }
+                                    val filtered = realPosts.filter { it.visibility == "public" || it.authorUid == currentUserId }
                                     trySend(filtered)
                                 }
                         }
@@ -93,7 +101,14 @@ class FirebaseFeedRepository(
                                     doc.toObject(Post::class.java)?.copy(id = doc.id)
                                 }.getOrNull()
                             } ?: emptyList()
-                        trySend(posts)
+                        // Filter out mock posts
+                        val realPosts = posts.filter { post ->
+                            !post.id.startsWith("demo_post_") &&
+                                    post.authorUid != "chef_hoang_uid" &&
+                                    post.authorUid != "foodie_lan_uid" &&
+                                    post.authorUid != "cafe_huy_uid"
+                        }
+                        trySend(realPosts)
                     }
             awaitClose { subscription.remove() }
         }
@@ -272,9 +287,17 @@ class FirebaseFeedRepository(
             }.getOrNull()
         }
 
+        // Filter out mock posts
+        val realPosts = posts.filter { post ->
+            !post.id.startsWith("demo_post_") &&
+                    post.authorUid != "chef_hoang_uid" &&
+                    post.authorUid != "foodie_lan_uid" &&
+                    post.authorUid != "cafe_huy_uid"
+        }
+
         val currentUserId = FirebaseProviders.auth.currentUser?.uid
         if (currentUserId.isNullOrBlank()) {
-            return posts.filter { it.visibility == "public" }.take(limit.toInt())
+            return realPosts.filter { it.visibility == "public" }.take(limit.toInt())
         }
 
         val docFollowedUids = runCatching {
@@ -297,7 +320,7 @@ class FirebaseFeedRepository(
 
         val followedUids = (docFollowedUids + subFollowedUids).distinct()
 
-        return posts.filter { post ->
+        return realPosts.filter { post ->
             post.visibility == "public" ||
                 post.authorUid == currentUserId ||
                 (post.visibility == "followers_only" && followedUids.contains(post.authorUid))
