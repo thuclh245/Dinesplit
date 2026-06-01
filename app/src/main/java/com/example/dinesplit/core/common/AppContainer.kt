@@ -7,6 +7,8 @@ import com.example.dinesplit.domain.usecase.*
 import com.google.firebase.firestore.FirebaseFirestore
 
 object AppContainer {
+    private var feedRepositoryInstance: FeedRepository? = null
+
     fun authRepository(context: Context): AuthRepository {
         return FirebaseAuthRepository.getInstance(context)
     }
@@ -24,7 +26,11 @@ object AppContainer {
     }
 
     fun feedRepository(): FeedRepository {
-        return FirebaseFeedRepository(FirebaseFirestore.getInstance())
+        return feedRepositoryInstance ?: synchronized(this) {
+            feedRepositoryInstance ?: FirebaseFeedRepository(FirebaseFirestore.getInstance()).also {
+                feedRepositoryInstance = it
+            }
+        }
     }
 
     fun splitRepository(): SplitRepository {
@@ -83,6 +89,7 @@ object AppContainer {
         return ResolveStartDestinationUseCase(
             observeSessionUseCase = observeSessionUseCase(context),
             getCurrentUserProfileUseCase = getCurrentUserProfileUseCase(context),
+            authRepository = authRepository(context),
         )
     }
 

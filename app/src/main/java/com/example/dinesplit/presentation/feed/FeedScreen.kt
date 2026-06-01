@@ -856,8 +856,25 @@ private fun SocialSplitCard(
                                 text = post.location ?: "Chưa rõ địa điểm",
                                 style = MaterialTheme.typography.labelSmall,
                                 color = MaterialTheme.colorScheme.outline,
-                                maxLines = 2,
+                                maxLines = 1,
                                 overflow = TextOverflow.Ellipsis,
+                                modifier = Modifier.weight(1f, fill = false)
+                            )
+                            Text(
+                                text = "•",
+                                style = MaterialTheme.typography.labelSmall,
+                                color = MaterialTheme.colorScheme.outline,
+                            )
+                            Icon(
+                                imageVector = if (post.visibility == "public") Icons.Default.Public else Icons.Default.People,
+                                contentDescription = null,
+                                modifier = Modifier.size(12.dp),
+                                tint = MaterialTheme.colorScheme.outline,
+                            )
+                            Text(
+                                text = if (post.visibility == "public") "Công khai" else "Bạn bè",
+                                style = MaterialTheme.typography.labelSmall,
+                                color = MaterialTheme.colorScheme.outline,
                             )
                         }
                     }

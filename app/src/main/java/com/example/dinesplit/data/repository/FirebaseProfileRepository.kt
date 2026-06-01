@@ -30,10 +30,13 @@ class FirebaseProfileRepository private constructor(
                     .get()
                     .awaitFirebase()
 
+            if (!snapshot.exists()) {
+                return null
+            }
             snapshot.toUserProfile(uid)
         } catch (e: Exception) {
             android.util.Log.e("FirebaseProfileRepo", "Error fetching profile", e)
-            null
+            throw e
         }
     }
 
@@ -204,6 +207,18 @@ class FirebaseProfileRepository private constructor(
         return value.trim()
     }
 
+    private fun DocumentSnapshot.getDateSafe(field: String): Date? {
+        return try {
+            getTimestamp(field)?.toDate()
+        } catch (e: Exception) {
+            try {
+                getLong(field)?.let { Date(it) }
+            } catch (e2: Exception) {
+                null
+            }
+        }
+    }
+
     private fun DocumentSnapshot.toUserProfile(uid: String): UserProfile? {
         if (!exists()) return null
 
@@ -217,8 +232,8 @@ class FirebaseProfileRepository private constructor(
         val followingCount = getLong(FIELD_FOLLOWING_COUNT)?.toInt() ?: 0
         val postsCount = getLong(FIELD_POSTS_COUNT)?.toInt() ?: 0
         val fcmToken = getString(FIELD_FCM_TOKEN).orEmpty()
-        val createdAt = getLong(FIELD_CREATED_AT)?.let { Date(it) }
-        val updatedAt = getLong(FIELD_UPDATED_AT)?.let { Date(it) } ?: createdAt
+        val createdAt = getDateSafe(FIELD_CREATED_AT)
+        val updatedAt = getDateSafe(FIELD_UPDATED_AT) ?: createdAt
 
         return UserProfile(
             uid = uid,

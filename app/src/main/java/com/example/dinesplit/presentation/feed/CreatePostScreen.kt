@@ -16,6 +16,8 @@ import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
 import androidx.compose.material.icons.filled.AddPhotoAlternate
 import androidx.compose.material.icons.filled.PhotoLibrary
+import androidx.compose.material.icons.filled.Public
+import androidx.compose.material.icons.filled.People
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
@@ -49,6 +51,7 @@ fun CreatePostScreen(
 ) {
     var restaurantName by remember { mutableStateOf("") }
     var caption by remember { mutableStateOf("") }
+    var visibility by remember { mutableStateOf("public") }
     var isPosting by remember { mutableStateOf(false) }
     var selectedImageUri by remember { mutableStateOf<Uri?>(null) }
     var isLoadingExistingPost by remember { mutableStateOf(false) }
@@ -81,6 +84,7 @@ fun CreatePostScreen(
                     existingPost = post
                     restaurantName = post.location.orEmpty()
                     caption = post.caption
+                    visibility = post.visibility
                     if (post.imageUrls.isNotEmpty()) {
                         selectedImageUri = Uri.parse(post.imageUrls.first())
                     }
@@ -294,6 +298,98 @@ fun CreatePostScreen(
                             ),
                         singleLine = false,
                     )
+
+                    Spacer(modifier = Modifier.height(4.dp))
+
+                    Text(
+                        text = "Chế độ hiển thị bài đăng",
+                        style =
+                            MaterialTheme.typography.titleSmall.copy(
+                                fontWeight = FontWeight.Bold,
+                                color = MaterialTheme.colorScheme.primary,
+                            ),
+                    )
+
+                    Row(
+                        modifier = Modifier.fillMaxWidth(),
+                        horizontalArrangement = Arrangement.spacedBy(12.dp)
+                    ) {
+                        // Option 1: Public
+                        val isPublic = visibility == "public"
+                        Surface(
+                            modifier = Modifier
+                                .weight(1f)
+                                .clickable { visibility = "public" },
+                            color = if (isPublic) MaterialTheme.colorScheme.primaryContainer else MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.4f),
+                            shape = RoundedCornerShape(16.dp),
+                            border = androidx.compose.foundation.BorderStroke(
+                                width = 1.5.dp,
+                                color = if (isPublic) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.outlineVariant.copy(alpha = 0.5f)
+                            )
+                        ) {
+                            Row(
+                                modifier = Modifier.padding(12.dp),
+                                verticalAlignment = Alignment.CenterVertically,
+                                horizontalArrangement = Arrangement.spacedBy(8.dp)
+                            ) {
+                                Icon(
+                                    imageVector = androidx.compose.material.icons.Icons.Default.Public,
+                                    contentDescription = null,
+                                    tint = if (isPublic) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.onSurfaceVariant
+                                )
+                                Column {
+                                    Text(
+                                        "Công khai",
+                                        style = MaterialTheme.typography.labelLarge.copy(fontWeight = FontWeight.Bold),
+                                        color = if (isPublic) MaterialTheme.colorScheme.onPrimaryContainer else MaterialTheme.colorScheme.onSurface
+                                    )
+                                    Text(
+                                        "Mọi người xem",
+                                        style = MaterialTheme.typography.labelSmall,
+                                        color = if (isPublic) MaterialTheme.colorScheme.onPrimaryContainer.copy(alpha = 0.7f) else MaterialTheme.colorScheme.onSurfaceVariant
+                                    )
+                                }
+                            }
+                        }
+
+                        // Option 2: Friends/Followers only
+                        val isFollowersOnly = visibility == "followers_only"
+                        Surface(
+                            modifier = Modifier
+                                .weight(1f)
+                                .clickable { visibility = "followers_only" },
+                            color = if (isFollowersOnly) MaterialTheme.colorScheme.primaryContainer else MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.4f),
+                            shape = RoundedCornerShape(16.dp),
+                            border = androidx.compose.foundation.BorderStroke(
+                                width = 1.5.dp,
+                                color = if (isFollowersOnly) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.outlineVariant.copy(alpha = 0.5f)
+                            )
+                        ) {
+                            Row(
+                                modifier = Modifier.padding(12.dp),
+                                verticalAlignment = Alignment.CenterVertically,
+                                horizontalArrangement = Arrangement.spacedBy(8.dp)
+                            ) {
+                                Icon(
+                                    imageVector = androidx.compose.material.icons.Icons.Default.People,
+                                    contentDescription = null,
+                                    tint = if (isFollowersOnly) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.onSurfaceVariant
+                                )
+                                Column {
+                                    Text(
+                                        "Bạn bè",
+                                        style = MaterialTheme.typography.labelLarge.copy(fontWeight = FontWeight.Bold),
+                                        color = if (isFollowersOnly) MaterialTheme.colorScheme.onPrimaryContainer else MaterialTheme.colorScheme.onSurface
+                                    )
+                                    Text(
+                                        "Người theo dõi xem",
+                                        style = MaterialTheme.typography.labelSmall,
+                                        color = if (isFollowersOnly) MaterialTheme.colorScheme.onPrimaryContainer.copy(alpha = 0.7f) else MaterialTheme.colorScheme.onSurfaceVariant
+                                    )
+                                }
+                            }
+                        }
+                    }
                 }
 
                 Spacer(modifier = Modifier.height(8.dp))
@@ -332,6 +428,7 @@ fun CreatePostScreen(
                                             caption = caption.trim(),
                                             imageUrls = listOf(finalImageUrl),
                                             location = restaurantName.trim(),
+                                            visibility = visibility,
                                             updatedAt = Date(),
                                         )
                                     AppContainer.feedRepository().updatePost(updatedPost)
@@ -346,6 +443,7 @@ fun CreatePostScreen(
                                             caption = caption.trim(),
                                             imageUrls = listOf(finalImageUrl),
                                             location = restaurantName.trim(),
+                                            visibility = visibility,
                                             createdAt = Date(),
                                             updatedAt = Date(),
                                         )

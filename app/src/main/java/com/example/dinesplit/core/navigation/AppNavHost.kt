@@ -65,7 +65,9 @@ fun AppNavHost(navController: NavHostController) {
 
                         if (target != AppRoute.Login.route) {
                             navController.navigate(target) {
-                                popUpTo(NavGraph.AUTH) { inclusive = true }
+                                if (target == NavGraph.MAIN) {
+                                    popUpTo(NavGraph.AUTH) { inclusive = true }
+                                }
                                 launchSingleTop = true
                             }
                         }
@@ -83,20 +85,20 @@ fun AppNavHost(navController: NavHostController) {
                     },
                 )
             }
+        }
 
-            composable(AppRoute.CompleteProfile.route) {
-                CompleteProfileScreen(
-                    onBack = {
-                        navController.navigateUp()
-                    },
-                    onCompleteProfileSuccess = {
-                        navController.navigate(NavGraph.MAIN) {
-                            popUpTo(NavGraph.AUTH) { inclusive = true }
-                            launchSingleTop = true
-                        }
-                    },
-                )
-            }
+        composable(AppRoute.CompleteProfile.route) {
+            CompleteProfileScreen(
+                onBack = {
+                    navController.navigateUp()
+                },
+                onCompleteProfileSuccess = {
+                    navController.navigate(NavGraph.MAIN) {
+                        popUpTo(AppRoute.CompleteProfile.route) { inclusive = true }
+                        launchSingleTop = true
+                    }
+                },
+            )
         }
 
         navigation(

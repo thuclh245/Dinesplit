@@ -86,17 +86,21 @@ class FeedViewModel(application: Application) : AndroidViewModel(application) {
         }
     }
 
+    private var feedJob: Job? = null
+
     private fun loadInitialFeed() {
-        viewModelScope.launch {
+        feedJob?.cancel()
+        feedJob = viewModelScope.launch {
             _paginationState.value = _paginationState.value.copy(isLoading = true, error = null)
             try {
-                val batch = AppContainer.feedRepository().getFeedPostsBatch(limit = 10, lastPostId = null)
-                _paginationState.value = _paginationState.value.copy(
-                    posts = batch,
-                    canLoadMore = batch.size >= 10,
-                    isLoading = false
-                )
-                observeBillSummaries(batch)
+                AppContainer.feedRepository().getFeedPosts().collect { posts ->
+                    _paginationState.value = _paginationState.value.copy(
+                        posts = posts,
+                        canLoadMore = false,
+                        isLoading = false
+                    )
+                    observeBillSummaries(posts)
+                }
             } catch (e: Exception) {
                 _paginationState.value = _paginationState.value.copy(
                     error = "Không thể tải bảng tin: ${e.localizedMessage ?: "Lỗi kết nối"}",
@@ -107,29 +111,7 @@ class FeedViewModel(application: Application) : AndroidViewModel(application) {
     }
 
     fun loadNextPage() {
-        val current = _paginationState.value
-        if (current.isLoadingMore || !current.canLoadMore || current.isLoading) return
-        viewModelScope.launch {
-            _paginationState.value = _paginationState.value.copy(isLoadingMore = true)
-            try {
-                val lastPostId = current.posts.lastOrNull()?.id
-                val nextBatch = AppContainer.feedRepository().getFeedPostsBatch(limit = 10, lastPostId = lastPostId)
-                if (nextBatch.isNotEmpty()) {
-                    val newPosts = current.posts + nextBatch
-                    _paginationState.value = _paginationState.value.copy(
-                        posts = newPosts,
-                        canLoadMore = nextBatch.size >= 10
-                    )
-                    observeBillSummaries(nextBatch)
-                } else {
-                    _paginationState.value = _paginationState.value.copy(canLoadMore = false)
-                }
-            } catch (e: Exception) {
-                // Keep current posts but stop trying to load more
-            } finally {
-                _paginationState.value = _paginationState.value.copy(isLoadingMore = false)
-            }
-        }
+        // Real-time flow handles pagination natively, no manual step needed
     }
 
     fun refresh() {
@@ -137,18 +119,12 @@ class FeedViewModel(application: Application) : AndroidViewModel(application) {
         viewModelScope.launch {
             _paginationState.value = _paginationState.value.copy(isRefreshing = true, error = null)
             try {
-                val batch = AppContainer.feedRepository().getFeedPostsBatch(limit = 10, lastPostId = null)
-                _paginationState.value = _paginationState.value.copy(
-                    posts = batch,
-                    canLoadMore = batch.size >= 10
-                )
-                
                 // Cancel active summaries jobs
                 activeBillJobs.values.forEach { it.cancel() }
                 activeBillJobs.clear()
                 _linkedBillSummaries.value = emptyMap()
                 
-                observeBillSummaries(batch)
+                loadInitialFeed()
             } catch (e: Exception) {
                 _paginationState.value = _paginationState.value.copy(
                     error = "Không thể tải lại: ${e.localizedMessage ?: "Lỗi kết nối"}"

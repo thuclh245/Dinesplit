@@ -310,6 +310,18 @@ class FirebasePersonalRepository private constructor(
             ?: throw IllegalStateException("Please sign in to use Personal data")
     }
 
+    private fun DocumentSnapshot.getLongDateSafe(field: String): Long? {
+        return try {
+            getTimestamp(field)?.toDate()?.time
+        } catch (e: Exception) {
+            try {
+                getLong(field)
+            } catch (e2: Exception) {
+                null
+            }
+        }
+    }
+
     private fun DocumentSnapshot.toTransaction(uid: String): Transaction? {
         val idValue = getString(FIELD_ID) ?: id
         val type =
@@ -329,8 +341,8 @@ class FirebasePersonalRepository private constructor(
             categoryId = getString(FIELD_CATEGORY_ID) ?: return null,
             category = getString(FIELD_CATEGORY) ?: return null,
             note = getString(FIELD_NOTE)?.takeIf { it.isNotBlank() },
-            date = getLong(FIELD_DATE) ?: return null,
-            createdAt = getLong(FIELD_CREATED_AT) ?: 0L,
+            date = getLongDateSafe(FIELD_DATE) ?: return null,
+            createdAt = getLongDateSafe(FIELD_CREATED_AT) ?: 0L,
             source = source,
             sourceGroupId = getString(FIELD_SOURCE_GROUP_ID)?.takeIf { it.isNotBlank() },
             sourceBillId = getString(FIELD_SOURCE_BILL_ID)?.takeIf { it.isNotBlank() },
@@ -375,9 +387,9 @@ class FirebasePersonalRepository private constructor(
             threshold = getNumberDouble(FIELD_THRESHOLD)?.toFloat() ?: 0.8f,
             reminderType = type,
             isEnabled = getBoolean(FIELD_IS_ENABLED) ?: true,
-            lastAlertedAt = getLong(FIELD_LAST_ALERTED_AT),
-            createdAt = getLong(FIELD_CREATED_AT) ?: 0L,
-            updatedAt = getLong(FIELD_UPDATED_AT) ?: 0L,
+            lastAlertedAt = getLongDateSafe(FIELD_LAST_ALERTED_AT),
+            createdAt = getLongDateSafe(FIELD_CREATED_AT) ?: 0L,
+            updatedAt = getLongDateSafe(FIELD_UPDATED_AT) ?: 0L,
         )
     }
 
@@ -401,10 +413,10 @@ class FirebasePersonalRepository private constructor(
             categoryName = getString(FIELD_CATEGORY_NAME) ?: return null,
             cadence = cadence,
             dayOfMonth = getLong(FIELD_DAY_OF_MONTH)?.toInt()?.coerceIn(1, 31) ?: 1,
-            nextRunAt = getLong(FIELD_NEXT_RUN_AT) ?: 0L,
+            nextRunAt = getLongDateSafe(FIELD_NEXT_RUN_AT) ?: 0L,
             isEnabled = getBoolean(FIELD_IS_ENABLED) ?: true,
-            createdAt = getLong(FIELD_CREATED_AT) ?: 0L,
-            updatedAt = getLong(FIELD_UPDATED_AT) ?: 0L,
+            createdAt = getLongDateSafe(FIELD_CREATED_AT) ?: 0L,
+            updatedAt = getLongDateSafe(FIELD_UPDATED_AT) ?: 0L,
         )
     }
 
@@ -421,10 +433,10 @@ class FirebasePersonalRepository private constructor(
             targetAmount = getNumberDouble(FIELD_TARGET_AMOUNT) ?: return null,
             currentAmount = getNumberDouble(FIELD_CURRENT_AMOUNT) ?: 0.0,
             categoryId = getString(FIELD_CATEGORY_ID)?.takeIf { it.isNotBlank() },
-            deadlineAt = getLong(FIELD_DEADLINE_AT) ?: 0L,
+            deadlineAt = getLongDateSafe(FIELD_DEADLINE_AT) ?: 0L,
             status = status,
-            createdAt = getLong(FIELD_CREATED_AT) ?: 0L,
-            updatedAt = getLong(FIELD_UPDATED_AT) ?: 0L,
+            createdAt = getLongDateSafe(FIELD_CREATED_AT) ?: 0L,
+            updatedAt = getLongDateSafe(FIELD_UPDATED_AT) ?: 0L,
         )
     }
 
@@ -442,8 +454,8 @@ class FirebasePersonalRepository private constructor(
             balance = getNumberDouble(FIELD_BALANCE) ?: 0.0,
             color = getString(FIELD_COLOR) ?: "#AB2D00",
             isArchived = getBoolean(FIELD_IS_ARCHIVED) ?: false,
-            createdAt = getLong(FIELD_CREATED_AT) ?: 0L,
-            updatedAt = getLong(FIELD_UPDATED_AT) ?: 0L,
+            createdAt = getLongDateSafe(FIELD_CREATED_AT) ?: 0L,
+            updatedAt = getLongDateSafe(FIELD_UPDATED_AT) ?: 0L,
         )
     }
 

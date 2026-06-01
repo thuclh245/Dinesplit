@@ -74,6 +74,18 @@ class FirebaseNotificationRepository private constructor(
             ?: throw IllegalStateException("Please sign in to use notifications")
     }
 
+    private fun com.google.firebase.firestore.DocumentSnapshot.getLongDateSafe(field: String): Long? {
+        return try {
+            getTimestamp(field)?.toDate()?.time
+        } catch (e: Exception) {
+            try {
+                getLong(field)
+            } catch (e2: Exception) {
+                null
+            }
+        }
+    }
+
     private fun com.google.firebase.firestore.DocumentSnapshot.toNotification(uid: String): Notification? {
         val type =
             getString(FIELD_TYPE)?.let { value ->
@@ -88,8 +100,8 @@ class FirebaseNotificationRepository private constructor(
             type = type,
             relatedId = getString(FIELD_RELATED_ID)?.takeIf { it.isNotBlank() },
             isRead = getBoolean(FIELD_IS_READ) ?: false,
-            createdAt = getLong(FIELD_CREATED_AT) ?: return null,
-            updatedAt = getLong(FIELD_UPDATED_AT) ?: System.currentTimeMillis(),
+            createdAt = getLongDateSafe(FIELD_CREATED_AT) ?: return null,
+            updatedAt = getLongDateSafe(FIELD_UPDATED_AT) ?: System.currentTimeMillis(),
             deepLinkDestination = getString(FIELD_DEEP_LINK_DESTINATION)?.takeIf { it.isNotBlank() },
             deepLinkTargetId = getString(FIELD_DEEP_LINK_TARGET_ID)?.takeIf { it.isNotBlank() },
         )

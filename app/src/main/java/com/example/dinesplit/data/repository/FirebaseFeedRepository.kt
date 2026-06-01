@@ -20,6 +20,7 @@ class FirebaseFeedRepository(
 ) : FeedRepository {
     override fun getFeedPosts(): Flow<List<Post>> =
         callbackFlow {
+            val currentUserId = FirebaseProviders.auth.currentUser?.uid
             val subscription =
                 firestore.collection("posts")
                     .orderBy("createdAt", Query.Direction.DESCENDING)
@@ -34,7 +35,43 @@ class FirebaseFeedRepository(
                                     doc.toObject(Post::class.java)?.copy(id = doc.id)
                                 }.getOrNull()
                             } ?: emptyList()
-                        trySend(posts)
+
+                        if (currentUserId.isNullOrBlank()) {
+                            trySend(posts.filter { it.visibility == "public" })
+                        } else {
+                            firestore.collection("users")
+                                .document(currentUserId)
+                                .get()
+                                .addOnSuccessListener { userSnap ->
+                                    val docFollowedUids = (userSnap.get("followingIds") as? List<*>)?.mapNotNull { it?.toString() } ?: emptyList()
+                                    firestore.collection("users")
+                                        .document(currentUserId)
+                                        .collection("following")
+                                        .get()
+                                        .addOnSuccessListener { followingSnap ->
+                                            val subFollowedUids = followingSnap.documents.map { it.id }
+                                            val followedUids = (docFollowedUids + subFollowedUids).distinct()
+                                            val filtered = posts.filter { post ->
+                                                post.visibility == "public" ||
+                                                    post.authorUid == currentUserId ||
+                                                    (post.visibility == "followers_only" && followedUids.contains(post.authorUid))
+                                            }
+                                            trySend(filtered)
+                                        }
+                                        .addOnFailureListener {
+                                            val filtered = posts.filter { post ->
+                                                post.visibility == "public" ||
+                                                    post.authorUid == currentUserId ||
+                                                    (post.visibility == "followers_only" && docFollowedUids.contains(post.authorUid))
+                                            }
+                                            trySend(filtered)
+                                        }
+                                }
+                                .addOnFailureListener {
+                                    val filtered = posts.filter { it.visibility == "public" || it.authorUid == currentUserId }
+                                    trySend(filtered)
+                                }
+                        }
                     }
             awaitClose { subscription.remove() }
         }
@@ -216,7 +253,7 @@ class FirebaseFeedRepository(
     ): List<Post> {
         var query = firestore.collection("posts")
             .orderBy("createdAt", Query.Direction.DESCENDING)
-            .limit(limit)
+            .limit(limit * 2)
 
         if (!lastPostId.isNullOrBlank()) {
             val lastDocSnapshot = firestore.collection("posts")
@@ -229,11 +266,42 @@ class FirebaseFeedRepository(
         }
 
         val snapshot = query.get().awaitFirebase()
-        return snapshot.documents.mapNotNull { doc ->
+        val posts = snapshot.documents.mapNotNull { doc ->
             runCatching {
                 doc.toObject(Post::class.java)?.copy(id = doc.id)
             }.getOrNull()
         }
+
+        val currentUserId = FirebaseProviders.auth.currentUser?.uid
+        if (currentUserId.isNullOrBlank()) {
+            return posts.filter { it.visibility == "public" }.take(limit.toInt())
+        }
+
+        val docFollowedUids = runCatching {
+            val userSnap = firestore.collection("users")
+                .document(currentUserId)
+                .get()
+                .awaitFirebase()
+            (userSnap.get("followingIds") as? List<*>)?.mapNotNull { it?.toString() } ?: emptyList()
+        }.getOrDefault(emptyList())
+
+        val subFollowedUids = runCatching {
+            firestore.collection("users")
+                .document(currentUserId)
+                .collection("following")
+                .get()
+                .awaitFirebase()
+                .documents
+                .map { it.id }
+        }.getOrDefault(emptyList())
+
+        val followedUids = (docFollowedUids + subFollowedUids).distinct()
+
+        return posts.filter { post ->
+            post.visibility == "public" ||
+                post.authorUid == currentUserId ||
+                (post.visibility == "followers_only" && followedUids.contains(post.authorUid))
+        }.take(limit.toInt())
     }
 
     override suspend fun searchPosts(query: String): List<Post> {

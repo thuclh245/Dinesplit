@@ -29,6 +29,23 @@ class SplashViewModel(application: Application) : AndroidViewModel(application) 
 
     fun resolveDestination() {
         viewModelScope.launch {
+            // Khởi động tải trước (Prefetch) dữ liệu song song để lưu vào bộ nhớ đệm Firestore
+            viewModelScope.launch {
+                runCatching {
+                    val feedRepo = AppContainer.feedRepository()
+                    val profileRepo = AppContainer.profileRepository(getApplication())
+
+                    // 1. Tải trước 10 bài đăng đầu tiên cho FeedScreen
+                    feedRepo.getFeedPostsBatch(limit = 10, lastPostId = null)
+
+                    // 2. Tải trước 100 bài đăng để làm ấm bộ đệm cho thống kê Trending Places trong Search
+                    feedRepo.getFeedPostsBatch(limit = 100, lastPostId = null)
+
+                    // 3. Tải trước danh sách người dùng gợi ý
+                    profileRepo.searchProfiles("", limit = 10)
+                }
+            }
+
             // Smoothly animate progress from 0 to 1.0 (100%)
             val duration = 2000L // 2 seconds
             val steps = 50

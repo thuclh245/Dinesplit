@@ -256,6 +256,18 @@ class FirebaseSplitRepository(
             (!hasMembershipList || currentUserId in memberIds)
     }
 
+    private fun DocumentSnapshot.getLongDateSafe(field: String): Long? {
+        return try {
+            getTimestamp(field)?.toDate()?.time
+        } catch (e: Exception) {
+            try {
+                getLong(field)
+            } catch (e2: Exception) {
+                null
+            }
+        }
+    }
+
     private fun DocumentSnapshot.toGroup(): Group? {
         val name = getString("name") ?: return null
         return Group(
@@ -265,7 +277,7 @@ class FirebaseSplitRepository(
             memberCount = getLong("memberCount")?.toInt() ?: 0,
             totalExpense = getDouble("totalExpense") ?: 0.0,
             yourBalance = getDouble("yourBalance") ?: 0.0,
-            createdAt = getLong("createdAt") ?: 0L,
+            createdAt = getLongDateSafe("createdAt") ?: 0L,
             ownerId = getString("ownerId") ?: getStringListField("memberIds").firstOrNull(),
         )
     }
@@ -322,7 +334,7 @@ class FirebaseSplitRepository(
             items = getBillItems(),
             shares = getShares(),
             paidMemberIds = getPaidMemberIds(),
-            date = getLong("date") ?: 0L,
+            date = getLongDateSafe("date") ?: 0L,
         )
     }
 
