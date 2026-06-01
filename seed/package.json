@@ -1,0 +1,14 @@
+{
+  "name": "dinesplit-seed",
+  "version": "1.0.0",
+  "private": true,
+  "type": "commonjs",
+  "scripts": {
+    "seed": "node seed.js",
+    "reset": "node seed.js --reset",
+    "seed:fresh": "node seed.js --reset --seed"
+  },
+  "dependencies": {
+    "firebase-admin": "^13.0.0"
+  }
+}

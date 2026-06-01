@@ -1,0 +1,4 @@
+# Do not commit the private key to source control!
+serviceAccountKey.json
+node_modules/
+npm-debug.log
