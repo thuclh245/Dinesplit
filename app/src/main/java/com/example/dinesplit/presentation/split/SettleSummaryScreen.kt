@@ -70,14 +70,14 @@ fun SettleSummaryScreen(
     onBack: () -> Unit,
 ) {
     val context = LocalContext.current
-    val viewModel =
-        remember(groupId) {
-            GroupDetailViewModel(
-                repository = AppContainer.splitRepository(context),
-                groupId = groupId,
-                currentUserId = FirebaseProviders.auth.currentUser?.uid,
-            )
-        }
+    val viewModel = remember(groupId) {
+        GroupDetailViewModel(
+            repository = AppContainer.splitRepository(context),
+            profileRepository = AppContainer.profileRepository(context),
+            groupId = groupId,
+            currentUserId = FirebaseProviders.auth.currentUser?.uid
+        )
+    }
     val uiState by viewModel.uiState.collectAsState()
     val currentUserId = uiState.currentUserId
     val settlements =

@@ -72,4 +72,38 @@ class SplitCalculationEngineTest {
         assertEquals(0.0, balances["b"] ?: 0.0, 0.001)
         assertEquals(-100.0, balances["c"] ?: 0.0, 0.001)
     }
+
+    @Test
+    fun `user balance keeps debt and receivable totals separate`() {
+        val userId = "current_user"
+        val bills = listOf(
+            Bill(
+                groupId = "g1",
+                name = "Lunch",
+                totalAmount = 90_000.0,
+                payerId = "friend",
+                method = SplitMethod.CUSTOM,
+                shares = mapOf("friend" to 60_000.0, userId to 30_000.0),
+                paidMemberIds = listOf("friend")
+            ),
+            Bill(
+                groupId = "g1",
+                name = "Dinner",
+                totalAmount = 120_000.0,
+                payerId = userId,
+                method = SplitMethod.EQUAL,
+                shares = mapOf(userId to 60_000.0, "friend" to 60_000.0),
+                paidMemberIds = listOf(userId)
+            )
+        )
+
+        val summary = SplitCalculationEngine.calculateUserBalance(
+            bills = bills,
+            userId = userId
+        )
+
+        assertEquals(30_000.0, summary.amountYouOwe, 0.001)
+        assertEquals(60_000.0, summary.amountYouAreOwed, 0.001)
+        assertEquals(30_000.0, summary.netBalance, 0.001)
+    }
 }

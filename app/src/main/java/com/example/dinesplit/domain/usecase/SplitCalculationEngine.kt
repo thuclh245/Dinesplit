@@ -6,6 +6,14 @@ import com.example.dinesplit.domain.model.Settlement
 import kotlin.math.abs
 import kotlin.math.roundToLong
 
+data class UserBalanceSummary(
+    val amountYouOwe: Double,
+    val amountYouAreOwed: Double
+) {
+    val netBalance: Double
+        get() = amountYouAreOwed - amountYouOwe
+}
+
 object SplitCalculationEngine {
     private const val MONEY_EPSILON = 0.5
 
@@ -114,6 +122,37 @@ object SplitCalculationEngine {
         return balances.mapValues { (_, amount) -> if (abs(amount) < MONEY_EPSILON) 0.0 else amount }
     }
 
+    fun calculateUserBalance(
+        bills: List<Bill>,
+        userId: String?
+    ): UserBalanceSummary {
+        val cleanUserId = userId?.takeIf { it.isNotBlank() }
+            ?: return UserBalanceSummary(amountYouOwe = 0.0, amountYouAreOwed = 0.0)
+
+        var amountYouOwe = 0.0
+        var amountYouAreOwed = 0.0
+
+        bills.forEach { bill ->
+            if (bill.payerId.isBlank()) return@forEach
+
+            if (bill.payerId == cleanUserId) {
+                amountYouAreOwed += bill.shares
+                    .filterKeys { memberId ->
+                        memberId != cleanUserId && memberId !in bill.paidMemberIds
+                    }
+                    .values
+                    .sum()
+            } else if (cleanUserId !in bill.paidMemberIds) {
+                amountYouOwe += bill.shares[cleanUserId] ?: 0.0
+            }
+        }
+
+        return UserBalanceSummary(
+            amountYouOwe = amountYouOwe.cleanMoney(),
+            amountYouAreOwed = amountYouAreOwed.cleanMoney()
+        )
+    }
+
     fun calculateSettlements(balances: Map<String, Double>): List<Settlement> {
         val debtors =
             balances
@@ -158,5 +197,9 @@ object SplitCalculationEngine {
         right: Double,
     ): Boolean {
         return abs(left.roundToLong() - right.roundToLong()) <= 0
+    }
+
+    private fun Double.cleanMoney(): Double {
+        return if (abs(this) < MONEY_EPSILON) 0.0 else this
     }
 }

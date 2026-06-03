@@ -63,6 +63,7 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.example.dinesplit.core.common.AppContainer
+import com.example.dinesplit.core.ui.DineAvatarImage
 import com.example.dinesplit.core.ui.PrimaryButton
 import com.example.dinesplit.domain.model.Bill
 import com.example.dinesplit.domain.model.BillItem
@@ -842,16 +843,13 @@ private fun AvatarBubble(
     selected: Boolean,
 ) {
     val colorScheme = MaterialTheme.colorScheme
-    Box(
-        modifier =
-            Modifier
-                .size(40.dp)
-                .clip(CircleShape)
-                .background(if (selected) colorScheme.primary else colorScheme.outlineVariant),
-        contentAlignment = Alignment.Center,
-    ) {
-        Text(member.initial, color = colorScheme.surfaceContainerLowest, fontWeight = FontWeight.Bold)
-    }
+    DineAvatarImage(
+        imageUrl = member.avatarUrl,
+        name = member.name.ifBlank { member.initial },
+        size = 40.dp,
+        fallbackContainerColor = if (selected) colorScheme.primary else colorScheme.outlineVariant,
+        fallbackContentColor = colorScheme.surfaceContainerLowest
+    )
 }
 
 @Composable
