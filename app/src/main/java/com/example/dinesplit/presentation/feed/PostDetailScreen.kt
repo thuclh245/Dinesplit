@@ -2,6 +2,7 @@ package com.example.dinesplit.presentation.feed
 
 import android.app.Application
 import androidx.compose.foundation.background
+import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
@@ -10,27 +11,31 @@ import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
-import androidx.compose.material.icons.automirrored.filled.Send
 import androidx.compose.material.icons.filled.Favorite
 import androidx.compose.material.icons.filled.LocationOn
+import androidx.compose.material.icons.outlined.ChatBubbleOutline
 import androidx.compose.material.icons.outlined.FavoriteBorder
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.focus.FocusRequester
-import androidx.compose.ui.focus.focusRequester
+import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.text.font.FontWeight
-import androidx.compose.ui.text.input.TextFieldValue
+import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
-import androidx.lifecycle.AndroidViewModel
+import androidx.lifecycle.ViewModel
 import androidx.lifecycle.ViewModelProvider
 import androidx.lifecycle.viewModelScope
 import androidx.lifecycle.viewmodel.compose.viewModel
+import coil.compose.AsyncImage
 import com.example.dinesplit.core.common.AppContainer
+import com.example.dinesplit.core.ui.AppCard
 import com.example.dinesplit.core.ui.AppDimens
+import com.example.dinesplit.core.ui.AppScaffold
+import com.example.dinesplit.core.ui.AppTextField
 import com.example.dinesplit.core.ui.DineAvatarImage
 import com.example.dinesplit.core.ui.DinePostImage
 import com.example.dinesplit.core.ui.ErrorStateBlock
@@ -48,7 +53,6 @@ import java.text.SimpleDateFormat
 import java.util.Date
 import java.util.Locale
 
-// ─── ViewModel ───────────────────────────────────────────────────────────────
 
 data class PostDetailUiState(
     val post: Post? = null,
@@ -62,7 +66,7 @@ data class PostDetailUiState(
 class PostDetailViewModel(
     application: Application,
     private val postId: String,
-) : AndroidViewModel(application) {
+) : ViewModel() {
     private val feedRepo = AppContainer.feedRepository()
     private val observeSession = AppContainer.observeSessionUseCase(application)
     private val getCurrentProfile = AppContainer.getCurrentUserProfileUseCase(application)
@@ -107,20 +111,6 @@ class PostDetailViewModel(
         }
     }
 
-    fun likePost() {
-        val userId = observeSession().value?.uid ?: return
-        viewModelScope.launch {
-            likeUseCase(postId, userId)
-        }
-    }
-
-    fun unlikePost() {
-        val userId = observeSession().value?.uid ?: return
-        viewModelScope.launch {
-            unlikeUseCase(postId, userId)
-        }
-    }
-
     fun submitComment(text: String) {
         if (text.isBlank()) return
         val userId = observeSession().value?.uid ?: return
@@ -128,17 +118,16 @@ class PostDetailViewModel(
             _isSubmitting.value = true
             try {
                 val profile = getCurrentProfile(userId)
-                val comment =
-                    Comment(
-                        authorUid = userId,
-                        authorName = profile?.displayName ?: "Người dùng",
-                        authorAvatar = profile?.avatarUrl ?: "",
-                        content = text.trim(),
-                        createdAt = Date(),
-                    )
+                val comment = Comment(
+                    authorUid = userId,
+                    authorName = profile?.displayName ?: "Người dùng",
+                    authorAvatar = profile?.avatarUrl ?: "",
+                    content = text.trim(),
+                    createdAt = Date(),
+                )
                 feedRepo.addComment(postId, comment)
             } catch (e: Exception) {
-                // Xử lý ngoại lệ nếu cần
+                e.printStackTrace()
             } finally {
                 _isSubmitting.value = false
             }
@@ -148,13 +137,12 @@ class PostDetailViewModel(
     class Factory(private val application: Application, private val postId: String) :
         ViewModelProvider.Factory {
         @Suppress("UNCHECKED_CAST")
-        override fun <T : androidx.lifecycle.ViewModel> create(modelClass: Class<T>): T = PostDetailViewModel(application, postId) as T
+        override fun <T : ViewModel> create(modelClass: Class<T>): T = 
+            PostDetailViewModel(application, postId) as T
     }
 }
 
-// ─── Screen ──────────────────────────────────────────────────────────────────
 
-@OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun PostDetailScreen(
     postId: String,
@@ -163,300 +151,271 @@ fun PostDetailScreen(
     val application = androidx.compose.ui.platform.LocalContext.current.applicationContext as Application
     val vm: PostDetailViewModel = viewModel(factory = PostDetailViewModel.Factory(application, postId))
     val uiState by vm.uiState.collectAsState()
-    var commentText by remember { mutableStateOf(TextFieldValue("")) }
     val listState = rememberLazyListState()
-    val focusRequester = remember { FocusRequester() }
 
-    // Scroll to bottom when comments grow
+    // TỰ ĐỘNG CUỘN ĐÁY: Khi có bình luận mới được thêm vào, danh sách tự cuộn xuống dưới cùng
     LaunchedEffect(uiState.comments.size) {
         if (uiState.comments.isNotEmpty()) {
             listState.animateScrollToItem(uiState.comments.size + 1)
         }
     }
 
-    Scaffold(
-        topBar = {
-            TopAppBar(
-                title = { Text("Bài viết", style = MaterialTheme.typography.titleMedium.copy(fontWeight = FontWeight.Bold)) },
-                navigationIcon = {
-                    IconButton(onClick = onBack) {
-                        Icon(Icons.AutoMirrored.Filled.ArrowBack, contentDescription = "Quay lại")
+    AppScaffold(
+        title = "Chi tiết bài viết",
+        navigationIcon = {
+            IconButton(onClick = onBack) {
+                Icon(Icons.AutoMirrored.Filled.ArrowBack, contentDescription = "Quay lại")
+            }
+        }
+    ) {
+        Box(modifier = Modifier.fillMaxSize()) {
+            val state = uiState
+            when {
+                state.isLoading -> {
+                    Box(modifier = Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
+                        LoadingBlock(message = "Đang tải chi tiết bài viết...")
                     }
-                },
-                colors =
-                    TopAppBarDefaults.topAppBarColors(
-                        containerColor = MaterialTheme.colorScheme.background,
-                    ),
-            )
-        },
-        bottomBar = {
-            // Comment input bar
-            Surface(
-                color = MaterialTheme.colorScheme.surfaceContainerLowest,
-                tonalElevation = 8.dp,
-            ) {
-                Row(
-                    modifier =
-                        Modifier
-                            .fillMaxWidth()
-                            .navigationBarsPadding()
-                            .imePadding()
-                            .padding(horizontal = 16.dp, vertical = 8.dp),
-                    verticalAlignment = Alignment.CenterVertically,
-                    horizontalArrangement = Arrangement.spacedBy(8.dp),
-                ) {
-                    OutlinedTextField(
-                        value = commentText,
-                        onValueChange = { commentText = it },
-                        placeholder = { Text("Viết bình luận...", style = MaterialTheme.typography.bodySmall) },
-                        modifier =
-                            Modifier
-                                .weight(1f)
-                                .focusRequester(focusRequester),
-                        shape = RoundedCornerShape(24.dp),
-                        singleLine = true,
-                        colors =
-                            OutlinedTextFieldDefaults.colors(
-                                focusedBorderColor = MaterialTheme.colorScheme.primary,
-                                unfocusedBorderColor = MaterialTheme.colorScheme.outline.copy(0.4f),
-                            ),
-                        textStyle = MaterialTheme.typography.bodySmall,
-                    )
-                    IconButton(
-                        onClick = {
-                            vm.submitComment(commentText.text)
-                            commentText = TextFieldValue("")
-                        },
-                        enabled = commentText.text.isNotBlank() && !uiState.isSubmittingComment,
-                        modifier =
-                            Modifier
-                                .size(44.dp)
-                                .background(
-                                    if (commentText.text.isNotBlank()) {
-                                        MaterialTheme.colorScheme.primary
-                                    } else {
-                                        MaterialTheme.colorScheme.surfaceContainerHigh
-                                    },
-                                    CircleShape,
-                                ),
+                }
+                state.error != null -> {
+                    Box(modifier = Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
+                        ErrorStateBlock(
+                            title = "Không tìm thấy bài viết",
+                            subtitle = state.error,
+                            retryText = "Quay lại",
+                            onRetryClick = onBack
+                        )
+                    }
+                }
+                state.post != null -> {
+                    // Hiển thị nội dung chính khi dữ liệu nạp thành công
+                    LazyColumn(
+                        state = listState,
+                        modifier = Modifier.fillMaxSize(),
+                        contentPadding = PaddingValues(bottom = 100.dp), // Tránh bị che bởi thanh nhập liệu dưới đáy
+                        verticalArrangement = Arrangement.spacedBy(AppDimens.spaceMd)
                     ) {
-                        if (uiState.isSubmittingComment) {
-                            CircularProgressIndicator(modifier = Modifier.size(20.dp), strokeWidth = 2.dp, color = MaterialTheme.colorScheme.onPrimary)
-                        } else {
-                            Icon(
-                                Icons.AutoMirrored.Filled.Send,
-                                contentDescription = "Gửi",
-                                tint = if (commentText.text.isNotBlank()) MaterialTheme.colorScheme.onPrimary else MaterialTheme.colorScheme.outline,
-                                modifier = Modifier.size(20.dp),
+                        item {
+                            PostDetailCard(
+                                post = state.post,
+                                isLikedByMe = state.isLikedByMe,
+                                onToggleLike = vm::toggleLike
                             )
                         }
-                    }
-                }
-            }
-        },
-    ) { padding ->
-        val post = uiState.post
-        when {
-            uiState.isLoading -> {
-                Box(
-                    modifier = Modifier.fillMaxSize().padding(padding),
-                    contentAlignment = Alignment.Center,
-                ) {
-                    LoadingBlock(
-                        message = "Đang tải chi tiết bài viết...",
-                        modifier = Modifier.padding(AppDimens.spaceLg),
-                    )
-                }
-            }
-            uiState.error != null -> {
-                Box(
-                    modifier = Modifier.fillMaxSize().padding(padding),
-                    contentAlignment = Alignment.Center,
-                ) {
-                    ErrorStateBlock(
-                        title = "Không tìm thấy bài viết",
-                        subtitle = uiState.error ?: "Bài viết không tồn tại hoặc đã bị xóa.",
-                        retryText = "Quay lại",
-                        onRetryClick = onBack,
-                        modifier = Modifier.padding(AppDimens.spaceLg),
-                    )
-                }
-            }
-            post != null -> {
-                LazyColumn(
-                    state = listState,
-                    modifier =
-                        Modifier
-                            .fillMaxSize()
-                            .background(MaterialTheme.colorScheme.background)
-                            .padding(padding),
-                    contentPadding = PaddingValues(bottom = 16.dp),
-                ) {
-                    item {
-                        PostContent(post = post, isLikedByMe = uiState.isLikedByMe, onLike = vm::likePost, onUnlike = vm::unlikePost)
-                    }
-                    item {
-                        HorizontalDivider(
-                            modifier = Modifier.padding(vertical = 8.dp),
-                            color = MaterialTheme.colorScheme.outlineVariant.copy(0.3f),
-                        )
-                        Text(
-                            text = "Bình luận (${uiState.comments.size})",
-                            style = MaterialTheme.typography.titleSmall.copy(fontWeight = FontWeight.Bold),
-                            modifier = Modifier.padding(horizontal = 16.dp, vertical = 8.dp),
-                        )
-                    }
-                    if (uiState.comments.isEmpty()) {
+
                         item {
-                            Box(modifier = Modifier.fillMaxWidth().padding(32.dp), contentAlignment = Alignment.Center) {
-                                Text(
-                                    "Chưa có bình luận nào. Hãy là người đầu tiên!",
-                                    style = MaterialTheme.typography.bodySmall,
-                                    color = MaterialTheme.colorScheme.outline,
-                                )
+                            HorizontalDivider(
+                                modifier = Modifier.padding(vertical = 4.dp),
+                                color = MaterialTheme.colorScheme.outlineVariant.copy(0.3f),
+                            )
+                            Text(
+                                text = "Bình luận (${state.comments.size})",
+                                style = MaterialTheme.typography.titleSmall.copy(fontWeight = FontWeight.Bold),
+                                modifier = Modifier.padding(horizontal = 16.dp, vertical = 4.dp),
+                            )
+                        }
+
+                        if (state.comments.isEmpty()) {
+                            item {
+                                Box(modifier = Modifier.fillMaxWidth().padding(32.dp), contentAlignment = Alignment.Center) {
+                                    Text(
+                                        text = "Chưa có bình luận nào. Hãy là người đầu tiên!",
+                                        style = MaterialTheme.typography.bodySmall,
+                                        color = MaterialTheme.colorScheme.outline
+                                    )
+                                }
+                            }
+                        } else {
+                            // KEYED ITEMS: Ép danh sách sử dụng ID thật để tối ưu hóa Slot Table khi bình luận tăng lên
+                            items(state.comments, key = { it.id }) { comment ->
+                                CommentRow(comment = comment)
                             }
                         }
                     }
-                    items(uiState.comments) { comment ->
-                        CommentItem(comment = comment)
-                    }
+
+                    CommentInputBar(
+                        modifier = Modifier
+                            .align(Alignment.BottomCenter)
+                            .fillMaxWidth()
+                            .imePadding(),
+                        isSubmitting = state.isSubmittingComment,
+                        onSubmit = vm::submitComment
+                    )
                 }
             }
         }
     }
 }
 
-// ─── Post content section ─────────────────────────────────────────────────────
-
 @Composable
-private fun PostContent(
+private fun PostDetailCard(
     post: Post,
     isLikedByMe: Boolean,
-    onLike: () -> Unit,
-    onUnlike: () -> Unit,
+    onToggleLike: () -> Unit
 ) {
-    Column {
-        // Author row
-        Row(
-            modifier = Modifier.padding(16.dp),
-            verticalAlignment = Alignment.CenterVertically,
-            horizontalArrangement = Arrangement.spacedBy(12.dp),
-        ) {
-            DineAvatarImage(imageUrl = post.authorAvatar, name = post.authorName, size = 44.dp)
-            Column(modifier = Modifier.weight(1f)) {
-                Text(post.authorName, style = MaterialTheme.typography.labelLarge.copy(fontWeight = FontWeight.Bold))
-                if (!post.location.isNullOrBlank()) {
-                    Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(4.dp)) {
-                        Icon(
-                            Icons.Default.LocationOn,
-                            contentDescription = null,
-                            modifier = Modifier.size(12.dp),
-                            tint = MaterialTheme.colorScheme.outline,
-                        )
+    AppCard {
+        Column(verticalArrangement = Arrangement.spacedBy(AppDimens.spaceMd)) {
+            Row(
+                verticalAlignment = Alignment.CenterVertically,
+                horizontalArrangement = Arrangement.SpaceBetween,
+                modifier = Modifier.fillMaxWidth()
+            ) {
+                Row(
+                    verticalAlignment = Alignment.CenterVertically,
+                    horizontalArrangement = Arrangement.spacedBy(12.dp)
+                ) {
+                    DineAvatarImage(imageUrl = post.authorAvatar, name = post.authorName, size = 40.dp)
+                    Column {
                         Text(
-                            post.location,
-                            style = MaterialTheme.typography.labelSmall,
-                            color = MaterialTheme.colorScheme.outline,
+                            text = post.authorName,
+                            style = MaterialTheme.typography.titleMedium.copy(fontWeight = FontWeight.Bold),
+                            color = MaterialTheme.colorScheme.onSurface
                         )
+                        post.location?.takeIf { it.isNotBlank() }?.let { location ->
+                            Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(4.dp)) {
+                                Icon(Icons.Default.LocationOn, contentDescription = null, modifier = Modifier.size(12.dp), tint = MaterialTheme.colorScheme.outline)
+                                Text(text = location, style = MaterialTheme.typography.labelSmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
+                            }
+                        }
                     }
                 }
-            }
-            post.createdAt?.let { date ->
-                Text(
-                    text = formatPostDate(date),
-                    style = MaterialTheme.typography.labelSmall,
-                    color = MaterialTheme.colorScheme.outline,
-                )
-            }
-        }
-
-        // Post image
-        if (post.imageUrls.isNotEmpty()) {
-            DinePostImage(
-                imageUrl = post.imageUrls.first(),
-                contentDescription = post.caption,
-                modifier =
-                    Modifier
-                        .fillMaxWidth()
-                        .aspectRatio(1f),
-                shape = RoundedCornerShape(0.dp),
-            )
-        }
-
-        // Caption
-        if (post.caption.isNotBlank()) {
-            Text(
-                text = post.caption,
-                style = MaterialTheme.typography.bodyMedium,
-                modifier = Modifier.padding(horizontal = 16.dp, vertical = 12.dp),
-            )
-        }
-
-        // Like row
-        Row(
-            modifier = Modifier.padding(horizontal = 8.dp, vertical = 4.dp),
-            verticalAlignment = Alignment.CenterVertically,
-            horizontalArrangement = Arrangement.spacedBy(4.dp),
-        ) {
-            IconButton(
-                onClick = if (isLikedByMe) onUnlike else onLike,
-                modifier = Modifier.size(44.dp),
-            ) {
-                Icon(
-                    imageVector = if (isLikedByMe) Icons.Filled.Favorite else Icons.Outlined.FavoriteBorder,
-                    contentDescription = if (isLikedByMe) "Bỏ thích" else "Thích",
-                    tint = if (isLikedByMe) MaterialTheme.colorScheme.error else MaterialTheme.colorScheme.onSurface,
-                    modifier = Modifier.size(24.dp),
-                )
-            }
-            if (post.likesCount > 0) {
-                Text(
-                    "${post.likesCount} lượt thích",
-                    style = MaterialTheme.typography.bodySmall.copy(fontWeight = FontWeight.SemiBold),
-                )
-            } else {
-                Text("Hãy thích bài viết này!", style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.outline)
-            }
-        }
-    }
-}
-
-// ─── Comment item ─────────────────────────────────────────────────────────────
-
-@Composable
-private fun CommentItem(comment: Comment) {
-    Row(
-        modifier =
-            Modifier
-                .fillMaxWidth()
-                .padding(horizontal = 16.dp, vertical = 6.dp),
-        horizontalArrangement = Arrangement.spacedBy(10.dp),
-        verticalAlignment = Alignment.Top,
-    ) {
-        DineAvatarImage(imageUrl = comment.authorAvatar, name = comment.authorName, size = 36.dp)
-        Column(
-            modifier =
-                Modifier
-                    .weight(1f)
-                    .background(MaterialTheme.colorScheme.surfaceContainerLowest, RoundedCornerShape(12.dp))
-                    .padding(horizontal = 12.dp, vertical = 8.dp),
-        ) {
-            Row(
-                modifier = Modifier.fillMaxWidth(),
-                horizontalArrangement = Arrangement.SpaceBetween,
-                verticalAlignment = Alignment.CenterVertically,
-            ) {
-                Text(comment.authorName, style = MaterialTheme.typography.labelSmall.copy(fontWeight = FontWeight.Bold))
-                comment.createdAt?.let { date ->
+                post.createdAt?.let { date ->
                     Text(
-                        formatPostDate(date),
+                        text = formatPostDate(date),
                         style = MaterialTheme.typography.labelSmall,
                         color = MaterialTheme.colorScheme.outline,
                     )
                 }
             }
-            Spacer(modifier = Modifier.height(2.dp))
-            Text(comment.content, style = MaterialTheme.typography.bodySmall)
+
+            if (post.imageUrls.isNotEmpty()) {
+                DinePostImage(
+                    imageUrl = post.imageUrls.first(),
+                    contentDescription = post.caption,
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .aspectRatio(1f),
+                    shape = RoundedCornerShape(AppDimens.radiusLg),
+                )
+            }
+
+            Row(
+                verticalAlignment = Alignment.CenterVertically,
+                horizontalArrangement = Arrangement.SpaceBetween,
+                modifier = Modifier.fillMaxWidth()
+            ) {
+                Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(6.dp)) {
+                    IconButton(onClick = onToggleLike, modifier = Modifier.size(36.dp)) {
+                        Icon(
+                            imageVector = if (isLikedByMe) Icons.Filled.Favorite else Icons.Outlined.FavoriteBorder,
+                            contentDescription = null,
+                            tint = if (isLikedByMe) MaterialTheme.colorScheme.error else MaterialTheme.colorScheme.onSurfaceVariant,
+                            modifier = Modifier.size(22.dp)
+                        )
+                    }
+                    Text(
+                        text = if (post.likesCount > 0) "${post.likesCount} lượt thích" else "Hãy thích bài viết này!",
+                        style = MaterialTheme.typography.bodySmall.copy(fontWeight = FontWeight.SemiBold),
+                        color = if (post.likesCount > 0) MaterialTheme.colorScheme.onSurface else MaterialTheme.colorScheme.outline
+                    )
+                }
+            }
+
+            if (post.caption.isNotBlank()) {
+                Text(
+                    text = post.caption,
+                    style = MaterialTheme.typography.bodyMedium,
+                    color = MaterialTheme.colorScheme.onSurface,
+                    lineHeight = 20.sp
+                )
+            }
+        }
+    }
+}
+
+@Composable
+private fun CommentRow(comment: Comment) {
+    AppCard {
+        Row(
+            modifier = Modifier.fillMaxWidth(),
+            horizontalArrangement = Arrangement.spacedBy(AppDimens.spaceMd),
+            verticalAlignment = Alignment.Top
+        ) {
+            DineAvatarImage(imageUrl = comment.authorAvatar, name = comment.authorName, size = 36.dp)
+
+            Column(verticalArrangement = Arrangement.spacedBy(AppDimens.spaceXs), modifier = Modifier.weight(1f)) {
+                Row(
+                    modifier = Modifier.fillMaxWidth(),
+                    horizontalArrangement = Arrangement.SpaceBetween,
+                    verticalAlignment = Alignment.CenterVertically
+                ) {
+                    Text(text = comment.authorName, style = MaterialTheme.typography.titleSmall.copy(fontWeight = FontWeight.Bold))
+                    comment.createdAt?.let { date ->
+                        Text(
+                            text = formatPostDate(date),
+                            style = MaterialTheme.typography.labelSmall,
+                            color = MaterialTheme.colorScheme.outline
+                        )
+                    }
+                }
+                Text(
+                    text = comment.content,
+                    style = MaterialTheme.typography.bodyMedium,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant
+                )
+            }
+        }
+    }
+}
+
+@Composable
+private fun CommentInputBar(
+    modifier: Modifier = Modifier,
+    isSubmitting: Boolean,
+    onSubmit: (String) -> Unit
+) {
+    var text by remember { mutableStateOf("") }
+
+    Surface(
+        modifier = modifier,
+        color = MaterialTheme.colorScheme.surfaceContainerLowest,
+        tonalElevation = 4.dp
+    ) {
+        Column(modifier = Modifier.padding(horizontal = 16.dp, vertical = 8.dp)) {
+            Row(
+                verticalAlignment = Alignment.CenterVertically,
+                horizontalArrangement = Arrangement.spacedBy(AppDimens.spaceSm)
+            ) {
+                AppTextField(
+                    value = text,
+                    onValueChange = { text = it },
+                    label = "",
+                    placeholder = "Viết bình luận công khai...",
+                    modifier = Modifier.weight(1f),
+                    singleLine = true
+                )
+                Button(
+                    onClick = {
+                        val current = text.trim()
+                        if (current.isNotBlank()) {
+                            onSubmit(current)
+                            text = "" // Xóa trống ô gõ sau khi submit thành công
+                        }
+                    },
+                    enabled = text.isNotBlank() && !isSubmitting,
+                    colors = ButtonDefaults.buttonColors(
+                        containerColor = MaterialTheme.colorScheme.primary,
+                        contentColor = MaterialTheme.colorScheme.onPrimary
+                    ),
+                    shape = RoundedCornerShape(24.dp),
+                    contentPadding = PaddingValues(horizontal = 20.dp, vertical = 8.dp)
+                ) {
+                    if (isSubmitting) {
+                        CircularProgressIndicator(modifier = Modifier.size(18.dp), strokeWidth = 2.dp, color = MaterialTheme.colorScheme.onPrimary)
+                    } else {
+                        Text("Gửi", fontWeight = FontWeight.Bold)
+                    }
+                }
+            }
         }
     }
 }
