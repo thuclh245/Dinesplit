@@ -56,6 +56,7 @@ import com.example.dinesplit.core.ui.AppDimens
 import com.example.dinesplit.core.ui.AppShapes
 import com.example.dinesplit.core.ui.EmptyStateBlock
 import com.example.dinesplit.core.ui.ErrorStateBlock
+import com.example.dinesplit.core.ui.HomeTopBar
 import com.example.dinesplit.core.ui.LoadingBlock
 import com.example.dinesplit.domain.model.Transaction
 import com.example.dinesplit.domain.model.TransactionSource
@@ -115,43 +116,46 @@ fun PersonalScreen(
             )
         }
     val monthMarker = remember { currentMonthMarker() }
-    val topCategory =
-        remember(expenseSlices) {
-            expenseSlices.maxByOrNull { it.amount }
-        }
-    val anomalySignals =
-        remember(uiState.transactions, chartState.monthlySummary, monthMarker) {
-            buildAnomalySignals(
-                transactions = uiState.transactions,
-                summary = chartState.monthlySummary,
-                monthMarker = monthMarker,
-            )
-        }
-    val prioritySignals =
-        remember(anomalySignals) {
-            anomalySignals
-                .filter { it.tone != AdvancedSignalTone.POSITIVE && it.metric != "Idle" }
-                .take(3)
-        }
-    val autopilotActions =
-        remember(
-            uiState.transactions,
-            uiState.recurringRules,
-            uiState.goals,
-            uiState.wallets,
-            reminderCount,
-            topCategory,
-            personalScore,
-        ) {
-            buildAutopilotActions(
-                uiState = uiState,
-                topCategory = topCategory,
-                reminderCount = reminderCount,
-                score = personalScore,
-            )
-        }
+    val topCategory = remember(expenseSlices) {
+        expenseSlices.maxByOrNull { it.amount }
+    }
+    val anomalySignals = remember(uiState.transactions, chartState.monthlySummary, monthMarker) {
+        buildAnomalySignals(
+            transactions = uiState.transactions,
+            summary = chartState.monthlySummary,
+            monthMarker = monthMarker
+        )
+    }
+    val prioritySignals = remember(anomalySignals) {
+        anomalySignals
+            .filter { it.tone != AdvancedSignalTone.POSITIVE && it.metric != "Chờ" }
+            .take(3)
+    }
+    val autopilotActions = remember(
+        uiState.transactions,
+        uiState.recurringRules,
+        uiState.goals,
+        uiState.wallets,
+        reminderCount,
+        topCategory,
+        personalScore
+    ) {
+        buildAutopilotActions(
+            uiState = uiState,
+            topCategory = topCategory,
+            reminderCount = reminderCount,
+            score = personalScore
+        )
+    }
 
     Scaffold(
+        topBar = {
+            HomeTopBar(
+                userAvatarUrl = userAvatarUrl,
+                title = "Cá nhân",
+                onOpenSearch = onOpenSearch
+            )
+        },
         floatingActionButton = {
             FloatingActionButton(
                 onClick = onAddTransaction,
@@ -160,7 +164,7 @@ fun PersonalScreen(
                 shape = CircleShape,
                 modifier = Modifier.padding(bottom = bottomPadding),
             ) {
-                Icon(Icons.Default.Add, contentDescription = "Add transaction")
+                Icon(Icons.Default.Add, contentDescription = "Thêm giao dịch")
             }
         },
     ) { padding ->
@@ -181,13 +185,13 @@ fun PersonalScreen(
         ) {
             if (uiState.isLoading) {
                 item {
-                    LoadingBlock(message = "Đang tải dữ liệu tài chính...")
+                    LoadingBlock(message = "Đang tải dữ liệu quản lý tài chính...")
                 }
             } else {
                 uiState.errorMessage?.let { message ->
                     item {
                         ErrorStateBlock(
-                            title = "Không thể tải dữ liệu",
+                            title = "Không thể tải dữ liệu Cá nhân",
                             subtitle = message,
                             onRetryClick = onRefresh,
                         )
@@ -256,10 +260,10 @@ fun PersonalScreen(
                 if (uiState.transactions.isEmpty()) {
                     item {
                         EmptyStateBlock(
-                            title = "Chưa có giao dịch nào",
-                            subtitle = "Thêm khoản thu hoặc chi để bắt đầu theo dõi tài chính của bạn.",
+                            title = "Chưa có giao dịch",
+                            subtitle = "Thêm giao dịch thu nhập hoặc chi tiêu để bắt đầu theo dõi dữ liệu Firebase thực tế của bạn.",
                             actionText = "Thêm giao dịch",
-                            onActionClick = onAddTransaction,
+                            onActionClick = onAddTransaction
                         )
                     }
                 } else {
@@ -272,7 +276,7 @@ fun PersonalScreen(
                     }
 
                     item {
-                        SectionHeader(title = "Recent transactions", actionLabel = "View all", onAction = onOpenHistory)
+                        SectionHeader(title = "Giao dịch gần đây", actionLabel = "Xem tất cả", onAction = onOpenHistory)
                     }
 
                     items(uiState.transactions.take(3), key = { it.id }) { transaction ->
@@ -339,7 +343,7 @@ private fun MonthlyCommandCard(
                     verticalArrangement = Arrangement.spacedBy(AppDimens.spaceXs),
                 ) {
                     Text(
-                        text = "Monthly command center",
+                        text = "Trung tâm lệnh hàng tháng",
                         style = MaterialTheme.typography.labelMedium,
                         color = onAccent.copy(alpha = 0.76f),
                     )
@@ -352,7 +356,7 @@ private fun MonthlyCommandCard(
                         overflow = TextOverflow.Ellipsis,
                     )
                     Text(
-                        text = "Safe today ${formatMoney(forecast.dailyAmount)}",
+                        text = "An toàn hôm nay ${formatMoney(forecast.dailyAmount)}",
                         style = MaterialTheme.typography.bodySmall,
                         color = onAccent.copy(alpha = 0.82f),
                         maxLines = 1,
@@ -366,8 +370,8 @@ private fun MonthlyCommandCard(
                         )
                         HeroSticker(
                             icon = Icons.Default.Savings,
-                            label = forecast.status.name.lowercase().replaceFirstChar { it.uppercase() },
-                            contentColor = onAccent,
+                            label = forecast.status.displayLabel(),
+                            contentColor = onAccent
                         )
                     }
                 }
@@ -405,14 +409,14 @@ private fun MonthlyCommandCard(
                 CommandMetricPill(
                     modifier = Modifier.weight(1f),
                     icon = Icons.Default.ArrowDownward,
-                    title = "Income",
+                    title = "Thu nhập",
                     amount = income,
                     contentColor = onAccent,
                 )
                 CommandMetricPill(
                     modifier = Modifier.weight(1f),
                     icon = Icons.Default.ArrowUpward,
-                    title = "Expense",
+                    title = "Chi tiêu",
                     amount = expense,
                     contentColor = onAccent,
                 )
@@ -523,7 +527,7 @@ private fun MonthRunwayBar(
                 color = contentColor.copy(alpha = 0.78f),
             )
             Text(
-                text = "Month runway",
+                text = "Thời gian trong tháng",
                 style = MaterialTheme.typography.labelSmall,
                 color = contentColor.copy(alpha = 0.78f),
             )
@@ -549,7 +553,7 @@ private fun PersonalSignalGrid(
     automationCount: Int,
 ) {
     Column(verticalArrangement = Arrangement.spacedBy(AppDimens.spaceMd)) {
-        SectionHeader(title = "Financial signals")
+        SectionHeader(title = "Tín hiệu tài chính")
         Row(
             modifier = Modifier.fillMaxWidth(),
             horizontalArrangement = Arrangement.spacedBy(AppDimens.spaceMd),
@@ -557,7 +561,7 @@ private fun PersonalSignalGrid(
             SignalTile(
                 modifier = Modifier.weight(1f),
                 icon = Icons.Default.AutoGraph,
-                label = "Personal score",
+                label = "Điểm cá nhân",
                 value = score.value.toString(),
                 subtitle = score.label,
                 color = scoreBandColor(score.band),
@@ -565,10 +569,10 @@ private fun PersonalSignalGrid(
             SignalTile(
                 modifier = Modifier.weight(1f),
                 icon = Icons.Default.Savings,
-                label = "Runway",
+                label = "Thời gian còn",
                 value = formatMoney(forecast.dailyAmount),
-                subtitle = "${forecast.daysLeft} days left",
-                color = forecastStatusColor(forecast.status),
+                subtitle = "${forecast.daysLeft} ngày còn lại",
+                color = forecastStatusColor(forecast.status)
             )
         }
         Row(
@@ -578,18 +582,18 @@ private fun PersonalSignalGrid(
             SignalTile(
                 modifier = Modifier.weight(1f),
                 icon = Icons.Default.Category,
-                label = "Top spend",
-                value = topCategory?.category ?: "No data",
-                subtitle = topCategory?.let { formatMoney(it.amount) } ?: "Add expenses",
-                color = MaterialTheme.colorScheme.tertiary,
+                label = "Chi tiêu cao nhất",
+                value = topCategory?.category ?: "Không có dữ liệu",
+                subtitle = topCategory?.let { formatMoney(it.amount) } ?: "Thêm chi tiêu",
+                color = MaterialTheme.colorScheme.tertiary
             )
             SignalTile(
                 modifier = Modifier.weight(1f),
                 icon = Icons.Default.NotificationsActive,
-                label = "C engine",
+                label = "Công cụ C",
                 value = "${reminderCount + automationCount}",
-                subtitle = "alerts and plans",
-                color = MaterialTheme.colorScheme.secondary,
+                subtitle = "cảnh báo và kế hoạch",
+                color = MaterialTheme.colorScheme.secondary
             )
         }
     }
@@ -662,9 +666,9 @@ private fun PriorityAlertSection(
 ) {
     AppCard {
         Column(verticalArrangement = Arrangement.spacedBy(AppDimens.spaceMd)) {
-            SectionHeader(title = "Priority alerts")
+            SectionHeader(title = "Cảnh báo ưu tiên")
             Text(
-                text = "Review these before adding more spending.",
+                text = "Xem lại những cảnh báo này trước khi chi tiêu thêm.",
                 style = MaterialTheme.typography.bodySmall,
                 color = MaterialTheme.colorScheme.onSurfaceVariant,
             )
@@ -700,9 +704,9 @@ private fun AutopilotQueue(
 ) {
     AppCard {
         Column(verticalArrangement = Arrangement.spacedBy(AppDimens.spaceMd)) {
-            SectionHeader(title = "Autopilot queue")
+            SectionHeader(title = "Hàng đợi tự động")
             Text(
-                text = "Concrete setup steps ranked by priority.",
+                text = "Các bước cài đặt cụ thể được xếp hạng theo ưu tiên.",
                 style = MaterialTheme.typography.bodySmall,
                 color = MaterialTheme.colorScheme.onSurfaceVariant,
             )
@@ -823,7 +827,7 @@ private fun PersonalActionGrid(
     onOpenPlans: () -> Unit,
 ) {
     Column(verticalArrangement = Arrangement.spacedBy(AppDimens.spaceMd)) {
-        SectionHeader(title = "Manage")
+        SectionHeader(title = "Quản lý")
         Row(
             modifier = Modifier.fillMaxWidth(),
             horizontalArrangement = Arrangement.spacedBy(AppDimens.spaceMd),
@@ -831,16 +835,16 @@ private fun PersonalActionGrid(
             QuickActionCard(
                 modifier = Modifier.weight(1f),
                 icon = Icons.Default.History,
-                label = "Ledger",
-                value = "$transactionCount entries",
+                label = "Sổ cái",
+                value = "$transactionCount mục",
                 color = MaterialTheme.colorScheme.primary,
                 onClick = onOpenHistory,
             )
             QuickActionCard(
                 modifier = Modifier.weight(1f),
                 icon = Icons.Default.AutoGraph,
-                label = "Insights",
-                value = "Radar and simulator",
+                label = "Thông tin",
+                value = "Radar và mô phỏng",
                 color = MaterialTheme.colorScheme.secondary,
                 onClick = onOpenInsights,
             )
@@ -852,16 +856,16 @@ private fun PersonalActionGrid(
             QuickActionCard(
                 modifier = Modifier.weight(1f),
                 icon = Icons.Default.Savings,
-                label = "Summary",
-                value = "Monthly report",
+                label = "Tổng hợp",
+                value = "Báo cáo hàng tháng",
                 color = MaterialTheme.colorScheme.tertiary,
                 onClick = onOpenMonthlySummary,
             )
             QuickActionCard(
                 modifier = Modifier.weight(1f),
                 icon = Icons.Default.Category,
-                label = "Categories",
-                value = "$categoryCount active",
+                label = "Danh mục",
+                value = "$categoryCount hoạt động",
                 color = MaterialTheme.colorScheme.primary,
                 onClick = onOpenCategories,
             )
@@ -873,16 +877,16 @@ private fun PersonalActionGrid(
             QuickActionCard(
                 modifier = Modifier.weight(1f),
                 icon = Icons.Default.NotificationsActive,
-                label = "Reminders",
-                value = "$reminderCount active",
+                label = "Nhắc nhở",
+                value = "$reminderCount hoạt động",
                 color = MaterialTheme.colorScheme.error,
                 onClick = onOpenReminders,
             )
             QuickActionCard(
                 modifier = Modifier.weight(1f),
                 icon = Icons.Default.EventRepeat,
-                label = "Plans",
-                value = "$planCount active",
+                label = "Kế hoạch",
+                value = "$planCount hoạt động",
                 color = MaterialTheme.colorScheme.secondary,
                 onClick = onOpenPlans,
             )
@@ -950,13 +954,13 @@ private fun SpendingSnapshotCard(
     AppCard {
         Column(verticalArrangement = Arrangement.spacedBy(AppDimens.spaceMd)) {
             SectionHeader(
-                title = "Spending snapshot",
-                actionLabel = "View ledger",
-                onAction = onOpenHistory,
+                title = "Ảnh chụp chi tiêu",
+                actionLabel = "Xem sổ cái",
+                onAction = onOpenHistory
             )
             if (expenseSlices.isEmpty() && dailyBars.isEmpty()) {
                 Text(
-                    text = "No expense chart yet. Add expense entries to unlock category and daily spend views.",
+                    text = "Chưa có biểu đồ chi tiêu. Thêm giao dịch chi tiêu để mở khóa chế độ xem danh mục và chi tiêu hàng ngày.",
                     style = MaterialTheme.typography.bodySmall,
                     color = MaterialTheme.colorScheme.onSurfaceVariant,
                 )
@@ -1096,7 +1100,7 @@ private fun formatMoney(amount: Double): String {
 }
 
 private fun formatDate(epochMillis: Long): String {
-    val formatter = SimpleDateFormat("dd MMM yyyy", Locale.getDefault())
+    val formatter = SimpleDateFormat("dd MMM yyyy", Locale("vi", "VN"))
     return formatter.format(Date(epochMillis))
 }
 
@@ -1130,7 +1134,7 @@ private fun buildPersonalScore(
         return PersonalScore(
             value = 20,
             band = PersonalScoreBand.RISK,
-            label = "Needs data",
+            label = "Cần dữ liệu"
         )
     }
 
@@ -1164,20 +1168,19 @@ private fun buildPersonalScore(
     score -= insights.count { it.tone == PersonalInsightTone.WARNING } * 6
 
     val normalized = score.coerceIn(0, 100)
-    val band =
-        when {
-            normalized >= 82 -> PersonalScoreBand.EXCELLENT
-            normalized >= 64 -> PersonalScoreBand.STABLE
-            normalized >= 42 -> PersonalScoreBand.WATCH
-            else -> PersonalScoreBand.RISK
-        }
-    val label =
-        when (band) {
-            PersonalScoreBand.EXCELLENT -> "Excellent control"
-            PersonalScoreBand.STABLE -> "Stable month"
-            PersonalScoreBand.WATCH -> "Watch spending"
-            PersonalScoreBand.RISK -> "Needs attention"
-        }
+    val band = when {
+        normalized >= 82 -> PersonalScoreBand.EXCELLENT
+        normalized >= 64 -> PersonalScoreBand.STABLE
+        normalized >= 42 -> PersonalScoreBand.WATCH
+        else -> PersonalScoreBand.RISK
+    }
+    // Labels for personal score bands in Vietnamese
+    val label = when (band) {
+         PersonalScoreBand.EXCELLENT -> "Kiểm soát tuyệt vời"
+         PersonalScoreBand.STABLE -> "Tháng ổn định"
+         PersonalScoreBand.WATCH -> "Theo dõi chi tiêu"
+         PersonalScoreBand.RISK -> "Cần chú ý"
+     }
 
     return PersonalScore(
         value = normalized,
@@ -1191,8 +1194,8 @@ private fun currentMonthMarker(): MonthMarker {
     val day = calendar.get(Calendar.DAY_OF_MONTH)
     val maxDay = calendar.getActualMaximum(Calendar.DAY_OF_MONTH).coerceAtLeast(1)
     return MonthMarker(
-        label = "Day $day of $maxDay",
-        progress = (day.toFloat() / maxDay.toFloat()).coerceIn(0f, 1f),
+        label = "Ngày $day của $maxDay",
+        progress = (day.toFloat() / maxDay.toFloat()).coerceIn(0f, 1f)
     )
 }
 
@@ -1217,10 +1220,10 @@ private fun forecastStatusColor(status: SafeToSpendStatus): Color {
 
 private fun TransactionSource.displayLabel(): String {
     return when (this) {
-        TransactionSource.MANUAL -> "Manual"
-        TransactionSource.SPLIT -> "Split"
-        TransactionSource.RECURRING -> "Recurring"
-        TransactionSource.RECEIPT -> "Receipt"
+        TransactionSource.MANUAL -> "Thủ công"
+        TransactionSource.SPLIT -> "Chia tách"
+        TransactionSource.RECURRING -> "Lặp lại"
+        TransactionSource.RECEIPT -> "Hóa đơn"
     }
 }
 
@@ -1266,13 +1269,13 @@ private fun buildAnomalySignals(
     if (expenses.isEmpty()) {
         return listOf(
             AnomalySignal(
-                title = "No anomaly yet",
-                message = "Add expenses to let the radar compare outliers, pace, and split impact.",
-                metric = "Idle",
-                tone = AdvancedSignalTone.INFO,
-                actionLabel = "Open ledger",
-                target = PersonalActionTarget.HISTORY,
-            ),
+             title = "Chưa có bất thường",
+                 message = "Thêm chi tiêu để radar so sánh các ngoại lệ, tốc độ và tác động chia tách.",
+                metric = "Chờ",
+                 tone = AdvancedSignalTone.INFO,
+                 actionLabel = "Mở sổ cái",
+                 target = PersonalActionTarget.HISTORY
+            )
         )
     }
 
@@ -1280,15 +1283,14 @@ private fun buildAnomalySignals(
     val averageExpense = expenses.map { it.amount }.average().takeUnless { it.isNaN() } ?: 0.0
     val largestExpense = expenses.maxByOrNull { it.amount }
     if (largestExpense != null && averageExpense > 0.0 && largestExpense.amount >= averageExpense * 1.8) {
-        signals +=
-            AnomalySignal(
-                title = "Outlier transaction",
-                message = "${largestExpense.category} is ${formatRatio(largestExpense.amount / averageExpense)}x higher than your average expense.",
-                metric = formatMoney(largestExpense.amount),
-                tone = AdvancedSignalTone.WARNING,
-                actionLabel = "Review history",
-                target = PersonalActionTarget.HISTORY,
-            )
+        signals += AnomalySignal(
+            title = "Giao dịch ngoại lệ",
+            message = "${largestExpense.category} cao hơn ${formatRatio(largestExpense.amount / averageExpense)}x so với chi tiêu trung bình của bạn.",
+            metric = formatMoney(largestExpense.amount),
+            tone = AdvancedSignalTone.WARNING,
+            actionLabel = "Xem lịch sử",
+            target = PersonalActionTarget.HISTORY
+        )
     }
 
     val topCategory =
@@ -1299,15 +1301,14 @@ private fun buildAnomalySignals(
     if (topCategory != null && summary.totalExpense > 0.0) {
         val categoryShare = topCategory.value / summary.totalExpense
         if (categoryShare >= 0.45) {
-            signals +=
-                AnomalySignal(
-                    title = "Category concentration",
-                    message = "${topCategory.key} owns ${(categoryShare * 100).toInt()}% of this month's expense.",
-                    metric = "${(categoryShare * 100).toInt()}%",
-                    tone = AdvancedSignalTone.WARNING,
-                    actionLabel = "Add reminder",
-                    target = PersonalActionTarget.REMINDERS,
-                )
+            signals += AnomalySignal(
+                title = "Tập trung danh mục",
+                message = "${topCategory.key} sở hữu ${(categoryShare * 100).toInt()}% chi tiêu tháng này.",
+                metric = "${(categoryShare * 100).toInt()}%",
+                tone = AdvancedSignalTone.WARNING,
+                actionLabel = "Thêm nhắc nhở",
+                target = PersonalActionTarget.REMINDERS
+            )
         }
     }
 
@@ -1316,15 +1317,14 @@ private fun buildAnomalySignals(
             .filter { it.source == TransactionSource.SPLIT }
             .sumOf { it.amount }
     if (summary.totalExpense > 0.0 && splitExpense / summary.totalExpense >= 0.35) {
-        signals +=
-            AnomalySignal(
-                title = "Split-heavy month",
-                message = "Split bills are driving ${(splitExpense / summary.totalExpense * 100).toInt()}% of your expense.",
-                metric = formatMoney(splitExpense),
-                tone = AdvancedSignalTone.INFO,
-                actionLabel = "Review ledger",
-                target = PersonalActionTarget.HISTORY,
-            )
+        signals += AnomalySignal(
+            title = "Tháng chia tách nặng",
+            message = "Hóa đơn chia tách đang thúc đẩy ${(splitExpense / summary.totalExpense * 100).toInt()}% chi tiêu của bạn.",
+            metric = formatMoney(splitExpense),
+            tone = AdvancedSignalTone.INFO,
+            actionLabel = "Xem sổ cái",
+            target = PersonalActionTarget.HISTORY
+        )
     }
 
     val dailyTotals =
@@ -1341,27 +1341,26 @@ private fun buildAnomalySignals(
         dailyTotals[1] < dailyTotals[2] &&
         monthMarker.progress > 0.2f
     ) {
-        signals +=
-            AnomalySignal(
-                title = "Three-day climb",
-                message = "Your daily expense increased three tracked days in a row.",
-                metric = "3d",
-                tone = AdvancedSignalTone.DANGER,
-                actionLabel = "Set guardrail",
-                target = PersonalActionTarget.REMINDERS,
-            )
+        signals += AnomalySignal(
+            title = "Ba ngày tăng",
+            message = "Chi tiêu hàng ngày của bạn tăng ba ngày liên tiếp.",
+            metric = "3 ngày",
+            tone = AdvancedSignalTone.DANGER,
+            actionLabel = "Đặt rào cản",
+            target = PersonalActionTarget.REMINDERS
+        )
     }
 
     return signals.take(3).ifEmpty {
         listOf(
             AnomalySignal(
-                title = "Radar clean",
-                message = "No outlier, concentration, or rising-streak signal detected this month.",
-                metric = "OK",
+                title = "Radar sạch",
+                message = "Không phát hiện tín hiệu ngoại lệ, tập trung hoặc dáy tăng tháng này.",
+                metric = "Ổn",
                 tone = AdvancedSignalTone.POSITIVE,
-                actionLabel = "Open ledger",
-                target = PersonalActionTarget.HISTORY,
-            ),
+                actionLabel = "Mở sổ cái",
+                target = PersonalActionTarget.HISTORY
+            )
         )
     }
 }
@@ -1381,76 +1380,70 @@ private fun buildAutopilotActions(
             .sumOf { it.amount }
 
     if (score.band == PersonalScoreBand.RISK || score.band == PersonalScoreBand.WATCH) {
-        actions +=
-            AutopilotAction(
-                title = "Run defensive month",
-                message = "Your score band suggests using a stricter reminder before adding more plans.",
-                priority = "High",
-                tone = AdvancedSignalTone.DANGER,
-                actionLabel = "Open reminders",
-                target = PersonalActionTarget.REMINDERS,
-            )
+        actions += AutopilotAction(
+            title = "Chạy tháng phòng thủ",
+            message = "Nhóm điểm của bạn gợi ý sử dụng nhắc nhở chặt chẽ hơn trước khi thêm kế hoạch.",
+            priority = "Cao",
+            tone = AdvancedSignalTone.DANGER,
+            actionLabel = "Mở nhắc nhở",
+            target = PersonalActionTarget.REMINDERS
+        )
     }
 
     if (reminderCount == 0 && topCategory != null) {
-        actions +=
-            AutopilotAction(
-                title = "Guard ${topCategory.category}",
-                message = "Create a spending reminder for the category currently leading your expense.",
-                priority = "High",
-                tone = AdvancedSignalTone.WARNING,
-                actionLabel = "Create guard",
-                target = PersonalActionTarget.REMINDERS,
-            )
+        actions += AutopilotAction(
+            title = "Bảo vệ ${topCategory.category}",
+            message = "Tạo nhắc nhở chi tiêu cho danh mục hiện đang dẫn đầu chi tiêu của bạn.",
+            priority = "Cao",
+            tone = AdvancedSignalTone.WARNING,
+            actionLabel = "Tạo bảo vệ",
+            target = PersonalActionTarget.REMINDERS
+        )
     }
 
     if (uiState.recurringRules.isEmpty()) {
-        actions +=
-            AutopilotAction(
-                title = "Set recurring bill",
-                message = "Add rent, salary, subscriptions, or fixed bills to improve forecast accuracy.",
-                priority = "Medium",
-                tone = AdvancedSignalTone.INFO,
-                actionLabel = "Add recurring",
-                target = PersonalActionTarget.RECURRING_PLANS,
-            )
+        actions += AutopilotAction(
+            title = "Đặt hóa đơn lặp lại",
+            message = "Thêm tiền thuê nhà, lương, đăng ký hoặc hóa đơn cố định để cải thiện độ chính xác dự báo.",
+            priority = "Trung bình",
+            tone = AdvancedSignalTone.INFO,
+            actionLabel = "Thêm lặp lại",
+            target = PersonalActionTarget.RECURRING_PLANS
+        )
     }
 
     if (totalExpense > 0.0 && splitExpense / totalExpense >= 0.3) {
-        actions +=
-            AutopilotAction(
-                title = "Audit split impact",
-                message = "Split bills are a large part of this month. Check whether all reimbursements are reflected.",
-                priority = "Medium",
-                tone = AdvancedSignalTone.INFO,
-                actionLabel = "Review ledger",
-                target = PersonalActionTarget.HISTORY,
-            )
+        actions += AutopilotAction(
+            title = "Kiểm toán tác động chia tách",
+            message = "Hóa đơn chia tách là một phần lớn của tháng này. Kiểm tra xem tất cả các khoản hoàn tiền có được phản ánh.",
+            priority = "Trung bình",
+            tone = AdvancedSignalTone.INFO,
+            actionLabel = "Xem sổ cái",
+            target = PersonalActionTarget.HISTORY
+        )
     }
 
     if (uiState.goals.isEmpty()) {
-        val goalSubject = topCategory?.category ?: "monthly spending"
-        actions +=
-            AutopilotAction(
-                title = "Create goal for $goalSubject",
-                message = "Set a target around $goalSubject so the score reacts to the plan you actually want.",
-                priority = "Medium",
-                tone = AdvancedSignalTone.POSITIVE,
-                actionLabel = "Create goal",
-                target = PersonalActionTarget.GOALS,
-            )
+        val goalSubject = topCategory?.category ?: "chi tiêu hàng tháng"
+        actions += AutopilotAction(
+            title = "Tạo mục tiêu cho $goalSubject",
+            message = "Đặt mục tiêu xung quanh $goalSubject để điểm phản ứng với kế hoạch bạn thực sự muốn.",
+            priority = "Trung bình",
+            tone = AdvancedSignalTone.POSITIVE,
+            actionLabel = "Tạo mục tiêu",
+            target = PersonalActionTarget.GOALS
+        )
     }
 
     if (uiState.wallets.isEmpty()) {
-        actions +=
-            AutopilotAction(
-                title = "Map wallet coverage",
-                message = "Add cash, bank, e-wallet, or credit balances to improve the balance forecast.",
-                priority = "Low",
-                tone = AdvancedSignalTone.INFO,
-                actionLabel = "Add wallet",
-                target = PersonalActionTarget.WALLETS,
-            )
+        actions += AutopilotAction(
+            title = "Bản đồ phạm vi ví",
+            message = "Thêm tiền mặt, ngân hàng, ví điện tử hoặc số dư tín dụng để cải thiện dự báo số dư.",
+            priority = "Thấp",
+            tone = AdvancedSignalTone.INFO,
+            actionLabel = "Thêm ví",
+            target = PersonalActionTarget.WALLETS
+        )
     }
 
     return actions.take(3)

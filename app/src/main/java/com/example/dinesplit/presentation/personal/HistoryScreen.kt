@@ -103,7 +103,7 @@ fun HistoryScreen(
     }
 
     AppScaffold(
-        title = "Sổ thu chi",
+        title = "Sổ cái",
         navigationIcon = {
             BackNavigationButton(onClick = onBack)
         },
@@ -115,13 +115,13 @@ fun HistoryScreen(
             verticalArrangement = Arrangement.spacedBy(AppDimens.spaceLg),
         ) {
             Text(
-                text = "Ledger.",
+                text = "Sổ cái.",
                 style = MaterialTheme.typography.displayLarge,
                 fontWeight = FontWeight.ExtraBold,
                 color = MaterialTheme.colorScheme.primary,
             )
 
-            // Thẻ tổng quan Thu - Chi thiết kế tinh tế toàn cục
+            // Summary card - Thẻ tóm tắt
             AppCard {
                 Column(verticalArrangement = Arrangement.spacedBy(AppDimens.spaceMd)) {
                     Row(
@@ -129,94 +129,80 @@ fun HistoryScreen(
                         horizontalArrangement = Arrangement.SpaceBetween,
                     ) {
                         Column {
-                            Text("Khoản thu (Income)", style = MaterialTheme.typography.labelSmall, color = MaterialTheme.colorScheme.outline)
+                            Text("Thu nhập", style = MaterialTheme.typography.labelSmall)
                             Text(
-                                text = "+${formatHistoryMoney(summaryStats.first)}",
-                                style = MaterialTheme.typography.titleMedium.copy(fontWeight = FontWeight.Bold),
+                                "+${formatHistoryMoney(summaryStats.first)}",
+                                style = MaterialTheme.typography.titleMedium,
                                 color = MaterialTheme.colorScheme.primary,
                             )
                         }
                         Column(horizontalAlignment = Alignment.End) {
-                            Text("Khoản chi (Expense)", style = MaterialTheme.typography.labelSmall, color = MaterialTheme.colorScheme.outline)
+                            Text("Chi tiêu", style = MaterialTheme.typography.labelSmall)
                             Text(
-                                text = "-${formatHistoryMoney(summaryStats.second)}",
-                                style = MaterialTheme.typography.titleMedium.copy(fontWeight = FontWeight.Bold),
+                                "-${formatHistoryMoney(summaryStats.second)}",
+                                style = MaterialTheme.typography.titleMedium,
                                 color = MaterialTheme.colorScheme.error,
                             )
                         }
                     }
-                    HorizontalDivider(color = MaterialTheme.colorScheme.outlineVariant.copy(alpha = 0.4f))
-                    Row(
-                        horizontalArrangement = Arrangement.spacedBy(AppDimens.spaceSm),
-                        verticalAlignment = Alignment.CenterVertically
-                    ) {
-                        Text("Thực tế (Net):", style = MaterialTheme.typography.labelSmall, color = MaterialTheme.colorScheme.outline)
+                    HorizontalDivider()
+                    Row(horizontalArrangement = Arrangement.spacedBy(AppDimens.spaceSm)) {
                         val netBalance = summaryStats.first - summaryStats.second
+                        Text("Ròng:", style = MaterialTheme.typography.labelSmall)
                         Text(
                             text = if (netBalance >= 0) "+${formatHistoryMoney(netBalance)}" else formatHistoryMoney(netBalance),
                             style = MaterialTheme.typography.titleSmall,
                             fontWeight = FontWeight.ExtraBold,
-                            color = if (netBalance >= 0) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.error
+                            color = if (netBalance >= 0) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.error,
                         )
                     }
                 }
             }
 
-            // Thanh tìm kiếm hóa đơn thông minh
             OutlinedTextField(
                 value = query,
                 onValueChange = { query = it },
                 modifier = Modifier.fillMaxWidth(),
-                placeholder = { Text("Tìm kiếm hạng mục, ghi chú, số tiền...") },
+                placeholder = { Text("Tìm kiếm giao dịch...") },
                 singleLine = true,
-                shape = RoundedCornerShape(16.dp),
-                colors = TextFieldDefaults.colors(
-                    focusedContainerColor = MaterialTheme.colorScheme.surfaceContainerLowest,
-                    unfocusedContainerColor = MaterialTheme.colorScheme.surfaceContainerLowest,
-                    focusedIndicatorColor = MaterialTheme.colorScheme.primary,
-                    unfocusedIndicatorColor = MaterialTheme.colorScheme.outlineVariant
-                ),
+                colors =
+                    TextFieldDefaults.colors(
+                        focusedContainerColor = MaterialTheme.colorScheme.surface,
+                        unfocusedContainerColor = MaterialTheme.colorScheme.surface,
+                    ),
             )
 
-            // Thanh trượt ngang lọc nhanh Loại giao dịch bằng Chips
-            LazyRow(
+            // Type filter buttons - Nút bộ lọc loại
+            Row(
                 modifier = Modifier.fillMaxWidth(),
                 horizontalArrangement = Arrangement.spacedBy(AppDimens.spaceSm),
-                contentPadding = PaddingValues(bottom = AppDimens.spaceXs)
             ) {
-                item {
-                    FilterChip(
-                        selected = selectedTypeFilter == null,
-                        onClick = { selectedTypeFilter = null },
-                        label = { Text("Tất cả") },
-                    )
-                }
-                item {
-                    FilterChip(
-                        selected = selectedTypeFilter == TransactionType.INCOME,
-                        onClick = { selectedTypeFilter = TransactionType.INCOME },
-                        label = { Text("Khoản thu") },
-                    )
-                }
-                item {
-                    FilterChip(
-                        selected = selectedTypeFilter == TransactionType.EXPENSE,
-                        onClick = { selectedTypeFilter = TransactionType.EXPENSE },
-                        label = { Text("Khoản chi") },
-                    )
-                }
+                FilterChip(
+                    selected = selectedTypeFilter == null,
+                    onClick = { selectedTypeFilter = null },
+                    label = { Text("Tất cả") },
+                )
+                FilterChip(
+                    selected = selectedTypeFilter == TransactionType.INCOME,
+                    onClick = { selectedTypeFilter = TransactionType.INCOME },
+                    label = { Text("Thu nhập") },
+                )
+                FilterChip(
+                    selected = selectedTypeFilter == TransactionType.EXPENSE,
+                    onClick = { selectedTypeFilter = TransactionType.EXPENSE },
+                    label = { Text("Chi tiêu") },
+                )
             }
 
-            // Xử lý các trạng thái rẽ nhánh hiển thị nội dung trống hoặc danh sách ảo hóa
-            if (groupedTransactions.isEmpty()) {
-                EmptyStateBlock(
-                    title = "Không tìm thấy giao dịch",
-                    subtitle = if (transactions.isEmpty()) {
-                        "Hãy thêm giao dịch đầu tiên để xây dựng sổ thu chi của bạn."
-                    } else {
-                        "Không tìm thấy kết quả phù hợp. Vui lòng thử lại bằng từ khóa khác."
-                    },
-                )
+             if (groupedTransactions.isEmpty()) {
+                 EmptyStateBlock(
+                     title = "Không tìm thấy giao dịch nào",
+                     subtitle = if (transactions.isEmpty()) {
+                         "Thêm giao dịch để xây dựng sổ cái Firebase của bạn."
+                     } else {
+                         "Hãy thử từ khóa khác."
+                     }
+                 )
             } else {
                 LazyColumn(
                     modifier = Modifier.fillMaxSize(),
@@ -321,17 +307,26 @@ private fun HistoryTransactionRow(
             )
         }
 
-        Column(horizontalAlignment = Alignment.End, verticalArrangement = Arrangement.spacedBy(2.dp)) {
-            val isIncome = item.type == TransactionType.INCOME
+        Column(horizontalAlignment = Alignment.End) {
             Text(
-                text = if (isIncome) "+${item.amount}" else "-${item.amount}",
-                style = MaterialTheme.typography.titleMedium.copy(fontWeight = FontWeight.Bold),
-                color = if (isIncome) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.onSurface,
+                text = item.amount,
+                style = MaterialTheme.typography.titleLarge,
+                color =
+                    if (item.type == TransactionType.INCOME) {
+                        MaterialTheme.colorScheme.primary
+                    } else {
+                        MaterialTheme.colorScheme.onSurface
+                    },
             )
             Text(
-                text = if (isIncome) "RECEIVED" else "PERSONAL",
-                style = MaterialTheme.typography.labelSmall.copy(fontSize = 9.sp, fontWeight = FontWeight.Bold),
-                color = if (isIncome) MaterialTheme.colorScheme.secondary else MaterialTheme.colorScheme.outline,
+                text = if (item.type == TransactionType.INCOME) "ĐÃ NHẬN" else "CÁ NHÂN",
+                style = MaterialTheme.typography.labelSmall,
+                color =
+                    if (item.type == TransactionType.INCOME) {
+                        MaterialTheme.colorScheme.secondary
+                    } else {
+                        MaterialTheme.colorScheme.outline
+                    },
             )
         }
     }

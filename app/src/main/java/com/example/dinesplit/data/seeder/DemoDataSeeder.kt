@@ -37,64 +37,63 @@ object DemoDataSeeder {
     ) {
         val now = System.currentTimeMillis()
 
-        val expenses =
-            listOf(
-                Transaction(
-                    id = UUID.randomUUID().toString(),
-                    userId = userId,
-                    amount = 150000.0,
-                    type = TransactionType.EXPENSE,
-                    categoryId = "c_food",
-                    category = "Dining Out",
-                    note = "Lunch with team",
-                    date = now - 1000 * 60 * 60 * 2,
-                    createdAt = now,
-                ),
-                Transaction(
-                    id = UUID.randomUUID().toString(),
-                    userId = userId,
-                    amount = 50000.0,
-                    type = TransactionType.EXPENSE,
-                    categoryId = "c_transit",
-                    category = "Transit",
-                    note = "Uber to office",
-                    date = now - 1000 * 60 * 60 * 24,
-                    createdAt = now,
-                ),
-                Transaction(
-                    id = UUID.randomUUID().toString(),
-                    userId = userId,
-                    amount = 320000.0,
-                    type = TransactionType.EXPENSE,
-                    categoryId = "c_grocery",
-                    category = "Groceries",
-                    note = "Weekly shopping",
-                    date = now - 1000 * 60 * 60 * 48,
-                    createdAt = now,
-                ),
-                Transaction(
-                    id = UUID.randomUUID().toString(),
-                    userId = userId,
-                    amount = 200000.0,
-                    type = TransactionType.INCOME,
-                    categoryId = "c_bonus",
-                    category = "Bonus",
-                    note = "Project completion bonus",
-                    date = now - 1000 * 60 * 60 * 72,
-                    createdAt = now,
-                ),
-                Transaction(
-                    id = UUID.randomUUID().toString(),
-                    userId = userId,
-                    amount = 100000.0,
-                    type = TransactionType.EXPENSE,
-                    categoryId = "c_fun",
-                    category = "Entertainment",
-                    note = "Movie tickets",
-                    date = now - 1000 * 60 * 60 * 96,
-                    createdAt = now,
-                ),
+        val expenses = listOf(
+            Transaction(
+                id = UUID.randomUUID().toString(),
+                userId = userId,
+                amount = 150000.0,
+                type = TransactionType.EXPENSE,
+                categoryId = "c_food",
+                category = "Ăn ngoài",
+                note = "Ăn trưa cùng đội",
+                date = now - 1000 * 60 * 60 * 2,
+                createdAt = now
+            ),
+            Transaction(
+                id = UUID.randomUUID().toString(),
+                userId = userId,
+                amount = 50000.0,
+                type = TransactionType.EXPENSE,
+                categoryId = "c_transit",
+                category = "Di chuyển",
+                note = "Đi xe công nghệ đến văn phòng",
+                date = now - 1000 * 60 * 60 * 24,
+                createdAt = now
+            ),
+            Transaction(
+                id = UUID.randomUUID().toString(),
+                userId = userId,
+                amount = 320000.0,
+                type = TransactionType.EXPENSE,
+                categoryId = "c_grocery",
+                category = "Tạp hóa",
+                note = "Mua sắm hằng tuần",
+                date = now - 1000 * 60 * 60 * 48,
+                createdAt = now
+            ),
+            Transaction(
+                id = UUID.randomUUID().toString(),
+                userId = userId,
+                amount = 200000.0,
+                type = TransactionType.INCOME,
+                categoryId = "c_bonus",
+                category = "Thưởng",
+                note = "Thưởng hoàn thành dự án",
+                date = now - 1000 * 60 * 60 * 72,
+                createdAt = now
+            ),
+            Transaction(
+                id = UUID.randomUUID().toString(),
+                userId = userId,
+                amount = 100000.0,
+                type = TransactionType.EXPENSE,
+                categoryId = "c_fun",
+                category = "Giải trí",
+                note = "Vé xem phim",
+                date = now - 1000 * 60 * 60 * 96,
+                createdAt = now
             )
+        )
 
         expenses.forEach { transaction ->
             try {
@@ -111,48 +110,47 @@ object DemoDataSeeder {
         userId: String,
     ) {
         val now = System.currentTimeMillis()
-        val notifications =
-            listOf(
-                Notification(
-                    id = UUID.randomUUID().toString(),
-                    userId = userId,
-                    title = "Spending alert: Dining Out",
-                    subtitle = "You have spent 75% of your 300,000 VND budget",
-                    type = NotificationType.TRANSACTION_ALERT,
-                    relatedId = "c_food",
-                    isRead = false,
-                    createdAt = now - 1000 * 60 * 30,
-                    updatedAt = now - 1000 * 60 * 30,
-                    deepLinkDestination = "SPENDING_REMINDERS",
-                    deepLinkTargetId = "c_food",
-                ),
-                Notification(
-                    id = UUID.randomUUID().toString(),
-                    userId = userId,
-                    title = "John paid you",
-                    subtitle = "Group dinner split settled - 120,000 VND",
-                    type = NotificationType.PAYMENT_COMPLETED,
-                    relatedId = "bill_123",
-                    isRead = true,
-                    createdAt = now - 1000 * 60 * 60 * 2,
-                    updatedAt = now - 1000 * 60 * 60 * 2,
-                    deepLinkDestination = "SPLIT_SETTLE",
-                    deepLinkTargetId = "bill_123",
-                ),
-                Notification(
-                    id = UUID.randomUUID().toString(),
-                    userId = userId,
-                    title = "New bill created",
-                    subtitle = "Weekend trip planning - 500,000 VND",
-                    type = NotificationType.BILL_CREATED,
-                    relatedId = "bill_456",
-                    isRead = false,
-                    createdAt = now - 1000 * 60 * 60 * 3,
-                    updatedAt = now - 1000 * 60 * 60 * 3,
-                    deepLinkDestination = "SPLIT_DETAIL",
-                    deepLinkTargetId = "bill_456",
-                ),
+        val notifications = listOf(
+            Notification(
+                id = UUID.randomUUID().toString(),
+                userId = userId,
+                title = "Cảnh báo chi tiêu: Ăn ngoài",
+                subtitle = "Bạn đã dùng 75% ngân sách 300,000 VND",
+                type = NotificationType.TRANSACTION_ALERT,
+                relatedId = "c_food",
+                isRead = false,
+                createdAt = now - 1000 * 60 * 30,
+                updatedAt = now - 1000 * 60 * 30,
+                deepLinkDestination = "SPENDING_REMINDERS",
+                deepLinkTargetId = "c_food"
+            ),
+            Notification(
+                id = UUID.randomUUID().toString(),
+                userId = userId,
+                title = "John đã thanh toán cho bạn",
+                subtitle = "Đã tất toán chia tiền bữa tối nhóm - 120,000 VND",
+                type = NotificationType.PAYMENT_COMPLETED,
+                relatedId = "bill_123",
+                isRead = true,
+                createdAt = now - 1000 * 60 * 60 * 2,
+                updatedAt = now - 1000 * 60 * 60 * 2,
+                deepLinkDestination = "SPLIT_SETTLE",
+                deepLinkTargetId = "bill_123"
+            ),
+            Notification(
+                id = UUID.randomUUID().toString(),
+                userId = userId,
+                title = "Đã tạo hóa đơn mới",
+                subtitle = "Kế hoạch chuyến đi cuối tuần - 500,000 VND",
+                type = NotificationType.BILL_CREATED,
+                relatedId = "bill_456",
+                isRead = false,
+                createdAt = now - 1000 * 60 * 60 * 3,
+                updatedAt = now - 1000 * 60 * 60 * 3,
+                deepLinkDestination = "SPLIT_DETAIL",
+                deepLinkTargetId = "bill_456"
             )
+        )
 
         notifications.forEach { notification ->
             try {

@@ -4,27 +4,27 @@ import com.example.dinesplit.domain.model.Transaction
 import com.example.dinesplit.domain.model.TransactionType
 import java.util.Calendar
 
-/** Chart-ready input for a pie chart by category. */
+/** Biểu đồ hình tròn được sử dụng trong các mô hình dữ liệu danh mục. */
 data class PieCategorySlice(
     val category: String,
     val amount: Double,
     val percentage: Float,
 )
 
-/** Chart-ready input for a daily expense bar chart in a month. */
+/** Biểu đồ cột hàng ngày trong một tháng sẵn sàng để biểu diễn. */
 data class DailyExpenseBar(
     val dayOfMonth: Int,
     val amount: Double,
 )
 
-/** Monthly totals used across dashboard, chart summary, and notifications. */
+/** Tổng hàng tháng được sử dụng trên bảng điều khiển, tóm tắt biểu đồ và thông báo. */
 data class MonthlySummary(
     val totalIncome: Double,
     val totalExpense: Double,
     val balance: Double,
 )
 
-/** Combined chart state for Personal dashboard. Helps keep data transformation centralized and reusable. */
+/** Trạng thái biểu đồ kết hợp cho bảng điều khiển Cá nhân. */
 data class PersonalChartState(
     val pieSlices: List<PieCategorySlice> = emptyList(),
     val dailyExpenseBars: List<DailyExpenseBar> = emptyList(),
@@ -55,7 +55,7 @@ data class SafeToSpendForecast(
     val dailyAmount: Double = 0.0,
     val daysLeft: Int = 0,
     val status: SafeToSpendStatus = SafeToSpendStatus.WATCH,
-    val message: String = "Add income and expenses to unlock daily guidance.",
+    val message: String = "Thêm thu nhập và chi tiêu để mở khóa hướng dẫn hàng ngày."
 )
 
 fun List<Transaction>.toMonthlySummary(): MonthlySummary {
@@ -121,20 +121,19 @@ fun List<Transaction>.toMonthlyInsights(referenceMillis: Long = System.currentTi
     if (previousSummary.totalExpense > 0.0) {
         val delta = currentSummary.totalExpense - previousSummary.totalExpense
         val percent = (kotlin.math.abs(delta) / previousSummary.totalExpense * 100.0).toInt()
-        insights +=
-            if (delta > 0.0) {
-                PersonalInsight(
-                    title = "Expense is up",
-                    message = "You have spent $percent% more than last month so far.",
-                    tone = PersonalInsightTone.WARNING,
-                )
-            } else {
-                PersonalInsight(
-                    title = "Expense is down",
-                    message = "You have spent $percent% less than last month so far.",
-                    tone = PersonalInsightTone.POSITIVE,
-                )
-            }
+        insights += if (delta > 0.0) {
+             PersonalInsight(
+                 title = "Chi tiêu tăng",
+                 message = "Bạn đã chi tiêu $percent% nhiều hơn tháng trước cho đến nay.",
+                 tone = PersonalInsightTone.WARNING
+             )
+         } else {
+             PersonalInsight(
+                 title = "Chi tiêu giảm",
+                 message = "Bạn đã chi tiêu $percent% ít hơn tháng trước cho đến nay.",
+                 tone = PersonalInsightTone.POSITIVE
+             )
+         }
     }
 
     currentMonth
@@ -143,17 +142,15 @@ fun List<Transaction>.toMonthlyInsights(referenceMillis: Long = System.currentTi
         .mapValues { (_, items) -> items.sumOf { it.amount } }
         .maxByOrNull { it.value }
         ?.let { (category, amount) ->
-            insights +=
-                PersonalInsight(
-                    title = "Top category",
-                    message = "$category is your largest spend this month.",
-                    tone =
-                        if (amount > currentSummary.totalIncome && currentSummary.totalIncome > 0.0) {
-                            PersonalInsightTone.WARNING
-                        } else {
-                            PersonalInsightTone.INFO
-                        },
-                )
+             insights += PersonalInsight(
+                 title = "Danh mục hàng đầu",
+                 message = "$category là chi tiêu lớn nhất của bạn trong tháng này.",
+                 tone = if (amount > currentSummary.totalIncome && currentSummary.totalIncome > 0.0) {
+                     PersonalInsightTone.WARNING
+                 } else {
+                     PersonalInsightTone.INFO
+                 }
+             )
         }
 
     val splitExpense =
@@ -162,12 +159,11 @@ fun List<Transaction>.toMonthlyInsights(referenceMillis: Long = System.currentTi
             .sumOf { it.amount }
     if (splitExpense > 0.0 && currentSummary.totalExpense > 0.0) {
         val percent = (splitExpense / currentSummary.totalExpense * 100.0).toInt()
-        insights +=
-            PersonalInsight(
-                title = "Split impact",
-                message = "Split bills make up $percent% of your monthly expenses.",
-                tone = PersonalInsightTone.INFO,
-            )
+         insights += PersonalInsight(
+             title = "Tác động chia tách",
+             message = "Hóa đơn chia tách chiếm $percent% chi tiêu hàng tháng của bạn.",
+             tone = PersonalInsightTone.INFO
+         )
     }
 
     val biggestDay =
@@ -180,23 +176,22 @@ fun List<Transaction>.toMonthlyInsights(referenceMillis: Long = System.currentTi
             .maxByOrNull { it.value }
 
     if (biggestDay != null) {
-        insights +=
-            PersonalInsight(
-                title = "Spending pattern",
-                message = "${dayName(biggestDay.key)} is your highest-spend day this month.",
-                tone = PersonalInsightTone.INFO,
-            )
+         insights += PersonalInsight(
+             title = "Mô hình chi tiêu",
+             message = "${dayName(biggestDay.key)} là ngày chi tiêu cao nhất của bạn trong tháng này.",
+             tone = PersonalInsightTone.INFO
+         )
     }
 
-    return insights.take(3).ifEmpty {
-        listOf(
-            PersonalInsight(
-                title = "Start tracking",
-                message = "Add a few more entries to unlock monthly patterns.",
-                tone = PersonalInsightTone.INFO,
-            ),
-        )
-    }
+     return insights.take(3).ifEmpty {
+         listOf(
+             PersonalInsight(
+                 title = "Bắt đầu theo dõi",
+                 message = "Thêm một vài mục nhập khác để mở khóa các mô hình hàng tháng.",
+                 tone = PersonalInsightTone.INFO
+             )
+         )
+     }
 }
 
 fun List<Transaction>.toSafeToSpendForecast(
@@ -210,18 +205,16 @@ fun List<Transaction>.toSafeToSpendForecast(
     val daysLeft = calendar.getActualMaximum(Calendar.DAY_OF_MONTH) - calendar.get(Calendar.DAY_OF_MONTH) + 1
     val available = summary.totalIncome - summary.totalExpense - upcomingRecurringExpense - savingsGoal
     val daily = if (daysLeft > 0) (available / daysLeft).coerceAtLeast(0.0) else 0.0
-    val status =
-        when {
-            available <= 0.0 -> SafeToSpendStatus.OVER
-            daily < 100_000.0 -> SafeToSpendStatus.WATCH
-            else -> SafeToSpendStatus.HEALTHY
-        }
-    val message =
-        when (status) {
-            SafeToSpendStatus.HEALTHY -> "You have room to spend while staying on track."
-            SafeToSpendStatus.WATCH -> "Keep purchases tight for the rest of the month."
-            SafeToSpendStatus.OVER -> "You are past the monthly buffer. Pause non-essential spend."
-        }
+    val status = when {
+        available <= 0.0 -> SafeToSpendStatus.OVER
+        daily < 100_000.0 -> SafeToSpendStatus.WATCH
+        else -> SafeToSpendStatus.HEALTHY
+    }
+    val message = when (status) {
+        SafeToSpendStatus.HEALTHY -> "Bạn vẫn còn dư địa chi tiêu và đang đi đúng kế hoạch."
+        SafeToSpendStatus.WATCH -> "Hãy giữ chi tiêu thật chặt trong phần còn lại của tháng."
+        SafeToSpendStatus.OVER -> "Bạn đã vượt vùng đệm tháng này. Tạm dừng các khoản không thiết yếu."
+    }
 
     return SafeToSpendForecast(
         dailyAmount = daily,
@@ -251,13 +244,13 @@ private fun List<Transaction>.filterByMonthOffset(
 
 private fun dayName(dayOfWeek: Int): String {
     return when (dayOfWeek) {
-        Calendar.MONDAY -> "Monday"
-        Calendar.TUESDAY -> "Tuesday"
-        Calendar.WEDNESDAY -> "Wednesday"
-        Calendar.THURSDAY -> "Thursday"
-        Calendar.FRIDAY -> "Friday"
-        Calendar.SATURDAY -> "Saturday"
-        Calendar.SUNDAY -> "Sunday"
-        else -> "This day"
+        Calendar.MONDAY -> "Thứ Hai"
+        Calendar.TUESDAY -> "Thứ Ba"
+        Calendar.WEDNESDAY -> "Thứ Tư"
+        Calendar.THURSDAY -> "Thứ Năm"
+        Calendar.FRIDAY -> "Thứ Sáu"
+        Calendar.SATURDAY -> "Thứ Bảy"
+        Calendar.SUNDAY -> "Chủ Nhật"
+        else -> "Ngày này"
     }
 }

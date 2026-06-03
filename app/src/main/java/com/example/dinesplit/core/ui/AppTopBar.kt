@@ -55,7 +55,7 @@ fun AppTopBar(
 @Composable
 fun BackNavigationButton(
     onClick: () -> Unit,
-    contentDescription: String = "Back",
+    contentDescription: String = "Quay lại",
 ) {
     IconButton(onClick = onClick) {
         Icon(
@@ -118,7 +118,7 @@ fun HomeTopBar(
                                     userAvatarUrl.takeIf {
                                         !it.isNullOrBlank()
                                     } ?: "https://lh3.googleusercontent.com/aida-public/AB6AXuCpnvw7NZghOMJRnH_WaC3eHutJm9XoZmybu_TS_uk9WGcWsJ_ROjtI90_bvBZh8RdgNB0TqYRJz9rZwQs8ccGh0XZdffsyr3NPpk2NVubfaS48U6sqwA-G3_MDzJUaOs2ZwR38m4yLqhn5qc9roHjyOG9DRe0snpGmqEaalIMhGPfnnWqyYIKfjwhLix41mqjPZc3XGCjrn-j-XR7ybsOoJqCMtxUDerTeRQZEdpJI07YwJUZ1l4qlO-YwxfFb6oJMhnd9dTple0c",
-                                contentDescription = "My Profile",
+                                contentDescription = "Hồ sơ của tôi",
                                 modifier = Modifier.fillMaxSize(),
                                 contentScale = ContentScale.Crop,
                             )
@@ -161,7 +161,7 @@ fun HomeTopBar(
                                 userAvatarUrl.takeIf {
                                     !it.isNullOrBlank()
                                 } ?: "https://lh3.googleusercontent.com/aida-public/AB6AXuCpnvw7NZghOMJRnH_WaC3eHutJm9XoZmybu_TS_uk9WGcWsJ_ROjtI90_bvBZh8RdgNB0TqYRJz9rZwQs8ccGh0XZdffsyr3NPpk2NVubfaS48U6sqwA-G3_MDzJUaOs2ZwR38m4yLqhn5qc9roHjyOG9DRe0snpGmqEaalIMhGPfnnWqyYIKfjwhLix41mqjPZc3XGCjrn-j-XR7ybsOoJqCMtxUDerTeRQZEdpJI07YwJUZ1l4qlO-YwxfFb6oJMhnd9dTple0c",
-                            contentDescription = "My Profile",
+                            contentDescription = "Hồ sơ của tôi",
                             modifier = Modifier.fillMaxSize(),
                             contentScale = ContentScale.Crop,
                         )
@@ -182,7 +182,7 @@ fun HomeTopBar(
                     IconButton(onClick = onOpenSearch) {
                         Icon(
                             imageVector = Icons.Default.Search,
-                            contentDescription = "Search",
+                            contentDescription = "Tìm kiếm",
                             tint = MaterialTheme.colorScheme.primary,
                         )
                     }
@@ -191,7 +191,7 @@ fun HomeTopBar(
                     IconButton(onClick = onOpenNotifications) {
                         Icon(
                             imageVector = Icons.Default.Notifications,
-                            contentDescription = "Notifications",
+                            contentDescription = "Thông báo",
                             tint = MaterialTheme.colorScheme.primary,
                         )
                     }

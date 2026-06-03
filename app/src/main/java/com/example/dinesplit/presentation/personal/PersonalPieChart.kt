@@ -38,10 +38,10 @@ fun PersonalPieChart(
             contentAlignment = Alignment.Center,
         ) {
             Text(
-                text = "No chart data",
-                style = MaterialTheme.typography.bodyMedium,
-                color = MaterialTheme.colorScheme.onSurfaceVariant,
-            )
+                 text = "Không có dữ liệu biểu đồ",
+                 style = MaterialTheme.typography.bodyMedium,
+                 color = MaterialTheme.colorScheme.onSurfaceVariant
+             )
         }
         return
     }

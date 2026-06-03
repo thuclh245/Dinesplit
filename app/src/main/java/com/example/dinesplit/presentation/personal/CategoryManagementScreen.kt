@@ -93,7 +93,7 @@ fun CategoryManagementScreen(
     val sideCategories = filteredCategories.drop(1)
 
     AppScaffold(
-        title = "Category Management",
+        title = "Quản lý danh mục",
         navigationIcon = {
             BackNavigationButton(onClick = onBack)
         },
@@ -253,7 +253,7 @@ fun CategoryManagementScreen(
 private fun CategoryHeaderTitle() {
     Column(verticalArrangement = Arrangement.spacedBy(AppDimens.spaceXs)) {
         Text(
-            text = "Category Management",
+            text = "Quản lý danh mục",
             style = MaterialTheme.typography.labelMedium,
             color = MaterialTheme.colorScheme.onSurfaceVariant,
         )
@@ -279,7 +279,7 @@ private fun NewCategoryActionCard(
         ) {
             Column(modifier = Modifier.weight(1f)) {
                 Text(
-                    text = "New Category",
+                    text = "Danh mục mới",
                     style = MaterialTheme.typography.labelSmall,
                     color = MaterialTheme.colorScheme.onSurfaceVariant,
                 )

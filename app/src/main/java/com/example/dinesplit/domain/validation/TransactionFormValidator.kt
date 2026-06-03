@@ -37,30 +37,27 @@ object TransactionFormValidator {
         availableCategoryIds: List<String> = emptyList(),
     ): TransactionFormValidationResult {
         val amountValue = input.amountText.toDoubleOrNull()
-        val amountError =
-            when {
-                input.amountText.isBlank() -> "Amount is required"
-                amountValue == null -> "Amount must be a number"
-                amountValue <= 0.0 -> "Amount must be greater than 0"
-                else -> null
-            }
+        val amountError = when {
+            input.amountText.isBlank() -> "Số tiền là bắt buộc"
+            amountValue == null -> "Số tiền phải là số hợp lệ"
+            amountValue <= 0.0 -> "Số tiền phải lớn hơn 0"
+            else -> null
+        }
 
-        val typeError =
-            if (input.type == null) {
-                "Please choose transaction type"
-            } else {
-                null
-            }
+        val typeError = if (input.type == null) {
+            "Vui lòng chọn loại giao dịch"
+        } else {
+            null
+        }
 
         val normalizedCategoryId = input.categoryId.trim()
-        val categoryError =
-            when {
-                normalizedCategoryId.isBlank() -> "Category is required"
-                availableCategoryIds.isNotEmpty() && normalizedCategoryId !in availableCategoryIds -> {
-                    "Please choose a valid category"
-                }
-                else -> null
+        val categoryError = when {
+            normalizedCategoryId.isBlank() -> "Danh mục là bắt buộc"
+            availableCategoryIds.isNotEmpty() && normalizedCategoryId !in availableCategoryIds -> {
+                "Vui lòng chọn danh mục hợp lệ"
             }
+            else -> null
+        }
 
         val validInput =
             if (amountError == null && typeError == null && categoryError == null) {

@@ -27,7 +27,7 @@ fun TransactionDetailScreen(
     onBack: () -> Unit,
 ) {
     AppScaffold(
-        title = "Transaction Detail",
+        title = "Chi tiết giao dịch",
         navigationIcon = {
             BackNavigationButton(onClick = onBack)
         },
@@ -39,9 +39,9 @@ fun TransactionDetailScreen(
             if (transaction == null) {
                 AppCard {
                     Text(
-                        text = "Transaction not found: $transactionId",
-                        style = MaterialTheme.typography.bodyLarge,
-                    )
+                         text = "Không tìm thấy giao dịch: $transactionId",
+                         style = MaterialTheme.typography.bodyLarge
+                     )
                 }
             } else {
                 AppCard {
@@ -61,21 +61,21 @@ fun TransactionDetailScreen(
                                 },
                         )
                         Text(
-                            text = "Type: ${transaction.type.name.lowercase().replaceFirstChar { it.uppercase() }}",
-                            style = MaterialTheme.typography.bodyMedium,
-                            color = MaterialTheme.colorScheme.onSurfaceVariant,
-                        )
-                        Text(
-                            text = "Date: ${formatDateTime(transaction.date)}",
-                            style = MaterialTheme.typography.bodyMedium,
-                            color = MaterialTheme.colorScheme.onSurfaceVariant,
-                        )
-                        if (!transaction.note.isNullOrBlank()) {
-                            Text(
-                                text = "Note: ${transaction.note}",
-                                style = MaterialTheme.typography.bodyMedium,
-                            )
-                        }
+                             text = "Loại: ${transaction.type.displayLabel()}",
+                             style = MaterialTheme.typography.bodyMedium,
+                             color = MaterialTheme.colorScheme.onSurfaceVariant
+                         )
+                         Text(
+                             text = "Ngày: ${formatDateTime(transaction.date)}",
+                             style = MaterialTheme.typography.bodyMedium,
+                             color = MaterialTheme.colorScheme.onSurfaceVariant
+                         )
+                         if (!transaction.note.isNullOrBlank()) {
+                             Text(
+                                 text = "Ghi chú: ${transaction.note}",
+                                 style = MaterialTheme.typography.bodyMedium
+                             )
+                         }
                         Text(
                             text = "Id: ${transaction.id}",
                             style = MaterialTheme.typography.bodySmall,
@@ -95,7 +95,7 @@ private fun formatDetailAmount(transaction: Transaction): String {
 }
 
 private fun formatDateTime(epochMillis: Long): String {
-    val formatter = SimpleDateFormat("dd MMM yyyy, hh:mm a", Locale.getDefault())
+    val formatter = SimpleDateFormat("dd MMM yyyy, HH:mm", Locale("vi", "VN"))
     return formatter.format(Date(epochMillis))
 }
 
@@ -103,21 +103,20 @@ private fun formatDateTime(epochMillis: Long): String {
 @Composable
 private fun TransactionDetailScreenPreview() {
     DineSplitTheme {
-        TransactionDetailScreen(
-            transactionId = "tx_1",
-            transaction =
-                Transaction(
-                    id = "tx_1",
-                    userId = "user_1",
-                    amount = 525000.0,
-                    type = TransactionType.EXPENSE,
-                    categoryId = "c_food",
-                    category = "Dining Out",
-                    note = "Dinner with team",
-                    date = System.currentTimeMillis(),
-                    createdAt = System.currentTimeMillis(),
-                ),
-            onBack = {},
+         TransactionDetailScreen(
+             transactionId = "tx_1",
+             transaction = Transaction(
+                 id = "tx_1",
+                 userId = "user_1",
+                 amount = 525000.0,
+                 type = TransactionType.EXPENSE,
+                 categoryId = "c_food",
+                 category = "Ăn Ngoài",
+                 note = "Bữa tối cùng đội",
+                 date = System.currentTimeMillis(),
+                 createdAt = System.currentTimeMillis()
+             ),
+             onBack = {}
         )
     }
 }

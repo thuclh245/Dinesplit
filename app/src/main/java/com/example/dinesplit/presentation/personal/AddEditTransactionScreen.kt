@@ -149,43 +149,39 @@ fun AddEditTransactionScreen(
         }
     }
 
-    val receiptPickerLauncher =
-        rememberLauncherForActivityResult(
-            contract = ActivityResultContracts.PickVisualMedia(),
-        ) { uri ->
-            uri?.let { selectedUri ->
-                input = input.copy(receiptImageUrl = selectedUri.toString())
-                receiptOcrStatus = null
-                coroutineScope.launch {
-                    isScanningReceipt = true
-                    receiptOcrStatus = "Reading receipt..."
-                    runCatching {
-                        val rawText = receiptTextRecognizer.recognize(selectedUri)
-                        val result =
-                            ReceiptOcrParser.parse(
-                                rawText = rawText,
-                                categories = availableCategories.toReceiptCategoryOptions(),
-                            )
-                        val amountApplied = result.amount != null && input.amount.isBlank()
-                        val categoryApplied = result.category != null && input.categoryId.isBlank()
-                        input =
-                            input.applyReceiptOcrResult(
-                                result = result,
-                                amountApplied = amountApplied,
-                                categoryApplied = categoryApplied,
-                            )
-                        receiptOcrStatus =
-                            result.toReceiptOcrStatus(
-                                amountApplied = amountApplied,
-                                categoryApplied = categoryApplied,
-                            )
-                    }.onFailure {
-                        receiptOcrStatus = "Could not read receipt. Enter amount/category manually."
-                    }
-                    isScanningReceipt = false
-                }
-            }
-        }
+    val receiptPickerLauncher = rememberLauncherForActivityResult(
+        contract = ActivityResultContracts.PickVisualMedia()
+    ) { uri ->
+        uri?.let { selectedUri ->
+             input = input.copy(receiptImageUrl = selectedUri.toString())
+             receiptOcrStatus = null
+             coroutineScope.launch {
+                 isScanningReceipt = true
+                 receiptOcrStatus = "Đang đọc hóa đơn..."
+                 runCatching {
+                     val rawText = receiptTextRecognizer.recognize(selectedUri)
+                     val result = ReceiptOcrParser.parse(
+                         rawText = rawText,
+                         categories = availableCategories.toReceiptCategoryOptions()
+                     )
+                     val amountApplied = result.amount != null && input.amount.isBlank()
+                     val categoryApplied = result.category != null && input.categoryId.isBlank()
+                     input = input.applyReceiptOcrResult(
+                         result = result,
+                         amountApplied = amountApplied,
+                         categoryApplied = categoryApplied
+                     )
+                     receiptOcrStatus = result.toReceiptOcrStatus(
+                         amountApplied = amountApplied,
+                         categoryApplied = categoryApplied
+                     )
+                 }.onFailure {
+                     receiptOcrStatus = "Không thể đọc hóa đơn. Nhập số tiền/danh mục theo cách thủ công."
+                 }
+                 isScanningReceipt = false
+             }
+         }
+    }
 
     val categoriesForType =
         availableCategories
@@ -193,7 +189,7 @@ fun AddEditTransactionScreen(
             .sortedBy { it.name }
 
     AppScaffold(
-        title = if (transactionId == null) "Add Transaction" else "Edit Transaction",
+        title = if (transactionId == null) "Thêm giao dịch" else "Chỉnh sửa giao dịch",
         navigationIcon = {
             BackNavigationButton(onClick = onBack)
         },
@@ -207,18 +203,18 @@ fun AddEditTransactionScreen(
             verticalArrangement = Arrangement.spacedBy(AppDimens.spaceLg),
         ) {
             Text(
-                text = if (transactionId == null) "New Entry." else "Update Entry.",
+                text = if (transactionId == null) "Mục mới." else "Cập nhật mục.",
                 style = MaterialTheme.typography.displaySmall,
                 fontWeight = FontWeight.ExtraBold,
             )
 
-            // Type selector
-            AppCard {
-                Column(
-                    modifier = Modifier.padding(AppDimens.spaceMd),
-                    verticalArrangement = Arrangement.spacedBy(AppDimens.spaceSm),
-                ) {
-                    Text("Type", style = MaterialTheme.typography.labelSmall)
+            // Type selector - Bộ chọn loại
+             AppCard {
+                 Column(
+                     modifier = Modifier.padding(AppDimens.spaceMd),
+                     verticalArrangement = Arrangement.spacedBy(AppDimens.spaceSm)
+                 ) {
+                     Text("Loại", style = MaterialTheme.typography.labelSmall)
                     Row(
                         modifier = Modifier.fillMaxWidth(),
                         horizontalArrangement = Arrangement.spacedBy(AppDimens.spaceSm),
@@ -227,57 +223,55 @@ fun AddEditTransactionScreen(
                             FilterChip(
                                 selected = input.type == type,
                                 onClick = { input = input.copy(type = type, categoryId = "", categoryName = "") },
-                                label = { Text(type.name.lowercase().replaceFirstChar { it.uppercase() }) },
-                                modifier = Modifier.weight(1f),
+                                label = { Text(type.displayLabel()) },
+                                modifier = Modifier.weight(1f)
                             )
                         }
                     }
                 }
             }
 
-            // Amount
-            AppCard {
-                OutlinedTextField(
-                    value = input.amount,
-                    onValueChange = { input = input.copy(amount = it) },
-                    label = { Text("Amount (VND)") },
-                    singleLine = true,
-                    modifier =
-                        Modifier
-                            .fillMaxWidth()
-                            .padding(AppDimens.spaceMd),
-                )
-            }
+            // Amount - Số tiền
+             AppCard {
+                 OutlinedTextField(
+                     value = input.amount,
+                     onValueChange = { input = input.copy(amount = it) },
+                     label = { Text("Số tiền (VND)") },
+                     singleLine = true,
+                     modifier = Modifier
+                         .fillMaxWidth()
+                         .padding(AppDimens.spaceMd)
+                 )
+             }
 
-            // Category
-            AppCard {
-                Column(
-                    modifier = Modifier.padding(AppDimens.spaceMd),
-                    verticalArrangement = Arrangement.spacedBy(AppDimens.spaceSm),
-                ) {
-                    Text("Category", style = MaterialTheme.typography.labelSmall)
-                    Surface(
-                        modifier = Modifier.fillMaxWidth(),
-                        color = MaterialTheme.colorScheme.surface,
-                        shape = MaterialTheme.shapes.medium,
-                    ) {
-                        Row(
-                            modifier =
-                                Modifier
-                                    .fillMaxWidth()
-                                    .padding(AppDimens.spaceMd),
-                            horizontalArrangement = Arrangement.SpaceBetween,
-                            verticalAlignment = Alignment.CenterVertically,
-                        ) {
-                            Text(
-                                text = input.categoryName.ifEmpty { "Select category" },
-                                style = MaterialTheme.typography.bodyMedium,
-                            )
-                            TextButton(onClick = { showCategoryDropdown = !showCategoryDropdown }) {
-                                Text("Change")
-                            }
-                        }
-                    }
+            // Category - Danh mục
+             AppCard {
+                 Column(
+                     modifier = Modifier.padding(AppDimens.spaceMd),
+                     verticalArrangement = Arrangement.spacedBy(AppDimens.spaceSm)
+                 ) {
+                     Text("Danh mục", style = MaterialTheme.typography.labelSmall)
+                     Surface(
+                         modifier = Modifier.fillMaxWidth(),
+                         color = MaterialTheme.colorScheme.surface,
+                         shape = MaterialTheme.shapes.medium
+                     ) {
+                         Row(
+                             modifier = Modifier
+                                 .fillMaxWidth()
+                                 .padding(AppDimens.spaceMd),
+                             horizontalArrangement = Arrangement.SpaceBetween,
+                             verticalAlignment = Alignment.CenterVertically
+                         ) {
+                             Text(
+                                 text = input.categoryName.ifEmpty { "Chọn danh mục" },
+                                 style = MaterialTheme.typography.bodyMedium
+                             )
+                             TextButton(onClick = { showCategoryDropdown = !showCategoryDropdown }) {
+                                 Text("Thay đổi")
+                             }
+                         }
+                     }
                     DropdownMenu(
                         expanded = showCategoryDropdown,
                         onDismissRequest = { showCategoryDropdown = false },
@@ -300,126 +294,123 @@ fun AddEditTransactionScreen(
                 }
             }
 
-            // Date
-            AppCard {
-                Row(
-                    modifier =
-                        Modifier
-                            .fillMaxWidth()
-                            .padding(AppDimens.spaceMd),
-                    horizontalArrangement = Arrangement.SpaceBetween,
-                    verticalAlignment = Alignment.CenterVertically,
-                ) {
-                    Text(
-                        text = "Date: ${SimpleDateFormat("dd MMM yyyy", Locale.getDefault()).format(Date(input.dateMillis))}",
-                        style = MaterialTheme.typography.bodyMedium,
-                    )
-                    IconButton(onClick = { showDatePicker = true }) {
-                        Icon(Icons.Default.DateRange, contentDescription = "Pick date")
-                    }
-                }
-            }
+            // Date - Ngày
+             AppCard {
+                 Row(
+                     modifier = Modifier
+                         .fillMaxWidth()
+                         .padding(AppDimens.spaceMd),
+                     horizontalArrangement = Arrangement.SpaceBetween,
+                     verticalAlignment = Alignment.CenterVertically
+                 ) {
+                     Text(
+                         text = "Ngày: ${SimpleDateFormat("dd MMM yyyy", Locale("vi", "VN")).format(Date(input.dateMillis))}",
+                         style = MaterialTheme.typography.bodyMedium
+                     )
+                     IconButton(onClick = { showDatePicker = true }) {
+                         Icon(Icons.Default.DateRange, contentDescription = "Chọn ngày")
+                     }
+                 }
+             }
 
-            // Date picker dialog
-            if (showDatePicker) {
-                val datePickerState = rememberDatePickerState(initialSelectedDateMillis = input.dateMillis)
-                DatePickerDialog(
-                    onDismissRequest = { showDatePicker = false },
-                    confirmButton = {
-                        TextButton(onClick = {
-                            datePickerState.selectedDateMillis?.let { selectedDate ->
-                                input = input.copy(dateMillis = selectedDate)
-                            }
-                            showDatePicker = false
-                        }) {
-                            Text("OK")
-                        }
-                    },
-                    dismissButton = {
-                        TextButton(onClick = { showDatePicker = false }) {
-                            Text("Cancel")
-                        }
-                    },
-                ) {
-                    DatePicker(state = datePickerState)
-                }
-            }
+             // Date picker dialog - Hộp thoại chọn ngày
+             if (showDatePicker) {
+                 val datePickerState = rememberDatePickerState(initialSelectedDateMillis = input.dateMillis)
+                 DatePickerDialog(
+                     onDismissRequest = { showDatePicker = false },
+                     confirmButton = {
+                          TextButton(onClick = {
+                              datePickerState.selectedDateMillis?.let { selectedDate ->
+                                  input = input.copy(dateMillis = selectedDate)
+                              }
+                              showDatePicker = false
+                          }) {
+                              Text("Xác Nhận")
+                          }
+                     },
+                     dismissButton = {
+                         TextButton(onClick = { showDatePicker = false }) {
+                             Text("Hủy")
+                         }
+                     }
+                 ) {
+                     DatePicker(state = datePickerState)
+                 }
+             }
 
-            // Note
-            AppCard {
-                OutlinedTextField(
-                    value = input.note,
-                    onValueChange = { input = input.copy(note = it) },
-                    label = { Text("Note (optional)") },
-                    modifier =
-                        Modifier
-                            .fillMaxWidth()
-                            .padding(AppDimens.spaceMd),
-                    minLines = 3,
-                )
-            }
+            // Note - Ghi chú
+             AppCard {
+                 OutlinedTextField(
+                     value = input.note,
+                     onValueChange = { input = input.copy(note = it) },
+                     label = { Text("Ghi chú (tùy chọn)") },
+                     modifier = Modifier
+                         .fillMaxWidth()
+                         .padding(AppDimens.spaceMd),
+                     minLines = 3
+                 )
+             }
 
             AppCard {
-                Column(
-                    modifier = Modifier.padding(AppDimens.spaceMd),
-                    verticalArrangement = Arrangement.spacedBy(AppDimens.spaceSm),
-                ) {
-                    Row(
-                        modifier = Modifier.fillMaxWidth(),
-                        horizontalArrangement = Arrangement.SpaceBetween,
-                        verticalAlignment = Alignment.CenterVertically,
-                    ) {
-                        Row(
-                            horizontalArrangement = Arrangement.spacedBy(AppDimens.spaceSm),
-                            verticalAlignment = Alignment.CenterVertically,
-                        ) {
-                            Icon(
-                                imageVector = Icons.AutoMirrored.Filled.ReceiptLong,
-                                contentDescription = null,
-                                tint = MaterialTheme.colorScheme.primary,
-                            )
-                            Text("Receipt", style = MaterialTheme.typography.titleMedium)
-                        }
-                        TextButton(
-                            enabled = !isScanningReceipt,
-                            onClick = {
-                                receiptPickerLauncher.launch(
-                                    PickVisualMediaRequest(ActivityResultContracts.PickVisualMedia.ImageOnly),
-                                )
-                            },
-                        ) {
-                            Text(if (input.receiptImageUrl.isBlank()) "Scan receipt" else "Change")
-                        }
-                    }
+                 Column(
+                     modifier = Modifier.padding(AppDimens.spaceMd),
+                     verticalArrangement = Arrangement.spacedBy(AppDimens.spaceSm)
+                 ) {
+                     Row(
+                         modifier = Modifier.fillMaxWidth(),
+                         horizontalArrangement = Arrangement.SpaceBetween,
+                         verticalAlignment = Alignment.CenterVertically
+                     ) {
+                         Row(
+                             horizontalArrangement = Arrangement.spacedBy(AppDimens.spaceSm),
+                             verticalAlignment = Alignment.CenterVertically
+                         ) {
+                             Icon(
+                                 imageVector = Icons.AutoMirrored.Filled.ReceiptLong,
+                                 contentDescription = null,
+                                 tint = MaterialTheme.colorScheme.primary
+                             )
+                             Text("Hóa đơn", style = MaterialTheme.typography.titleMedium)
+                         }
+                         TextButton(
+                             enabled = !isScanningReceipt,
+                             onClick = {
+                                 receiptPickerLauncher.launch(
+                                     PickVisualMediaRequest(ActivityResultContracts.PickVisualMedia.ImageOnly)
+                                 )
+                             }
+                         ) {
+                             Text(if (input.receiptImageUrl.isBlank()) "Quét hóa đơn" else "Thay đổi")
+                         }
+                     }
 
-                    if (isScanningReceipt) {
-                        LinearProgressIndicator(modifier = Modifier.fillMaxWidth())
-                    }
+                     if (isScanningReceipt) {
+                         LinearProgressIndicator(modifier = Modifier.fillMaxWidth())
+                     }
 
-                    Text(
-                        text =
-                            receiptOcrStatus ?: if (input.receiptImageUrl.isBlank()) {
-                                "Attach a receipt photo before saving."
-                            } else {
-                                "Receipt attached. Amount and category stay editable before saving."
-                            },
-                        style = MaterialTheme.typography.bodySmall,
-                        color = MaterialTheme.colorScheme.onSurfaceVariant,
-                    )
+                     Text(
+                         text = receiptOcrStatus ?: if (input.receiptImageUrl.isBlank()) {
+                             "Đính kèm ảnh hóa đơn trước khi lưu."
+                         } else {
+                             "Hóa đơn được đính kèm. Số tiền và danh mục có thể chỉnh sửa trước khi lưu."
+                         },
+                         style = MaterialTheme.typography.bodySmall,
+                         color = MaterialTheme.colorScheme.onSurfaceVariant
+                     )
 
-                    if (input.receiptImageUrl.isNotBlank()) {
-                        TextButton(
-                            enabled = !isScanningReceipt,
-                            onClick = {
-                                input = input.copy(receiptImageUrl = "")
-                                receiptOcrStatus = null
-                            },
-                        ) {
-                            Text("Remove receipt")
-                        }
-                    }
-                }
-            }
+                     if (input.receiptImageUrl.isNotBlank()) {
+                         TextButton(
+                             enabled = !isScanningReceipt,
+                             onClick = {
+                                 input = input.copy(receiptImageUrl = "")
+                                 receiptOcrStatus = null
+                             }
+                         ) {
+                             Text("Xóa hóa đơn")
+                         }
+                     }
+                 }
+             }
 
             validationError?.let { error ->
                 Surface(
@@ -437,13 +428,13 @@ fun AddEditTransactionScreen(
             }
 
             PrimaryButton(
-                text = if (transactionId == null) "Create Transaction" else "Update Transaction",
-                onClick = {
-                    try {
-                        require(input.amount.isNotBlank()) { "Amount is required" }
-                        require(input.amount.toDoubleOrNull() != null) { "Amount must be a valid number" }
-                        require(input.amount.toDouble() > 0) { "Amount must be > 0" }
-                        require(input.categoryId.isNotBlank()) { "Category is required" }
+                 text = if (transactionId == null) "Tạo giao dịch" else "Cập nhật giao dịch",
+                 onClick = {
+                     try {
+                         require(input.amount.isNotBlank()) { "Số tiền là bắt buộc" }
+                         require(input.amount.toDoubleOrNull() != null) { "Số tiền phải là số hợp lệ" }
+                         require(input.amount.toDouble() > 0) { "Số tiền phải > 0" }
+                         require(input.categoryId.isNotBlank()) { "Danh mục là bắt buộc" }
 
                         val transaction =
                             Transaction(
@@ -467,7 +458,7 @@ fun AddEditTransactionScreen(
                         validationError = null
                         onSave(transaction)
                     } catch (e: Exception) {
-                        validationError = e.message ?: "Invalid input"
+                        validationError = e.message ?: "Dữ liệu không hợp lệ"
                     }
                 },
                 modifier = Modifier.fillMaxWidth(),
@@ -512,24 +503,23 @@ private fun AddEditTransactionInput.applyReceiptOcrResult(
 }
 
 private fun ReceiptOcrResult.toReceiptOcrStatus(
-    amountApplied: Boolean,
-    categoryApplied: Boolean,
-): String {
-    if (rawText.isBlank()) return "No readable text found. Enter amount/category manually."
+     amountApplied: Boolean,
+     categoryApplied: Boolean
+ ): String {
+     if (rawText.isBlank()) return "Không tìm thấy văn bản có thể đọc được. Nhập số tiền/danh mục theo cách thủ công."
 
-    val detectedParts =
-        listOfNotNull(
-            amount?.let { formatReceiptAmountLabel(it) },
-            category?.name,
-        )
-    val detectedText = detectedParts.joinToString(" - ")
+     val detectedParts = listOfNotNull(
+         amount?.let { formatReceiptAmountLabel(it) },
+         category?.name
+     )
+     val detectedText = detectedParts.joinToString(" - ")
 
-    return when {
-        detectedText.isBlank() -> "Receipt attached. No total/category detected."
-        amountApplied || categoryApplied -> "Detected $detectedText"
-        else -> "Detected $detectedText. Existing fields kept."
-    }
-}
+     return when {
+         detectedText.isBlank() -> "Hóa đơn được đính kèm. Không phát hiện tổng/danh mục."
+         amountApplied || categoryApplied -> "Phát hiện $detectedText"
+         else -> "Phát hiện $detectedText. Các trường hiện có được giữ lại."
+     }
+ }
 
 private fun formatReceiptAmountInput(amount: Double): String {
     val rounded = amount.roundToLong()

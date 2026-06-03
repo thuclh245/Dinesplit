@@ -307,7 +307,7 @@ class FirebasePersonalRepository private constructor(
 
     private fun requireCurrentUserId(): String {
         return FirebaseProviders.auth.currentUser?.uid
-            ?: throw IllegalStateException("Please sign in to use Personal data")
+            ?: throw IllegalStateException("Vui lòng đăng nhập để sử dụng dữ liệu cá nhân")
     }
 
     private fun DocumentSnapshot.getLongDateSafe(field: String): Long? {
@@ -573,7 +573,7 @@ class FirebasePersonalRepository private constructor(
                     continuation.resume(task.result)
                 } else {
                     continuation.resumeWithException(
-                        task.exception ?: IllegalStateException("Firebase task failed"),
+                        task.exception ?: IllegalStateException("Tác vụ Firebase thất bại")
                     )
                 }
             }
