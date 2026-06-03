@@ -1,6 +1,7 @@
 package com.example.dinesplit.presentation.split
 
 import androidx.compose.foundation.background
+import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
@@ -44,12 +45,15 @@ import androidx.compose.runtime.remember
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
+import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.example.dinesplit.core.common.AppContainer
+import com.example.dinesplit.core.ui.DineAvatarImage
 import com.example.dinesplit.domain.model.Group
+import com.example.dinesplit.domain.model.Member
 import kotlin.math.abs
 
 data class GroupItem(
@@ -58,7 +62,8 @@ data class GroupItem(
     val statusText: String,
     val isSettled: Boolean,
     val statusType: GroupStatusType,
-    val avatarCount: Int,
+    val memberAvatars: List<Member>,
+    val avatarCount: Int
 )
 
 enum class GroupStatusType { OWE, RECEIVE, SETTLED }
@@ -71,7 +76,12 @@ fun GroupListScreen(
 ) {
     val colorScheme = MaterialTheme.colorScheme
     val context = LocalContext.current
-    val viewModel = remember { GroupListViewModel(AppContainer.splitRepository(context)) }
+    val viewModel = remember {
+        GroupListViewModel(
+            repository = AppContainer.splitRepository(context),
+            profileRepository = AppContainer.profileRepository(context)
+        )
+    }
     val uiState by viewModel.uiState.collectAsState()
 
     Scaffold(
@@ -97,7 +107,10 @@ fun GroupListScreen(
             verticalArrangement = Arrangement.spacedBy(16.dp),
         ) {
             item {
-                FinancialSummaryCard()
+                FinancialSummaryCard(
+                    amountYouOwe = uiState.amountYouOwe,
+                    amountYouAreOwed = uiState.amountYouAreOwed
+                )
             }
 
             item {
@@ -159,8 +172,10 @@ fun GroupListScreen(
                 else -> {
                     items(uiState.groups, key = { group -> group.id }) { group ->
                         GroupCardItem(
-                            group = group.toGroupItem(),
-                            onClick = { onNavigateToGroupDetail(group.id) },
+                            group = group.toGroupItem(
+                                members = uiState.membersByGroup[group.id].orEmpty()
+                            ),
+                            onClick = { onNavigateToGroupDetail(group.id) }
                         )
                     }
                 }
@@ -191,7 +206,10 @@ fun GroupTopBar() {
 }
 
 @Composable
-fun FinancialSummaryCard() {
+fun FinancialSummaryCard(
+    amountYouOwe: Double,
+    amountYouAreOwed: Double
+) {
     val colorScheme = MaterialTheme.colorScheme
 
     Row(
@@ -214,7 +232,7 @@ fun FinancialSummaryCard() {
                 )
                 Spacer(modifier = Modifier.height(8.dp))
                 Text(
-                    text = "0 đ",
+                    text = formatVnd(amountYouOwe),
                     fontSize = 22.sp,
                     color = colorScheme.primary,
                     fontWeight = FontWeight.ExtraBold,
@@ -248,7 +266,7 @@ fun FinancialSummaryCard() {
                 )
                 Spacer(modifier = Modifier.height(8.dp))
                 Text(
-                    text = "0 đ",
+                    text = formatVnd(amountYouAreOwed),
                     fontSize = 22.sp,
                     color = colorScheme.onSecondaryContainer,
                     fontWeight = FontWeight.ExtraBold,
@@ -351,17 +369,11 @@ fun GroupCardItem(
                 Spacer(modifier = Modifier.height(4.dp))
 
                 Row(verticalAlignment = Alignment.CenterVertically) {
-                    Row(horizontalArrangement = Arrangement.spacedBy((-8).dp)) {
-                        for (i in 0 until minOf(3, group.avatarCount)) {
-                            Box(
-                                modifier =
-                                    Modifier
-                                        .size(24.dp)
-                                        .clip(CircleShape)
-                                        .background(colorScheme.surfaceContainerHigh),
-                            )
-                        }
-                    }
+                    GroupMemberAvatarStack(
+                        members = group.memberAvatars,
+                        fallbackCount = group.avatarCount,
+                        fallbackName = group.title
+                    )
                     Spacer(modifier = Modifier.width(8.dp))
                     Text(text = group.time, fontSize = 12.sp, color = colorScheme.onSurfaceVariant)
                 }
@@ -394,13 +406,73 @@ fun GroupCardItem(
     }
 }
 
-private fun Group.toGroupItem(): GroupItem {
-    val statusType =
-        when {
-            yourBalance < 0.0 -> GroupStatusType.OWE
-            yourBalance > 0.0 -> GroupStatusType.RECEIVE
-            else -> GroupStatusType.SETTLED
+@Composable
+private fun GroupMemberAvatarStack(
+    members: List<Member>,
+    fallbackCount: Int,
+    fallbackName: String
+) {
+    val visibleMembers = members.take(3)
+    Row(horizontalArrangement = Arrangement.spacedBy((-8).dp)) {
+        if (visibleMembers.isEmpty()) {
+            repeat(minOf(3, fallbackCount.coerceAtLeast(1))) { index ->
+                GroupMemberAvatar(
+                    imageUrl = null,
+                    name = fallbackName,
+                    seed = "$fallbackName-$index"
+                )
+            }
+        } else {
+            visibleMembers.forEach { member ->
+                GroupMemberAvatar(
+                    imageUrl = member.avatarUrl,
+                    name = member.name.ifBlank { member.initial },
+                    seed = member.id
+                )
+            }
         }
+    }
+}
+
+@Composable
+private fun GroupMemberAvatar(
+    imageUrl: String?,
+    name: String,
+    seed: String
+) {
+    val colorScheme = MaterialTheme.colorScheme
+    DineAvatarImage(
+        imageUrl = imageUrl,
+        name = name,
+        size = 24.dp,
+        modifier = Modifier.border(
+            width = 1.dp,
+            color = colorScheme.surfaceContainerLowest,
+            shape = CircleShape
+        ),
+        fallbackContainerColor = avatarColor(seed),
+        fallbackContentColor = Color.White
+    )
+}
+
+@Composable
+private fun avatarColor(seed: String): Color {
+    val colorScheme = MaterialTheme.colorScheme
+    val colors = listOf(
+        colorScheme.primary,
+        colorScheme.secondary,
+        colorScheme.tertiary,
+        colorScheme.error
+    )
+    return colors[(seed.hashCode() and Int.MAX_VALUE) % colors.size]
+}
+
+private fun Group.toGroupItem(members: List<Member>): GroupItem {
+    val statusType = when {
+        yourBalance < 0.0 -> GroupStatusType.OWE
+        yourBalance > 0.0 -> GroupStatusType.RECEIVE
+        else -> GroupStatusType.SETTLED
+    }
 
     return GroupItem(
         title = name,
@@ -408,7 +480,8 @@ private fun Group.toGroupItem(): GroupItem {
         statusText = formatGroupStatus(yourBalance),
         isSettled = yourBalance == 0.0,
         statusType = statusType,
-        avatarCount = memberCount.coerceAtLeast(1),
+        memberAvatars = members,
+        avatarCount = memberCount.coerceAtLeast(1)
     )
 }
 

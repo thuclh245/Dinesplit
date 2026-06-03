@@ -1,6 +1,7 @@
 package com.example.dinesplit.presentation.split
 
 import androidx.compose.foundation.background
+import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
@@ -18,7 +19,6 @@ import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.statusBarsPadding
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.lazy.LazyColumn
-import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
@@ -31,6 +31,8 @@ import androidx.compose.material3.ButtonDefaults
 import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
 import androidx.compose.material3.CircularProgressIndicator
+import androidx.compose.material3.DropdownMenu
+import androidx.compose.material3.DropdownMenuItem
 import androidx.compose.material3.HorizontalDivider
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
@@ -43,7 +45,9 @@ import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
+import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
@@ -167,13 +171,21 @@ fun BillDetailScreen(
                             payerInitial = resolveMemberInitial(bill.payerId, uiState.members),
                         )
                     }
-                    item { BdSplitBreakdown(splitRows) }
+                    item {
+                        BdSplitBreakdown(
+                            rows = splitRows,
+                            onMarkPaid = viewModel::markMemberPaid,
+                            onConfirmPayment = viewModel::markMemberPaid,
+                            onSendReminder = viewModel::sendPaymentReminder
+                        )
+                    }
                     if (bill.items.isNotEmpty()) {
                         item { BdItemBreakdown(items = bill.items) }
                     }
                     item { BdFooterInfo(bill = bill) }
                 }
             }
+
         }
     }
 }
@@ -336,7 +348,12 @@ private fun BdReceiptHeaderCard(
 }
 
 @Composable
-private fun BdSplitBreakdown(rows: List<BillSplitRow>) {
+private fun BdSplitBreakdown(
+    rows: List<BillSplitRow>,
+    onMarkPaid: (String) -> Unit,
+    onConfirmPayment: (String) -> Unit,
+    onSendReminder: (String) -> Unit
+) {
     val colorScheme = MaterialTheme.colorScheme
 
     Column {
@@ -357,7 +374,12 @@ private fun BdSplitBreakdown(rows: List<BillSplitRow>) {
         ) {
             Column {
                 rows.forEachIndexed { index, row ->
-                    BdSplitRow(row = row)
+                    BdSplitRow(
+                        row = row,
+                        onMarkPaid = onMarkPaid,
+                        onConfirmPayment = onConfirmPayment,
+                        onSendReminder = onSendReminder
+                    )
                     if (index < rows.size - 1) {
                         HorizontalDivider(color = colorScheme.outlineVariant.copy(alpha = 0.2f))
                     }
@@ -368,16 +390,23 @@ private fun BdSplitBreakdown(rows: List<BillSplitRow>) {
 }
 
 @Composable
-private fun BdSplitRow(row: BillSplitRow) {
+private fun BdSplitRow(
+    row: BillSplitRow,
+    onMarkPaid: (String) -> Unit,
+    onConfirmPayment: (String) -> Unit,
+    onSendReminder: (String) -> Unit
+) {
     val colorScheme = MaterialTheme.colorScheme
+    var menuExpanded by remember(row.memberId, row.paymentStatus) { mutableStateOf(false) }
+    val canOpenPaymentActions = !row.isPayer && !row.isPaid
 
     Row(
-        modifier =
-            Modifier
-                .fillMaxWidth()
-                .background(if (row.isMe) colorScheme.primaryContainer.copy(alpha = 0.15f) else Color.Transparent)
-                .height(IntrinsicSize.Min),
-        verticalAlignment = Alignment.CenterVertically,
+        modifier = Modifier
+            .fillMaxWidth()
+            .background(if (row.isMe) colorScheme.primaryContainer.copy(alpha = 0.15f) else Color.Transparent)
+            .clickable(enabled = canOpenPaymentActions) { menuExpanded = true }
+            .height(IntrinsicSize.Min),
+        verticalAlignment = Alignment.CenterVertically
     ) {
         Box(
             modifier =
@@ -480,6 +509,32 @@ private fun BdSplitRow(row: BillSplitRow) {
                         )
                     }
                 }
+            }
+            DropdownMenu(
+                expanded = menuExpanded,
+                onDismissRequest = { menuExpanded = false }
+            ) {
+                DropdownMenuItem(
+                    text = { Text("Đánh dấu đã trả") },
+                    onClick = {
+                        menuExpanded = false
+                        onMarkPaid(row.memberId)
+                    }
+                )
+                DropdownMenuItem(
+                    text = { Text("Xác nhận thanh toán") },
+                    onClick = {
+                        menuExpanded = false
+                        onConfirmPayment(row.memberId)
+                    }
+                )
+                DropdownMenuItem(
+                    text = { Text("Nhắc thanh toán") },
+                    onClick = {
+                        menuExpanded = false
+                        onSendReminder(row.memberId)
+                    }
+                )
             }
         }
     }

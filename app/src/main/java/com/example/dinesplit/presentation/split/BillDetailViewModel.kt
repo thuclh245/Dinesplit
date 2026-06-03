@@ -36,9 +36,12 @@ class BillDetailViewModel(
     }
 
     fun markCurrentMemberPaid() {
+        markMemberPaid(_uiState.value.currentMemberId)
+    }
+
+    fun markMemberPaid(memberId: String) {
         val state = _uiState.value
         val bill = state.bill ?: return
-        val memberId = state.currentMemberId
         if (memberId.isBlank() || memberId == bill.payerId || memberId in bill.paidMemberIds) return
 
         viewModelScope.launch {
@@ -72,6 +75,14 @@ class BillDetailViewModel(
                     )
                 }
             }
+        }
+    }
+
+    fun sendPaymentReminder(memberId: String) {
+        val memberName = _uiState.value.members.firstOrNull { it.id == memberId }?.name
+            ?: fallbackMemberName(memberId)
+        _uiState.update {
+            it.copy(paymentMessage = "Đã nhắc $memberName thanh toán")
         }
     }
 

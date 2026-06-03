@@ -23,7 +23,8 @@ data class Member(
     val id: String,
     val name: String,
     val initial: String,
-    val isMe: Boolean = false,
+    val avatarUrl: String = "",
+    val isMe: Boolean = false
 )
 
 data class BillItem(

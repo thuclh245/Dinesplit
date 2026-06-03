@@ -1,6 +1,7 @@
 package com.example.dinesplit.presentation.split
 
 import androidx.compose.foundation.background
+import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
@@ -57,8 +58,10 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.example.dinesplit.core.common.AppContainer
 import com.example.dinesplit.core.firebase.FirebaseProviders
+import com.example.dinesplit.core.ui.DineAvatarImage
 import com.example.dinesplit.domain.model.Bill
 import com.example.dinesplit.domain.model.BillStatus
+import com.example.dinesplit.domain.model.Member
 import com.example.dinesplit.domain.model.SplitMethod
 import com.example.dinesplit.ui.theme.BrandPrimary
 import com.example.dinesplit.ui.theme.BrandPrimaryContainer
@@ -80,14 +83,14 @@ fun GroupDetailScreen(
     onNavigateToBillDetail: (String) -> Unit,
 ) {
     val context = LocalContext.current
-    val viewModel =
-        remember(groupId) {
-            GroupDetailViewModel(
-                repository = AppContainer.splitRepository(context),
-                groupId = groupId,
-                currentUserId = FirebaseProviders.auth.currentUser?.uid,
-            )
-        }
+    val viewModel = remember(groupId) {
+        GroupDetailViewModel(
+            repository = AppContainer.splitRepository(context),
+            profileRepository = AppContainer.profileRepository(context),
+            groupId = groupId,
+            currentUserId = FirebaseProviders.auth.currentUser?.uid
+        )
+    }
     val uiState by viewModel.uiState.collectAsState()
     val colorScheme = MaterialTheme.colorScheme
     var selectedTab by remember { mutableStateOf(GroupDetailTab.Bills) }
@@ -132,6 +135,7 @@ fun GroupDetailScreen(
             DetailTopBar(
                 groupName = uiState.group?.name ?: "Chi tiết nhóm",
                 memberCount = uiState.members.size.takeIf { it > 0 } ?: uiState.group?.memberCount ?: 0,
+                members = uiState.members,
                 isOwner = uiState.isCurrentUserOwner,
                 onBack = onBack,
                 onLeaveClick = { showLeaveDialog = true },
@@ -269,6 +273,7 @@ fun GroupDetailScreen(
 private fun DetailTopBar(
     groupName: String,
     memberCount: Int,
+    members: List<Member>,
     isOwner: Boolean,
     onBack: () -> Unit,
     onLeaveClick: () -> Unit,
@@ -319,17 +324,11 @@ private fun DetailTopBar(
             modifier = Modifier.clickable(onClick = onLeaveClick),
             verticalAlignment = Alignment.CenterVertically,
         ) {
-            Row(horizontalArrangement = Arrangement.spacedBy((-12).dp)) {
-                repeat(minOf(3, memberCount.coerceAtLeast(1))) {
-                    Box(
-                        modifier =
-                            Modifier
-                                .size(32.dp)
-                                .clip(CircleShape)
-                                .background(colorScheme.surfaceContainerHigh),
-                    )
-                }
-            }
+            DetailMemberAvatarStack(
+                members = members,
+                fallbackCount = memberCount,
+                fallbackName = groupName
+            )
             Spacer(modifier = Modifier.width(8.dp))
             Icon(
                 imageVector = Icons.AutoMirrored.Filled.ExitToApp,
@@ -350,6 +349,67 @@ private fun DetailTopBar(
             }
         }
     }
+}
+
+@Composable
+private fun DetailMemberAvatarStack(
+    members: List<Member>,
+    fallbackCount: Int,
+    fallbackName: String
+) {
+    val visibleMembers = members.take(3)
+    Row(horizontalArrangement = Arrangement.spacedBy((-12).dp)) {
+        if (visibleMembers.isEmpty()) {
+            repeat(minOf(3, fallbackCount.coerceAtLeast(1))) { index ->
+                DetailMemberAvatar(
+                    imageUrl = null,
+                    name = fallbackName,
+                    seed = "$fallbackName-$index"
+                )
+            }
+        } else {
+            visibleMembers.forEach { member ->
+                DetailMemberAvatar(
+                    imageUrl = member.avatarUrl,
+                    name = member.name.ifBlank { member.initial },
+                    seed = member.id
+                )
+            }
+        }
+    }
+}
+
+@Composable
+private fun DetailMemberAvatar(
+    imageUrl: String?,
+    name: String,
+    seed: String
+) {
+    val colorScheme = MaterialTheme.colorScheme
+    DineAvatarImage(
+        imageUrl = imageUrl,
+        name = name,
+        size = 32.dp,
+        modifier = Modifier.border(
+            width = 1.dp,
+            color = colorScheme.surfaceContainerLowest,
+            shape = CircleShape
+        ),
+        fallbackContainerColor = detailAvatarColor(seed),
+        fallbackContentColor = Color.White
+    )
+}
+
+@Composable
+private fun detailAvatarColor(seed: String): Color {
+    val colorScheme = MaterialTheme.colorScheme
+    val colors = listOf(
+        colorScheme.primary,
+        colorScheme.secondary,
+        colorScheme.tertiary,
+        colorScheme.error
+    )
+    return colors[(seed.hashCode() and Int.MAX_VALUE) % colors.size]
 }
 
 @Composable

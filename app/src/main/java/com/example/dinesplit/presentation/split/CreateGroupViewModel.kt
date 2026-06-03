@@ -187,7 +187,8 @@ class CreateGroupViewModel(
             id = uid,
             name = name,
             initial = name.firstOrNull()?.uppercase().orEmpty(),
-            isMe = isMe,
+            avatarUrl = avatarUrl,
+            isMe = isMe
         )
     }
 
