@@ -23,8 +23,8 @@ import com.example.dinesplit.presentation.feed.search.components.*
 @Composable
 fun SearchScreen(
     onBack: () -> Unit,
-    onOpenPostDetail: (String) -> Unit,
-    onOpenUserProfile: (String) -> Unit,
+    onOpenPostDetail: (String) -> Unit, // Đã kết nối luồng click mở chi tiết bài viết
+    onOpenUserProfile: (String) -> Unit, // Đã kết nối luồng click mở trang cá nhân người khác
     viewModel: SearchViewModel = androidx.lifecycle.viewmodel.compose.viewModel()
 ) {
     val uiState by viewModel.uiState.collectAsState()
@@ -45,8 +45,10 @@ fun SearchScreen(
                 .background(MaterialTheme.colorScheme.background)
                 .padding(padding)
         ) {
+            val state = uiState
+            
             when {
-                uiState.isLoading -> {
+                state.isLoading -> {
                     LoadingBlock(
                         message = "Đang tìm kiếm...",
                         modifier = Modifier
@@ -55,10 +57,11 @@ fun SearchScreen(
                     )
                 }
 
-                uiState.errorMessage != null -> {
+                // TRẠNG THÁI LỖI MẠNG (Đồng bộ xử lý bẫy lỗi Tuần 5)
+                state.errorMessage != null -> {
                     ErrorStateBlock(
                         title = "Không thể tìm kiếm",
-                        subtitle = uiState.errorMessage!!,
+                        subtitle = state.errorMessage!!,
                         retryText = "Thử lại",
                         onRetryClick = viewModel::executeSearch,
                         modifier = Modifier
@@ -67,7 +70,7 @@ fun SearchScreen(
                     )
                 }
 
-                uiState.hasNoResult -> {
+                state.hasNoResult -> {
                     EmptyStateBlock(
                         title = "Không tìm thấy kết quả",
                         subtitle = "Thử tìm kiếm với từ khóa khác như món ăn, địa điểm hoặc tên người dùng.",
@@ -83,11 +86,10 @@ fun SearchScreen(
                         contentPadding = PaddingValues(bottom = 32.dp),
                         verticalArrangement = Arrangement.spacedBy(AppDimens.spaceLg),
                     ) {
-                        if (uiState.isExploreMode) {
-                            // EXPLORE MODE
+                        if (state.isExploreMode) {
                             
-                            // Recent searches
-                            if (uiState.recentSearches.isNotEmpty()) {
+                            // Danh sách từ khóa tìm kiếm gần đây
+                            if (state.recentSearches.isNotEmpty()) {
                                 item {
                                     Column(modifier = Modifier.padding(top = AppDimens.spaceMd)) {
                                         Row(
@@ -115,7 +117,7 @@ fun SearchScreen(
                                             horizontalArrangement = Arrangement.spacedBy(AppDimens.spaceSm),
                                         ) {
                                             items(
-                                                items = uiState.recentSearches,
+                                                items = state.recentSearches,
                                                 key = { "recent_$it" }
                                             ) { search ->
                                                 RecentSearchChip(
@@ -129,8 +131,8 @@ fun SearchScreen(
                                 }
                             }
 
-                            // Discover People (Gợi ý kết nối bạn bè)
-                            if (uiState.suggestedPeople.isNotEmpty()) {
+                            // Khám phá gợi ý bạn bè kết nối
+                            if (state.suggestedPeople.isNotEmpty()) {
                                 item {
                                     Text(
                                         text = "Khám phá bạn bè",
@@ -141,7 +143,7 @@ fun SearchScreen(
                                 }
 
                                 items(
-                                    items = uiState.suggestedPeople,
+                                    items = state.suggestedPeople,
                                     key = { "suggested_${it.uid}" }
                                 ) { user ->
                                     Box(modifier = Modifier.padding(horizontal = AppDimens.spaceLg)) {
@@ -153,8 +155,8 @@ fun SearchScreen(
                                 }
                             }
 
-                            // Trending Places (Địa điểm ăn uống xu hướng)
-                            if (uiState.trendingPlaces.isNotEmpty()) {
+                            // Địa điểm ăn uống nổi bật xu hướng
+                            if (state.trendingPlaces.isNotEmpty()) {
                                 item {
                                     Text(
                                         text = "Địa điểm nổi bật",
@@ -165,30 +167,29 @@ fun SearchScreen(
                                 }
 
                                 items(
-                                    items = uiState.trendingPlaces,
+                                    items = state.trendingPlaces,
                                     key = { "trending_${it.id}" }
                                 ) { place ->
                                     Box(modifier = Modifier.padding(horizontal = AppDimens.spaceLg)) {
                                         SearchPlaceCard(
                                             place = place,
-                                            onClick = { }
+                                            onClick = { /* Xử lý nếu mở chi tiết địa điểm */ }
                                         )
                                     }
                                 }
                             }
 
                         } else {
-                            // RESULT MODE
                             
-                            // Category chips selection
                             item {
                                 LazyRow(
                                     contentPadding = PaddingValues(horizontal = AppDimens.spaceLg, vertical = AppDimens.spaceSm),
                                     horizontalArrangement = Arrangement.spacedBy(AppDimens.spaceSm)
                                 ) {
-                                    items(SearchFilter.values()) { filter ->
+                                    // TUẦN 6 OPTIMIZATION: Thay thế .values() bằng .entries để tránh sao chép cấp phát mảng thừa trong bộ nhớ
+                                    items(SearchFilter.entries) { filter ->
                                         FilterChip(
-                                            selected = uiState.selectedFilter == filter,
+                                            selected = state.selectedFilter == filter,
                                             onClick = { viewModel.onFilterChange(filter) },
                                             label = { Text(filter.label) },
                                             colors = FilterChipDefaults.filterChipColors(
@@ -200,10 +201,10 @@ fun SearchScreen(
                                 }
                             }
 
-                            when (uiState.selectedFilter) {
+                            when (state.selectedFilter) {
                                 SearchFilter.All -> {
-                                    // 1. Users category preview
-                                    if (uiState.peopleResults.isNotEmpty()) {
+                                    // 1. Phân vùng xem trước: Người dùng tương thích
+                                    if (state.peopleResults.isNotEmpty()) {
                                         item {
                                             Text(
                                                 text = "Người dùng",
@@ -211,9 +212,8 @@ fun SearchScreen(
                                                 modifier = Modifier.padding(horizontal = AppDimens.spaceLg, vertical = AppDimens.spaceSm)
                                             )
                                         }
-
                                         items(
-                                            items = uiState.peopleResults.take(3),
+                                            items = state.peopleResults.take(3),
                                             key = { "result_person_all_${it.uid}" }
                                         ) { user ->
                                             Box(modifier = Modifier.padding(horizontal = AppDimens.spaceLg)) {
@@ -225,8 +225,7 @@ fun SearchScreen(
                                         }
                                     }
 
-                                    // 2. Posts category preview
-                                    if (uiState.postResults.isNotEmpty()) {
+                                    if (state.postResults.isNotEmpty()) {
                                         item {
                                             Text(
                                                 text = "Bài viết",
@@ -234,9 +233,8 @@ fun SearchScreen(
                                                 modifier = Modifier.padding(horizontal = AppDimens.spaceLg, vertical = AppDimens.spaceSm)
                                             )
                                         }
-
                                         items(
-                                            items = uiState.postResults.take(5),
+                                            items = state.postResults.take(5),
                                             key = { "result_post_all_${it.id}" }
                                         ) { post ->
                                             Box(modifier = Modifier.padding(horizontal = AppDimens.spaceLg)) {
@@ -249,8 +247,7 @@ fun SearchScreen(
                                         }
                                     }
 
-                                    // 3. Places category preview
-                                    if (uiState.placeResults.isNotEmpty()) {
+                                    if (state.placeResults.isNotEmpty()) {
                                         item {
                                             Text(
                                                 text = "Địa điểm",
@@ -258,15 +255,14 @@ fun SearchScreen(
                                                 modifier = Modifier.padding(horizontal = AppDimens.spaceLg, vertical = AppDimens.spaceSm)
                                             )
                                         }
-
                                         items(
-                                            items = uiState.placeResults.take(3),
+                                            items = state.placeResults.take(3),
                                             key = { "result_place_all_${it.id}" }
                                         ) { place ->
                                             Box(modifier = Modifier.padding(horizontal = AppDimens.spaceLg)) {
                                                 SearchPlaceCard(
                                                     place = place,
-                                                    onClick = { }
+                                                    onClick = { /* Xử lý mở vị trí map */ }
                                                 )
                                             }
                                         }
@@ -275,7 +271,7 @@ fun SearchScreen(
 
                                 SearchFilter.Posts -> {
                                     items(
-                                        items = uiState.postResults,
+                                        items = state.postResults,
                                         key = { "result_post_only_${it.id}" }
                                     ) { post ->
                                         Box(modifier = Modifier.padding(horizontal = AppDimens.spaceLg)) {
@@ -290,7 +286,7 @@ fun SearchScreen(
 
                                 SearchFilter.People -> {
                                     items(
-                                        items = uiState.peopleResults,
+                                        items = state.peopleResults,
                                         key = { "result_person_only_${it.uid}" }
                                     ) { user ->
                                         Box(modifier = Modifier.padding(horizontal = AppDimens.spaceLg)) {
@@ -304,13 +300,13 @@ fun SearchScreen(
 
                                 SearchFilter.Places -> {
                                     items(
-                                        items = uiState.placeResults,
+                                        items = state.placeResults,
                                         key = { "result_place_only_${it.id}" }
                                     ) { place ->
                                         Box(modifier = Modifier.padding(horizontal = AppDimens.spaceLg)) {
                                             SearchPlaceCard(
                                                 place = place,
-                                                onClick = { }
+                                                onClick = { /* Xử lý click */ }
                                             )
                                         }
                                     }
