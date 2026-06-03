@@ -2,7 +2,6 @@ package com.example.dinesplit.presentation.feed
 
 import android.app.Application
 import androidx.compose.foundation.background
-import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
@@ -19,6 +18,7 @@ import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.draw.alpha
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.layout.ContentScale
@@ -40,104 +40,159 @@ import com.example.dinesplit.core.ui.DineAvatarImage
 import com.example.dinesplit.core.ui.DinePostImage
 import com.example.dinesplit.core.ui.ErrorStateBlock
 import com.example.dinesplit.core.ui.LoadingBlock
-import com.example.dinesplit.domain.model.Comment
 import com.example.dinesplit.domain.model.Post
 import com.example.dinesplit.ui.theme.AppColors
+import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.SharingStarted
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.combine
 import kotlinx.coroutines.flow.stateIn
+import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
 import java.text.SimpleDateFormat
 import java.util.Date
 import java.util.Locale
+import java.util.UUID
 
 
-data class PostDetailUiState(
-    val post: Post? = null,
-    val comments: List<Comment> = emptyList(),
-    val isLikedByMe: Boolean = false,
+sealed interface PostDetailUiState {
+    data object Loading : PostDetailUiState
+    刻 Success(val content: PostDetailContent) : PostDetailUiState
+    data class Error(val message: String) : PostDetailUiState
+}
+
+data class PostDetailContent(
+    val post: Post,
+    val comments: List<PostComment>,
+    val isLiked: Boolean,
     val isSubmittingComment: Boolean = false,
-    val isLoading: Boolean = true,
-    val error: String? = null,
+    val errorMessage: String? = null
+)
+
+data class PostComment(
+    val id: String,
+    val userId: String,
+    val userName: String,
+    val userAvatarUrl: String?,
+    val message: String,
+    val createdAt: Long,
+    val isPending: Boolean = false
 )
 
 class PostDetailViewModel(
     application: Application,
-    private val postId: String,
+    private val postId: String
 ) : ViewModel() {
-    private val feedRepo = AppContainer.feedRepository()
-    private val observeSession = AppContainer.observeSessionUseCase(application)
-    private val getCurrentProfile = AppContainer.getCurrentUserProfileUseCase(application)
+
+    private val firestore = AppContainer.feedRepository() // Kết nối thông qua Repository sạch thay vì gọi Firestore trực tiếp
+    private val observeSessionUseCase = AppContainer.observeSessionUseCase(application)
+    private val getCurrentUserProfileUseCase = AppContainer.getCurrentUserProfileUseCase(application)
     private val likeUseCase = AppContainer.likePostUseCase()
     private val unlikeUseCase = AppContainer.unlikePostUseCase()
 
     private val _isSubmitting = MutableStateFlow(false)
+    private val _errorMessage = MutableStateFlow<String?>(null)
 
     val uiState: StateFlow<PostDetailUiState> =
         combine(
-            feedRepo.getFeedPosts(),
-            feedRepo.getComments(postId),
-            observeSession(),
+            AppContainer.feedRepository().getFeedPosts(),
+            AppContainer.feedRepository().getComments(postId),
+            observeSessionUseCase(),
             _isSubmitting,
-        ) { posts, comments, session, submitting ->
+            _errorMessage
+        ) { posts, comments, session, submitting, errorMsg ->
             val post = posts.firstOrNull { it.id == postId }
             val uid = session?.uid
             val isLiked = uid != null && post?.likedBy?.contains(uid) == true
-            PostDetailUiState(
-                post = post,
-                comments = comments,
-                isLikedByMe = isLiked,
-                isSubmittingComment = submitting,
-                isLoading = false,
-                error = if (post == null) "Bài viết không tồn tại hoặc đã bị xóa" else null,
-            )
+            
+            if (post == null) {
+                PostDetailUiState.Error("Bài viết không tồn tại hoặc đã bị xóa")
+            } else {
+                // Chuyển đổi dữ liệu domain Comment sang cấu trúc dữ liệu hiển thị PostComment có tính năng pending
+                val mappedComments = comments.map { domainComment ->
+                    PostComment(
+                        id = UUID.randomUUID().toString(), // Khởi tạo ID an toàn cho LazyColumn
+                        userId = domainComment.authorUid,
+                        userName = domainComment.authorName,
+                        userAvatarUrl = domainComment.authorAvatar,
+                        message = domainComment.content,
+                        createdAt = domainComment.createdAt?.time ?: System.currentTimeMillis(),
+                        isPending = false
+                    )
+                }
+                
+                PostDetailUiState.Success(
+                    PostDetailContent(
+                        post = post,
+                        comments = mappedComments,
+                        isLiked = isLiked,
+                        isSubmittingComment = submitting,
+                        errorMessage = errorMsg
+                    )
+                )
+            }
         }.stateIn(
             scope = viewModelScope,
             started = SharingStarted.WhileSubscribed(5000),
-            initialValue = PostDetailUiState(),
+            initialValue = PostDetailUiState.Loading,
         )
 
     fun toggleLike() {
-        val userId = observeSession().value?.uid ?: return
-        val post = uiState.value.post ?: return
+        val userId = observeSessionUseCase().value?.uid ?: return
+        val state = uiState.value as? PostDetailUiState.Success ?: return
         viewModelScope.launch {
-            if (uiState.value.isLikedByMe) {
-                unlikeUseCase(post.id, userId)
+            if (state.content.isLiked) {
+                unlikeUseCase(postId, userId)
             } else {
-                likeUseCase(post.id, userId)
+                likeUseCase(postId, userId)
             }
         }
     }
 
-    fun submitComment(text: String) {
-        if (text.isBlank()) return
-        val userId = observeSession().value?.uid ?: return
+    fun submitComment(message: String) {
+        val trimmed = message.trim()
+        if (trimmed.isBlank()) return
+
+        val state = uiState.value as? PostDetailUiState.Success ?: return
+        if (state.content.isSubmittingComment) return
+
+        val session = observeSessionUseCase().value
+        if (session == null) {
+            _errorMessage.value = "Phiên đăng nhập hết hạn. Vui lòng đăng nhập lại."
+            return
+        }
+
         viewModelScope.launch {
             _isSubmitting.value = true
-            try {
-                val profile = getCurrentProfile(userId)
-                val comment = Comment(
-                    authorUid = userId,
+            _errorMessage.value = null
+            runCatching {
+                val profile = getCurrentUserProfileUseCase(session.uid)
+                val comment = com.example.dinesplit.domain.model.Comment(
+                    authorUid = session.uid,
                     authorName = profile?.displayName ?: "Người dùng",
                     authorAvatar = profile?.avatarUrl ?: "",
-                    content = text.trim(),
+                    content = trimmed,
                     createdAt = Date(),
                 )
-                feedRepo.addComment(postId, comment)
-            } catch (e: Exception) {
-                e.printStackTrace()
-            } finally {
+                AppContainer.feedRepository().addComment(postId, comment)
+            }.onFailure { throwable ->
+                _errorMessage.value = "Không thể gửi bình luận: ${throwable.localizedMessage}"
+            }.onFinalized {
                 _isSubmitting.value = false
             }
         }
     }
 
+    private fun <T> Result<T>.onFinalized(action: () -> Unit): Result<T> {
+        action()
+        return this
+    }
+
     class Factory(private val application: Application, private val postId: String) :
         ViewModelProvider.Factory {
         @Suppress("UNCHECKED_CAST")
-        override fun <T : ViewModel> create(modelClass: Class<T>): T = 
+        override fun <T : ViewModel> create(modelClass: Class<T>): T =
             PostDetailViewModel(application, postId) as T
     }
 }
@@ -149,14 +204,17 @@ fun PostDetailScreen(
     onBack: () -> Unit = {},
 ) {
     val application = androidx.compose.ui.platform.LocalContext.current.applicationContext as Application
+    // KHỞI TẠO CHUẨN KIẾN TRÚC: Đưa Factory vào ngăn chặn lỗi Crash Runtime
     val vm: PostDetailViewModel = viewModel(factory = PostDetailViewModel.Factory(application, postId))
     val uiState by vm.uiState.collectAsState()
     val listState = rememberLazyListState()
 
-    // TỰ ĐỘNG CUỘN ĐÁY: Khi có bình luận mới được thêm vào, danh sách tự cuộn xuống dưới cùng
-    LaunchedEffect(uiState.comments.size) {
-        if (uiState.comments.isNotEmpty()) {
-            listState.animateScrollToItem(uiState.comments.size + 1)
+    LaunchedEffect(uiState) {
+        if (uiState is PostDetailUiState.Success) {
+            val comments = (uiState as PostDetailUiState.Success).content.comments
+            if (comments.isNotEmpty()) {
+                listState.animateScrollToItem(comments.size + 1)
+            }
         }
     }
 
@@ -168,81 +226,105 @@ fun PostDetailScreen(
             }
         }
     ) {
-        Box(modifier = Modifier.fillMaxSize()) {
-            val state = uiState
-            when {
-                state.isLoading -> {
-                    Box(modifier = Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
-                        LoadingBlock(message = "Đang tải chi tiết bài viết...")
-                    }
+        when (val state = uiState) {
+            is PostDetailUiState.Loading -> {
+                Box(modifier = Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
+                    LoadingBlock(message = "Đang tải chi tiết bài viết...")
                 }
-                state.error != null -> {
-                    Box(modifier = Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
-                        ErrorStateBlock(
-                            title = "Không tìm thấy bài viết",
-                            subtitle = state.error,
-                            retryText = "Quay lại",
-                            onRetryClick = onBack
+            }
+            is PostDetailUiState.Error -> {
+                Box(modifier = Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
+                    ErrorStateBlock(
+                        title = "Không tìm thấy bài viết",
+                        subtitle = state.message,
+                        retryText = "Quay lại",
+                        onRetryClick = onBack
+                    )
+                }
+            }
+            is PostDetailUiState.Success -> {
+                PostDetailBody(
+                    content = state.content,
+                    listState = listState,
+                    onToggleLike = vm::toggleLike,
+                    onSubmitComment = vm::submitComment
+                )
+            }
+        }
+    }
+}
+
+@Composable
+private fun PostDetailBody(
+    content: PostDetailContent,
+    listState: androidx.compose.foundation.lazy.LazyListState,
+    onToggleLike: () -> Unit,
+    onSubmitComment: (String) -> Unit
+) {
+    Box(modifier = Modifier.fillMaxSize()) {
+        LazyColumn(
+            state = listState,
+            modifier = Modifier.fillMaxSize(),
+            contentPadding = PaddingValues(bottom = 100.dp),
+            verticalArrangement = Arrangement.spacedBy(AppDimens.spaceMd)
+        ) {
+            item {
+                PostDetailCard(
+                    post = content.post,
+                    isLikedByMe = content.isLiked,
+                    onToggleLike = onToggleLike
+                )
+            }
+
+            item {
+                HorizontalDivider(
+                    modifier = Modifier.padding(vertical = 4.dp),
+                    color = MaterialTheme.colorScheme.outlineVariant.copy(0.3f),
+                )
+                Text(
+                    text = "Bình luận (${content.comments.size})",
+                    style = MaterialTheme.typography.titleSmall.copy(fontWeight = FontWeight.Bold),
+                    modifier = Modifier.padding(horizontal = 16.dp, vertical = 4.dp),
+                )
+            }
+
+            if (content.comments.isEmpty()) {
+                item {
+                    Box(modifier = Modifier.fillMaxWidth().padding(32.dp), contentAlignment = Alignment.Center) {
+                        Text(
+                            text = "Chưa có bình luận nào. Hãy là người đầu tiên!",
+                            style = MaterialTheme.typography.bodySmall,
+                            color = MaterialTheme.colorScheme.outline
                         )
                     }
                 }
-                state.post != null -> {
-                    // Hiển thị nội dung chính khi dữ liệu nạp thành công
-                    LazyColumn(
-                        state = listState,
-                        modifier = Modifier.fillMaxSize(),
-                        contentPadding = PaddingValues(bottom = 100.dp), // Tránh bị che bởi thanh nhập liệu dưới đáy
-                        verticalArrangement = Arrangement.spacedBy(AppDimens.spaceMd)
-                    ) {
-                        item {
-                            PostDetailCard(
-                                post = state.post,
-                                isLikedByMe = state.isLikedByMe,
-                                onToggleLike = vm::toggleLike
-                            )
-                        }
+            } else {
+                items(content.comments, key = { it.id }) { comment ->
+                    CommentRow(comment = comment)
+                }
+            }
 
-                        item {
-                            HorizontalDivider(
-                                modifier = Modifier.padding(vertical = 4.dp),
-                                color = MaterialTheme.colorScheme.outlineVariant.copy(0.3f),
-                            )
-                            Text(
-                                text = "Bình luận (${state.comments.size})",
-                                style = MaterialTheme.typography.titleSmall.copy(fontWeight = FontWeight.Bold),
-                                modifier = Modifier.padding(horizontal = 16.dp, vertical = 4.dp),
-                            )
-                        }
-
-                        if (state.comments.isEmpty()) {
-                            item {
-                                Box(modifier = Modifier.fillMaxWidth().padding(32.dp), contentAlignment = Alignment.Center) {
-                                    Text(
-                                        text = "Chưa có bình luận nào. Hãy là người đầu tiên!",
-                                        style = MaterialTheme.typography.bodySmall,
-                                        color = MaterialTheme.colorScheme.outline
-                                    )
-                                }
-                            }
-                        } else {
-                            // KEYED ITEMS: Ép danh sách sử dụng ID thật để tối ưu hóa Slot Table khi bình luận tăng lên
-                            items(state.comments, key = { it.id }) { comment ->
-                                CommentRow(comment = comment)
-                            }
-                        }
-                    }
-
-                    CommentInputBar(
-                        modifier = Modifier
-                            .align(Alignment.BottomCenter)
-                            .fillMaxWidth()
-                            .imePadding(),
-                        isSubmitting = state.isSubmittingComment,
-                        onSubmit = vm::submitComment
+            content.errorMessage?.takeIf { it.isNotBlank() }?.let { errorMessage ->
+                item {
+                    Text(
+                        text = errorMessage,
+                        style = MaterialTheme.typography.bodySmall,
+                        color = MaterialTheme.colorScheme.error,
+                        modifier = Modifier.padding(horizontal = 16.dp)
                     )
                 }
             }
         }
+
+        CommentInputBar(
+            modifier = Modifier
+                .align(Alignment.BottomCenter)
+                .fillMaxWidth()
+                .navigationBarsPadding()
+                .imePadding(),
+            isSubmitting = content.isSubmittingComment,
+            onSubmit = onSubmitComment
+        )
     }
 }
 
@@ -291,9 +373,7 @@ private fun PostDetailCard(
                 DinePostImage(
                     imageUrl = post.imageUrls.first(),
                     contentDescription = post.caption,
-                    modifier = Modifier
-                        .fillMaxWidth()
-                        .aspectRatio(1f),
+                    modifier = Modifier.fillMaxWidth().aspectRatio(1f),
                     shape = RoundedCornerShape(AppDimens.radiusLg),
                 )
             }
@@ -333,14 +413,15 @@ private fun PostDetailCard(
 }
 
 @Composable
-private fun CommentRow(comment: Comment) {
-    AppCard {
+private fun CommentRow(comment: PostComment) {
+    val alpha = if (comment.isPending) 0.5f else 1f
+    AppCard(modifier = Modifier.alpha(alpha)) {
         Row(
             modifier = Modifier.fillMaxWidth(),
             horizontalArrangement = Arrangement.spacedBy(AppDimens.spaceMd),
             verticalAlignment = Alignment.Top
         ) {
-            DineAvatarImage(imageUrl = comment.authorAvatar, name = comment.authorName, size = 36.dp)
+            DineAvatarImage(imageUrl = comment.userAvatarUrl, name = comment.userName, size = 36.dp)
 
             Column(verticalArrangement = Arrangement.spacedBy(AppDimens.spaceXs), modifier = Modifier.weight(1f)) {
                 Row(
@@ -348,20 +429,27 @@ private fun CommentRow(comment: Comment) {
                     horizontalArrangement = Arrangement.SpaceBetween,
                     verticalAlignment = Alignment.CenterVertically
                 ) {
-                    Text(text = comment.authorName, style = MaterialTheme.typography.titleSmall.copy(fontWeight = FontWeight.Bold))
-                    comment.createdAt?.let { date ->
-                        Text(
-                            text = formatPostDate(date),
-                            style = MaterialTheme.typography.labelSmall,
-                            color = MaterialTheme.colorScheme.outline
-                        )
-                    }
+                    Text(text = comment.userName, style = MaterialTheme.typography.titleSmall.copy(fontWeight = FontWeight.Bold))
+                    
+                    val commentDate = remember(comment.createdAt) { Date(comment.createdAt) }
+                    Text(
+                        text = formatPostDate(commentDate),
+                        style = MaterialTheme.typography.labelSmall,
+                        color = MaterialTheme.colorScheme.outline
+                    )
                 }
                 Text(
-                    text = comment.content,
+                    text = comment.message,
                     style = MaterialTheme.typography.bodyMedium,
                     color = MaterialTheme.colorScheme.onSurfaceVariant
                 )
+                if (comment.isPending) {
+                    Text(
+                        text = "Đang gửi...",
+                        style = MaterialTheme.typography.labelSmall,
+                        color = MaterialTheme.colorScheme.primary
+                    )
+                }
             }
         }
     }
@@ -398,7 +486,7 @@ private fun CommentInputBar(
                         val current = text.trim()
                         if (current.isNotBlank()) {
                             onSubmit(current)
-                            text = "" // Xóa trống ô gõ sau khi submit thành công
+                            text = "" 
                         }
                     },
                     enabled = text.isNotBlank() && !isSubmitting,
@@ -417,18 +505,5 @@ private fun CommentInputBar(
                 }
             }
         }
-    }
-}
-
-private fun formatPostDate(date: Date): String {
-    val now = Date()
-    val diffMs = now.time - date.time
-    val diffMins = diffMs / 60000
-    return when {
-        diffMins < 1 -> "Vừa xong"
-        diffMins < 60 -> "${diffMins}ph"
-        diffMins < 1440 -> "${diffMins / 60}g"
-        diffMins < 10080 -> "${diffMins / 1440}ng"
-        else -> SimpleDateFormat("dd/MM", Locale.getDefault()).format(date)
     }
 }
