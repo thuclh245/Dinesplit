@@ -348,6 +348,15 @@ fun MainContainerScreen(
                     
                     composable(AppRoute.SpendingReminders.route) {
                         SpendingReminderScreen(
+                            reminders = personalReminders,
+                            categories = personalUiState.categories,
+                            errorMessage = personalUiState.errorMessage,
+                            onCreateReminder = { categoryId, categoryName, budgetAmount, threshold, type ->
+                                personalViewModel.addSpendingReminder(categoryId, categoryName, budgetAmount, threshold, type)
+                            },
+                            onDeleteReminder = { reminderId ->
+                                personalViewModel.deleteSpendingReminder(reminderId)
+                            },
                             onBack = { mainNavController.navigateUp() },
                         )
                     }
