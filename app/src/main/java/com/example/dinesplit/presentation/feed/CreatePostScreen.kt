@@ -1,483 +1,233 @@
 package com.example.dinesplit.presentation.feed
 
-import android.app.Application
 import android.net.Uri
 import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.result.contract.ActivityResultContracts
+import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.background
-import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.rememberScrollState
-import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.automirrored.filled.ArrowBack
 import androidx.compose.material.icons.filled.AddPhotoAlternate
+import androidx.compose.material.icons.filled.People
 import androidx.compose.material.icons.filled.PhotoLibrary
 import androidx.compose.material.icons.filled.Public
-import androidx.compose.material.icons.filled.People
 import androidx.compose.material3.*
-import androidx.compose.runtime.*
+import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
+import androidx.compose.runtime.collectAsState
+import androidx.compose.runtime.getValue
+import androidx.compose.runtime.remember
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.layout.ContentScale
-import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
-import androidx.compose.ui.unit.sp
 import coil.compose.AsyncImage
-import com.example.dinesplit.core.common.AppContainer
+import com.example.dinesplit.core.ui.AppButton
+import com.example.dinesplit.core.ui.AppCard
 import com.example.dinesplit.core.ui.AppDimens
-import com.example.dinesplit.core.ui.AppShapes
-import com.example.dinesplit.core.ui.DinePostImage
+import com.example.dinesplit.core.ui.AppScaffold
+import com.example.dinesplit.core.ui.AppTextField
 import com.example.dinesplit.core.ui.LoadingBlock
-import com.example.dinesplit.domain.model.Post
-import com.example.dinesplit.ui.theme.AppColors
-import kotlinx.coroutines.flow.first
-import kotlinx.coroutines.launch
-import java.util.Date
-import java.util.UUID
 
-@OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun CreatePostScreen(
-    postId: String? = null,
-    onBack: () -> Unit = {},
+    viewModel: CreatePostViewModel,
+    postId: String? = null, // Hỗ trợ Edit Mode từ file dự án chính của nhóm
+    onBack: () -> Unit = {}
 ) {
-    var restaurantName by remember { mutableStateOf("") }
-    var caption by remember { mutableStateOf("") }
-    var visibility by remember { mutableStateOf("public") }
-    var isPosting by remember { mutableStateOf(false) }
-    var selectedImageUri by remember { mutableStateOf<Uri?>(null) }
-    var isLoadingExistingPost by remember { mutableStateOf(false) }
-    var existingPost by remember { mutableStateOf<Post?>(null) }
+    val uiState by viewModel.uiState.collectAsState()
+    val restaurantName by viewModel.restaurantName.collectAsState()
+    val caption by viewModel.caption.collectAsState()
+    val selectedImageUri by viewModel.imageUri.collectAsState()
+    val visibility by viewModel.visibility.collectAsState()
+    val isFormValid by viewModel.isFormValid.collectAsState()
+    val isLoadingExistingPost by viewModel.isLoadingExistingPost.collectAsState()
 
-    val scope = rememberCoroutineScope()
-    val context = LocalContext.current
-    val application = context.applicationContext as Application
+    val snackbarHostState = remember { SnackbarHostState() }
 
-    // Select a beautiful random placeholder food photo as initial fallback
-    val mockImage =
-        remember {
-            listOf(
-                "https://images.unsplash.com/photo-1565299624946-b28f40a0ae38?w=800&auto=format&fit=crop",
-                "https://images.unsplash.com/photo-1482049016688-2d3e1b311543?w=800&auto=format&fit=crop",
-                "https://images.unsplash.com/photo-1467003909585-2f8a72700288?w=800&auto=format&fit=crop",
-                "https://images.unsplash.com/photo-1504674900247-0877df9cc836?w=800&auto=format&fit=crop",
-                "https://images.unsplash.com/photo-1546069901-ba9599a7e63c?w=800&auto=format&fit=crop",
-            ).random()
-        }
-
-    // Load existing post if in edit mode
+    // KHỞI TẠO LUỒNG ĐĂNG/SỬA: Nếu có postId, ra lệnh cho ViewModel nạp dữ liệu cũ về
     LaunchedEffect(postId) {
-        if (!postId.isNullOrBlank()) {
-            isLoadingExistingPost = true
-            try {
-                val posts = AppContainer.feedRepository().getFeedPosts().first()
-                val post = posts.firstOrNull { it.id == postId }
-                if (post != null) {
-                    existingPost = post
-                    restaurantName = post.location.orEmpty()
-                    caption = post.caption
-                    visibility = post.visibility
-                    if (post.imageUrls.isNotEmpty()) {
-                        selectedImageUri = Uri.parse(post.imageUrls.first())
-                    }
-                }
-            } catch (e: Exception) {
-                e.printStackTrace()
-            } finally {
-                isLoadingExistingPost = false
+        viewModel.initializePostMode(postId)
+    }
+
+    // SIDE-EFFECTS CONTROL: Đảm bảo tác vụ điều hướng/thông báo lỗi mạng chạy chuẩn xác
+    LaunchedEffect(uiState) {
+        if (uiState is CreatePostUiState.Success) {
+            onBack()
+            viewModel.resetUiState() // Trả state về Idle để tránh bẫy loop khi quay lại backstack
+        } else if (uiState is CreatePostUiState.Error) {
+            val result = snackbarHostState.showSnackbar(
+                message = (uiState as CreatePostUiState.Error).message,
+                actionLabel = "Thử lại"
+            )
+            if (result == SnackbarResult.ActionPerformed) {
+                viewModel.submitPost()
             }
         }
     }
 
-    val galleryLauncher =
-        rememberLauncherForActivityResult(
-            contract = ActivityResultContracts.GetContent(),
-        ) { uri: Uri? ->
-            if (uri != null) {
-                selectedImageUri = uri
+    val galleryLauncher = rememberLauncherForActivityResult(
+        contract = ActivityResultContracts.GetContent()
+    ) { uri: Uri? -> viewModel.updateImageUri(uri) }
+
+    AppScaffold(
+        title = if (!postId.isNullOrBlank()) "Chỉnh sửa bài viết" else "Đăng bài viết mới",
+        navigationIcon = {
+            TextButton(onClick = onBack) {
+                Text("Hủy", color = MaterialTheme.colorScheme.primary, fontWeight = FontWeight.Bold)
             }
         }
-
-    Scaffold(
-        topBar = {
-            CenterAlignedTopAppBar(
-                title = {
-                    Text(
-                        if (!postId.isNullOrBlank()) "Chỉnh sửa bài viết" else "Đăng bài viết mới",
-                        style = MaterialTheme.typography.titleMedium.copy(fontWeight = FontWeight.Bold),
-                    )
-                },
-                navigationIcon = {
-                    IconButton(onClick = onBack) {
-                        Icon(Icons.AutoMirrored.Filled.ArrowBack, contentDescription = "Quay lại")
-                    }
-                },
-                colors =
-                    TopAppBarDefaults.centerAlignedTopAppBarColors(
-                        containerColor = MaterialTheme.colorScheme.background,
-                    ),
-            )
-        },
-    ) { padding ->
-        if (isLoadingExistingPost) {
-            Box(
-                modifier =
-                    Modifier
+    ) {
+        Box(modifier = Modifier.fillMaxSize()) {
+            if (isLoadingExistingPost) {
+                // Trạng thái chờ tải bài viết cũ trong Edit Mode
+                Box(modifier = Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
+                    LoadingBlock(message = "Đang tải bài viết cũ...")
+                }
+            } else {
+                Column(
+                    modifier = Modifier
                         .fillMaxSize()
-                        .padding(padding),
-                contentAlignment = Alignment.Center,
-            ) {
-                LoadingBlock(
-                    message = "Đang tải bài viết...",
-                    modifier = Modifier.padding(AppDimens.spaceLg),
-                )
-            }
-        } else {
-            Column(
-                modifier =
-                    Modifier
-                        .fillMaxSize()
-                        .background(MaterialTheme.colorScheme.background)
                         .verticalScroll(rememberScrollState())
-                        .padding(padding)
-                        .padding(horizontal = 24.dp, vertical = 16.dp),
-                verticalArrangement = Arrangement.spacedBy(20.dp),
-            ) {
-                // Elegant Image Picker Block
-                Box(
-                    modifier =
-                        Modifier
-                            .fillMaxWidth()
-                            .aspectRatio(1.33f)
-                            .clip(RoundedCornerShape(24.dp))
-                            .background(MaterialTheme.colorScheme.surfaceContainerHigh)
-                            .border(
-                                width = 1.5.dp,
-                                color = MaterialTheme.colorScheme.outlineVariant.copy(alpha = 0.5f),
-                                shape = RoundedCornerShape(24.dp),
-                            )
-                            .clickable { galleryLauncher.launch("image/*") },
-                    contentAlignment = Alignment.Center,
+                        .padding(horizontal = 16.dp, vertical = 8.dp),
+                    verticalArrangement = Arrangement.spacedBy(20.dp)
                 ) {
-                    if (selectedImageUri != null) {
-                        // Show custom chosen image from gallery or Firestore
-                        DinePostImage(
-                            imageUrl = selectedImageUri?.toString(),
-                            contentDescription = "Selected image",
-                            modifier = Modifier.fillMaxSize(),
-                            shape = AppShapes.xLarge,
-                        )
-                        // Glassmorphic change indicator pill at top right
-                        Surface(
-                            color = Color.Black.copy(alpha = 0.55f),
-                            shape = AppShapes.medium,
-                            modifier =
-                                Modifier
-                                    .align(Alignment.BottomEnd)
-                                    .padding(AppDimens.spaceMd),
-                        ) {
-                            Row(
-                                modifier = Modifier.padding(horizontal = 10.dp, vertical = 6.dp),
-                                verticalAlignment = Alignment.CenterVertically,
-                                horizontalArrangement = Arrangement.spacedBy(AppDimens.spaceXs),
-                            ) {
-                                Icon(
-                                    Icons.Default.PhotoLibrary,
-                                    contentDescription = null,
-                                    tint = AppColors.surfaceWhite,
-                                    modifier = Modifier.size(12.dp),
-                                )
-                                Text(
-                                    "Đổi ảnh thư viện",
-                                    color = AppColors.surfaceWhite,
-                                    style = MaterialTheme.typography.labelSmall.copy(fontWeight = FontWeight.Bold),
-                                )
-                            }
-                        }
-                    } else {
-                        // Fallback to visual preview of default random food image but styled to encourage changing
-                        DinePostImage(
-                            imageUrl = mockImage,
-                            contentDescription = "Mock image",
-                            modifier = Modifier.fillMaxSize(),
-                            shape = AppShapes.xLarge,
-                        )
-                        // Overlay tint
-                        Box(modifier = Modifier.fillMaxSize().background(Color.Black.copy(alpha = 0.4f)))
-
-                        // Call to Action
-                        Column(
-                            horizontalAlignment = Alignment.CenterHorizontally,
-                            verticalArrangement = Arrangement.spacedBy(AppDimens.spaceSm),
-                            modifier = Modifier.padding(AppDimens.spaceLg),
-                        ) {
-                            Box(
-                                modifier =
-                                    Modifier
-                                        .size(48.dp)
-                                        .background(AppColors.surfaceWhite.copy(0.2f), CircleShape)
-                                        .border(1.5.dp, AppColors.surfaceWhite, CircleShape),
-                                contentAlignment = Alignment.Center,
-                            ) {
-                                Icon(
-                                    Icons.Default.AddPhotoAlternate,
-                                    contentDescription = null,
-                                    tint = AppColors.surfaceWhite,
-                                    modifier = Modifier.size(24.dp),
-                                )
-                            }
-                            Text(
-                                text = "Nhấp để chọn ảnh từ gallery của bạn 📸",
-                                color = AppColors.surfaceWhite,
-                                style = MaterialTheme.typography.labelLarge.copy(fontWeight = FontWeight.Bold),
-                                textAlign = TextAlign.Center,
-                            )
-                            Text(
-                                text = "Hoặc sử dụng ảnh món ăn ngẫu nhiên có sẵn",
-                                color = AppColors.surfaceWhite.copy(0.7f),
-                                style = MaterialTheme.typography.labelSmall,
-                                textAlign = TextAlign.Center,
-                            )
-                        }
-                    }
-                }
-
-                // Input Fields
-                Column(verticalArrangement = Arrangement.spacedBy(16.dp)) {
-                    Text(
-                        text = "Thông tin ẩm thực",
-                        style =
-                            MaterialTheme.typography.titleSmall.copy(
-                                fontWeight = FontWeight.Bold,
-                                color = MaterialTheme.colorScheme.primary,
-                            ),
-                    )
-
-                    OutlinedTextField(
-                        value = restaurantName,
-                        onValueChange = { restaurantName = it },
-                        label = { Text("Tên quán ăn / Nhà hàng", style = MaterialTheme.typography.bodyMedium) },
-                        placeholder = { Text("Ví dụ: Phở Thìn Lò Đúc, Pizza 4P's...", style = MaterialTheme.typography.bodyMedium) },
-                        modifier = Modifier.fillMaxWidth(),
-                        shape = RoundedCornerShape(16.dp),
-                        colors =
-                            OutlinedTextFieldDefaults.colors(
-                                focusedBorderColor = MaterialTheme.colorScheme.primary,
-                                unfocusedBorderColor = MaterialTheme.colorScheme.outlineVariant,
-                            ),
-                        singleLine = true,
-                    )
-
-                    OutlinedTextField(
-                        value = caption,
-                        onValueChange = { caption = it },
-                        label = { Text("Cảm nghĩ của bạn về bữa ăn", style = MaterialTheme.typography.bodyMedium) },
-                        placeholder = {
-                            Text(
-                                "Hôm nay bạn ăn gì? Trải nghiệm hương vị ra sao? Hãy chia sẻ cho cộng đồng nhé!",
-                                style = MaterialTheme.typography.bodyMedium,
-                            )
-                        },
-                        modifier =
-                            Modifier
+                    // Cụm Chọn Ảnh Ẩm Thực Cao Cấp (Hỗ trợ cả fallback ảnh mồi ngẫu nhiên)
+                    AppCard {
+                        Box(
+                            modifier = Modifier
                                 .fillMaxWidth()
-                                .height(120.dp),
-                        shape = RoundedCornerShape(16.dp),
-                        colors =
-                            OutlinedTextFieldDefaults.colors(
-                                focusedBorderColor = MaterialTheme.colorScheme.primary,
-                                unfocusedBorderColor = MaterialTheme.colorScheme.outlineVariant,
-                            ),
-                        singleLine = false,
-                    )
-
-                    Spacer(modifier = Modifier.height(4.dp))
-
-                    Text(
-                        text = "Chế độ hiển thị bài đăng",
-                        style =
-                            MaterialTheme.typography.titleSmall.copy(
-                                fontWeight = FontWeight.Bold,
-                                color = MaterialTheme.colorScheme.primary,
-                            ),
-                    )
-
-                    Row(
-                        modifier = Modifier.fillMaxWidth(),
-                        horizontalArrangement = Arrangement.spacedBy(12.dp)
-                    ) {
-                        // Option 1: Public
-                        val isPublic = visibility == "public"
-                        Surface(
-                            modifier = Modifier
-                                .weight(1f)
-                                .clickable { visibility = "public" },
-                            color = if (isPublic) MaterialTheme.colorScheme.primaryContainer else MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.4f),
-                            shape = RoundedCornerShape(16.dp),
-                            border = androidx.compose.foundation.BorderStroke(
-                                width = 1.5.dp,
-                                color = if (isPublic) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.outlineVariant.copy(alpha = 0.5f)
-                            )
+                                .aspectRatio(16f / 10f)
+                                .clip(MaterialTheme.shapes.large)
+                                .background(MaterialTheme.colorScheme.surfaceContainerHigh)
+                                .clickable { galleryLauncher.launch("image/*") },
+                            contentAlignment = Alignment.Center
                         ) {
-                            Row(
-                                modifier = Modifier.padding(12.dp),
-                                verticalAlignment = Alignment.CenterVertically,
-                                horizontalArrangement = Arrangement.spacedBy(8.dp)
-                            ) {
-                                Icon(
-                                    imageVector = androidx.compose.material.icons.Icons.Default.Public,
-                                    contentDescription = null,
-                                    tint = if (isPublic) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.onSurfaceVariant
+                            if (selectedImageUri != null) {
+                                AsyncImage(
+                                    model = selectedImageUri,
+                                    contentDescription = "Food Preview",
+                                    modifier = Modifier.fillMaxSize(),
+                                    contentScale = ContentScale.Crop
                                 )
-                                Column {
-                                    Text(
-                                        "Công khai",
-                                        style = MaterialTheme.typography.labelLarge.copy(fontWeight = FontWeight.Bold),
-                                        color = if (isPublic) MaterialTheme.colorScheme.onPrimaryContainer else MaterialTheme.colorScheme.onSurface
-                                    )
-                                    Text(
-                                        "Mọi người xem",
-                                        style = MaterialTheme.typography.labelSmall,
-                                        color = if (isPublic) MaterialTheme.colorScheme.onPrimaryContainer.copy(alpha = 0.7f) else MaterialTheme.colorScheme.onSurfaceVariant
-                                    )
+                                // Nhãn thủy tinh báo đổi ảnh
+                                Surface(
+                                    color = Color.Black.copy(alpha = 0.6f),
+                                    shape = RoundedCornerShape(12.dp),
+                                    modifier = Modifier.align(Alignment.BottomEnd).padding(12.dp)
+                                ) {
+                                    Row(
+                                        modifier = Modifier.padding(horizontal = 10.dp, vertical = 6.dp),
+                                        verticalAlignment = Alignment.CenterVertically,
+                                        horizontalArrangement = Arrangement.spacedBy(6.dp)
+                                    ) {
+                                        Icon(Icons.Default.PhotoLibrary, contentDescription = null, tint = Color.White, modifier = Modifier.size(14.dp))
+                                        Text("Đổi ảnh", color = Color.White, style = MaterialTheme.typography.labelSmall.copy(fontWeight = FontWeight.Bold))
+                                    }
                                 }
-                            }
-                        }
-
-                        // Option 2: Friends/Followers only
-                        val isFollowersOnly = visibility == "followers_only"
-                        Surface(
-                            modifier = Modifier
-                                .weight(1f)
-                                .clickable { visibility = "followers_only" },
-                            color = if (isFollowersOnly) MaterialTheme.colorScheme.primaryContainer else MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.4f),
-                            shape = RoundedCornerShape(16.dp),
-                            border = androidx.compose.foundation.BorderStroke(
-                                width = 1.5.dp,
-                                color = if (isFollowersOnly) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.outlineVariant.copy(alpha = 0.5f)
-                            )
-                        ) {
-                            Row(
-                                modifier = Modifier.padding(12.dp),
-                                verticalAlignment = Alignment.CenterVertically,
-                                horizontalArrangement = Arrangement.spacedBy(8.dp)
-                            ) {
-                                Icon(
-                                    imageVector = androidx.compose.material.icons.Icons.Default.People,
-                                    contentDescription = null,
-                                    tint = if (isFollowersOnly) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.onSurfaceVariant
-                                )
-                                Column {
-                                    Text(
-                                        "Bạn bè",
-                                        style = MaterialTheme.typography.labelLarge.copy(fontWeight = FontWeight.Bold),
-                                        color = if (isFollowersOnly) MaterialTheme.colorScheme.onPrimaryContainer else MaterialTheme.colorScheme.onSurface
-                                    )
-                                    Text(
-                                        "Người theo dõi xem",
-                                        style = MaterialTheme.typography.labelSmall,
-                                        color = if (isFollowersOnly) MaterialTheme.colorScheme.onPrimaryContainer.copy(alpha = 0.7f) else MaterialTheme.colorScheme.onSurfaceVariant
-                                    )
+                            } else {
+                                Column(
+                                    horizontalAlignment = Alignment.CenterHorizontally,
+                                    verticalArrangement = Arrangement.spacedBy(8.dp)
+                                ) {
+                                    Icon(Icons.Default.AddPhotoAlternate, contentDescription = null, tint = MaterialTheme.colorScheme.primary, modifier = Modifier.size(32.dp))
+                                    Text("Nhấp chọn ảnh món ăn từ máy của bạn 📸", style = MaterialTheme.typography.labelMedium, textAlign = TextAlign.Center)
                                 }
                             }
                         }
                     }
-                }
 
-                Spacer(modifier = Modifier.height(8.dp))
+                    // Các ô nhập liệu đồng bộ Design System của nhóm
+                    AppTextField(
+                        value = restaurantName,
+                        onValueChange = { viewModel.updateRestaurantName(it) },
+                        label = "Tên quán ăn / Nhà hàng",
+                        placeholder = "Ví dụ: Phở Thìn Lò Đúc, Pizza 4P's..."
+                    )
 
-                // Submit Button
-                Button(
-                    onClick = {
-                        isPosting = true
-                        scope.launch {
-                            try {
-                                val session = AppContainer.observeSessionUseCase(application).invoke().value
-                                val uid = session?.uid
-                                val profile =
-                                    if (uid != null) {
-                                        AppContainer.getCurrentUserProfileUseCase(application).invoke(uid)
-                                    } else {
-                                        null
-                                    }
+                    AppTextField(
+                        value = caption,
+                        onValueChange = { viewModel.updateCaption(it) },
+                        label = "Cảm nghĩ của bạn về bữa ăn",
+                        placeholder = "Hôm nay bạn ăn gì? Trải nghiệm ra sao?",
+                        singleLine = false
+                    )
 
-                                val targetPostId = existingPost?.id ?: UUID.randomUUID().toString()
-                                var finalImageUrl = mockImage
-                                if (selectedImageUri != null) {
-                                    val uriStr = selectedImageUri!!.toString()
-                                    if (uriStr.startsWith("content://") || uriStr.startsWith("file://")) {
-                                        // Upload local picked gallery photo to Firebase Storage
-                                        finalImageUrl = AppContainer.feedRepository().uploadPostImage(targetPostId, selectedImageUri!!)
-                                    } else {
-                                        finalImageUrl = uriStr
+                    // Phân Vùng Chọn Quyền Hiển Thị (Public / Followers Only) từ file nhóm
+                    Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
+                        Text(
+                            text = "Chế độ hiển thị bài đăng",
+                            style = MaterialTheme.typography.titleSmall.copy(fontWeight = FontWeight.Bold, color = MaterialTheme.colorScheme.primary)
+                        )
+                        Row(
+                            modifier = Modifier.fillMaxWidth(),
+                            horizontalArrangement = Arrangement.spacedBy(12.dp)
+                        ) {
+                            val isPublic = visibility == "public"
+                            Surface(
+                                modifier = Modifier.weight(1f).clickable { viewModel.updateVisibility("public") },
+                                color = if (isPublic) MaterialTheme.colorScheme.primaryContainer else MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.3f),
+                                shape = RoundedCornerShape(16.dp),
+                                border = BorderStroke(1.5.dp, if (isPublic) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.outlineVariant.copy(alpha = 0.4f))
+                            ) {
+                                Row(modifier = Modifier.padding(12.dp), verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+                                    Icon(Icons.Default.Public, contentDescription = null, tint = if (isPublic) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.onSurfaceVariant)
+                                    Column {
+                                        Text("Công khai", style = MaterialTheme.typography.labelLarge.copy(fontWeight = FontWeight.Bold))
+                                        Text("Mọi người xem", style = MaterialTheme.typography.labelSmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
                                     }
                                 }
+                            }
 
-                                if (existingPost != null) {
-                                    // Update existing post
-                                    val updatedPost =
-                                        existingPost!!.copy(
-                                            caption = caption.trim(),
-                                            imageUrls = listOf(finalImageUrl),
-                                            location = restaurantName.trim(),
-                                            visibility = visibility,
-                                            updatedAt = Date(),
-                                        )
-                                    AppContainer.feedRepository().updatePost(updatedPost)
-                                } else {
-                                    // Create brand new post
-                                    val newPost =
-                                        Post(
-                                            id = targetPostId,
-                                            authorUid = profile?.uid ?: "",
-                                            authorName = profile?.displayName ?: "User",
-                                            authorAvatar = profile?.avatarUrl ?: "",
-                                            caption = caption.trim(),
-                                            imageUrls = listOf(finalImageUrl),
-                                            location = restaurantName.trim(),
-                                            visibility = visibility,
-                                            createdAt = Date(),
-                                            updatedAt = Date(),
-                                        )
-                                    AppContainer.feedRepository().createPost(newPost)
+                            val isFollowers = visibility == "followers_only"
+                            Surface(
+                                modifier = Modifier.weight(1f).clickable { viewModel.updateVisibility("followers_only") },
+                                color = if (isFollowers) MaterialTheme.colorScheme.primaryContainer else MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.3f),
+                                shape = RoundedCornerShape(16.dp),
+                                border = BorderStroke(1.5.dp, if (isFollowers) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.outlineVariant.copy(alpha = 0.4f))
+                            ) {
+                                Row(modifier = Modifier.padding(12.dp), verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+                                    Icon(Icons.Default.People, contentDescription = null, tint = if (isFollowers) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.onSurfaceVariant)
+                                    Column {
+                                        Text("Bạn bè", style = MaterialTheme.typography.labelLarge.copy(fontWeight = FontWeight.Bold))
+                                        Text("Người theo dõi", style = MaterialTheme.typography.labelSmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
+                                    }
                                 }
-                                onBack()
-                            } catch (e: Exception) {
-                                e.printStackTrace()
-                                isPosting = false
                             }
                         }
-                    },
-                    modifier =
-                        Modifier
-                            .fillMaxWidth()
-                            .height(AppDimens.buttonHeight),
-                    shape = AppShapes.full,
-                    colors =
-                        ButtonDefaults.buttonColors(
-                            containerColor = MaterialTheme.colorScheme.primary,
-                            contentColor = MaterialTheme.colorScheme.onPrimary,
-                        ),
-                    enabled = restaurantName.isNotBlank() && caption.isNotBlank() && !isPosting,
-                ) {
-                    if (isPosting) {
-                        CircularProgressIndicator(modifier = Modifier.size(24.dp), strokeWidth = 2.5.dp, color = MaterialTheme.colorScheme.onPrimary)
+                    }
+
+                    Spacer(modifier = Modifier.height(16.dp))
+
+                    // Chống click spam khi đang tải lên đám mây
+                    if (uiState is CreatePostUiState.Loading) {
+                        Box(modifier = Modifier.fillMaxWidth(), contentAlignment = Alignment.Center) {
+                            CircularProgressIndicator(color = MaterialTheme.colorScheme.primary)
+                        }
                     } else {
-                        Text(
-                            if (existingPost != null) "Cập nhật bài viết" else "Đăng bài viết",
-                            style = MaterialTheme.typography.titleMedium.copy(fontWeight = FontWeight.Bold),
+                        AppButton(
+                            text = if (postId.isNullOrBlank()) "Đăng bài viết" else "Cập nhật bài viết",
+                            onClick = { viewModel.submitPost() },
+                            enabled = isFormValid,
+                            modifier = Modifier.fillMaxWidth()
                         )
                     }
                 }
             }
+
+            // Đưa SnackbarHost ra làm bộ hiển thị overlay ở đáy màn hình
+            SnackbarHost(
+                hostState = snackbarHostState,
+                modifier = Modifier.align(Alignment.BottomCenter).padding(bottom = 16.dp)
+            )
         }
     }
 }

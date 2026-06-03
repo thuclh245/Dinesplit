@@ -351,4 +351,34 @@ class FirebaseFeedRepository(
             }
         }
     }
+        private fun DocumentSnapshot.toPost(): Post? {
+        if (!exists()) return null
+        val postId = getString("id")?.takeIf { it.isNotBlank() } ?: id
+        val userId = getString("userId") ?: return null
+        val userName = getString("userName") ?: return null
+        val mainImageUrl = getString("mainImageUrl") ?: return null
+        val caption = getString("caption") ?: ""
+        val dinersCount = getLong("dinersCount")?.toInt() ?: 0
+        val likesCount = getLong("likesCount")?.toInt() ?: 0
+        val commentsCount = getLong("commentsCount")?.toInt() ?: 0
+        val shareAmount = getDouble("shareAmount") ?: getLong("shareAmount")?.toDouble() ?: 0.0
+        val createdAt = getLong("createdAt") ?: 0L
+        val userAvatarUrl = getString("userAvatarUrl")
+        val location = getString("location")
+
+        return Post(
+            id = postId,
+            userId = userId,
+            userName = userName,
+            userAvatarUrl = userAvatarUrl,
+            location = location,
+            mainImageUrl = mainImageUrl,
+            dinersCount = dinersCount,
+            likesCount = likesCount,
+            commentsCount = commentsCount,
+            caption = caption,
+            shareAmount = shareAmount,
+            createdAt = createdAt
+        )
+    }
 }
