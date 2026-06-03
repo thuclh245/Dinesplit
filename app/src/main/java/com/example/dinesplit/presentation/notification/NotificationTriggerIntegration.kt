@@ -11,12 +11,12 @@ import kotlinx.coroutines.GlobalScope
 import kotlinx.coroutines.launch
 
 /**
- * Helper object to dispatch notification triggers from Feed / Split modules.
- * Call these when events happen in feed (like/comment) or split (payment/bill).
+ * Đối tượng trợ giúp để gửi các kích hoạt thông báo từ các mô-đun Feed / Split.
+ * Gọi những cái này khi sự kiện xảy ra trong feed (like/comment) hoặc split (payment/bill).
  *
- * Usage from Feed module when user likes a post:
+ * Cách sử dụng từ mô-đun Feed khi người dùng thích một bài đăng:
  *   NotificationTriggerIntegration.triggerFeedNotification(
- *       context = this,  // from Activity or Fragment
+ *       context = this,  // từ Activity hoặc Fragment
  *       trigger = FeedNotificationTrigger(...),
  *       userId = recipientUserId
  *   )

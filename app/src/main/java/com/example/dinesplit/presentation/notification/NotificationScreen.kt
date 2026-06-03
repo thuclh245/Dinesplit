@@ -498,10 +498,10 @@ private fun NotificationItemCard(
                                     Icons.Default.MarkEmailRead
                                 },
                                 contentDescription = if (notification.isRead) {
-                                    "Mark notification as unread"
-                                } else {
-                                    "Mark notification as read"
-                                },
+                                     "Đánh dấu thông báo là chưa đọc"
+                                 } else {
+                                     "Đánh dấu thông báo là đã đọc"
+                                 },
                                 tint = MaterialTheme.colorScheme.onSurfaceVariant
                             )
                         }

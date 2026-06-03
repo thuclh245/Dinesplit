@@ -82,7 +82,7 @@ class PersonalViewModel(application: Application) : AndroidViewModel(application
                 repository.insertTransaction(preparedTransaction)
                 
                  // Kích hoạt thông báo cho giao dịch được thêm
-                val notification = NotificationFactory.transactionAdded(
+                 val notification = NotificationFactory.transactionAdded(
                     amount = preparedTransaction.amount,
                     categoryName = preparedTransaction.category,
                     type = preparedTransaction.type,
@@ -173,8 +173,8 @@ class PersonalViewModel(application: Application) : AndroidViewModel(application
                     )
                 )
 
-                // Kích hoạt thông báo cho danh mục được tạo
-                val notification = NotificationFactory.categoryCreated(
+                 // Kích hoạt thông báo cho danh mục được tạo
+                 val notification = NotificationFactory.categoryCreated(
                     categoryName = name,
                     type = type,
                     userId = currentUserId()
@@ -196,16 +196,16 @@ class PersonalViewModel(application: Application) : AndroidViewModel(application
         isCustom: Boolean,
         isActive: Boolean
     ) {
-        viewModelScope.launch(Dispatchers.IO) {
-            _uiState.value = _uiState.value.copy(isSaving = true, errorMessage = null)
-            runCatching {
-                val existing = _categories.value.firstOrNull { it.id == categoryId } ?: return@runCatching
+         viewModelScope.launch(Dispatchers.IO) {
+             _uiState.value = _uiState.value.copy(isSaving = true, errorMessage = null)
+              runCatching {
+                  val existing = _categories.value.firstOrNull { it.id == categoryId } ?: return@runCatching
 
-                // Kiểm tra nếu loại thay đổi (CHI TIÊU <-> THU NHẬP)
-                val typeChanged = existing.type != type
+                  // Kiểm tra nếu loại thay đổi (CHI TIÊU <-> THU NHẬP)
+                  val typeChanged = existing.type != type
 
-                // Cập nhật danh mục
-                repository.updateCategory(
+                  // Cập nhật danh mục
+                  repository.updateCategory(
                     existing.copy(
                         name = name.trim(),
                         icon = iconCodeForName(name),
@@ -214,21 +214,21 @@ class PersonalViewModel(application: Application) : AndroidViewModel(application
                         description = description.trim(),
                         isActive = isActive
                     )
-                )
-                
-                // Nếu loại thay đổi, cập nhật tất cả giao dịch với danh mục này
-                if (typeChanged) {
+                  )
+
+                  // Nếu loại thay đổi, cập nhật tất cả giao dịch với danh mục này
+                  if (typeChanged) {
                     val allTransactions = repository.getAllTransactions()
                     val transactionsToUpdate = allTransactions.filter { it.categoryId == categoryId }
                     transactionsToUpdate.forEach { transaction ->
                         repository.updateTransaction(
                             transaction.copy(type = type)
                         )
-                    }
-                }
+                     }
+                  }
 
-                // Luôn làm mới hoàn toàn sau khi cập nhật danh mục (cho dù loại thay đổi hay không)
-                refreshStateInternal(showLoading = false)
+                  // Luôn làm mới hoàn toàn sau khi cập nhật danh mục (dù loại có thay đổi hay không)
+                  refreshStateInternal(showLoading = false)
             }.onFailure { throwable ->
                 setError(throwable)
             }
@@ -285,8 +285,8 @@ class PersonalViewModel(application: Application) : AndroidViewModel(application
                     )
                 )
 
-                // Kích hoạt thông báo cho nhắc nhở được tạo
-                val notification = NotificationFactory.reminderCreated(
+                 // Kích hoạt thông báo cho lời nhắc được tạo
+                 val notification = NotificationFactory.reminderCreated(
                     categoryName = categoryName,
                     budgetAmount = budgetAmount,
                     userId = currentUserId()
@@ -472,19 +472,19 @@ class PersonalViewModel(application: Application) : AndroidViewModel(application
                 setError(throwable)
             }
         }
-    }
-
-    // Làm mới nhẹ cho các cập nhật danh mục (tránh tải lại giao dịch đầy đủ)
-    private suspend fun refreshCategoriesOnly() {
+     }
+ 
+      // Làm mới nhẹ để cập nhật danh mục (tránh tải lại toàn bộ giao dịch)
+      private suspend fun refreshCategoriesOnly() {
         runCatching {
             val categories = repository.getCategories()
             _categories.value = categories
             _categoryNamesByType.value = categories
                 .groupBy { it.type }
-                .mapValues { (_, items) -> items.map { it.name }.sorted() }
+                 .mapValues { (_, items) -> items.map { it.name }.sorted() }
 
-            // Cập nhật trạng thái UI mà không tải lại giao dịch
-            _uiState.value = buildUiState(
+              // Cập nhật trạng thái UI mà không tải lại giao dịch
+              _uiState.value = buildUiState(
                 transactions = _transactions.value,
                 categories = categories
             )
@@ -503,38 +503,38 @@ class PersonalViewModel(application: Application) : AndroidViewModel(application
         }
 
         runCatching {
-            val categories = repository.getCategories()
-            val recurringRules = repository.getRecurringRules()
-            val goals = repository.getGoals()
-            val wallets = repository.getWallets()
-            val allTransactions = repository.getAllTransactions()
-            
-            // Tối ưu hóa bộ nhớ: Tải giao dịch tháng hiện tại trước
-            // Chỉ tải tất cả giao dịch khi cần thiết (cho nhắc nhở)
-            val monthFilter = currentMonthFilter.value
-            val filteredTransactions = if (monthFilter != null) {
-                // Tải chỉ giao dịch tháng cụ thể để lọc
-                filterTransactions(
-                    transactions = allTransactions,
-                    monthFilter = monthFilter
-                )
-                    .take(500)  // Giới hạn ở 500 gần đây nhất trong tháng này
-            } else {
-                // Nếu không có bộ lọc tháng, chỉ tải tháng hiện tại
-                val calendar = Calendar.getInstance()
-                val currentMonth = calendar.get(Calendar.MONTH) + 1
-                val currentYear = calendar.get(Calendar.YEAR)
+             val categories = repository.getCategories()
+             val recurringRules = repository.getRecurringRules()
+             val goals = repository.getGoals()
+             val wallets = repository.getWallets()
+              val allTransactions = repository.getAllTransactions()
 
-                allTransactions.filter { transaction ->
-                    val txnCalendar = Calendar.getInstance().apply {
-                        timeInMillis = transaction.date
-                    }
-                    txnCalendar.get(Calendar.MONTH) + 1 == currentMonth &&
-                    txnCalendar.get(Calendar.YEAR) == currentYear
-                }
-                    .take(500)  // Giới hạn ở 500 gần đây nhất
-            }
-            val upcomingRecurringExpense = recurringRules
+              // Tối ưu hóa bộ nhớ: Tải giao dịch tháng hiện tại trước
+              // Chỉ tải tất cả giao dịch khi cần thiết (cho lời nhắc)
+              val monthFilter = currentMonthFilter.value
+              val filteredTransactions = if (monthFilter != null) {
+                  // Tải chỉ giao dịch cho tháng cụ thể để lọc
+                  filterTransactions(
+                     transactions = allTransactions,
+                      monthFilter = monthFilter
+                  )
+                      .take(500)  // Giới hạn đến 500 giao dịch gần nhất trong tháng này
+              } else {
+                  // Nếu không có bộ lọc tháng, chỉ tải tháng hiện tại
+                  val calendar = Calendar.getInstance()
+                 val currentMonth = calendar.get(Calendar.MONTH) + 1
+                 val currentYear = calendar.get(Calendar.YEAR)
+
+                 allTransactions.filter { transaction ->
+                     val txnCalendar = Calendar.getInstance().apply {
+                         timeInMillis = transaction.date
+                     }
+                     txnCalendar.get(Calendar.MONTH) + 1 == currentMonth &&
+                     txnCalendar.get(Calendar.YEAR) == currentYear
+                  }
+                      .take(500)  // Giới hạn đến 500 giao dịch gần nhất
+             }
+             val upcomingRecurringExpense = recurringRules
                 .filter { it.isEnabled && it.type == TransactionType.EXPENSE }
                 .sumOf { it.amount }
             val savingsGoal = goals
@@ -568,10 +568,10 @@ class PersonalViewModel(application: Application) : AndroidViewModel(application
                 recurringRules = recurringRules,
                 goals = goals,
                 wallets = wallets
-            )
-            
-            // Tải tất cả giao dịch không đồng bộ cho nhắc nhở (nền)
-            viewModelScope.launch(Dispatchers.IO) {
+             )
+
+             // Tải tất cả giao dịch không đồng bộ cho lời nhắc (nền)
+             viewModelScope.launch(Dispatchers.IO) {
                 syncSpendingReminders(allTransactions)
             }
         }.onFailure { throwable ->

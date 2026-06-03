@@ -219,7 +219,7 @@ fun AddEditTransactionScreen(
                             FilterChip(
                                 selected = input.type == type,
                                 onClick = { input = input.copy(type = type, categoryId = "", categoryName = "") },
-                                label = { Text(type.name.lowercase().replaceFirstChar { it.uppercase() }) },
+                                label = { Text(type.displayLabel()) },
                                 modifier = Modifier.weight(1f)
                             )
                         }
@@ -299,7 +299,7 @@ fun AddEditTransactionScreen(
                      verticalAlignment = Alignment.CenterVertically
                  ) {
                      Text(
-                         text = "Ngày: ${SimpleDateFormat("dd MMM yyyy", Locale.getDefault()).format(Date(input.dateMillis))}",
+                         text = "Ngày: ${SimpleDateFormat("dd MMM yyyy", Locale("vi", "VN")).format(Date(input.dateMillis))}",
                          style = MaterialTheme.typography.bodyMedium
                      )
                      IconButton(onClick = { showDatePicker = true }) {
@@ -314,14 +314,14 @@ fun AddEditTransactionScreen(
                  DatePickerDialog(
                      onDismissRequest = { showDatePicker = false },
                      confirmButton = {
-                         TextButton(onClick = {
-                             datePickerState.selectedDateMillis?.let { selectedDate ->
-                                 input = input.copy(dateMillis = selectedDate)
-                             }
-                             showDatePicker = false
-                         }) {
-                             Text("OK")
-                         }
+                          TextButton(onClick = {
+                              datePickerState.selectedDateMillis?.let { selectedDate ->
+                                  input = input.copy(dateMillis = selectedDate)
+                              }
+                              showDatePicker = false
+                          }) {
+                              Text("Xác Nhận")
+                          }
                      },
                      dismissButton = {
                          TextButton(onClick = { showDatePicker = false }) {
@@ -451,7 +451,7 @@ fun AddEditTransactionScreen(
                         validationError = null
                         onSave(transaction)
                     } catch (e: Exception) {
-                        validationError = e.message ?: "Invalid input"
+                        validationError = e.message ?: "Dữ liệu không hợp lệ"
                     }
                 },
                 modifier = Modifier.fillMaxWidth()

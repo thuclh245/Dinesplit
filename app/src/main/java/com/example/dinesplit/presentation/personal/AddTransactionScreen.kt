@@ -390,7 +390,7 @@ private fun CategoryTileButton(
 }
 
 private fun currentDateLabel(currentDateMillis: Long): String {
-    val formatter = SimpleDateFormat("EEE, dd MMM", Locale.getDefault())
+    val formatter = SimpleDateFormat("EEE, dd MMM", Locale("vi", "VN"))
     return formatter.format(Date(currentDateMillis))
 }
 

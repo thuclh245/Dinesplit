@@ -35,7 +35,7 @@ fun PersonalDailyExpenseBarChart(
             contentAlignment = Alignment.Center
         ) {
             Text(
-                text = "No daily expense data",
+                text = "Không có dữ liệu chi tiêu hàng ngày",
                 style = MaterialTheme.typography.bodyMedium,
                 color = MaterialTheme.colorScheme.onSurfaceVariant
             )
@@ -84,7 +84,7 @@ fun PersonalDailyExpenseBarChart(
         }
 
         Text(
-            text = "Day of month",
+            text = "Ngày trong tháng",
             style = MaterialTheme.typography.bodySmall,
             color = MaterialTheme.colorScheme.onSurfaceVariant
         )

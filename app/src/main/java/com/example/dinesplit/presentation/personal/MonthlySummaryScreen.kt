@@ -42,8 +42,8 @@ import java.util.Calendar
 import java.util.Locale
 
 /**
- * Monthly summary screen showing income, expense, and balance for a specific month.
- * Part of week 2 deliverables.
+ * Màn hình tóm tắt hàng tháng hiển thị thu nhập, chi tiêu và số dư cho một tháng cụ thể.
+ * Một phần của các kết quả giao hàng tuần 2.
  */
 @Composable
 fun MonthlySummaryScreen(
@@ -53,7 +53,7 @@ fun MonthlySummaryScreen(
     month: Int = Calendar.getInstance().get(Calendar.MONTH) + 1,
     year: Int = Calendar.getInstance().get(Calendar.YEAR)
 ) {
-    val monthName = SimpleDateFormat("MMMM", Locale.getDefault()).format(
+    val monthName = SimpleDateFormat("MMMM", Locale("vi", "VN")).format(
         Calendar.getInstance().apply {
             set(Calendar.MONTH, month - 1)
             set(Calendar.YEAR, year)

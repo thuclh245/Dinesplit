@@ -68,7 +68,7 @@ class FirebaseNotificationRepository private constructor(
 
     private fun requireCurrentUserId(): String {
         return FirebaseProviders.auth.currentUser?.uid
-            ?: throw IllegalStateException("Please sign in to use notifications")
+            ?: throw IllegalStateException("Vui lòng đăng nhập để sử dụng thông báo")
     }
 
     private fun com.google.firebase.firestore.DocumentSnapshot.toNotification(uid: String): Notification? {
@@ -114,7 +114,7 @@ class FirebaseNotificationRepository private constructor(
                     continuation.resume(task.result)
                 } else {
                     continuation.resumeWithException(
-                        task.exception ?: IllegalStateException("Firebase task failed")
+                        task.exception ?: IllegalStateException("Tác vụ Firebase thất bại")
                     )
                 }
             }

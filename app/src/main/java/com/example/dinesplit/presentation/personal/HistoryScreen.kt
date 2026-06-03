@@ -226,8 +226,8 @@ fun HistoryScreen(
 private fun historyGroupLabel(item: HistoryTransactionItem): String {
     val dateLower = item.date.lowercase()
     return when {
-        dateLower.contains("today") -> "TODAY"
-        dateLower.contains("yesterday") -> "YESTERDAY"
+        dateLower.contains("today") -> "HÔM NAY"
+        dateLower.contains("yesterday") -> "HÔM QUA"
         else -> item.month.uppercase()
     }
 }
@@ -286,25 +286,25 @@ private fun HistoryTransactionRow(
             )
         }
 
-        Column(horizontalAlignment = Alignment.End) {
-            Text(
-                text = item.amount,
-                style = MaterialTheme.typography.titleLarge,
-                color = if (item.type == TransactionType.INCOME) {
-                    MaterialTheme.colorScheme.primary
-                } else {
-                    MaterialTheme.colorScheme.onSurface
-                }
-            )
-            Text(
-                text = if (item.type == TransactionType.INCOME) "RECEIVED" else "PERSONAL",
-                style = MaterialTheme.typography.labelSmall,
-                color = if (item.type == TransactionType.INCOME) {
-                    MaterialTheme.colorScheme.secondary
-                } else {
-                    MaterialTheme.colorScheme.outline
-                }
-            )
+         Column(horizontalAlignment = Alignment.End) {
+             Text(
+                 text = item.amount,
+                 style = MaterialTheme.typography.titleLarge,
+                 color = if (item.type == TransactionType.INCOME) {
+                     MaterialTheme.colorScheme.primary
+                 } else {
+                     MaterialTheme.colorScheme.onSurface
+                 }
+             )
+             Text(
+                 text = if (item.type == TransactionType.INCOME) "ĐÃ NHẬN" else "CÁ NHÂN",
+                 style = MaterialTheme.typography.labelSmall,
+                 color = if (item.type == TransactionType.INCOME) {
+                     MaterialTheme.colorScheme.secondary
+                 } else {
+                     MaterialTheme.colorScheme.outline
+                 }
+             )
         }
     }
 }

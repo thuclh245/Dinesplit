@@ -14,25 +14,25 @@ sealed class BottomTab(
 ) {
     data object Feed : BottomTab(
         route = AppRoute.Feed.route,
-        label = "Feed",
+        label = "Bảng tin",
         icon = Icons.AutoMirrored.Outlined.ReceiptLong
     )
 
     data object Split : BottomTab(
         route = AppRoute.Split.route,
-        label = "Split",
+        label = "Chia tiền",
         icon = Icons.AutoMirrored.Outlined.CallSplit
     )
 
     data object Personal : BottomTab(
         route = AppRoute.Personal.route,
-        label = "Personal",
+        label = "Cá nhân",
         icon = Icons.Outlined.AccountBalanceWallet
     )
 
     data object Profile : BottomTab(
         route = AppRoute.Profile.route,
-        label = "Profile",
+        label = "Hồ sơ",
         icon = Icons.Outlined.Person
     )
 

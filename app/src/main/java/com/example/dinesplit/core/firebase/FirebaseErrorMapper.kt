@@ -12,37 +12,37 @@ import java.io.IOException
 object FirebaseErrorMapper {
     fun toUserMessage(throwable: Throwable): String {
         return when (throwable) {
-            is UsernameAlreadyExistsException -> "Username already exists"
-            is FirebaseAuthUserCollisionException -> "Email already registered"
-            is FirebaseAuthWeakPasswordException -> "Password is too weak"
-            is FirebaseAuthInvalidUserException -> "Account not found"
-            is FirebaseAuthInvalidCredentialsException -> "Invalid email or password"
+            is UsernameAlreadyExistsException -> "Tên người dùng đã tồn tại"
+            is FirebaseAuthUserCollisionException -> "Email đã được đăng ký"
+            is FirebaseAuthWeakPasswordException -> "Mật khẩu quá yếu"
+            is FirebaseAuthInvalidUserException -> "Không tìm thấy tài khoản"
+            is FirebaseAuthInvalidCredentialsException -> "Email hoặc mật khẩu không hợp lệ"
             is FirebaseAuthException -> mapAuthCode(throwable.errorCode)
             is FirebaseFirestoreException -> mapFirestoreCode(throwable.code)
-            is IOException -> "No internet connection"
-            else -> throwable.message?.takeIf { it.isNotBlank() } ?: "Firebase temporarily unavailable"
+            is IOException -> "Không có kết nối internet"
+            else -> throwable.message?.takeIf { it.isNotBlank() } ?: "Firebase tạm thời không khả dụng"
         }
     }
 
     private fun mapAuthCode(errorCode: String): String {
         return when (errorCode) {
-            "ERROR_USER_DISABLED" -> "This account is disabled"
-            "ERROR_WRONG_PASSWORD" -> "Invalid email or password"
-            "ERROR_USER_NOT_FOUND" -> "Account not found"
-            else -> "Authentication failed"
+            "ERROR_USER_DISABLED" -> "Tài khoản này đã bị vô hiệu hóa"
+            "ERROR_WRONG_PASSWORD" -> "Email hoặc mật khẩu không hợp lệ"
+            "ERROR_USER_NOT_FOUND" -> "Không tìm thấy tài khoản"
+            else -> "Xác thực thất bại"
         }
     }
 
     private fun mapFirestoreCode(code: FirebaseFirestoreException.Code): String {
         return when (code) {
-            FirebaseFirestoreException.Code.PERMISSION_DENIED -> "Permission denied"
-            FirebaseFirestoreException.Code.UNAUTHENTICATED -> "Authentication failed"
+            FirebaseFirestoreException.Code.PERMISSION_DENIED -> "Bạn không có quyền thực hiện thao tác này"
+            FirebaseFirestoreException.Code.UNAUTHENTICATED -> "Vui lòng đăng nhập lại"
             FirebaseFirestoreException.Code.UNAVAILABLE,
             FirebaseFirestoreException.Code.DEADLINE_EXCEEDED,
-            FirebaseFirestoreException.Code.ABORTED -> "Firebase temporarily unavailable"
-            FirebaseFirestoreException.Code.INVALID_ARGUMENT -> "Invalid data"
-            FirebaseFirestoreException.Code.NOT_FOUND -> "Data not found"
-            else -> "Unable to save profile"
+            FirebaseFirestoreException.Code.ABORTED -> "Firebase tạm thời không khả dụng"
+            FirebaseFirestoreException.Code.INVALID_ARGUMENT -> "Dữ liệu không hợp lệ"
+            FirebaseFirestoreException.Code.NOT_FOUND -> "Không tìm thấy dữ liệu"
+            else -> "Không thể lưu dữ liệu"
         }
     }
 }

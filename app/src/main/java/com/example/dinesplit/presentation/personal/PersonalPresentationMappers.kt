@@ -84,9 +84,9 @@ private fun formatPersonalMoney(amount: Double): String {
 }
 
 private fun formatHistoryDate(epochMillis: Long): String {
-    return SimpleDateFormat("dd MMM yyyy", Locale.getDefault()).format(Date(epochMillis))
+    return SimpleDateFormat("dd MMM yyyy", Locale("vi", "VN")).format(Date(epochMillis))
 }
 
 private fun formatHistoryMonth(epochMillis: Long): String {
-    return SimpleDateFormat("MMMM yyyy", Locale.getDefault()).format(Date(epochMillis))
+    return SimpleDateFormat("MMMM yyyy", Locale("vi", "VN")).format(Date(epochMillis))
 }

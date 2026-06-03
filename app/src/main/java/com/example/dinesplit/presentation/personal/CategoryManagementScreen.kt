@@ -506,51 +506,51 @@ private fun CategoryEditorDialog(
 }
 
 private fun previewManagedCategories(): List<ManagedCategory> {
-    return listOf(
-        ManagedCategory(
-            id = "c_food",
-            name = "Dining Out",
-            icon = "FD",
-            type = CategoryTypeFilter.EXPENSE,
-            isCustom = false,
-            description = "Restaurants, cafes, and delivery.",
-            amountLabel = "1,450,000 VND",
-            progress = 0.65f,
-            isActive = true
-        ),
-        ManagedCategory(
-            id = "c_grocery",
-            name = "Groceries",
-            icon = "GR",
-            type = CategoryTypeFilter.EXPENSE,
-            isCustom = false,
-            description = "Supermarkets and local markets.",
-            amountLabel = "820,000 VND",
-            progress = 0.40f,
-            isActive = false
-        ),
-        ManagedCategory(
-            id = "c_transit",
-            name = "Transit",
-            icon = "TR",
-            type = CategoryTypeFilter.EXPENSE,
-            isCustom = false,
-            description = "Rideshares and public transport.",
-            amountLabel = "340,000 VND",
-            progress = 0.0f,
-            isActive = false
-        ),
-        ManagedCategory(
-            id = "c_salary",
-            name = "Salary",
-            icon = "SL",
-            type = CategoryTypeFilter.INCOME,
-            isCustom = false,
-            description = "Monthly fixed salary income.",
-            amountLabel = "3,500,000 VND",
-            progress = 0.72f,
-            isActive = true
-        )
+     return listOf(
+         ManagedCategory(
+             id = "c_food",
+             name = "Ăn Ngoài",
+             icon = "FD",
+             type = CategoryTypeFilter.EXPENSE,
+             isCustom = false,
+             description = "Nhà hàng, quán cà phê và giao hàng.",
+             amountLabel = "1,450,000 VND",
+             progress = 0.65f,
+             isActive = true
+         ),
+         ManagedCategory(
+             id = "c_grocery",
+             name = "Tạp Hóa",
+             icon = "GR",
+             type = CategoryTypeFilter.EXPENSE,
+             isCustom = false,
+             description = "Siêu thị và chợ địa phương.",
+             amountLabel = "820,000 VND",
+             progress = 0.40f,
+             isActive = false
+         ),
+         ManagedCategory(
+             id = "c_transit",
+             name = "Giao Thông",
+             icon = "TR",
+             type = CategoryTypeFilter.EXPENSE,
+             isCustom = false,
+             description = "Rideshare và giao thông công cộng.",
+             amountLabel = "340,000 VND",
+             progress = 0.0f,
+             isActive = false
+         ),
+         ManagedCategory(
+             id = "c_salary",
+             name = "Lương",
+             icon = "SL",
+             type = CategoryTypeFilter.INCOME,
+             isCustom = false,
+             description = "Lương cố định hàng tháng.",
+             amountLabel = "3,500,000 VND",
+             progress = 0.72f,
+             isActive = true
+         )
     )
 }
 

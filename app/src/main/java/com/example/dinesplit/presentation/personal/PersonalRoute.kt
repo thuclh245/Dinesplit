@@ -1,5 +1,5 @@
 package com.example.dinesplit.presentation.personal
 
-// Deprecated: Use PersonalScreen directly from MainContainerScreen instead
-// PersonalRoute was used for standalone testing but is no longer needed
+// Không dùng nữa: Sử dụng PersonalScreen trực tiếp từ MainContainerScreen thay vào đó
+// PersonalRoute được sử dụng để kiểm tra độc lập nhưng không còn cần thiết
 

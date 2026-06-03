@@ -60,7 +60,7 @@ fun TransactionDetailScreen(
                             }
                         )
                         Text(
-                             text = "Loại: ${transaction.type.name.lowercase().replaceFirstChar { it.uppercase() }}",
+                             text = "Loại: ${transaction.type.displayLabel()}",
                              style = MaterialTheme.typography.bodyMedium,
                              color = MaterialTheme.colorScheme.onSurfaceVariant
                          )
@@ -94,7 +94,7 @@ private fun formatDetailAmount(transaction: Transaction): String {
 }
 
 private fun formatDateTime(epochMillis: Long): String {
-    val formatter = SimpleDateFormat("dd MMM yyyy, hh:mm a", Locale.getDefault())
+    val formatter = SimpleDateFormat("dd MMM yyyy, HH:mm", Locale("vi", "VN"))
     return formatter.format(Date(epochMillis))
 }
 
@@ -102,20 +102,20 @@ private fun formatDateTime(epochMillis: Long): String {
 @Composable
 private fun TransactionDetailScreenPreview() {
     DineSplitTheme {
-        TransactionDetailScreen(
-            transactionId = "tx_1",
-            transaction = Transaction(
-                id = "tx_1",
-                userId = "user_1",
-                amount = 525000.0,
-                type = TransactionType.EXPENSE,
-                categoryId = "c_food",
-                category = "Dining Out",
-                note = "Dinner with team",
-                date = System.currentTimeMillis(),
-                createdAt = System.currentTimeMillis()
-            ),
-            onBack = {}
+         TransactionDetailScreen(
+             transactionId = "tx_1",
+             transaction = Transaction(
+                 id = "tx_1",
+                 userId = "user_1",
+                 amount = 525000.0,
+                 type = TransactionType.EXPENSE,
+                 categoryId = "c_food",
+                 category = "Ăn Ngoài",
+                 note = "Bữa tối cùng đội",
+                 date = System.currentTimeMillis(),
+                 createdAt = System.currentTimeMillis()
+             ),
+             onBack = {}
         )
     }
 }

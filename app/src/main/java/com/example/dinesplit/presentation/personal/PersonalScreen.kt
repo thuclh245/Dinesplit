@@ -123,7 +123,7 @@ fun PersonalScreen(
     }
     val prioritySignals = remember(anomalySignals) {
         anomalySignals
-            .filter { it.tone != AdvancedSignalTone.POSITIVE && it.metric != "Idle" }
+            .filter { it.tone != AdvancedSignalTone.POSITIVE && it.metric != "Chờ" }
             .take(3)
     }
     val autopilotActions = remember(
@@ -358,7 +358,7 @@ private fun MonthlyCommandCard(
                         )
                         HeroSticker(
                             icon = Icons.Default.Savings,
-                            label = forecast.status.name.lowercase().replaceFirstChar { it.uppercase() },
+                            label = forecast.status.displayLabel(),
                             contentColor = onAccent
                         )
                     }
@@ -513,7 +513,7 @@ private fun MonthRunwayBar(
                 color = contentColor.copy(alpha = 0.78f)
             )
             Text(
-                text = "Runway tháng",
+                text = "Thời gian trong tháng",
                 style = MaterialTheme.typography.labelSmall,
                 color = contentColor.copy(alpha = 0.78f)
             )
@@ -554,7 +554,7 @@ private fun PersonalSignalGrid(
             SignalTile(
                 modifier = Modifier.weight(1f),
                 icon = Icons.Default.Savings,
-                label = "Runway",
+                label = "Thời gian còn",
                 value = formatMoney(forecast.dailyAmount),
                 subtitle = "${forecast.daysLeft} ngày còn lại",
                 color = forecastStatusColor(forecast.status)
@@ -1081,7 +1081,7 @@ private fun formatMoney(amount: Double): String {
 }
 
 private fun formatDate(epochMillis: Long): String {
-    val formatter = SimpleDateFormat("dd MMM yyyy", Locale.getDefault())
+    val formatter = SimpleDateFormat("dd MMM yyyy", Locale("vi", "VN"))
     return formatter.format(Date(epochMillis))
 }
 
@@ -1249,7 +1249,7 @@ private fun buildAnomalySignals(
             AnomalySignal(
              title = "Chưa có bất thường",
                  message = "Thêm chi tiêu để radar so sánh các ngoại lệ, tốc độ và tác động chia tách.",
-                 metric = "Idle",  // Keep as is for UI consistency
+                metric = "Chờ",
                  tone = AdvancedSignalTone.INFO,
                  actionLabel = "Mở sổ cái",
                  target = PersonalActionTarget.HISTORY
@@ -1319,7 +1319,7 @@ private fun buildAnomalySignals(
         signals += AnomalySignal(
             title = "Ba ngày tăng",
             message = "Chi tiêu hàng ngày của bạn tăng ba ngày liên tiếp.",
-            metric = "3d",
+            metric = "3 ngày",
             tone = AdvancedSignalTone.DANGER,
             actionLabel = "Đặt rào cản",
             target = PersonalActionTarget.REMINDERS
@@ -1331,7 +1331,7 @@ private fun buildAnomalySignals(
             AnomalySignal(
                 title = "Radar sạch",
                 message = "Không phát hiện tín hiệu ngoại lệ, tập trung hoặc dáy tăng tháng này.",
-                metric = "OK",
+                metric = "Ổn",
                 tone = AdvancedSignalTone.POSITIVE,
                 actionLabel = "Mở sổ cái",
                 target = PersonalActionTarget.HISTORY
@@ -1357,7 +1357,7 @@ private fun buildAutopilotActions(
         actions += AutopilotAction(
             title = "Chạy tháng phòng thủ",
             message = "Nhóm điểm của bạn gợi ý sử dụng nhắc nhở chặt chẽ hơn trước khi thêm kế hoạch.",
-            priority = "High",
+            priority = "Cao",
             tone = AdvancedSignalTone.DANGER,
             actionLabel = "Mở nhắc nhở",
             target = PersonalActionTarget.REMINDERS
@@ -1368,7 +1368,7 @@ private fun buildAutopilotActions(
         actions += AutopilotAction(
             title = "Bảo vệ ${topCategory.category}",
             message = "Tạo nhắc nhở chi tiêu cho danh mục hiện đang dẫn đầu chi tiêu của bạn.",
-            priority = "High",
+            priority = "Cao",
             tone = AdvancedSignalTone.WARNING,
             actionLabel = "Tạo bảo vệ",
             target = PersonalActionTarget.REMINDERS
@@ -1379,7 +1379,7 @@ private fun buildAutopilotActions(
         actions += AutopilotAction(
             title = "Đặt hóa đơn lặp lại",
             message = "Thêm tiền thuê nhà, lương, đăng ký hoặc hóa đơn cố định để cải thiện độ chính xác dự báo.",
-            priority = "Medium",
+            priority = "Trung bình",
             tone = AdvancedSignalTone.INFO,
             actionLabel = "Thêm lặp lại",
             target = PersonalActionTarget.RECURRING_PLANS
@@ -1390,7 +1390,7 @@ private fun buildAutopilotActions(
         actions += AutopilotAction(
             title = "Kiểm toán tác động chia tách",
             message = "Hóa đơn chia tách là một phần lớn của tháng này. Kiểm tra xem tất cả các khoản hoàn tiền có được phản ánh.",
-            priority = "Medium",
+            priority = "Trung bình",
             tone = AdvancedSignalTone.INFO,
             actionLabel = "Xem sổ cái",
             target = PersonalActionTarget.HISTORY
@@ -1402,7 +1402,7 @@ private fun buildAutopilotActions(
         actions += AutopilotAction(
             title = "Tạo mục tiêu cho $goalSubject",
             message = "Đặt mục tiêu xung quanh $goalSubject để điểm phản ứng với kế hoạch bạn thực sự muốn.",
-            priority = "Medium",
+            priority = "Trung bình",
             tone = AdvancedSignalTone.POSITIVE,
             actionLabel = "Tạo mục tiêu",
             target = PersonalActionTarget.GOALS
@@ -1413,7 +1413,7 @@ private fun buildAutopilotActions(
         actions += AutopilotAction(
             title = "Bản đồ phạm vi ví",
             message = "Thêm tiền mặt, ngân hàng, ví điện tử hoặc số dư tín dụng để cải thiện dự báo số dư.",
-            priority = "Low",
+            priority = "Thấp",
             tone = AdvancedSignalTone.INFO,
             actionLabel = "Thêm ví",
             target = PersonalActionTarget.WALLETS

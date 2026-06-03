@@ -299,8 +299,8 @@ private fun PlanCockpitCard(
             PlanMetricPill(
                 modifier = Modifier.fillMaxWidth(),
                 icon = Icons.Default.Flag,
-                label = "Goal progress",
-                value = "${formatMoney(goalCurrent)} of ${formatMoney(goalTarget)}"
+                label = "Tiến độ mục tiêu",
+                value = "${formatMoney(goalCurrent)} của ${formatMoney(goalTarget)}"
             )
         }
     }
@@ -361,61 +361,61 @@ private fun RecurringPlanSection(
     val category = categories.firstOrNull { it.type == type }
 
     PlanSectionCard(
-        icon = Icons.Default.Repeat,
-        title = "Recurring radar",
-        subtitle = "Track fixed bills and income before they hit."
-    ) {
-        TypeChips(selectedType = type, onTypeSelected = { type = it })
-        OutlinedTextField(
-            value = name,
-            onValueChange = { name = it },
-            label = { Text("Name") },
-            singleLine = true,
-            modifier = Modifier.fillMaxWidth()
-        )
-        OutlinedTextField(
-            value = amount,
-            onValueChange = { value -> if (value.all { it.isDigit() }) amount = value },
-            label = { Text("Amount") },
-            singleLine = true,
-            modifier = Modifier.fillMaxWidth()
-        )
-        OutlinedTextField(
-            value = day,
-            onValueChange = { value -> if (value.all { it.isDigit() }) day = value.take(2) },
-            label = { Text("Day of month") },
-            singleLine = true,
-            modifier = Modifier.fillMaxWidth()
-        )
-        PrimaryButton(
-            text = "Add recurring rule",
-            onClick = {
-                val parsedAmount = amount.toDoubleOrNull() ?: 0.0
-                if (name.isNotBlank() && parsedAmount > 0.0 && category != null) {
-                    onAdd(
-                        name,
-                        parsedAmount,
-                        type,
-                        category.id,
-                        category.name,
-                        RecurringCadence.MONTHLY,
-                        day.toIntOrNull() ?: 1
-                    )
-                    name = ""
-                    amount = ""
-                    day = "1"
-                }
-            }
-        )
+         icon = Icons.Default.Repeat,
+         title = "Radar lặp lại",
+         subtitle = "Theo dõi các hóa đơn cố định và thu nhập trước khi chúng được nhập."
+     ) {
+         TypeChips(selectedType = type, onTypeSelected = { type = it })
+         OutlinedTextField(
+             value = name,
+             onValueChange = { name = it },
+             label = { Text("Tên") },
+             singleLine = true,
+             modifier = Modifier.fillMaxWidth()
+         )
+         OutlinedTextField(
+             value = amount,
+             onValueChange = { value -> if (value.all { it.isDigit() }) amount = value },
+             label = { Text("Số tiền") },
+             singleLine = true,
+             modifier = Modifier.fillMaxWidth()
+         )
+         OutlinedTextField(
+             value = day,
+             onValueChange = { value -> if (value.all { it.isDigit() }) day = value.take(2) },
+             label = { Text("Ngày trong tháng") },
+             singleLine = true,
+             modifier = Modifier.fillMaxWidth()
+         )
+         PrimaryButton(
+             text = "Thêm quy tắc lặp lại",
+             onClick = {
+                 val parsedAmount = amount.toDoubleOrNull() ?: 0.0
+                 if (name.isNotBlank() && parsedAmount > 0.0 && category != null) {
+                     onAdd(
+                         name,
+                         parsedAmount,
+                         type,
+                         category.id,
+                         category.name,
+                         RecurringCadence.MONTHLY,
+                         day.toIntOrNull() ?: 1
+                     )
+                     name = ""
+                     amount = ""
+                     day = "1"
+                 }
+             }
+         )
 
-        PlanList(
-            emptyTitle = "No recurring rules yet",
-            items = rules,
-            itemTitle = { it.name },
-            itemSubtitle = { "${it.categoryName} - ${formatMoney(it.amount)} - day ${it.dayOfMonth}" },
-            onDelete = { onDelete(it.id) }
-        )
-    }
+         PlanList(
+             emptyTitle = "Chưa có quy tắc lặp lại nào",
+             items = rules,
+             itemTitle = { it.name },
+             itemSubtitle = { "${it.categoryName} - ${formatMoney(it.amount)} - ngày ${it.dayOfMonth}" },
+             onDelete = { onDelete(it.id) }
+         )
+     }
 }
 
 @Composable
@@ -429,44 +429,44 @@ private fun GoalPlanSection(
     var current by rememberSaveable { mutableStateOf("") }
 
     PlanSectionCard(
-        icon = Icons.Default.Flag,
-        title = "Goals and challenges",
-        subtitle = "Turn budgets into progress you can see."
-    ) {
-        OutlinedTextField(
-            value = title,
-            onValueChange = { title = it },
-            label = { Text("Goal title") },
-            singleLine = true,
-            modifier = Modifier.fillMaxWidth()
-        )
-        OutlinedTextField(
-            value = target,
-            onValueChange = { value -> if (value.all { it.isDigit() }) target = value },
-            label = { Text("Target amount") },
-            singleLine = true,
-            modifier = Modifier.fillMaxWidth()
-        )
-        OutlinedTextField(
-            value = current,
-            onValueChange = { value -> if (value.all { it.isDigit() }) current = value },
-            label = { Text("Current amount") },
-            singleLine = true,
-            modifier = Modifier.fillMaxWidth()
-        )
-        PrimaryButton(
-            text = "Add goal",
-            onClick = {
-                val parsedTarget = target.toDoubleOrNull() ?: 0.0
-                val parsedCurrent = current.toDoubleOrNull() ?: 0.0
-                if (title.isNotBlank() && parsedTarget > 0.0) {
-                    onAdd(title, parsedTarget, parsedCurrent, null)
-                    title = ""
-                    target = ""
-                    current = ""
-                }
-            }
-        )
+         icon = Icons.Default.Flag,
+         title = "Mục tiêu và thử thách",
+         subtitle = "Biến ngân sách thành tiến độ mà bạn có thể nhìn thấy."
+     ) {
+         OutlinedTextField(
+             value = title,
+             onValueChange = { title = it },
+             label = { Text("Tiêu đề mục tiêu") },
+             singleLine = true,
+             modifier = Modifier.fillMaxWidth()
+         )
+         OutlinedTextField(
+             value = target,
+             onValueChange = { value -> if (value.all { it.isDigit() }) target = value },
+             label = { Text("Số tiền mục tiêu") },
+             singleLine = true,
+             modifier = Modifier.fillMaxWidth()
+         )
+         OutlinedTextField(
+             value = current,
+             onValueChange = { value -> if (value.all { it.isDigit() }) current = value },
+             label = { Text("Số tiền hiện tại") },
+             singleLine = true,
+             modifier = Modifier.fillMaxWidth()
+         )
+         PrimaryButton(
+             text = "Thêm mục tiêu",
+             onClick = {
+                 val parsedTarget = target.toDoubleOrNull() ?: 0.0
+                 val parsedCurrent = current.toDoubleOrNull() ?: 0.0
+                 if (title.isNotBlank() && parsedTarget > 0.0) {
+                     onAdd(title, parsedTarget, parsedCurrent, null)
+                     title = ""
+                     target = ""
+                     current = ""
+                 }
+             }
+         )
 
         GoalProgressList(
             goals = goals,
@@ -481,13 +481,13 @@ private fun GoalProgressList(
     onDelete: (String) -> Unit
 ) {
     if (goals.isEmpty()) {
-        Text(
-            text = "No goals yet",
-            style = MaterialTheme.typography.bodyMedium,
-            color = MaterialTheme.colorScheme.onSurfaceVariant
-        )
-        return
-    }
+         Text(
+             text = "Chưa có mục tiêu nào",
+             style = MaterialTheme.typography.bodyMedium,
+             color = MaterialTheme.colorScheme.onSurfaceVariant
+         )
+         return
+     }
 
     Column(verticalArrangement = Arrangement.spacedBy(AppDimens.spaceSm)) {
         goals.forEach { goal ->
@@ -498,41 +498,49 @@ private fun GoalProgressList(
             }
 
             AppCard(contentPadding = PaddingValues(AppDimens.spaceMd)) {
-                Row(
+                Column(
                     modifier = Modifier.fillMaxWidth(),
-                    verticalAlignment = Alignment.CenterVertically,
-                    horizontalArrangement = Arrangement.spacedBy(AppDimens.spaceMd)
+                    verticalArrangement = Arrangement.spacedBy(AppDimens.spaceXs)
                 ) {
-                    Column(
-                        modifier = Modifier.weight(1f),
-                        verticalArrangement = Arrangement.spacedBy(AppDimens.spaceXs)
+                    Row(
+                        modifier = Modifier.fillMaxWidth(),
+                        verticalAlignment = Alignment.CenterVertically,
+                        horizontalArrangement = Arrangement.SpaceBetween
                     ) {
                         Text(
                             text = goal.title,
                             style = MaterialTheme.typography.titleSmall,
                             fontWeight = FontWeight.Bold,
                             maxLines = 1,
-                            overflow = TextOverflow.Ellipsis
+                            overflow = TextOverflow.Ellipsis,
+                            modifier = Modifier.weight(1f)
                         )
-                        LinearProgressIndicator(
-                            progress = { progress },
-                            modifier = Modifier
-                                .fillMaxWidth()
-                                .height(6.dp),
-                            color = MaterialTheme.colorScheme.secondary,
-                            trackColor = MaterialTheme.colorScheme.surfaceVariant
-                        )
-                        Text(
-                            text = "${formatMoney(goal.currentAmount)} of ${formatMoney(goal.targetAmount)} by ${formatDate(goal.deadlineAt)}",
-                            style = MaterialTheme.typography.bodySmall,
-                            color = MaterialTheme.colorScheme.onSurfaceVariant,
-                            maxLines = 1,
-                            overflow = TextOverflow.Ellipsis
-                        )
+                        IconButton(onClick = { onDelete(goal.id) }) {
+                            Icon(Icons.Default.Delete, contentDescription = "Xóa")
+                        }
                     }
-                    IconButton(onClick = { onDelete(goal.id) }) {
-                        Icon(Icons.Default.Delete, contentDescription = "Delete")
-                    }
+                    LinearProgressIndicator(
+                        progress = { progress },
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .height(6.dp),
+                        color = MaterialTheme.colorScheme.secondary,
+                        trackColor = MaterialTheme.colorScheme.surfaceVariant
+                    )
+                    Text(
+                        text = "${formatMoney(goal.currentAmount)} / ${formatMoney(goal.targetAmount)}",
+                        style = MaterialTheme.typography.bodySmall,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant,
+                        maxLines = 1,
+                        overflow = TextOverflow.Ellipsis
+                    )
+                    Text(
+                        text = "Hạn: ${formatDate(goal.deadlineAt)}",
+                        style = MaterialTheme.typography.labelSmall,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant,
+                        maxLines = 1,
+                        overflow = TextOverflow.Ellipsis
+                    )
                 }
             }
         }
@@ -550,53 +558,58 @@ private fun WalletPlanSection(
     var type by rememberSaveable { mutableStateOf(WalletType.CASH) }
 
     PlanSectionCard(
-        icon = Icons.Default.AccountBalanceWallet,
-        title = "Wallets",
-        subtitle = "Separate cash, bank, e-wallet, and credit balances."
-    ) {
-        Row(horizontalArrangement = Arrangement.spacedBy(AppDimens.spaceSm)) {
-            WalletType.entries.forEach { walletType ->
-                FilterChip(
-                    selected = type == walletType,
-                    onClick = { type = walletType },
-                    label = { Text(walletType.name.lowercase().replaceFirstChar { it.uppercase() }) }
-                )
-            }
-        }
-        OutlinedTextField(
-            value = name,
-            onValueChange = { name = it },
-            label = { Text("Wallet name") },
-            singleLine = true,
-            modifier = Modifier.fillMaxWidth()
-        )
-        OutlinedTextField(
-            value = balance,
-            onValueChange = { value -> if (value.all { it.isDigit() }) balance = value },
-            label = { Text("Starting balance") },
-            singleLine = true,
-            modifier = Modifier.fillMaxWidth()
-        )
-        PrimaryButton(
-            text = "Add wallet",
-            onClick = {
-                val parsedBalance = balance.toDoubleOrNull() ?: 0.0
-                if (name.isNotBlank()) {
-                    onAdd(name, type, parsedBalance)
-                    name = ""
-                    balance = ""
-                }
-            }
-        )
+         icon = Icons.Default.AccountBalanceWallet,
+         title = "Ví",
+         subtitle = "Tách biệt tiền mặt, ngân hàng, ví điện tử và số dư tín dụng."
+      ) {
+          Row(
+              modifier = Modifier
+                  .fillMaxWidth()
+                  .horizontalScroll(rememberScrollState()),
+              horizontalArrangement = Arrangement.spacedBy(AppDimens.spaceSm)
+          ) {
+              WalletType.entries.forEach { walletType ->
+                  FilterChip(
+                      selected = type == walletType,
+                      onClick = { type = walletType },
+                      label = { Text(walletType.displayLabel()) }
+                  )
+              }
+          }
+          OutlinedTextField(
+             value = name,
+             onValueChange = { name = it },
+             label = { Text("Tên ví") },
+             singleLine = true,
+             modifier = Modifier.fillMaxWidth()
+         )
+         OutlinedTextField(
+             value = balance,
+             onValueChange = { value -> if (value.all { it.isDigit() }) balance = value },
+             label = { Text("Số dư ban đầu") },
+             singleLine = true,
+             modifier = Modifier.fillMaxWidth()
+         )
+         PrimaryButton(
+             text = "Thêm ví",
+             onClick = {
+                 val parsedBalance = balance.toDoubleOrNull() ?: 0.0
+                 if (name.isNotBlank()) {
+                     onAdd(name, type, parsedBalance)
+                     name = ""
+                     balance = ""
+                 }
+             }
+         )
 
-        PlanList(
-            emptyTitle = "No wallets yet",
-            items = wallets,
-            itemTitle = { it.name },
-            itemSubtitle = { "${it.type.name.lowercase().replaceFirstChar { char -> char.uppercase() }} - ${formatMoney(it.balance)}" },
-            onDelete = { onDelete(it.id) }
-        )
-    }
+         PlanList(
+             emptyTitle = "Chưa có ví nào",
+             items = wallets,
+             itemTitle = { it.name },
+             itemSubtitle = { "${it.type.displayLabel()} - ${formatMoney(it.balance)}" },
+             onDelete = { onDelete(it.id) }
+         )
+     }
 }
 
 @Composable
@@ -634,7 +647,7 @@ private fun TypeChips(
             FilterChip(
                 selected = selectedType == type,
                 onClick = { onTypeSelected(type) },
-                label = { Text(type.name.lowercase().replaceFirstChar { it.uppercase() }) }
+                label = { Text(type.displayLabel()) }
             )
         }
     }
@@ -670,8 +683,8 @@ private fun <T> PlanList(
                         Text(itemSubtitle(item), style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
                     }
                     IconButton(onClick = { onDelete(item) }) {
-                        Icon(Icons.Default.Delete, contentDescription = "Delete")
-                    }
+                         Icon(Icons.Default.Delete, contentDescription = "Xóa")
+                     }
                 }
             }
         }
@@ -684,6 +697,6 @@ private fun formatMoney(amount: Double): String {
 }
 
 private fun formatDate(epochMillis: Long): String {
-    if (epochMillis <= 0L) return "No deadline"
-    return SimpleDateFormat("dd MMM", Locale.getDefault()).format(Date(epochMillis))
-}
+     if (epochMillis <= 0L) return "Không có hạn chót"
+     return SimpleDateFormat("dd MMM", Locale("vi", "VN")).format(Date(epochMillis))
+ }

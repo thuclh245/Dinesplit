@@ -79,7 +79,7 @@ fun PersonalIntelligenceScreen(
     var selectedScenario by rememberSaveable { mutableStateOf(CashflowScenario.DINNER_WEEKEND) }
 
     AppScaffold(
-        title = "Personal Insights",
+        title = "Thông tin cá nhân",
         navigationIcon = {
             BackNavigationButton(onClick = onBack)
         }
@@ -91,7 +91,7 @@ fun PersonalIntelligenceScreen(
             verticalArrangement = Arrangement.spacedBy(AppDimens.spaceLg)
         ) {
             Text(
-                text = "Intelligence cockpit",
+                text = "Buồng lái thông tin",
                 style = MaterialTheme.typography.headlineSmall,
                 fontWeight = FontWeight.ExtraBold
             )
@@ -177,12 +177,12 @@ private fun IntelligenceHeroCard(
                     verticalArrangement = Arrangement.spacedBy(AppDimens.spaceXs)
                 ) {
                     Text(
-                        text = "Decision layer",
+                        text = "Lớp quyết định",
                         style = MaterialTheme.typography.labelMedium,
                         color = onAccent.copy(alpha = 0.78f)
                     )
                     Text(
-                        text = "Insights, risk, and what-if checks",
+                        text = "Thông tin, rủi ro và kiểm tra giả định",
                         style = MaterialTheme.typography.titleLarge,
                         color = onAccent,
                         fontWeight = FontWeight.ExtraBold
@@ -204,14 +204,14 @@ private fun IntelligenceHeroCard(
             }
 
             Column(verticalArrangement = Arrangement.spacedBy(AppDimens.spaceSm)) {
-                Row(horizontalArrangement = Arrangement.spacedBy(AppDimens.spaceSm)) {
-                    IntelligenceSticker(Icons.Default.Lightbulb, "$insightCount insights", onAccent)
-                    IntelligenceSticker(Icons.Default.WarningAmber, "$signalCount signals", onAccent)
-                }
-                Row(horizontalArrangement = Arrangement.spacedBy(AppDimens.spaceSm)) {
-                    IntelligenceSticker(Icons.Default.Flag, "$automationCount controls", onAccent)
-                }
-            }
+                 Row(horizontalArrangement = Arrangement.spacedBy(AppDimens.spaceSm)) {
+                     IntelligenceSticker(Icons.Default.Lightbulb, "$insightCount thông tin", onAccent)
+                     IntelligenceSticker(Icons.Default.WarningAmber, "$signalCount tín hiệu", onAccent)
+                 }
+                 Row(horizontalArrangement = Arrangement.spacedBy(AppDimens.spaceSm)) {
+                     IntelligenceSticker(Icons.Default.Flag, "$automationCount điều khiển", onAccent)
+                 }
+             }
 
             LinearProgressIndicator(
                 progress = { animatedProgress },
@@ -264,11 +264,11 @@ private fun IntelligenceSticker(
 private fun InsightSection(insights: List<PersonalInsight>) {
     AppCard {
         Column(verticalArrangement = Arrangement.spacedBy(AppDimens.spaceMd)) {
-            SectionHeader(title = "Monthly insights")
-            insights.forEach { insight ->
-                InsightCard(insight = insight)
-            }
-        }
+             SectionHeader(title = "Thông tin hàng tháng")
+             insights.forEach { insight ->
+                 InsightCard(insight = insight)
+             }
+         }
     }
 }
 
@@ -301,14 +301,14 @@ private fun AnomalyRadarSection(
     onOpenHistory: () -> Unit,
     onOpenReminders: () -> Unit
 ) {
-    AppCard {
-        Column(verticalArrangement = Arrangement.spacedBy(AppDimens.spaceMd)) {
-            SectionHeader(title = "Anomaly radar")
-            Text(
-                text = "Tracks unusual spend, concentration, split-heavy months, and rising daily pace.",
-                style = MaterialTheme.typography.bodySmall,
-                color = MaterialTheme.colorScheme.onSurfaceVariant
-            )
+     AppCard {
+         Column(verticalArrangement = Arrangement.spacedBy(AppDimens.spaceMd)) {
+             SectionHeader(title = "Radar bất thường")
+             Text(
+                 text = "Theo dõi chi tiêu bất thường, tập trung, tháng nặng chia tách và tốc độ hàng ngày tăng.",
+                 style = MaterialTheme.typography.bodySmall,
+                 color = MaterialTheme.colorScheme.onSurfaceVariant
+             )
             signals.forEach { signal ->
                 SignalRow(
                     icon = Icons.Default.WarningAmber,
@@ -363,15 +363,15 @@ private fun CashflowSimulatorCard(
                     verticalArrangement = Arrangement.spacedBy(AppDimens.spaceXs)
                 ) {
                     Text(
-                        text = "Cashflow what-if",
-                        style = MaterialTheme.typography.titleMedium,
-                        fontWeight = FontWeight.Bold
-                    )
-                    Text(
-                        text = "Simulate planned spending against recurring rules and goals.",
-                        style = MaterialTheme.typography.bodySmall,
-                        color = MaterialTheme.colorScheme.onSurfaceVariant
-                    )
+                         text = "Dòng tiền giả định",
+                         style = MaterialTheme.typography.titleMedium,
+                         fontWeight = FontWeight.Bold
+                     )
+                     Text(
+                         text = "Mô phỏng chi tiêu dự kiến so với các quy tắc lặp lại và mục tiêu.",
+                         style = MaterialTheme.typography.bodySmall,
+                         color = MaterialTheme.colorScheme.onSurfaceVariant
+                     )
                 }
                 StatusPill(
                     label = projection.status.label,
@@ -395,31 +395,31 @@ private fun CashflowSimulatorCard(
             Row(horizontalArrangement = Arrangement.spacedBy(AppDimens.spaceMd)) {
                 ProjectionMetric(
                     modifier = Modifier.weight(1f),
-                    label = "Scenario",
+                    label = "Kịch bản",
                     value = formatMoney(selectedScenario.amount),
                     color = MaterialTheme.colorScheme.primary
                 )
                 ProjectionMetric(
-                    modifier = Modifier.weight(1f),
-                    label = "End balance",
-                    value = formatMoney(projection.projectedBalance),
-                    color = projectionColor
-                )
-            }
-            Row(horizontalArrangement = Arrangement.spacedBy(AppDimens.spaceMd)) {
-                ProjectionMetric(
-                    modifier = Modifier.weight(1f),
-                    label = "Daily after",
-                    value = formatMoney(projection.adjustedDaily),
-                    color = projectionColor
-                )
-                ProjectionMetric(
-                    modifier = Modifier.weight(1f),
-                    label = "Fixed + goals",
-                    value = formatMoney(projection.reservedAmount),
-                    color = MaterialTheme.colorScheme.tertiary
-                )
-            }
+                     modifier = Modifier.weight(1f),
+                     label = "Kết thúc số dư",
+                     value = formatMoney(projection.projectedBalance),
+                     color = projectionColor
+                 )
+             }
+             Row(horizontalArrangement = Arrangement.spacedBy(AppDimens.spaceMd)) {
+                 ProjectionMetric(
+                     modifier = Modifier.weight(1f),
+                     label = "Hàng ngày sau",
+                     value = formatMoney(projection.adjustedDaily),
+                     color = projectionColor
+                 )
+                 ProjectionMetric(
+                     modifier = Modifier.weight(1f),
+                     label = "Cố định + mục tiêu",
+                     value = formatMoney(projection.reservedAmount),
+                     color = MaterialTheme.colorScheme.tertiary
+                 )
+             }
             Text(
                 text = projection.message,
                 style = MaterialTheme.typography.bodySmall,
@@ -440,33 +440,33 @@ private fun AutomationControlCard(
 ) {
     AppCard {
         Column(verticalArrangement = Arrangement.spacedBy(AppDimens.spaceMd)) {
-            SectionHeader(
-                title = "Automation control",
-                actionLabel = "Open plans",
-                onAction = onOpenPlans
-            )
-            Text(
-                text = "Review how reminders, recurring rules, goals, and wallets affect the intelligence layer.",
-                style = MaterialTheme.typography.bodySmall,
-                color = MaterialTheme.colorScheme.onSurfaceVariant
-            )
-            Row(horizontalArrangement = Arrangement.spacedBy(AppDimens.spaceMd)) {
-                AutomationMetric(
-                    modifier = Modifier.weight(1f),
-                    icon = Icons.Default.NotificationsActive,
-                    title = "Budget guard",
-                    value = "$reminderCount reminders",
-                    onClick = onOpenReminders
-                )
-                AutomationMetric(
-                    modifier = Modifier.weight(1f),
-                    icon = Icons.Default.Flag,
-                    title = "Plan stack",
-                    value = "${recurringCount + goalCount + walletCount} items",
-                    onClick = onOpenPlans
-                )
-            }
-        }
+             SectionHeader(
+                 title = "Điều khiển tự động",
+                 actionLabel = "Mở kế hoạch",
+                 onAction = onOpenPlans
+             )
+             Text(
+                 text = "Xem xét cách các nhắc nhở, quy tắc lặp lại, mục tiêu và ví ảnh hưởng đến lớp thông tin.",
+                 style = MaterialTheme.typography.bodySmall,
+                 color = MaterialTheme.colorScheme.onSurfaceVariant
+             )
+             Row(horizontalArrangement = Arrangement.spacedBy(AppDimens.spaceMd)) {
+                 AutomationMetric(
+                     modifier = Modifier.weight(1f),
+                     icon = Icons.Default.NotificationsActive,
+                     title = "Bảo vệ ngân sách",
+                     value = "$reminderCount nhắc nhở",
+                     onClick = onOpenReminders
+                 )
+                 AutomationMetric(
+                     modifier = Modifier.weight(1f),
+                     icon = Icons.Default.Flag,
+                     title = "Ngăn xếp kế hoạch",
+                     value = "${recurringCount + goalCount + walletCount} mục",
+                     onClick = onOpenPlans
+                 )
+             }
+         }
     }
 }
 
@@ -705,20 +705,20 @@ private enum class IntelligenceTarget {
     REMINDERS
 }
 
-private enum class CashflowScenario(
-    val label: String,
-    val amount: Double
-) {
-    QUICK("Quick", 120_000.0),
-    DINNER_WEEKEND("Dinner", 350_000.0),
-    GROUP_NIGHT("Group", 750_000.0)
-}
+ private enum class CashflowScenario(
+     val label: String,
+     val amount: Double
+ ) {
+     QUICK("Nhanh", 120_000.0),
+     DINNER_WEEKEND("Bữa tối", 350_000.0),
+     GROUP_NIGHT("Nhóm", 750_000.0)
+ }
 
-private enum class CashflowStatus(val label: String) {
-    COMFORTABLE("Feasible"),
-    TIGHT("Tight"),
-    BLOCKED("Blocked")
-}
+ private enum class CashflowStatus(val label: String) {
+     COMFORTABLE("Khả thi"),
+     TIGHT("Chặt chẽ"),
+     BLOCKED("Bị chặn")
+ }
 
 private fun buildIntelligenceAnomalySignals(
     transactions: List<Transaction>,
@@ -726,31 +726,31 @@ private fun buildIntelligenceAnomalySignals(
     monthMarker: IntelligenceMonthMarker
 ): List<IntelligenceAnomalySignal> {
     val expenses = transactions.filter { it.type == TransactionType.EXPENSE }
-    if (expenses.isEmpty()) {
-        return listOf(
-            IntelligenceAnomalySignal(
-                title = "No anomaly yet",
-                message = "Add expenses to let the radar compare outliers, pace, and split impact.",
-                metric = "Idle",
-                tone = SignalTone.INFO,
-                actionLabel = "Open ledger",
-                target = IntelligenceTarget.HISTORY
-            )
-        )
-    }
+     if (expenses.isEmpty()) {
+         return listOf(
+             IntelligenceAnomalySignal(
+                 title = "Chưa có bất thường",
+                 message = "Thêm chi tiêu để cho phép radar so sánh các ngoại lệ, tốc độ và tác động chia tách.",
+                 metric = "Chờ",
+                 tone = SignalTone.INFO,
+                 actionLabel = "Mở sổ cái",
+                 target = IntelligenceTarget.HISTORY
+             )
+         )
+     }
 
     val signals = mutableListOf<IntelligenceAnomalySignal>()
     val averageExpense = expenses.map { it.amount }.average().takeUnless { it.isNaN() } ?: 0.0
     val largestExpense = expenses.maxByOrNull { it.amount }
     if (largestExpense != null && averageExpense > 0.0 && largestExpense.amount >= averageExpense * 1.8) {
-        signals += IntelligenceAnomalySignal(
-            title = "Outlier transaction",
-            message = "${largestExpense.category} is ${formatRatio(largestExpense.amount / averageExpense)}x higher than your average expense.",
-            metric = formatMoney(largestExpense.amount),
-            tone = SignalTone.WARNING,
-            actionLabel = "Review history",
-            target = IntelligenceTarget.HISTORY
-        )
+         signals += IntelligenceAnomalySignal(
+             title = "Giao dịch ngoại lệ",
+             message = "${largestExpense.category} cao hơn ${formatRatio(largestExpense.amount / averageExpense)}x so với chi tiêu trung bình của bạn.",
+             metric = formatMoney(largestExpense.amount),
+             tone = SignalTone.WARNING,
+             actionLabel = "Xem lịch sử",
+             target = IntelligenceTarget.HISTORY
+         )
     }
 
     val topCategory = expenses
@@ -760,14 +760,14 @@ private fun buildIntelligenceAnomalySignals(
     if (topCategory != null && summary.totalExpense > 0.0) {
         val categoryShare = topCategory.value / summary.totalExpense
         if (categoryShare >= 0.45) {
-            signals += IntelligenceAnomalySignal(
-                title = "Category concentration",
-                message = "${topCategory.key} owns ${(categoryShare * 100).toInt()}% of this month's expense.",
-                metric = "${(categoryShare * 100).toInt()}%",
-                tone = SignalTone.WARNING,
-                actionLabel = "Add reminder",
-                target = IntelligenceTarget.REMINDERS
-            )
+             signals += IntelligenceAnomalySignal(
+                 title = "Tập trung danh mục",
+                 message = "${topCategory.key} sở hữu ${(categoryShare * 100).toInt()}% chi tiêu của tháng này.",
+                 metric = "${(categoryShare * 100).toInt()}%",
+                 tone = SignalTone.WARNING,
+                 actionLabel = "Thêm nhắc nhở",
+                 target = IntelligenceTarget.REMINDERS
+             )
         }
     }
 
@@ -775,14 +775,14 @@ private fun buildIntelligenceAnomalySignals(
         .filter { it.source == TransactionSource.SPLIT }
         .sumOf { it.amount }
     if (summary.totalExpense > 0.0 && splitExpense / summary.totalExpense >= 0.35) {
-        signals += IntelligenceAnomalySignal(
-            title = "Split-heavy month",
-            message = "Split bills are driving ${(splitExpense / summary.totalExpense * 100).toInt()}% of your expense.",
-            metric = formatMoney(splitExpense),
-            tone = SignalTone.INFO,
-            actionLabel = "Review ledger",
-            target = IntelligenceTarget.HISTORY
-        )
+         signals += IntelligenceAnomalySignal(
+             title = "Tháng chia tách nặng",
+             message = "Hóa đơn chia tách đang thúc đẩy ${(splitExpense / summary.totalExpense * 100).toInt()}% chi tiêu của bạn.",
+             metric = formatMoney(splitExpense),
+             tone = SignalTone.INFO,
+             actionLabel = "Xem sổ cái",
+             target = IntelligenceTarget.HISTORY
+         )
     }
 
     val dailyTotals = expenses
@@ -798,28 +798,28 @@ private fun buildIntelligenceAnomalySignals(
         dailyTotals[1] < dailyTotals[2] &&
         monthMarker.progress > 0.2f
     ) {
-        signals += IntelligenceAnomalySignal(
-            title = "Three-day climb",
-            message = "Your daily expense increased three tracked days in a row.",
-            metric = "3d",
-            tone = SignalTone.DANGER,
-            actionLabel = "Set guardrail",
-            target = IntelligenceTarget.REMINDERS
-        )
+         signals += IntelligenceAnomalySignal(
+             title = "Ba ngày tăng",
+             message = "Chi tiêu hàng ngày của bạn tăng ba ngày theo dõi liên tiếp.",
+             metric = "3 ngày",
+             tone = SignalTone.DANGER,
+             actionLabel = "Đặt rào cản",
+             target = IntelligenceTarget.REMINDERS
+         )
     }
 
-    return signals.take(3).ifEmpty {
-        listOf(
-            IntelligenceAnomalySignal(
-                title = "Radar clean",
-                message = "No outlier, concentration, or rising-streak signal detected this month.",
-                metric = "OK",
-                tone = SignalTone.POSITIVE,
-                actionLabel = "Open ledger",
-                target = IntelligenceTarget.HISTORY
-            )
-        )
-    }
+     return signals.take(3).ifEmpty {
+         listOf(
+             IntelligenceAnomalySignal(
+                 title = "Radar sạch",
+                 message = "Không phát hiện tín hiệu ngoại lệ, tập trung hoặc chuỗi tăng tháng này.",
+                 metric = "OK",
+                 tone = SignalTone.POSITIVE,
+                 actionLabel = "Mở sổ cái",
+                 target = IntelligenceTarget.HISTORY
+             )
+         )
+     }
 }
 
 private fun buildCashflowProjection(
@@ -851,14 +851,14 @@ private fun buildCashflowProjection(
     val walletBuffer = uiState.wallets
         .filterNot { it.isArchived }
         .sumOf { it.balance }
-    val message = when (status) {
-        CashflowStatus.COMFORTABLE ->
-            "Scenario fits the month. Wallet buffer: ${formatMoney(walletBuffer)}."
-        CashflowStatus.TIGHT ->
-            "Scenario works, but daily safe amount becomes tight after fixed plans."
-        CashflowStatus.BLOCKED ->
-            "Scenario breaks the monthly buffer unless income or wallet coverage changes."
-    }
+     val message = when (status) {
+         CashflowStatus.COMFORTABLE ->
+             "Kịch bản phù hợp với tháng. Bộ đệm ví: ${formatMoney(walletBuffer)}."
+         CashflowStatus.TIGHT ->
+             "Kịch bản hoạt động, nhưng lượng an toàn hàng ngày trở nên chặt chẽ sau các kế hoạch cố định."
+         CashflowStatus.BLOCKED ->
+             "Kịch bản phá vỡ bộ đệm hàng tháng trừ khi thu nhập hoặc phạm vi bảo hiểm ví thay đổi."
+     }
 
     return CashflowProjection(
         projectedBalance = projectedBalance,

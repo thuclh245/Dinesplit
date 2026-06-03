@@ -44,8 +44,8 @@ object DemoDataSeeder {
                 amount = 150000.0,
                 type = TransactionType.EXPENSE,
                 categoryId = "c_food",
-                category = "Dining Out",
-                note = "Lunch with team",
+                category = "Ăn ngoài",
+                note = "Ăn trưa cùng đội",
                 date = now - 1000 * 60 * 60 * 2,
                 createdAt = now
             ),
@@ -55,8 +55,8 @@ object DemoDataSeeder {
                 amount = 50000.0,
                 type = TransactionType.EXPENSE,
                 categoryId = "c_transit",
-                category = "Transit",
-                note = "Uber to office",
+                category = "Di chuyển",
+                note = "Đi xe công nghệ đến văn phòng",
                 date = now - 1000 * 60 * 60 * 24,
                 createdAt = now
             ),
@@ -66,8 +66,8 @@ object DemoDataSeeder {
                 amount = 320000.0,
                 type = TransactionType.EXPENSE,
                 categoryId = "c_grocery",
-                category = "Groceries",
-                note = "Weekly shopping",
+                category = "Tạp hóa",
+                note = "Mua sắm hằng tuần",
                 date = now - 1000 * 60 * 60 * 48,
                 createdAt = now
             ),
@@ -77,8 +77,8 @@ object DemoDataSeeder {
                 amount = 200000.0,
                 type = TransactionType.INCOME,
                 categoryId = "c_bonus",
-                category = "Bonus",
-                note = "Project completion bonus",
+                category = "Thưởng",
+                note = "Thưởng hoàn thành dự án",
                 date = now - 1000 * 60 * 60 * 72,
                 createdAt = now
             ),
@@ -88,8 +88,8 @@ object DemoDataSeeder {
                 amount = 100000.0,
                 type = TransactionType.EXPENSE,
                 categoryId = "c_fun",
-                category = "Entertainment",
-                note = "Movie tickets",
+                category = "Giải trí",
+                note = "Vé xem phim",
                 date = now - 1000 * 60 * 60 * 96,
                 createdAt = now
             )
@@ -114,8 +114,8 @@ object DemoDataSeeder {
             Notification(
                 id = UUID.randomUUID().toString(),
                 userId = userId,
-                title = "Spending alert: Dining Out",
-                subtitle = "You have spent 75% of your 300,000 VND budget",
+                title = "Cảnh báo chi tiêu: Ăn ngoài",
+                subtitle = "Bạn đã dùng 75% ngân sách 300,000 VND",
                 type = NotificationType.TRANSACTION_ALERT,
                 relatedId = "c_food",
                 isRead = false,
@@ -127,8 +127,8 @@ object DemoDataSeeder {
             Notification(
                 id = UUID.randomUUID().toString(),
                 userId = userId,
-                title = "John paid you",
-                subtitle = "Group dinner split settled - 120,000 VND",
+                title = "John đã thanh toán cho bạn",
+                subtitle = "Đã tất toán chia tiền bữa tối nhóm - 120,000 VND",
                 type = NotificationType.PAYMENT_COMPLETED,
                 relatedId = "bill_123",
                 isRead = true,
@@ -140,8 +140,8 @@ object DemoDataSeeder {
             Notification(
                 id = UUID.randomUUID().toString(),
                 userId = userId,
-                title = "New bill created",
-                subtitle = "Weekend trip planning - 500,000 VND",
+                title = "Đã tạo hóa đơn mới",
+                subtitle = "Kế hoạch chuyến đi cuối tuần - 500,000 VND",
                 type = NotificationType.BILL_CREATED,
                 relatedId = "bill_456",
                 isRead = false,
