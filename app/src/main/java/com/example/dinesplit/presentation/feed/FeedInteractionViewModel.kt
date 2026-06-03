@@ -76,12 +76,12 @@ class FeedInteractionViewModel(application: Application) : AndroidViewModel(appl
             }.onSuccess {
                 if (!item.isLiked) { // Only trigger notification when liking (not unliking)
                     val session = observeSessionUseCase().value
-                    if (session != null && session.uid != item.post.userId) {
+                    if (session != null && session.uid != item.post.authorUid) {
                         val profile = getCurrentUserProfileUseCase(session.uid)
                         val displayName = profile?.displayName?.takeIf { it.isNotBlank() }
                             ?: session.email.substringBefore('@')
                         triggerSocialNotification(
-                            targetUserId = item.post.userId,
+                            targetUserId = item.post.authorUid,
                             title = "New Like",
                             subtitle = "$displayName liked your post",
                             type = "ACTIVITY_UPDATE",
@@ -152,9 +152,9 @@ class FeedInteractionViewModel(application: Application) : AndroidViewModel(appl
                     .update("commentsCount", FieldValue.increment(1))
                     .awaitFirebase()
             }.onSuccess {
-                if (session.uid != item.post.userId) {
+                if (session.uid != item.post.authorUid) {
                     triggerSocialNotification(
-                        targetUserId = item.post.userId,
+                        targetUserId = item.post.authorUid,
                         title = "New Comment",
                         subtitle = "$displayName commented on your post",
                         type = "ACTIVITY_UPDATE",

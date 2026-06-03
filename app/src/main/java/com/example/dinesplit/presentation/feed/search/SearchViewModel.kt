@@ -27,35 +27,6 @@ import kotlin.coroutines.resume
 import kotlin.coroutines.resumeWithException
 
 
-data class PlaceUiModel(
-    val id: String,
-    val name: String,
-    val category: String,
-    val rating: String,
-    val distance: String,
-    val priceRange: String,
-    val image: String
-)
-
-data class SearchUiState(
-    val query: String = "",
-    val isLoading: Boolean = false,
-    val selectedFilter: SearchFilter = SearchFilter.All,
-    val peopleResults: List<UserProfile> = emptyList(),
-    val postResults: List<Post> = emptyList(),
-    val placeResults: List<PlaceUiModel> = emptyList(),
-    val recentSearches: List<String> = emptyList(),
-    val suggestedPeople: List<UserProfile> = emptyList(),
-    val trendingPlaces: List<PlaceUiModel> = emptyList(),
-    val errorMessage: String? = null,
-    val hasSearched: Boolean = false
-) {
-    // TRẠNG THÁI RẼ NHÁNH TỰ ĐỘNG: Giao diện tự đổi sang Explore Mode nếu ô nhập trống
-    val isExploreMode: Boolean get() = query.isBlank()
-    val hasNoResult: Boolean get() = hasSearched && !isLoading && 
-            peopleResults.isEmpty() && postResults.isEmpty() && placeResults.isEmpty()
-}
-
 class SearchViewModel(application: Application) : AndroidViewModel(application) {
 
     private val profileRepository = AppContainer.profileRepository(application)
@@ -179,7 +150,9 @@ class SearchViewModel(application: Application) : AndroidViewModel(application) 
             .get()
             .awaitFirebase()
 
-        return snapshot.documents.mapNotNull { document -> document.toPost() }
+        return snapshot.documents.mapNotNull { document ->
+            document.toObject(Post::class.java)?.copy(id = document.id)
+        }
     }
 
     private suspend fun searchPlacesFromFirestore(query: String): List<PlaceUiModel> {
@@ -291,36 +264,7 @@ class SearchViewModel(application: Application) : AndroidViewModel(application) 
             profileRepository.clearRecentSearches(uid)
         }
     }
-    private fun DocumentSnapshot.toPost(): Post? {
-        if (!exists()) return null
-        val postId = getString("id")?.takeIf { it.isNotBlank() } ?: id
-        val userId = getString("userId") ?: return null
-        val userName = getString("userName") ?: return null
-        val mainImageUrl = getString("mainImageUrl") ?: return null
-        val caption = getString("caption") ?: ""
-        val dinersCount = getLong("dinersCount")?.toInt() ?: 0
-        val likesCount = getLong("likesCount")?.toInt() ?: 0
-        val commentsCount = getLong("commentsCount")?.toInt() ?: 0
-        val shareAmount = getDouble("shareAmount") ?: getLong("shareAmount")?.toDouble() ?: 0.0
-        val createdAt = getLong("createdAt") ?: 0L
-        val userAvatarUrl = getString("userAvatarUrl")
-        val location = getString("location")
 
-        return Post(
-            id = postId,
-            userId = userId,
-            userName = userName,
-            userAvatarUrl = userAvatarUrl,
-            location = location,
-            mainImageUrl = mainImageUrl,
-            dinersCount = dinersCount,
-            likesCount = likesCount,
-            commentsCount = commentsCount,
-            caption = caption,
-            shareAmount = shareAmount,
-            createdAt = createdAt
-        )
-    }
 
     private fun DocumentSnapshot.toPlaceUiModel(): PlaceUiModel? {
         if (!exists()) return null

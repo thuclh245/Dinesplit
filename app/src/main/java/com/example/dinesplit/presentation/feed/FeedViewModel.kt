@@ -51,6 +51,7 @@ class FeedViewModel(application: Application) : AndroidViewModel(application) {
     private val _paginationState = MutableStateFlow(PaginationState())
     private val _viewedStoryIds = MutableStateFlow<Set<String>>(emptySet())
     private val _linkedBillSummaries = MutableStateFlow<Map<String, LinkedBillSummary>>(emptyMap())
+    private val _currentUserProfile = MutableStateFlow<UserProfile?>(null)
 
     private val activeBillJobs = mutableMapOf<String, Job>()
 
@@ -60,11 +61,34 @@ class FeedViewModel(application: Application) : AndroidViewModel(application) {
             _linkedBillSummaries,
             observeSessionUseCase(),
             _viewedStoryIds,
-        ) { pagination, summaries, session, viewedIds ->
-            val userProfile = session?.uid?.let { getCurrentUserProfileUseCase(it) }
+            _currentUserProfile,
+        ) { array ->
+            @Suppress("UNCHECKED_CAST")
+            val pagination = array[0] as PaginationState
+            @Suppress("UNCHECKED_CAST")
+            val summaries = array[1] as Map<String, LinkedBillSummary>
+            val session = array[2] as com.example.dinesplit.domain.model.UserSession?
+            @Suppress("UNCHECKED_CAST")
+            val viewedIds = array[3] as Set<String>
+            val currentUser = array[4] as UserProfile?
+
+            val currentUserId = session?.uid.orEmpty()
+
+            val finalizedPosts = pagination.posts
+
+            // Sort posts: Liked posts are moved to the end of the list, sorted by creation date descending within groups
+            val sortedPosts = finalizedPosts.sortedWith(
+                compareBy<Post> { post ->
+                    val isLiked = currentUserId.isNotEmpty() && post.likedBy.contains(currentUserId)
+                    if (isLiked) 1 else 0
+                }.thenByDescending { post ->
+                    post.createdAt?.time ?: 0L
+                }
+            )
+
             FeedUiState(
-                posts = pagination.posts,
-                currentUser = userProfile,
+                posts = sortedPosts,
+                currentUser = currentUser,
                 viewedStoryIds = viewedIds,
                 isLoading = pagination.isLoading,
                 error = pagination.error,
@@ -85,6 +109,14 @@ class FeedViewModel(application: Application) : AndroidViewModel(application) {
             observeSessionUseCase().collect { session ->
                 if (session != null) {
                     observeBillSummaries(_paginationState.value.posts)
+                    try {
+                        val profile = getCurrentUserProfileUseCase(session.uid)
+                        _currentUserProfile.value = profile
+                    } catch (e: Exception) {
+                        android.util.Log.e("FeedViewModel", "Failed to fetch user profile", e)
+                    }
+                } else {
+                    _currentUserProfile.value = null
                 }
             }
         }
@@ -262,6 +294,28 @@ class FeedViewModel(application: Application) : AndroidViewModel(application) {
 
     fun markStoryAsViewed(postId: String) {
         _viewedStoryIds.value = _viewedStoryIds.value + postId
+    }
+
+    fun onSavePost(postId: String) {
+        val uid = FirebaseProviders.auth.currentUser?.uid ?: uiState.value.currentUser?.uid ?: return
+        viewModelScope.launch {
+            try {
+                AppContainer.feedRepository().savePost(postId, uid)
+            } catch (e: java.lang.Exception) {
+                android.util.Log.e("FeedViewModel", "Failed to save post: $postId", e)
+            }
+        }
+    }
+
+    fun onUnsavePost(postId: String) {
+        val uid = FirebaseProviders.auth.currentUser?.uid ?: uiState.value.currentUser?.uid ?: return
+        viewModelScope.launch {
+            try {
+                AppContainer.feedRepository().unsavePost(postId, uid)
+            } catch (e: java.lang.Exception) {
+                android.util.Log.e("FeedViewModel", "Failed to unsave post: $postId", e)
+            }
+        }
     }
 
     fun onDeletePost(postId: String) {

@@ -21,6 +21,7 @@ class GetLinkedBillSummaryUseCase(
                 val myShare = bill.shares[currentUserId] ?: 0.0
                 val isMyPaid = currentUserId in bill.paidMemberIds
                 val isSettled = bill.status == com.example.dinesplit.domain.model.BillStatus.SETTLED
+                val isParticipant = isIPayer || bill.shares.containsKey(currentUserId)
 
                 LinkedBillSummary(
                     billId = bill.id,
@@ -31,6 +32,7 @@ class GetLinkedBillSummaryUseCase(
                     myShare = myShare,
                     isMyPaid = isMyPaid,
                     isIPayer = isIPayer,
+                    isParticipant = isParticipant,
                 )
             }
         }

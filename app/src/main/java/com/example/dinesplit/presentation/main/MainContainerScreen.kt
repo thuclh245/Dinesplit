@@ -281,6 +281,7 @@ fun MainContainerScreen(
                             onBack = { mainNavController.navigateUp() },
                             transactionId = null,
                             initialTransaction = null,
+                            
                             availableCategories = personalUiState.categories,
                             onSave = { transaction ->
                                 personalViewModel.addTransaction(transaction)
@@ -414,6 +415,11 @@ fun MainContainerScreen(
                                     userName = profileUiState.profile?.displayName ?: "User",
                                     userHandle = profileUiState.profile?.username?.let { "@$it" }.orEmpty(),
                                     userBio = profileUiState.profile?.bio.orEmpty(),
+                                    posts = profileUiState.posts,
+                                    followersCount = profileUiState.profile?.followersCount ?: 0,
+                                    followingCount = profileUiState.profile?.followingCount ?: 0,
+                                    savedPosts = profileUiState.savedPosts,
+                                    taggedBills = profileUiState.taggedBills,
                                     isLoggingOut = profileUiState.isLoggingOut,
                                     isSeeding = profileUiState.isSeeding,
                                     bottomPadding = dynamicBottomPadding,
@@ -421,6 +427,12 @@ fun MainContainerScreen(
                                     onSeedDemoData = profileViewModel::seedDemoData,
                                     onOpenSearch = { mainNavController.navigate(AppRoute.Search.route) },
                                     onLogout = profileViewModel::logout,
+                                    onOpenPostDetail = { postId ->
+                                        mainNavController.navigate(AppRoute.PostDetail.createRoute(postId))
+                                    },
+                                    onBillClick = { groupId, billId ->
+                                        mainNavController.navigate(AppRoute.BillDetail.createRoute(groupId, billId))
+                                    },
                                 )
                             }
                         }
@@ -474,7 +486,7 @@ fun MainContainerScreen(
                         val groupId = backStackEntry.arguments?.getString(AppRoute.CreateBill.ARG_GROUP_ID).orEmpty()
                         CreateBillScreen(
                             groupId = groupId,
-                            onBack = { padding -> mainNavController.navigateUp() },
+                            onBack = { mainNavController.navigateUp() },
                             onBillSavedForPersonal = personalViewModel::addSplitBillTransaction,
                         )
                     }

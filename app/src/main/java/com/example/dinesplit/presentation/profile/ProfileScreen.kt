@@ -24,7 +24,12 @@ import com.example.dinesplit.core.ui.AppCard
 import com.example.dinesplit.core.ui.AppDimens
 import com.example.dinesplit.core.ui.DineAvatarImage
 import com.example.dinesplit.core.ui.DineGridImage
+import com.example.dinesplit.domain.model.LinkedBillSummary
+import com.example.dinesplit.domain.model.Post
 import com.example.dinesplit.ui.theme.DineSplitTheme
+import java.text.NumberFormat
+import java.util.Locale
+
 
 @Composable
 fun ProfileScreen(
@@ -32,6 +37,11 @@ fun ProfileScreen(
     userName: String,
     userHandle: String = "",
     userBio: String = "",
+    posts: List<Post> = emptyList(),
+    followersCount: Int = 0,
+    followingCount: Int = 0,
+    savedPosts: List<Post> = emptyList(),
+    taggedBills: List<LinkedBillSummary> = emptyList(),
     isLoggingOut: Boolean = false,
     isSeeding: Boolean = false,
     bottomPadding: Dp = 80.dp,
@@ -40,6 +50,8 @@ fun ProfileScreen(
     onSeedDemoData: () -> Unit = {},
     onOpenSearch: () -> Unit,
     onLogout: () -> Unit,
+    onOpenPostDetail: (String) -> Unit = {},
+    onBillClick: (String, String) -> Unit = { _, _ -> },
 ) {
     val resolvedHandle = userHandle.ifBlank { "@" }
     val resolvedBio = userBio.ifBlank { "Add a bio so friends know who they are splitting with." }
@@ -47,7 +59,7 @@ fun ProfileScreen(
     var showSettingsDialog by remember { mutableStateOf(false) }
     var wasSeeding by remember { mutableStateOf(false) }
     var selectedTab by remember { mutableStateOf(0) }
-
+ 
     LaunchedEffect(isSeeding) {
         if (isSeeding) {
             wasSeeding = true
@@ -56,7 +68,7 @@ fun ProfileScreen(
             wasSeeding = false
         }
     }
-
+ 
     if (showLogoutConfirmation) {
         AlertDialog(
             onDismissRequest = { if (!isLoggingOut) showLogoutConfirmation = false },
@@ -83,7 +95,7 @@ fun ProfileScreen(
             },
         )
     }
-
+ 
     if (showSettingsDialog) {
         AlertDialog(
             onDismissRequest = { if (!isSeeding) showSettingsDialog = false },
@@ -141,7 +153,7 @@ fun ProfileScreen(
             },
         )
     }
-
+ 
     Scaffold { padding ->
         Column(
             modifier =
@@ -157,9 +169,9 @@ fun ProfileScreen(
                 displayName = userName,
                 bio = resolvedBio,
                 link = "",
-                posts = "4",
-                followers = "142",
-                following = "89",
+                posts = posts.size.toString(),
+                followers = followersCount.toString(),
+                following = followingCount.toString(),
                 avatarUrl = userAvatarUrl.orEmpty(),
                 onEditProfile = onEditProfile,
                 onOpenSettings = { showSettingsDialog = true },
@@ -170,22 +182,68 @@ fun ProfileScreen(
             ProfileTabs(selectedTab = selectedTab, onTabSelected = { selectedTab = it })
 
             when (selectedTab) {
-                0 -> PhotoGrid(photos = samplePhotos)
-                1 -> ProfileOverview()
-                2 -> {
-                    Box(
-                        modifier =
-                            Modifier
+                0 -> {
+                    val postsWithImages = posts.filter { it.imageUrls.isNotEmpty() }
+                    if (postsWithImages.isEmpty()) {
+                        Box(
+                            modifier = Modifier
                                 .fillMaxWidth()
-                                .padding(vertical = 32.dp),
-                        contentAlignment = Alignment.Center,
-                    ) {
-                        Text(
-                            text = "Không có hoạt động được gắn thẻ",
-                            style = MaterialTheme.typography.bodyMedium,
-                            color = MaterialTheme.colorScheme.outline,
-                        )
+                                .padding(vertical = 48.dp),
+                            contentAlignment = Alignment.Center
+                        ) {
+                            Column(
+                                horizontalAlignment = Alignment.CenterHorizontally,
+                                verticalArrangement = Arrangement.spacedBy(8.dp)
+                            ) {
+                                Icon(
+                                    imageVector = Icons.Default.PhotoLibrary,
+                                    contentDescription = null,
+                                    tint = MaterialTheme.colorScheme.outline.copy(0.6f),
+                                    modifier = Modifier.size(48.dp)
+                                )
+                                Text(
+                                    text = "Chưa có bài đăng nào",
+                                    style = MaterialTheme.typography.bodyMedium,
+                                    color = MaterialTheme.colorScheme.outline
+                                )
+                            }
+                        }
+                    } else {
+                        PhotoGrid(posts = posts, onPostClick = onOpenPostDetail)
                     }
+                }
+                1 -> {
+                    val savedWithImages = savedPosts.filter { it.imageUrls.isNotEmpty() }
+                    if (savedWithImages.isEmpty()) {
+                        Box(
+                            modifier = Modifier
+                                .fillMaxWidth()
+                                .padding(vertical = 48.dp),
+                            contentAlignment = Alignment.Center
+                        ) {
+                            Column(
+                                horizontalAlignment = Alignment.CenterHorizontally,
+                                verticalArrangement = Arrangement.spacedBy(8.dp)
+                            ) {
+                                Icon(
+                                    imageVector = Icons.Default.BookmarkBorder,
+                                    contentDescription = null,
+                                    tint = MaterialTheme.colorScheme.outline.copy(0.6f),
+                                    modifier = Modifier.size(48.dp)
+                                )
+                                Text(
+                                    text = "Chưa có bài viết đã lưu",
+                                    style = MaterialTheme.typography.bodyMedium,
+                                    color = MaterialTheme.colorScheme.outline
+                                )
+                            }
+                        }
+                    } else {
+                        PhotoGrid(posts = savedPosts, onPostClick = onOpenPostDetail)
+                    }
+                }
+                2 -> {
+                    TaggedBillsList(bills = taggedBills, onBillClick = onBillClick)
                 }
             }
 
@@ -402,20 +460,28 @@ private fun ProfileTabs(
 }
 
 @Composable
-private fun PhotoGrid(photos: List<String>) {
+private fun PhotoGrid(
+    posts: List<Post>,
+    onPostClick: (String) -> Unit,
+) {
+    val postsWithImages = posts.filter { it.imageUrls.isNotEmpty() }
     Column(modifier = Modifier.padding(horizontal = 4.dp)) {
-        val rows = photos.chunked(3)
-        rows.forEach { rowPhotos ->
+        val rows = postsWithImages.chunked(3)
+        rows.forEach { rowPosts ->
             Row(modifier = Modifier.fillMaxWidth().padding(vertical = 2.dp), horizontalArrangement = Arrangement.spacedBy(4.dp)) {
-                rowPhotos.forEach { url ->
+                rowPosts.forEach { post ->
+                    val url = post.imageUrls.first()
                     DineGridImage(
                         imageUrl = url,
                         contentDescription = null,
-                        modifier = Modifier.weight(1f).aspectRatio(1f),
+                        modifier = Modifier
+                            .weight(1f)
+                            .aspectRatio(1f)
+                            .clickable { onPostClick(post.id) },
                     )
                 }
                 // Fill empty slots if last row has less than 3 photos
-                repeat(3 - rowPhotos.size) {
+                repeat(3 - rowPosts.size) {
                     Spacer(modifier = Modifier.weight(1f))
                 }
             }
@@ -425,15 +491,147 @@ private fun PhotoGrid(photos: List<String>) {
 
 data class TabInfo(val label: String, val icon: ImageVector)
 
-private val samplePhotos =
-    listOf(
-        "https://lh3.googleusercontent.com/aida-public/AB6AXuDPo68lKRJUgLSRbIMyP8cKangAwx0j7hXe8PGwHVAeN_TDWusH8I8piDCWfw0boUfkdYsVUlUlUV1YD0w-MrFAyUSQZOSjFcFJ3NbqdUSOKrAk0ubOLr-Rb7iQTBtNH2gNKYkNca8ETj4zX1WjUd40GlfZOPbOWsxFuGpuAdi-99aZ5hRzAZisrBwQcfUUsqOZP-3qNcUYWf_t1vgCRaRczPZhkyd8-snCNxnXflJ5wz15MmXNLuTvCeyYY2MBT3AHVoVEv-t-s9s",
-        "https://lh3.googleusercontent.com/aida-public/AB6AXuAFcJh_WZqVCMMZv3NBDAbKn8TO2X9FTtTgdKQrSY01kiKSI0JS0mmvY-Fe4EL6Ku_O4yvkEXB2mXSAM7wcQbmJAcUYvX1382IgqqR9Sq9f-51QR9wlqbC-YeyL69KaKzKccU1OaWX881J_GofRqtcPQME54kWADXnILsPIK75U4kP07KJs8nLTmrED_azhBJdiCUAeamAiG3NyDKOIhuxuQ57cI9zzYj2xFFX2nG8A0bsHw61VTKaQLdAz_lkHX5HqB5piLy7y02U",
-        "https://lh3.googleusercontent.com/aida-public/AB6AXuBfGVqZEjq3TzaADMZ2buEd9tcHuiLkAoFK4FbRhL6Y9VkMGlV6y1zIRrYCn-olI46CLic4shUSoA5v49slK5WqMT6yMbuI-0_BmNRtEq3rJNb27iTHhck0QjS9faAp-Y14z_oJX4xAIAZ5NYCaYr8fO0gOgD3R0OXTMTEGuGB92iTGChFBAaMkmTpEsg_xoiZ0DRo-XPvIcOrSndlelqCjlo3RxgBFaT-BjHSpRZgHWrZA3pWRbPUd5qnxazk9I3bzJX4jBfI83JU",
-        "https://lh3.googleusercontent.com/aida-public/AB6AXuC32dimkr7Rmci-xva5bmegZsbng43iQe9X5By2wvKya393xmrteEaed26ylxNdfRDepdEL34vta7dPuvfZTCMFQF_kpvrRFV8ZowU6rmReLh3whaosUh0wGou5w0XIsDyiNATIMCHUMr5-icroJ9GN-ebRm083ZBZLIzxm8nIjgVenrYOO05IhtnzH9CG27mL127oQAbOKOb6vzde0yXhO4ZE4bSL-qsdbeLdmme2kRc1a7v8-lLD_L7ME3DqCIwtz4BaA3WjVFHs",
-        "https://lh3.googleusercontent.com/aida-public/AB6AXuCz15-drOE04YNhXjKak_xexU7l7z5yKLDOq2-rnnNIo-GY-Jn--zxEi9VmocpjT4cbiJ2W4ONCPbrnGQ15A7yhQkPpUiCKjHbDiEe-DJoHxAelIkVsh078_KRSnkSJKNdw5vDuKOtri72kPncg8pYkGE74MRIzjyHxbI255p7Y9oP6ogKpoJHhcwd_ZZAoc9SgtfaDvtY2e6-hTKygHmaToOL8LVHHLuzQyMMFqju90iv0rD9-926Dq-5DMAAzHncrfLvhnxKxpxs",
-        "https://lh3.googleusercontent.com/aida-public/AB6AXuDqhcDBDtkEkv9k095DhXUETbPEu2BmjWo0sOxInwgyuJ39Ctwm_V5bOa4Mc3_h0VxBNQYiFWMOOxMkJpGs2fiMOBjatAjj6NwFVyKXT2XM_WJikSgcUQLuShbh8jUgobtbfNkwVMUTRtPc1IxHED07NKI1wvZatqbjoBgMPYzHbRDff8KBFqKW4AQsdCpv5mmdCmMtV6C6-DZR2tIrs6eKMHv7sWF1JO-G8IQ0Eu68Hnc2tjAIuDd8Mq02nZPSHsIpd1dt6qW-r1k",
-    )
+@Composable
+private fun TaggedBillsList(
+    bills: List<LinkedBillSummary>,
+    onBillClick: (String, String) -> Unit
+) {
+    if (bills.isEmpty()) {
+        Box(
+            modifier = Modifier
+                .fillMaxWidth()
+                .padding(vertical = 48.dp),
+            contentAlignment = Alignment.Center
+        ) {
+            Column(
+                horizontalAlignment = Alignment.CenterHorizontally,
+                verticalArrangement = Arrangement.spacedBy(8.dp)
+            ) {
+                Icon(
+                    imageVector = Icons.Default.ReceiptLong,
+                    contentDescription = null,
+                    tint = MaterialTheme.colorScheme.outline.copy(0.6f),
+                    modifier = Modifier.size(48.dp)
+                )
+                Text(
+                    text = "Chưa có hoạt động chia tiền nào",
+                    style = MaterialTheme.typography.bodyMedium,
+                    color = MaterialTheme.colorScheme.outline
+                )
+            }
+        }
+    } else {
+        Column(
+            modifier = Modifier
+                .fillMaxWidth()
+                .padding(horizontal = 16.dp, vertical = 8.dp),
+            verticalArrangement = Arrangement.spacedBy(12.dp)
+        ) {
+            bills.forEach { summary ->
+                Surface(
+                    color = MaterialTheme.colorScheme.surfaceContainerHigh,
+                    shape = RoundedCornerShape(16.dp),
+                    border = BorderStroke(1.dp, MaterialTheme.colorScheme.outlineVariant.copy(alpha = 0.5f)),
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .clickable { onBillClick(summary.groupId, summary.billId) }
+                ) {
+                    Column(
+                        modifier = Modifier.padding(16.dp),
+                        verticalArrangement = Arrangement.spacedBy(12.dp)
+                      ) {
+                        Row(
+                            verticalAlignment = Alignment.CenterVertically,
+                            horizontalArrangement = Arrangement.SpaceBetween,
+                            modifier = Modifier.fillMaxWidth()
+                        ) {
+                            Row(
+                                verticalAlignment = Alignment.CenterVertically,
+                                horizontalArrangement = Arrangement.spacedBy(8.dp),
+                                modifier = Modifier.weight(1f)
+                            ) {
+                                Icon(
+                                    imageVector = Icons.Default.ReceiptLong,
+                                    contentDescription = null,
+                                    tint = MaterialTheme.colorScheme.primary,
+                                    modifier = Modifier.size(20.dp)
+                                )
+                                Text(
+                                    text = summary.billName,
+                                    style = MaterialTheme.typography.titleSmall.copy(fontWeight = FontWeight.Bold),
+                                    maxLines = 1,
+                                    overflow = TextOverflow.Ellipsis
+                                )
+                            }
+                            
+                            Surface(
+                                color = if (summary.isSettled) {
+                                    MaterialTheme.colorScheme.secondaryContainer
+                                } else {
+                                    MaterialTheme.colorScheme.errorContainer.copy(alpha = 0.2f)
+                                },
+                                shape = CircleShape,
+                                border = BorderStroke(
+                                    width = 1.dp,
+                                    color = if (summary.isSettled) MaterialTheme.colorScheme.secondary else MaterialTheme.colorScheme.error.copy(alpha = 0.4f)
+                                )
+                            ) {
+                                Text(
+                                    text = if (summary.isSettled) "ĐÃ THANH TOÁN" else "CHƯA THANH TOÁN",
+                                    modifier = Modifier.padding(horizontal = 8.dp, vertical = 2.dp),
+                                    style = MaterialTheme.typography.labelSmall.copy(fontWeight = FontWeight.Bold),
+                                    color = if (summary.isSettled) MaterialTheme.colorScheme.onSecondaryContainer else MaterialTheme.colorScheme.error
+                                )
+                            }
+                        }
+                        
+                        Row(
+                            modifier = Modifier.fillMaxWidth(),
+                            horizontalArrangement = Arrangement.SpaceBetween,
+                            verticalAlignment = Alignment.CenterVertically
+                        ) {
+                            Column {
+                                Text(
+                                    text = "Tổng hóa đơn",
+                                    style = MaterialTheme.typography.labelSmall,
+                                    color = MaterialTheme.colorScheme.onSurfaceVariant
+                                )
+                                Text(
+                                    text = formatMoney(summary.totalAmount),
+                                    style = MaterialTheme.typography.bodyMedium.copy(fontWeight = FontWeight.Bold)
+                                )
+                            }
+                            
+                            Column(horizontalAlignment = Alignment.End) {
+                                Text(
+                                    text = if (summary.isIPayer) "Bạn đã trả trước" else "Phần của bạn",
+                                    style = MaterialTheme.typography.labelSmall,
+                                    color = MaterialTheme.colorScheme.onSurfaceVariant
+                                )
+                                Text(
+                                    text = formatMoney(summary.myShare),
+                                    style = MaterialTheme.typography.bodyMedium.copy(
+                                        fontWeight = FontWeight.Bold,
+                                        color = if (summary.isSettled || summary.isMyPaid || summary.isIPayer) {
+                                            MaterialTheme.colorScheme.secondary
+                                        } else {
+                                            MaterialTheme.colorScheme.error
+                                        }
+                                    )
+                                )
+                            }
+                        }
+                    }
+                }
+            }
+        }
+    }
+}
+
+private fun formatMoney(amount: Double): String {
+    val formatter = NumberFormat.getCurrencyInstance(Locale("vi", "VN"))
+    return formatter.format(amount)
+}
 
 @Preview(showBackground = true)
 @Composable

@@ -9,4 +9,5 @@ data class LinkedBillSummary(
     val myShare: Double,
     val isMyPaid: Boolean,
     val isIPayer: Boolean,
+    val isParticipant: Boolean = true,
 )

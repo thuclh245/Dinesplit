@@ -143,6 +143,19 @@ const users = [
   }
 ];
 
+const workingAvatars = [
+  "1535713875002-d1d0cf377fde", // Male 1
+  "1494790108377-be9c29b29330", // Female 1
+  "1507003211169-0a1dd7228f2d", // Male 2
+  "1438761681033-6461ffad8d80", // Female 2
+  "1500648767791-00dcc994a43e", // Male 3
+  "1534528741775-53994a69daeb", // Female 3
+  "1527983359383-4758693f760c", // Male 4
+  "1544005313-94ddf0286df2", // Female 4
+  "1506794778202-cad84cf45f1d", // Male 5
+  "1517841905240-472988babdf9"  // Female 5
+];
+
 // Tự động bù thêm các user từ 06 đến 20 để đủ dataset
 for (let i = 6; i <= 20; i++) {
   const uid = `demo_user_${String(i).padStart(2, "0")}`;
@@ -153,7 +166,7 @@ for (let i = 6; i <= 20; i++) {
     displayName: `Demo Foodie ${i}`,
     username: `demo_foodie_${i}`,
     email: `demo_user_${i}@example.com`,
-    avatarUrl: i % 3 === 0 ? "" : `https://images.unsplash.com/photo-${1500000000000 + i * 100000}?w=150&auto=format&fit=crop&q=60`,
+    avatarUrl: i % 3 === 0 ? "" : `https://images.unsplash.com/photo-${workingAvatars[i % workingAvatars.length]}?w=150&auto=format&fit=crop&q=60`,
     bio: i % 4 === 0 ? "" : `Thành viên đam mê ăn uống số ${i} trong DineSplit.`,
     diningStyles: i % 2 === 0 ? ["Street Food", "Vietnamese"] : ["Cafe Hopper", "Dessert"],
     followersCount: i <= 10 ? 2 : 0,
@@ -272,6 +285,34 @@ const posts = [
   }
 ];
 
+const workingFoodImages = [
+  "1565299624946-b28f40a0ae38", // Pizza
+  "1482049016688-2d3e1b311543", // Egg toast salad
+  "1467003909585-2f8a72700288", // Plated salmon
+  "1504674900247-0877df9cc836", // Steak / Meat
+  "1546069901-ba9599a7e63c", // Salad bowl
+  "1567620905732-2d1ec7ab7445", // Pancakes
+  "1565958011703-44f9829ba187", // Strawberry cake dessert
+  "1484723091739-30a097e8f929", // French toast
+  "1473093295043-cdd812d0e601", // Pasta
+  "1513104890138-7c749659a591", // Pizza flatlay
+  "1476224203421-9ac39bcb3327", // Meat/veggies platter
+  "1555939594-58d7cb561ad1", // Meat skewers barbecue
+  "1569718212165-3a8278d5f624", // Ramen noodles
+  "1540189549336-e6e99c3679fe", // Salad dish
+  "1498837167922-ddd27525d352", // Healthy food flatlay
+  "1512621776951-a57141f2eefd", // Green salad bowl
+  "1493770308161-fd81a649fbb6", // Breakfast table
+  "1490645935967-10de6ba17061", // Diet plan meals
+  "1506084868230-bb9d95c24759", // Waffles
+  "1481931098730-318b6f776db0", // Plated dessert
+  "1551183053-bf91a1d81141", // Chocolate cake slice
+  "1541167760496-1628856ab772", // Espresso coffee latte
+  "1495474472287-4d71bcdd2085", // Table coffee and pastries
+  "1517248135467-4c7edcad34c4", // Cozy cafe interior
+  "1507133750040-4a8f57021571"  // Milk tea/bubble tea
+];
+
 // Tạo thêm posts từ 006 đến 040 tự động cho đa dạng dòng thời gian
 for (let i = 6; i <= 40; i++) {
   const id = `demo_post_${String(i).padStart(3, "0")}`;
@@ -295,7 +336,7 @@ for (let i = 6; i <= 40; i++) {
     authorName: author.displayName,
     authorAvatar: author.avatarUrl,
     caption: `Bài đăng mẫu số ${i} của ${author.displayName}. Trải nghiệm ẩm thực tuyệt vời của tuần này cùng hội bạn thân DineSplit!`,
-    imageUrls: hasImage ? [`https://images.unsplash.com/photo-${1550000000000 + i * 2000000}?w=500&auto=format&fit=crop&q=60`] : [],
+    imageUrls: hasImage ? [`https://images.unsplash.com/photo-${workingFoodImages[i % workingFoodImages.length]}?w=500&auto=format&fit=crop&q=60`] : [],
     videoUrls: [],
     location: i % 4 === 0 ? null : place.name,
     linkedGroupId: i % 9 === 0 ? "demo_group_02" : "",

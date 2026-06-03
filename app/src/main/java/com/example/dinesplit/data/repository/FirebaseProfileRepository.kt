@@ -1,3 +1,4 @@
+
 package com.example.dinesplit.data.repository
 
 import android.content.Context
@@ -186,6 +187,7 @@ class FirebaseProfileRepository private constructor(
             FIELD_FOLLOWERS_COUNT to followersCount,
             FIELD_FOLLOWING_COUNT to followingCount,
             FIELD_POSTS_COUNT to postsCount,
+            FIELD_SAVED_POST_IDS to savedPostIds,
             FIELD_FCM_TOKEN to fcmToken,
             FIELD_CREATED_AT to (createdAt?.time ?: 0L),
             FIELD_UPDATED_AT to (updatedAt?.time ?: System.currentTimeMillis()),
@@ -231,6 +233,7 @@ class FirebaseProfileRepository private constructor(
         val followersCount = getLong(FIELD_FOLLOWERS_COUNT)?.toInt() ?: 0
         val followingCount = getLong(FIELD_FOLLOWING_COUNT)?.toInt() ?: 0
         val postsCount = getLong(FIELD_POSTS_COUNT)?.toInt() ?: 0
+        val savedPostIds = get(FIELD_SAVED_POST_IDS) as? List<*> ?: emptyList<Any>()
         val fcmToken = getString(FIELD_FCM_TOKEN).orEmpty()
         val createdAt = getDateSafe(FIELD_CREATED_AT)
         val updatedAt = getDateSafe(FIELD_UPDATED_AT) ?: createdAt
@@ -246,6 +249,7 @@ class FirebaseProfileRepository private constructor(
             followersCount = followersCount,
             followingCount = followingCount,
             postsCount = postsCount,
+            savedPostIds = savedPostIds.mapNotNull { it?.toString() },
             fcmToken = fcmToken,
             createdAt = createdAt,
             updatedAt = updatedAt,
@@ -289,6 +293,7 @@ class FirebaseProfileRepository private constructor(
         private const val FIELD_FOLLOWERS_COUNT = "followersCount"
         private const val FIELD_FOLLOWING_COUNT = "followingCount"
         private const val FIELD_POSTS_COUNT = "postsCount"
+        private const val FIELD_SAVED_POST_IDS = "savedPostIds"
         private const val FIELD_FCM_TOKEN = "fcmToken"
         private const val FIELD_CREATED_AT = "createdAt"
         private const val FIELD_UPDATED_AT = "updatedAt"

@@ -30,6 +30,12 @@ interface FeedRepository {
         imageUri: android.net.Uri,
     ): String
 
+    suspend fun savePost(postId: String, userId: String)
+
+    suspend fun unsavePost(postId: String, userId: String)
+
+    fun getSavedPosts(userId: String): Flow<List<Post>>
+
     // Comments
     fun getComments(postId: String): Flow<List<Comment>>
 

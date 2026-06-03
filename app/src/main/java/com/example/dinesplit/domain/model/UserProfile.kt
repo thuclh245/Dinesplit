@@ -13,6 +13,7 @@ data class UserProfile(
     val followersCount: Int = 0,
     val followingCount: Int = 0,
     val postsCount: Int = 0,
+    val savedPostIds: List<String> = emptyList(),
     val fcmToken: String = "",
     val createdAt: Date? = null,
     val updatedAt: Date? = null,

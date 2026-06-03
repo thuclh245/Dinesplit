@@ -27,6 +27,7 @@ class CreatePostViewModel(application: Application) : AndroidViewModel(applicati
     private val feedRepository = AppContainer.feedRepository()
     private val observeSessionUseCase = AppContainer.observeSessionUseCase(application)
     private val getCurrentUserProfileUseCase = AppContainer.getCurrentUserProfileUseCase(application)
+    private val firestore = FirebaseProviders.firestore
 
     private val _uiState = MutableStateFlow<CreatePostUiState>(CreatePostUiState.Idle)
     val uiState: StateFlow<CreatePostUiState> = _uiState.asStateFlow()
@@ -39,6 +40,14 @@ class CreatePostViewModel(application: Application) : AndroidViewModel(applicati
 
     private val _caption = MutableStateFlow("")
     val caption: StateFlow<String> = _caption.asStateFlow()
+
+    private val _visibility = MutableStateFlow("public")
+    val visibility: StateFlow<String> = _visibility.asStateFlow()
+
+    private val _isLoadingExistingPost = MutableStateFlow(false)
+    val isLoadingExistingPost: StateFlow<Boolean> = _isLoadingExistingPost.asStateFlow()
+
+    private var currentPostId: String? = null
 
     val isFormValid: StateFlow<Boolean> = combine(
         _imageUri,
@@ -62,6 +71,45 @@ class CreatePostViewModel(application: Application) : AndroidViewModel(applicati
         _caption.value = value
     }
 
+    fun updateVisibility(value: String) {
+        _visibility.value = value
+    }
+
+    fun resetUiState() {
+        _uiState.value = CreatePostUiState.Idle
+        _imageUri.value = null
+        _restaurantName.value = ""
+        _caption.value = ""
+        _visibility.value = "public"
+        _isLoadingExistingPost.value = false
+        currentPostId = null
+    }
+
+    fun initializePostMode(postId: String?) {
+        if (postId.isNullOrBlank()) {
+            resetUiState()
+            return
+        }
+        currentPostId = postId
+        _isLoadingExistingPost.value = true
+        viewModelScope.launch(Dispatchers.IO) {
+            try {
+                val document = firestore.collection("posts").document(postId).get().awaitFirebase()
+                val post = document.toObject(Post::class.java)?.copy(id = document.id)
+                if (post != null) {
+                    _restaurantName.value = post.location.orEmpty()
+                    _caption.value = post.caption
+                    _imageUri.value = post.imageUrls.firstOrNull()?.let { Uri.parse(it) }
+                    _visibility.value = post.visibility
+                }
+                _isLoadingExistingPost.value = false
+            } catch (e: Exception) {
+                _isLoadingExistingPost.value = false
+                _uiState.value = CreatePostUiState.Error(FirebaseErrorMapper.toUserMessage(e))
+            }
+        }
+    }
+
     fun retryLastSubmit() {
         lastSubmit?.let { draft ->
             submitPost(draft.imageUri, draft.restaurantName, draft.caption)
@@ -72,17 +120,26 @@ class CreatePostViewModel(application: Application) : AndroidViewModel(applicati
         updateImageUri(imageUri)
         updateRestaurantName(restaurantName)
         updateCaption(caption)
-        lastSubmit = SubmitDraft(imageUri, restaurantName, caption)
+        submitPost()
+    }
 
-        if (imageUri == null) {
+    fun submitPost() {
+        val imgUri = _imageUri.value
+        val restName = _restaurantName.value
+        val capt = _caption.value
+        val vis = _visibility.value
+
+        lastSubmit = SubmitDraft(imgUri, restName, capt)
+
+        if (imgUri == null) {
             _uiState.value = CreatePostUiState.Error("Please select a photo")
             return
         }
-        if (restaurantName.isBlank()) {
+        if (restName.isBlank()) {
             _uiState.value = CreatePostUiState.Error("Please enter a restaurant")
             return
         }
-        if (caption.trim().length < 3) {
+        if (capt.trim().length < 3) {
             _uiState.value = CreatePostUiState.Error("Caption must be at least 3 characters")
             return
         }
@@ -100,26 +157,41 @@ class CreatePostViewModel(application: Application) : AndroidViewModel(applicati
                 val displayName = profile?.displayName?.takeIf { it.isNotBlank() }
                     ?: session.email.substringBefore('@')
 
-                val postId = UUID.randomUUID().toString()
-                val imageUrl = uploadPostImage(session.uid, postId, imageUri)
-                val now = System.currentTimeMillis()
+                val postId = currentPostId ?: UUID.randomUUID().toString()
+                val finalImageUrl = if (imgUri.toString().startsWith("content://") || imgUri.toString().startsWith("file://")) {
+                    uploadPostImage(session.uid, postId, imgUri)
+                } else {
+                    imgUri.toString()
+                }
+
+                var originalPost: Post? = null
+                if (currentPostId != null) {
+                    val doc = firestore.collection("posts").document(currentPostId!!).get().awaitFirebase()
+                    originalPost = doc.toObject(Post::class.java)
+                }
 
                 val post = Post(
                     id = postId,
-                    userId = session.uid,
-                    userName = displayName,
-                    userAvatarUrl = profile?.avatarUrl?.takeIf { it.isNotBlank() },
-                    location = restaurantName.trim().takeIf { it.isNotBlank() },
-                    mainImageUrl = imageUrl,
-                    dinersCount = 1,
-                    likesCount = 0,
-                    commentsCount = 0,
-                    caption = caption.trim(),
-                    shareAmount = 0.0,
-                    createdAt = now
+                    authorUid = originalPost?.authorUid ?: session.uid,
+                    authorName = originalPost?.authorName ?: displayName,
+                    authorAvatar = originalPost?.authorAvatar ?: profile?.avatarUrl.orEmpty(),
+                    location = restName.trim().takeIf { it.isNotBlank() },
+                    imageUrls = listOf(finalImageUrl),
+                    likesCount = originalPost?.likesCount ?: 0,
+                    likedBy = originalPost?.likedBy ?: emptyList(),
+                    commentsCount = originalPost?.commentsCount ?: 0,
+                    sharesCount = originalPost?.sharesCount ?: 0,
+                    caption = capt.trim(),
+                    visibility = vis,
+                    createdAt = originalPost?.createdAt ?: java.util.Date(),
+                    updatedAt = java.util.Date()
                 )
 
-                feedRepository.createPost(post)
+                if (currentPostId != null) {
+                    feedRepository.updatePost(post)
+                } else {
+                    feedRepository.createPost(post)
+                }
                 _uiState.value = CreatePostUiState.Success
             } catch (throwable: Throwable) {
                 _uiState.value = CreatePostUiState.Error(FirebaseErrorMapper.toUserMessage(throwable))

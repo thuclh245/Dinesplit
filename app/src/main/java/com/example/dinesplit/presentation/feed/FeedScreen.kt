@@ -75,13 +75,15 @@ fun FeedRoute(
     onNavigateToUserProfile: (String) -> Unit,
     onNavigateToEditPost: (String) -> Unit
 ) {
+    val context = LocalContext.current
+    val application = context.applicationContext as android.app.Application
     // KIẾN TRÚC SẠCH: Khởi tạo ViewModelFactory độc lập bảo vệ vòng đời hệ thống
     val viewModel: FeedViewModel = viewModel(
         factory = object : ViewModelProvider.Factory {
             @Suppress("UNCHECKED_CAST")
             override fun <T : ViewModel> create(modelClass: Class<T>): T {
                 if (modelClass.isAssignableFrom(FeedViewModel::class.java)) {
-                    return FeedViewModel(AppContainer.getFeedUseCase()) as T
+                    return FeedViewModel(application) as T
                 }
                 throw IllegalArgumentException("Unknown ViewModel class")
             }
@@ -104,7 +106,9 @@ fun FeedRoute(
         onDeletePost = { viewModel.onDeletePost(it) },
         onLikePost = { viewModel.onLikePost(it) },
         onUnlikePost = { viewModel.onUnlikePost(it) },
-        onMarkStoryAsViewed = { viewModel.markStoryAsViewed(it) }
+        onMarkStoryAsViewed = { viewModel.markStoryAsViewed(it) },
+        onSavePost = { viewModel.onSavePost(it) },
+        onUnsavePost = { viewModel.onUnsavePost(it) }
     )
 }
 
@@ -126,7 +130,9 @@ fun FeedScreen(
     onDeletePost: (String) -> Unit,
     onLikePost: (String) -> Unit,
     onUnlikePost: (String) -> Unit,
-    onMarkStoryAsViewed: (String) -> Unit
+    onMarkStoryAsViewed: (String) -> Unit,
+    onSavePost: (String) -> Unit,
+    onUnsavePost: (String) -> Unit
 ) {
     val lifecycleOwner = LocalLifecycleOwner.current
     val currentOnRefresh by rememberUpdatedState(onRefresh)
@@ -310,12 +316,14 @@ fun FeedScreen(
                         // DANH SÁCH BÀI ĐĂNG CHUẨN KEYED ITEMS ĐẠT HIỆU NĂNG TỐI ĐA
                         items(state.posts, key = { it.id }) { post ->
                             val isLikedByMe = state.currentUser?.uid?.let { post.likedBy.contains(it) } ?: false
+                            val isSavedByMe = state.currentUser?.savedPostIds?.contains(post.id) == true
                             val isOwnPost = state.currentUser?.uid == post.authorUid
                             val billSummary = state.linkedBillSummaries[post.id]
                             
                             SocialSplitCard(
                                 post = post,
                                 isLikedByMe = isLikedByMe,
+                                isSavedByMe = isSavedByMe,
                                 isOwnPost = isOwnPost,
                                 billSummary = billSummary,
                                 onLike = { onLikePost(post.id) },
@@ -333,8 +341,15 @@ fun FeedScreen(
                                     }
                                     context.startActivity(Intent.createChooser(intent, "Chia sẻ bài viết"))
                                 },
+                                onBookmark = {
+                                    if (isSavedByMe) {
+                                        onUnsavePost(post.id)
+                                    } else {
+                                        onSavePost(post.id)
+                                    }
+                                },
                                 onAuthorClick = { onOpenUserProfile(post.authorUid) },
-                                onEditClick = { onEditClick -> onEditPost(post.id) },
+                                onEditClick = { onEditPost(post.id) },
                                 onDeleteClick = { postToDeleteId = post.id },
                                 onSettleUp = {
                                     val gId = post.linkedGroupId
@@ -675,9 +690,187 @@ private fun RecentGroupVibes(
 }
 
 @Composable
+private fun LinkedBillSummarySection(
+    summary: LinkedBillSummary,
+    onViewBill: () -> Unit,
+    onSettleUp: () -> Unit,
+) {
+    Surface(
+        color = MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.5f),
+        shape = AppShapes.large,
+        border = BorderStroke(1.dp, MaterialTheme.colorScheme.outlineVariant.copy(alpha = 0.5f)),
+        modifier = Modifier
+            .fillMaxWidth()
+            .padding(horizontal = 16.dp, vertical = 8.dp)
+    ) {
+        Column(
+            modifier = Modifier.padding(16.dp),
+            verticalArrangement = Arrangement.spacedBy(12.dp)
+        ) {
+            Row(
+                verticalAlignment = Alignment.CenterVertically,
+                horizontalArrangement = Arrangement.SpaceBetween,
+                modifier = Modifier.fillMaxWidth()
+            ) {
+                Row(
+                    verticalAlignment = Alignment.CenterVertically,
+                    horizontalArrangement = Arrangement.spacedBy(8.dp),
+                    modifier = Modifier.weight(1f)
+                ) {
+                    Icon(
+                        imageVector = Icons.Default.ReceiptLong,
+                        contentDescription = null,
+                        tint = MaterialTheme.colorScheme.primary,
+                        modifier = Modifier.size(20.dp)
+                    )
+                    Text(
+                        text = summary.billName,
+                        style = MaterialTheme.typography.titleSmall.copy(fontWeight = FontWeight.Bold),
+                        maxLines = 1,
+                        overflow = TextOverflow.Ellipsis
+                    )
+                }
+                
+                if (summary.isParticipant) {
+                    Surface(
+                        color = if (summary.isSettled) {
+                            MaterialTheme.colorScheme.secondaryContainer
+                        } else {
+                            MaterialTheme.colorScheme.errorContainer.copy(alpha = 0.2f)
+                        },
+                        shape = CircleShape,
+                        border = BorderStroke(
+                            width = 1.dp,
+                            color = if (summary.isSettled) MaterialTheme.colorScheme.secondary else MaterialTheme.colorScheme.error.copy(alpha = 0.4f)
+                        )
+                    ) {
+                        Text(
+                            text = if (summary.isSettled) "ĐÃ THANH TOÁN" else "CHƯA THANH TOÁN",
+                            modifier = Modifier.padding(horizontal = 8.dp, vertical = 2.dp),
+                            style = MaterialTheme.typography.labelSmall.copy(fontWeight = FontWeight.Bold),
+                            color = if (summary.isSettled) MaterialTheme.colorScheme.onSecondaryContainer else MaterialTheme.colorScheme.error
+                        )
+                    }
+                }
+            }
+
+            Row(
+                modifier = Modifier.fillMaxWidth(),
+                horizontalArrangement = Arrangement.SpaceBetween,
+                verticalAlignment = Alignment.CenterVertically
+            ) {
+                Column {
+                    Text(
+                        text = "Tổng hóa đơn",
+                        style = MaterialTheme.typography.labelSmall,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant
+                    )
+                    Text(
+                        text = formatMoney(summary.totalAmount),
+                        style = MaterialTheme.typography.bodyMedium.copy(fontWeight = FontWeight.Bold)
+                    )
+                }
+                
+                if (summary.isParticipant) {
+                    Column(horizontalAlignment = Alignment.End) {
+                        Text(
+                            text = if (summary.isIPayer) "Bạn đã trả trước" else "Phần của bạn",
+                            style = MaterialTheme.typography.labelSmall,
+                            color = MaterialTheme.colorScheme.onSurfaceVariant
+                        )
+                        Text(
+                            text = formatMoney(summary.myShare),
+                            style = MaterialTheme.typography.bodyMedium.copy(
+                                fontWeight = FontWeight.Bold,
+                                color = if (summary.isSettled || summary.isMyPaid || summary.isIPayer) {
+                                    MaterialTheme.colorScheme.secondary
+                                } else {
+                                    MaterialTheme.colorScheme.error
+                                }
+                            )
+                        )
+                    }
+                } else {
+                    Column(horizontalAlignment = Alignment.End) {
+                        Text(
+                            text = "Trạng thái",
+                            style = MaterialTheme.typography.labelSmall,
+                            color = MaterialTheme.colorScheme.onSurfaceVariant
+                        )
+                        Text(
+                            text = "Chỉ xem",
+                            style = MaterialTheme.typography.bodyMedium.copy(
+                                fontWeight = FontWeight.Bold,
+                                color = MaterialTheme.colorScheme.outline
+                            )
+                        )
+                    }
+                }
+            }
+
+            if (summary.isParticipant) {
+                Row(
+                    modifier = Modifier.fillMaxWidth(),
+                    horizontalArrangement = Arrangement.spacedBy(8.dp)
+                ) {
+                    OutlinedButton(
+                        onClick = onViewBill,
+                        modifier = Modifier.weight(1f),
+                        shape = AppShapes.medium,
+                        border = BorderStroke(1.dp, MaterialTheme.colorScheme.outline.copy(alpha = 0.3f)),
+                        colors = ButtonDefaults.outlinedButtonColors(
+                            contentColor = MaterialTheme.colorScheme.onSurface
+                        )
+                    ) {
+                        Icon(
+                            imageVector = Icons.Default.Info,
+                            contentDescription = null,
+                            modifier = Modifier.size(16.dp)
+                        )
+                        Spacer(modifier = Modifier.width(4.dp))
+                        Text(
+                            text = "Chi tiết",
+                            style = MaterialTheme.typography.labelMedium.copy(fontWeight = FontWeight.SemiBold)
+                        )
+                    }
+
+                    if (!summary.isSettled && !summary.isMyPaid && !summary.isIPayer && summary.myShare > 0.0) {
+                        Button(
+                            onClick = onSettleUp,
+                            modifier = Modifier.weight(1f),
+                            shape = AppShapes.medium,
+                            colors = ButtonDefaults.buttonColors(
+                                containerColor = MaterialTheme.colorScheme.secondary,
+                                contentColor = MaterialTheme.colorScheme.onSecondary
+                            )
+                        ) {
+                            Icon(
+                                imageVector = Icons.Default.Payments,
+                                contentDescription = null,
+                                modifier = Modifier.size(16.dp)
+                            )
+                            Spacer(modifier = Modifier.width(4.dp))
+                            Text(
+                                text = "Trả nợ",
+                                style = MaterialTheme.typography.labelMedium.copy(fontWeight = FontWeight.Bold)
+                            )
+                        }
+                    }
+                }
+            }
+        }
+    }
+}
+
+private fun formatMoney(amount: Double): String {
+    val formatter = java.text.NumberFormat.getNumberInstance(java.util.Locale("vi", "VN"))
+    return "${formatter.format(amount.toLong())}đ"
+}
+@Composable
 private fun SocialSplitCard(
     post: Post,
     isLikedByMe: Boolean,
+    isSavedByMe: Boolean = false,
     isOwnPost: Boolean = false,
     billSummary: LinkedBillSummary? = null,
     onLike: () -> Unit,
@@ -839,7 +1032,12 @@ private fun SocialSplitCard(
                     }
                 }
                 IconButton(onClick = onBookmark, modifier = Modifier.size(40.dp)) {
-                    Icon(Icons.Outlined.BookmarkBorder, contentDescription = "Bookmark", modifier = Modifier.size(24.dp))
+                    Icon(
+                        imageVector = if (isSavedByMe) Icons.Filled.Bookmark else Icons.Outlined.BookmarkBorder,
+                        contentDescription = if (isSavedByMe) "Unsave" else "Save",
+                        tint = if (isSavedByMe) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.onSurface,
+                        modifier = Modifier.size(24.dp)
+                    )
                 }
             }
 
@@ -852,18 +1050,19 @@ private fun SocialSplitCard(
                         onSettleUp = onSettleUp
                     )
                 } else {
-                    Button(
-                        onClick = onSettleUp,
-                        modifier = Modifier.fillMaxWidth().padding(horizontal = AppDimens.spaceLg, vertical = AppDimens.spaceXs),
-                        colors = ButtonDefaults.buttonColors(
-                            containerColor = MaterialTheme.colorScheme.secondary,
-                            contentColor = MaterialTheme.colorScheme.onSecondary,
-                        ),
-                        shape = AppShapes.medium,
+                    Box(
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .padding(horizontal = 16.dp, vertical = 8.dp)
+                            .height(100.dp)
+                            .background(MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.2f), AppShapes.large),
+                        contentAlignment = Alignment.Center
                     ) {
-                        Icon(Icons.Default.Payments, contentDescription = null, modifier = Modifier.size(18.dp))
-                        Spacer(modifier = Modifier.width(AppDimens.spaceSm))
-                        Text("Thanh toán ngay (Settle Up)", style = MaterialTheme.typography.labelLarge.copy(fontWeight = FontWeight.Bold))
+                        CircularProgressIndicator(
+                            modifier = Modifier.size(20.dp),
+                            strokeWidth = 2.dp,
+                            color = MaterialTheme.colorScheme.outline
+                        )
                     }
                 }
             }
@@ -878,87 +1077,6 @@ private fun SocialSplitCard(
                 maxLines = 2,
                 overflow = TextOverflow.Ellipsis,
             )
-        }
-    }
-}
-
-@Composable
-private fun LinkedBillSummarySection(
-    summary: LinkedBillSummary,
-    onViewBill: () -> Unit,
-    onSettleUp: () -> Unit,
-) {
-    Surface(
-        color = MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.5f),
-        shape = AppShapes.large,
-        border = BorderStroke(1.dp, MaterialTheme.colorScheme.outlineVariant.copy(alpha = 0.5f)),
-        modifier = Modifier.fillMaxWidth().padding(horizontal = 16.dp, vertical = 8.dp)
-    ) {
-        Column(modifier = Modifier.padding(16.dp), verticalArrangement = Arrangement.spacedBy(12.dp)) {
-            Row(modifier = Modifier.fillMaxWidth(), verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.SpaceBetween) {
-                Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(8.dp), modifier = Modifier.weight(1f)) {
-                    Icon(Icons.Default.ReceiptLong, contentDescription = null, tint = MaterialTheme.colorScheme.primary, modifier = Modifier.size(20.dp))
-                    Text(text = summary.billName, style = MaterialTheme.typography.titleSmall.copy(fontWeight = FontWeight.Bold), maxLines = 1, overflow = TextOverflow.Ellipsis)
-                }
-                
-                Surface(
-                    color = if (summary.isSettled) MaterialTheme.colorScheme.secondaryContainer else MaterialTheme.colorScheme.errorContainer.copy(alpha = 0.2f),
-                    shape = CircleShape,
-                    border = BorderStroke(1.dp, if (summary.isSettled) MaterialTheme.colorScheme.secondary else MaterialTheme.colorScheme.error.copy(alpha = 0.4f))
-                ) {
-                    Text(
-                        text = if (summary.isSettled) "ĐÃ THANH TOÁN" else "CHƯA THANH TOÁN",
-                        modifier = Modifier.padding(horizontal = 8.dp, vertical = 2.dp),
-                        style = MaterialTheme.typography.labelSmall.copy(fontWeight = FontWeight.Bold),
-                        color = if (summary.isSettled) MaterialTheme.colorScheme.onSecondaryContainer else MaterialTheme.colorScheme.error
-                    )
-                }
-            }
-
-            Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.SpaceBetween, verticalAlignment = Alignment.CenterVertically) {
-                Column {
-                    Text("Tổng hóa đơn", style = MaterialTheme.typography.labelSmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
-                    Text(text = formatMoney(summary.totalAmount), style = MaterialTheme.typography.bodyMedium.copy(fontWeight = FontWeight.Bold))
-                }
-                
-                Column(horizontalAlignment = Alignment.End) {
-                    Text(text = if (summary.isIPayer) "Bạn đã trả trước" else "Phần của bạn", style = MaterialTheme.typography.labelSmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
-                    Text(
-                        text = formatMoney(summary.myShare),
-                        style = MaterialTheme.typography.bodyMedium.copy(
-                            fontWeight = FontWeight.Bold,
-                            color = if (summary.isSettled || summary.isMyPaid || summary.isIPayer) MaterialTheme.colorScheme.secondary else MaterialTheme.colorScheme.error
-                        )
-                    )
-                }
-            }
-
-            Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(8.dp)) {
-                OutlinedButton(
-                    onClick = onViewBill,
-                    modifier = Modifier.weight(1f),
-                    shape = AppShapes.medium,
-                    border = BorderStroke(1.dp, MaterialTheme.colorScheme.outline.copy(alpha = 0.3f)),
-                    colors = ButtonDefaults.outlinedButtonColors(contentColor = MaterialTheme.colorScheme.onSurface)
-                ) {
-                    Icon(Icons.Default.Info, contentDescription = null, modifier = Modifier.size(16.dp))
-                    Spacer(modifier = Modifier.width(4.dp))
-                    Text("Chi tiết", style = MaterialTheme.typography.labelMedium.copy(fontWeight = FontWeight.SemiBold))
-                }
-
-                if (!summary.isSettled && !summary.isMyPaid && !summary.isIPayer && summary.myShare > 0.0) {
-                    Button(
-                        onClick = onSettleUp,
-                        modifier = Modifier.weight(1f),
-                        shape = AppShapes.medium,
-                        colors = ButtonDefaults.buttonColors(containerColor = MaterialTheme.colorScheme.secondary, contentColor = MaterialTheme.colorScheme.onSecondary)
-                    ) {
-                        Icon(Icons.Default.Payments, contentDescription = null, modifier = Modifier.size(16.dp))
-                        Spacer(modifier = Modifier.width(4.dp))
-                        Text("Trả nợ", style = MaterialTheme.typography.labelMedium.copy(fontWeight = FontWeight.Bold))
-                    }
-                }
-            }
         }
     }
 }
@@ -1061,10 +1179,7 @@ private val vibes = listOf(
     Vibe("Thế Huy", "https://lh3.googleusercontent.com/aida-public/AB6AXuDgF0M5FazB2IT4juh4tcOt4K1Ebn3YjSLLXXnEO_orZuRvR7754qsoNDOrLZZRk9MBdEyyJm92iSBTTnUo254hKU062XQiAI0pDu2ZzQ6qUeeRLIRs31LkLGwZlpQVMko9-vOn8jdvYQxhY1IXcHNASxdE5qHGU8nV6uM1v89Ykoyi-NsBff_wlPgG-H-Xsclt1CrCt3PDOJlWGuMnbGFCAkt3p8c5XbDj3XqELFVIf12Tnm9BMHwVXvqOCJPx3F_X1-e8Nyuo7RU", false)
 )
 
-private fun formatMoney(amount: Double): String {
-    val formatter = NumberFormat.getNumberInstance(Locale("vi", "VN"))
-    return "${formatter.format(amount.toLong())}đ"
-}
+
 
 @Preview(showBackground = true)
 @Composable

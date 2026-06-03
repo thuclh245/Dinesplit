@@ -8,6 +8,8 @@ import com.example.dinesplit.core.common.AppContainer
 import com.example.dinesplit.core.firebase.FirebaseErrorMapper
 import com.example.dinesplit.data.seeder.DemoDataSeeder
 import com.example.dinesplit.domain.exception.UsernameAlreadyExistsException
+import com.example.dinesplit.domain.model.LinkedBillSummary
+import com.example.dinesplit.domain.model.Post
 import com.example.dinesplit.domain.model.UserProfile
 import com.example.dinesplit.domain.usecase.GetCurrentUserProfileUseCase
 import com.example.dinesplit.domain.usecase.LogoutUseCase
@@ -22,6 +24,10 @@ import kotlinx.coroutines.flow.SharedFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asSharedFlow
 import kotlinx.coroutines.flow.asStateFlow
+import kotlinx.coroutines.flow.combine
+import kotlinx.coroutines.flow.flatMapLatest
+import kotlinx.coroutines.flow.flowOf
+import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
 import java.util.Date
@@ -32,6 +38,9 @@ data class ProfileUiState(
     val errorMessage: String? = null,
     val isLoggingOut: Boolean = false,
     val isSeeding: Boolean = false,
+    val posts: List<Post> = emptyList(),
+    val savedPosts: List<Post> = emptyList(),
+    val taggedBills: List<LinkedBillSummary> = emptyList(),
 )
 
 data class EditProfileUiState(
@@ -76,16 +85,75 @@ class ProfileViewModel(application: Application) : AndroidViewModel(application)
     private val _effect = MutableSharedFlow<ProfileUiEffect>()
     val effect: SharedFlow<ProfileUiEffect> = _effect.asSharedFlow()
 
+    private var postsJob: kotlinx.coroutines.Job? = null
+    private var savedPostsJob: kotlinx.coroutines.Job? = null
+    private var taggedBillsJob: kotlinx.coroutines.Job? = null
+
     init {
         loadProfile()
     }
 
+    @OptIn(kotlinx.coroutines.ExperimentalCoroutinesApi::class)
     fun loadProfile() {
         val session = observeSessionUseCase().value
         if (session == null) {
             _profileUiState.value = ProfileUiState(isLoading = false, errorMessage = "Session expired")
             _editUiState.value = EditProfileUiState()
             return
+        }
+
+        postsJob?.cancel()
+        postsJob = viewModelScope.launch {
+            AppContainer.feedRepository().getUserPosts(session.uid).collect { posts ->
+                _profileUiState.value = _profileUiState.value.copy(posts = posts)
+            }
+        }
+
+        savedPostsJob?.cancel()
+        savedPostsJob = viewModelScope.launch {
+            AppContainer.feedRepository().getSavedPosts(session.uid).collect { savedPosts ->
+                _profileUiState.value = _profileUiState.value.copy(savedPosts = savedPosts)
+            }
+        }
+
+        taggedBillsJob?.cancel()
+        taggedBillsJob = viewModelScope.launch {
+            val splitRepo = AppContainer.splitRepository()
+            splitRepo.getGroups().flatMapLatest { groups ->
+                if (groups.isEmpty()) {
+                    flowOf(emptyList<LinkedBillSummary>())
+                } else {
+                    val billFlows = groups.map { group ->
+                        splitRepo.getBills(group.id).map { bills ->
+                            bills.filter { bill ->
+                                bill.payerId == session.uid || bill.shares.containsKey(session.uid)
+                            }.map { bill ->
+                                val isIPayer = bill.payerId == session.uid
+                                val myShare = bill.shares[session.uid] ?: 0.0
+                                val isMyPaid = session.uid in bill.paidMemberIds
+                                val isSettled = bill.status == com.example.dinesplit.domain.model.BillStatus.SETTLED
+                                
+                                LinkedBillSummary(
+                                    billId = bill.id,
+                                    groupId = group.id,
+                                    billName = bill.name,
+                                    totalAmount = bill.totalAmount,
+                                    isSettled = isSettled,
+                                    myShare = myShare,
+                                    isMyPaid = isMyPaid,
+                                    isIPayer = isIPayer,
+                                    isParticipant = true
+                                )
+                            }
+                        }
+                    }
+                    combine(billFlows) { arrays ->
+                        arrays.flatMap { it }.sortedByDescending { it.billId }
+                    }
+                }
+            }.collect { summaries ->
+                _profileUiState.value = _profileUiState.value.copy(taggedBills = summaries)
+            }
         }
 
         viewModelScope.launch {
@@ -287,6 +355,7 @@ class ProfileViewModel(application: Application) : AndroidViewModel(application)
                     DemoDataSeeder.seedDemoTransactions(personalRepo, profile.uid)
                     DemoDataSeeder.seedDemoNotifications(notificationRepo, profile.uid)
                     DemoDataSeeder.seedDemoSplit(splitRepo, profile.uid)
+                    DemoDataSeeder.seedDemoPosts(feedRepo, profile)
                 }
                 _effect.emit(ProfileUiEffect.SeedSuccess)
             } catch (e: Exception) {

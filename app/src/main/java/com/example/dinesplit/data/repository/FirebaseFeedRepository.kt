@@ -36,13 +36,8 @@ class FirebaseFeedRepository(
                                 }.getOrNull()
                             } ?: emptyList()
 
-                        // Filter out mock posts
-                        val realPosts = posts.filter { post ->
-                            !post.id.startsWith("demo_post_") &&
-                                    post.authorUid != "chef_hoang_uid" &&
-                                    post.authorUid != "foodie_lan_uid" &&
-                                    post.authorUid != "cafe_huy_uid"
-                        }
+                        // Show all Firestore posts
+                        val realPosts = posts
 
                         if (currentUserId.isNullOrBlank()) {
                             trySend(realPosts.filter { it.visibility == "public" })
@@ -88,7 +83,6 @@ class FirebaseFeedRepository(
         callbackFlow {
             val subscription =
                 firestore.collection("posts")
-                    .whereEqualTo("authorUid", userId)
                     .orderBy("createdAt", Query.Direction.DESCENDING)
                     .addSnapshotListener { snapshot, error ->
                         if (error != null) {
@@ -101,14 +95,13 @@ class FirebaseFeedRepository(
                                     doc.toObject(Post::class.java)?.copy(id = doc.id)
                                 }.getOrNull()
                             } ?: emptyList()
-                        // Filter out mock posts
-                        val realPosts = posts.filter { post ->
-                            !post.id.startsWith("demo_post_") &&
-                                    post.authorUid != "chef_hoang_uid" &&
-                                    post.authorUid != "foodie_lan_uid" &&
-                                    post.authorUid != "cafe_huy_uid"
+                        // Show all Firestore posts
+                        val realPosts = posts
+                        // Keep only own posts for profile grid
+                        val filtered = realPosts.filter { post ->
+                            post.authorUid == userId
                         }
-                        trySend(realPosts)
+                        trySend(filtered)
                     }
             awaitClose { subscription.remove() }
         }
@@ -140,24 +133,34 @@ class FirebaseFeedRepository(
     ) {
         val postRef = firestore.collection("posts").document(postId)
         firestore.runTransaction { transaction ->
+            // 1. Perform all READS first
             val snapshot = transaction.get(postRef)
-            val currentLikedBy = (snapshot.get("likedBy") as? List<String>) ?: emptyList()
+            val currentLikedBy = (snapshot.get("likedBy") as? List<*>)?.mapNotNull { it?.toString() } ?: emptyList()
+            
+            val authorUid = snapshot.getString("authorUid")
+            val shouldCreateNotification = !authorUid.isNullOrBlank() && authorUid != userId
+            
+            var triggeredByUserName = "Ai đó"
+            if (shouldCreateNotification) {
+                val userRef = firestore.collection("users").document(userId)
+                val userSnapshot = transaction.get(userRef)
+                triggeredByUserName = userSnapshot.getString("displayName") ?: "Ai đó"
+            }
+
+            // 2. Perform all WRITES after all reads
             if (!currentLikedBy.contains(userId)) {
                 val newLikedBy = currentLikedBy + userId
                 val newLikesCount = newLikedBy.size.toLong()
+                
+                // Write 1: Update the post likes
                 transaction.update(postRef, "likesCount", newLikesCount, "likedBy", newLikedBy)
 
-                // Write notification inside transaction
-                val authorUid = snapshot.getString("authorUid")
-                if (!authorUid.isNullOrBlank() && authorUid != userId) {
-                    val userRef = firestore.collection("users").document(userId)
-                    val userSnapshot = transaction.get(userRef)
-                    val triggeredByUserName = userSnapshot.getString("displayName") ?: "Ai đó"
+                // Write 2: Add notification if needed
+                if (shouldCreateNotification) {
                     val postTitle = snapshot.getString("caption")?.take(30) ?: "bài viết"
-
                     val notificationId = "${System.currentTimeMillis()}_$postId"
                     val notificationRef = firestore.collection("user_notifications")
-                        .document(authorUid)
+                        .document(authorUid!!)
                         .collection("notifications")
                         .document(notificationId)
 
@@ -187,7 +190,7 @@ class FirebaseFeedRepository(
         val postRef = firestore.collection("posts").document(postId)
         firestore.runTransaction { transaction ->
             val snapshot = transaction.get(postRef)
-            val currentLikedBy = (snapshot.get("likedBy") as? List<String>) ?: emptyList()
+            val currentLikedBy = (snapshot.get("likedBy") as? List<*>)?.mapNotNull { it?.toString() } ?: emptyList()
             if (currentLikedBy.contains(userId)) {
                 val newLikedBy = currentLikedBy - userId
                 val newLikesCount = newLikedBy.size.toLong()
@@ -195,6 +198,72 @@ class FirebaseFeedRepository(
             }
         }.awaitFirebase()
     }
+
+    override suspend fun savePost(postId: String, userId: String) {
+        val userRef = firestore.collection("users").document(userId)
+        firestore.runTransaction { transaction ->
+            val snapshot = transaction.get(userRef)
+            val currentSaved = (snapshot.get("savedPostIds") as? List<*>)?.mapNotNull { it?.toString() } ?: emptyList()
+            if (!currentSaved.contains(postId)) {
+                val newSaved = currentSaved + postId
+                transaction.update(userRef, "savedPostIds", newSaved)
+            }
+        }.awaitFirebase()
+    }
+
+    override suspend fun unsavePost(postId: String, userId: String) {
+        val userRef = firestore.collection("users").document(userId)
+        firestore.runTransaction { transaction ->
+            val snapshot = transaction.get(userRef)
+            val currentSaved = (snapshot.get("savedPostIds") as? List<*>)?.mapNotNull { it?.toString() } ?: emptyList()
+            if (currentSaved.contains(postId)) {
+                val newSaved = currentSaved - postId
+                transaction.update(userRef, "savedPostIds", newSaved)
+            }
+        }.awaitFirebase()
+    }
+
+    override fun getSavedPosts(userId: String): Flow<List<Post>> =
+        callbackFlow {
+            val userRef = firestore.collection("users").document(userId)
+            var postsListener: com.google.firebase.firestore.ListenerRegistration? = null
+            
+            val userListener = userRef.addSnapshotListener { userSnap, userErr ->
+                if (userErr != null) {
+                    close(userErr)
+                    return@addSnapshotListener
+                }
+                val savedIds = (userSnap?.get("savedPostIds") as? List<*>)?.mapNotNull { it?.toString() } ?: emptyList()
+                
+                postsListener?.remove()
+                
+                if (savedIds.isEmpty()) {
+                    trySend(emptyList())
+                    return@addSnapshotListener
+                }
+                
+                postsListener = firestore.collection("posts")
+                    .orderBy("createdAt", Query.Direction.DESCENDING)
+                    .addSnapshotListener { postsSnap, postsErr ->
+                        if (postsErr != null) {
+                            return@addSnapshotListener
+                        }
+                        val posts = postsSnap?.documents?.mapNotNull { doc ->
+                            runCatching {
+                                doc.toObject(Post::class.java)?.copy(id = doc.id)
+                            }.getOrNull()
+                        } ?: emptyList()
+                        
+                        val filtered = posts.filter { savedIds.contains(it.id) }
+                        trySend(filtered)
+                    }
+            }
+            
+            awaitClose {
+                userListener.remove()
+                postsListener?.remove()
+            }
+        }
 
     override fun getComments(postId: String): Flow<List<Comment>> =
         callbackFlow {
@@ -287,13 +356,8 @@ class FirebaseFeedRepository(
             }.getOrNull()
         }
 
-        // Filter out mock posts
-        val realPosts = posts.filter { post ->
-            !post.id.startsWith("demo_post_") &&
-                    post.authorUid != "chef_hoang_uid" &&
-                    post.authorUid != "foodie_lan_uid" &&
-                    post.authorUid != "cafe_huy_uid"
-        }
+        // Show all Firestore posts
+        val realPosts = posts
 
         val currentUserId = FirebaseProviders.auth.currentUser?.uid
         if (currentUserId.isNullOrBlank()) {
@@ -350,35 +414,5 @@ class FirebaseFeedRepository(
                 }
             }
         }
-    }
-        private fun DocumentSnapshot.toPost(): Post? {
-        if (!exists()) return null
-        val postId = getString("id")?.takeIf { it.isNotBlank() } ?: id
-        val userId = getString("userId") ?: return null
-        val userName = getString("userName") ?: return null
-        val mainImageUrl = getString("mainImageUrl") ?: return null
-        val caption = getString("caption") ?: ""
-        val dinersCount = getLong("dinersCount")?.toInt() ?: 0
-        val likesCount = getLong("likesCount")?.toInt() ?: 0
-        val commentsCount = getLong("commentsCount")?.toInt() ?: 0
-        val shareAmount = getDouble("shareAmount") ?: getLong("shareAmount")?.toDouble() ?: 0.0
-        val createdAt = getLong("createdAt") ?: 0L
-        val userAvatarUrl = getString("userAvatarUrl")
-        val location = getString("location")
-
-        return Post(
-            id = postId,
-            userId = userId,
-            userName = userName,
-            userAvatarUrl = userAvatarUrl,
-            location = location,
-            mainImageUrl = mainImageUrl,
-            dinersCount = dinersCount,
-            likesCount = likesCount,
-            commentsCount = commentsCount,
-            caption = caption,
-            shareAmount = shareAmount,
-            createdAt = createdAt
-        )
     }
 }

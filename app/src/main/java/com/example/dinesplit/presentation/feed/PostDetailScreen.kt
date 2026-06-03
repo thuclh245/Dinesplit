@@ -58,7 +58,7 @@ import java.util.UUID
 
 sealed interface PostDetailUiState {
     data object Loading : PostDetailUiState
-    刻 Success(val content: PostDetailContent) : PostDetailUiState
+    data class Success(val content: PostDetailContent) : PostDetailUiState
     data class Error(val message: String) : PostDetailUiState
 }
 
@@ -506,4 +506,9 @@ private fun CommentInputBar(
             }
         }
     }
+}
+
+private fun formatPostDate(date: Date): String {
+    val sdf = SimpleDateFormat("dd/MM/yyyy HH:mm", Locale.getDefault())
+    return sdf.format(date)
 }
