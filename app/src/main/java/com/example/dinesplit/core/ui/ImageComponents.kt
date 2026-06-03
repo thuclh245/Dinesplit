@@ -20,6 +20,7 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
+import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.font.FontWeight
@@ -40,17 +41,23 @@ fun DineAvatarImage(
     name: String?,
     modifier: Modifier = Modifier,
     size: Dp = 48.dp,
+    fallbackContainerColor: Color = MaterialTheme.colorScheme.primaryContainer,
+    fallbackContentColor: Color = MaterialTheme.colorScheme.onPrimaryContainer
 ) {
     val initial = name?.trim()?.firstOrNull()?.uppercase()
     var isError by remember(imageUrl) { mutableStateOf(false) }
+    val initialStyle = if (size <= 32.dp) {
+        MaterialTheme.typography.labelSmall
+    } else {
+        MaterialTheme.typography.titleMedium
+    }
 
     Box(
-        modifier =
-            modifier
-                .size(size)
-                .clip(CircleShape)
-                .background(MaterialTheme.colorScheme.primaryContainer),
-        contentAlignment = Alignment.Center,
+        modifier = modifier
+            .size(size)
+            .clip(CircleShape)
+            .background(fallbackContainerColor),
+        contentAlignment = Alignment.Center
     ) {
         if (!imageUrl.isNullOrBlank() && !isError) {
             AsyncImage(
@@ -69,16 +76,16 @@ fun DineAvatarImage(
         } else if (!initial.isNullOrBlank()) {
             Text(
                 text = initial,
-                style = MaterialTheme.typography.titleMedium,
+                style = initialStyle,
                 fontWeight = FontWeight.ExtraBold,
-                color = MaterialTheme.colorScheme.onPrimaryContainer,
+                color = fallbackContentColor
             )
         } else {
             Icon(
                 imageVector = Icons.Default.Person,
                 contentDescription = null,
-                tint = MaterialTheme.colorScheme.onPrimaryContainer,
-                modifier = Modifier.size(size * 0.5f),
+                tint = fallbackContentColor,
+                modifier = Modifier.size(size * 0.5f)
             )
         }
     }

@@ -6,6 +6,7 @@ import com.example.dinesplit.core.firebase.FirebaseProviders
 import com.example.dinesplit.domain.model.Bill
 import com.example.dinesplit.domain.model.Group
 import com.example.dinesplit.domain.repository.SplitRepository
+import com.example.dinesplit.domain.usecase.SplitCalculationEngine
 import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.MutableStateFlow
@@ -71,13 +72,18 @@ class SplitDashboardViewModel(
                                 .sortedByDescending { it.bill.date }
                                 .take(5)
 
+                        val balanceSummary = SplitCalculationEngine.calculateUserBalance(
+                            bills = billsByGroup.values.flatten(),
+                            userId = currentUserId
+                        )
+
                         _uiState.update {
                             it.copy(
                                 groups = sortedGroups,
                                 billsByGroup = billsByGroup,
                                 recentBills = recentBills,
-                                amountYouOwe = calculateAmountYouOwe(billsByGroup),
-                                amountYouAreOwed = calculateAmountYouAreOwed(billsByGroup),
+                                amountYouOwe = balanceSummary.amountYouOwe,
+                                amountYouAreOwed = balanceSummary.amountYouAreOwed,
                                 currentUserId = currentUserId,
                                 isLoading = false,
                                 error = null,
@@ -106,28 +112,4 @@ class SplitDashboardViewModel(
         }
     }
 
-    private fun calculateAmountYouOwe(billsByGroup: Map<String, List<Bill>>): Double {
-        val userId = currentUserId ?: return 0.0
-        return billsByGroup.values.flatten().sumOf { bill ->
-            if (bill.payerId == userId || bill.paidMemberIds.contains(userId)) {
-                0.0
-            } else {
-                bill.shares[userId] ?: 0.0
-            }
-        }
-    }
-
-    private fun calculateAmountYouAreOwed(billsByGroup: Map<String, List<Bill>>): Double {
-        val userId = currentUserId ?: return 0.0
-        return billsByGroup.values.flatten().sumOf { bill ->
-            if (bill.payerId != userId) {
-                0.0
-            } else {
-                bill.shares
-                    .filterKeys { memberId -> memberId != userId && !bill.paidMemberIds.contains(memberId) }
-                    .values
-                    .sum()
-            }
-        }
-    }
 }

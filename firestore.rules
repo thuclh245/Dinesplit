@@ -333,11 +333,12 @@ service cloud.firestore {
     }
 
     function validNewMember(data, groupId, memberId) {
-      return data.keys().hasOnly(['id', 'name', 'initial', 'isMe'])
+      return data.keys().hasOnly(['id', 'name', 'initial', 'avatarUrl', 'isMe'])
         && data.id == memberId
         && data.name is string
         && data.name.size() > 0
         && data.initial is string
+        && (!data.keys().hasAny(['avatarUrl']) || data.avatarUrl is string)
         && data.isMe is bool
         && data.isMe == (memberId == request.auth.uid)
         && memberId in getAfter(groupPath(groupId)).data.memberIds;

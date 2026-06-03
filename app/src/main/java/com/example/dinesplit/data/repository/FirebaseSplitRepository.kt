@@ -284,17 +284,16 @@ class FirebaseSplitRepository(
 
     private fun QuerySnapshot.toMembers(): List<Member> {
         val currentUserId = FirebaseProviders.auth.currentUser?.uid
-        val rawMembers =
-            documents.mapNotNull { doc ->
-                val id = doc.getString("id") ?: doc.id
-                val name = doc.getString("name") ?: return@mapNotNull null
-                val initial = doc.getString("initial") ?: name.firstOrNull()?.toString().orEmpty()
-                val isMe = doc.getBoolean("isMe") ?: false
-                Member(id = id, name = name, initial = initial, isMe = isMe)
-            }
-        val hasCurrentUserMember =
-            !currentUserId.isNullOrBlank() &&
-                rawMembers.any { it.id == currentUserId }
+        val rawMembers = documents.mapNotNull { doc ->
+            val id = doc.getString("id") ?: doc.id
+            val name = doc.getString("name") ?: return@mapNotNull null
+            val initial = doc.getString("initial") ?: name.firstOrNull()?.toString().orEmpty()
+            val avatarUrl = doc.getString("avatarUrl").orEmpty()
+            val isMe = doc.getBoolean("isMe") ?: false
+            Member(id = id, name = name, initial = initial, avatarUrl = avatarUrl, isMe = isMe)
+        }
+        val hasCurrentUserMember = !currentUserId.isNullOrBlank() &&
+            rawMembers.any { it.id == currentUserId }
 
         return rawMembers
             .filterNot { member ->
@@ -426,7 +425,8 @@ class FirebaseSplitRepository(
             "id" to id,
             "name" to name,
             "initial" to initial,
-            "isMe" to isMe,
+            "avatarUrl" to avatarUrl,
+            "isMe" to isMe
         )
     }
 

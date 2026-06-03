@@ -5,6 +5,8 @@ import androidx.lifecycle.viewModelScope
 import com.example.dinesplit.domain.model.Bill
 import com.example.dinesplit.domain.model.Group
 import com.example.dinesplit.domain.model.Member
+import com.example.dinesplit.domain.model.UserProfile
+import com.example.dinesplit.domain.repository.ProfileRepository
 import com.example.dinesplit.domain.repository.SplitRepository
 import com.example.dinesplit.domain.usecase.SplitCalculationEngine
 import kotlinx.coroutines.flow.MutableStateFlow
@@ -53,11 +55,14 @@ data class GroupDetailUiState(
 
 class GroupDetailViewModel(
     private val repository: SplitRepository,
+    private val profileRepository: ProfileRepository,
     private val groupId: String,
     private val currentUserId: String?,
 ) : ViewModel() {
     private val _uiState = MutableStateFlow(GroupDetailUiState(currentUserId = currentUserId))
     val uiState: StateFlow<GroupDetailUiState> = _uiState.asStateFlow()
+
+    private val profileCache = mutableMapOf<String, UserProfile?>()
 
     init {
         observeGroupDetail()
@@ -159,13 +164,13 @@ class GroupDetailViewModel(
         }
     }
 
-    private fun buildEffectiveMembers(
+    private suspend fun buildEffectiveMembers(
         firestoreMembers: List<Member>,
         bills: List<Bill>,
     ): List<Member> {
         if (firestoreMembers.isNotEmpty()) {
             return firestoreMembers.map { member ->
-                member.copy(isMe = member.id == currentUserId)
+                enrichMember(member.copy(isMe = member.id == currentUserId))
             }
         }
 
@@ -177,13 +182,35 @@ class GroupDetailViewModel(
 
         return ids.map { id ->
             val name = fallbackMemberName(id)
-            Member(
+            enrichMember(Member(
                 id = id,
                 name = name,
                 initial = name.firstOrNull()?.uppercase().orEmpty(),
-                isMe = id == currentUserId,
-            )
+                isMe = id == currentUserId
+            ))
         }
+    }
+
+    private suspend fun enrichMember(member: Member): Member {
+        val profile = profileFor(member.id)
+        val profileName = profile?.displayName?.takeIf { it.isNotBlank() }
+        val displayName = profileName ?: member.name
+        val initial = displayName.firstOrNull()?.uppercase().orEmpty()
+            .ifBlank { member.initial }
+
+        return member.copy(
+            name = displayName,
+            initial = initial,
+            avatarUrl = member.avatarUrl.ifBlank { profile?.avatarUrl.orEmpty() }
+        )
+    }
+
+    private suspend fun profileFor(userId: String): UserProfile? {
+        if (userId.isBlank()) return null
+        if (!profileCache.containsKey(userId)) {
+            profileCache[userId] = profileRepository.getProfile(userId)
+        }
+        return profileCache[userId]
     }
 
     private fun calculateMemberBalances(
