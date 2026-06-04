@@ -4,6 +4,9 @@ import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.example.dinesplit.domain.model.Bill
 import com.example.dinesplit.domain.model.Member
+import com.example.dinesplit.domain.model.Notification
+import com.example.dinesplit.domain.model.NotificationType
+import com.example.dinesplit.domain.repository.NotificationRepository
 import com.example.dinesplit.domain.repository.SplitRepository
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
@@ -11,6 +14,7 @@ import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.combine
 import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
+import java.util.Locale
 
 data class BillDetailUiState(
     val bill: Bill? = null,
@@ -24,6 +28,7 @@ data class BillDetailUiState(
 
 class BillDetailViewModel(
     private val repository: SplitRepository,
+    private val notificationRepository: NotificationRepository,
     private val groupId: String,
     private val billId: String,
     private val currentUserId: String?,
@@ -79,10 +84,51 @@ class BillDetailViewModel(
     }
 
     fun sendPaymentReminder(memberId: String) {
-        val memberName = _uiState.value.members.firstOrNull { it.id == memberId }?.name
+        val state = _uiState.value
+        val bill = state.bill ?: return
+        if (memberId.isBlank() || memberId == currentUserId || memberId == bill.payerId || memberId in bill.paidMemberIds) {
+            return
+        }
+
+        val memberName = state.members.firstOrNull { it.id == memberId }?.name
             ?: fallbackMemberName(memberId)
-        _uiState.update {
-            it.copy(paymentMessage = "Đã nhắc $memberName thanh toán")
+        val senderName = state.members.firstOrNull { it.id == currentUserId }?.name
+            ?: fallbackMemberName(currentUserId.orEmpty())
+                .ifBlank { "Một thành viên" }
+        val amount = bill.shares[memberId] ?: 0.0
+
+        viewModelScope.launch {
+            val now = System.currentTimeMillis()
+            val notification = Notification(
+                id = "${now}_${bill.id}_${memberId}_payment_reminder",
+                userId = memberId,
+                title = "$senderName nhắc bạn thanh toán",
+                subtitle = "${bill.name} - ${formatReminderAmount(amount)} đ",
+                type = NotificationType.PAYMENT_PENDING,
+                relatedId = bill.id,
+                isRead = false,
+                createdAt = now,
+                updatedAt = now,
+                deepLinkDestination = "SPLIT_DETAIL",
+                deepLinkTargetId = bill.id,
+                senderId = currentUserId,
+                groupId = groupId,
+            )
+
+            val result = runCatching {
+                notificationRepository.insertNotification(notification)
+            }
+
+            _uiState.update {
+                if (result.isSuccess) {
+                    it.copy(paymentMessage = "Đã nhắc $memberName thanh toán")
+                } else {
+                    it.copy(
+                        paymentMessage = result.exceptionOrNull()?.message
+                            ?: "Không thể gửi nhắc thanh toán",
+                    )
+                }
+            }
         }
     }
 
@@ -126,26 +172,23 @@ class BillDetailViewModel(
         firestoreMembers: List<Member>,
         bill: Bill?,
     ): List<Member> {
-        if (firestoreMembers.isNotEmpty()) {
-            return firestoreMembers.map { member ->
-                member.copy(isMe = member.id == currentUserId)
-            }
-        }
-        if (bill == null) return emptyList()
-
+        val memberById = firestoreMembers.associateBy { it.id }
+        val billMemberIds = bill?.let { it.shares.keys + it.payerId }.orEmpty()
         val ids =
-            (bill.shares.keys + bill.payerId)
+            (firestoreMembers.map { it.id } + billMemberIds)
                 .filter { it.isNotBlank() }
                 .distinct()
 
         return ids.map { id ->
-            val name = fallbackMemberName(id)
-            Member(
-                id = id,
-                name = name,
-                initial = name.firstOrNull()?.uppercase().orEmpty(),
-                isMe = id == currentUserId,
-            )
+            memberById[id]?.copy(isMe = id == currentUserId) ?: run {
+                val name = fallbackMemberName(id)
+                Member(
+                    id = id,
+                    name = name,
+                    initial = name.firstOrNull()?.uppercase().orEmpty(),
+                    isMe = id == currentUserId,
+                )
+            }
         }
     }
 
@@ -163,5 +206,9 @@ class BillDetailViewModel(
             "tuan_anh" -> "Tuấn Anh"
             else -> memberId
         }
+    }
+
+    private fun formatReminderAmount(amount: Double): String {
+        return "%,.0f".format(Locale("vi", "VN"), amount).replace(",", ".")
     }
 }

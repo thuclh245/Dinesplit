@@ -132,10 +132,17 @@ fun GroupDetailScreen(
     Scaffold(
         containerColor = colorScheme.surface,
         topBar = {
+            val headerMembers = buildHeaderMembers(
+                members = uiState.members,
+                balances = uiState.memberBalances,
+            )
             DetailTopBar(
                 groupName = uiState.group?.name ?: "Chi tiết nhóm",
-                memberCount = uiState.members.size.takeIf { it > 0 } ?: uiState.group?.memberCount ?: 0,
-                members = uiState.members,
+                memberCount = maxOf(
+                    headerMembers.size,
+                    uiState.group?.memberCount ?: 0,
+                ),
+                members = headerMembers,
                 isOwner = uiState.isCurrentUserOwner,
                 onBack = onBack,
                 onLeaveClick = { showLeaveDialog = true },
@@ -269,6 +276,25 @@ fun GroupDetailScreen(
     }
 }
 
+private fun buildHeaderMembers(
+    members: List<Member>,
+    balances: List<GroupMemberBalance>,
+): List<Member> {
+    val memberIds = members.mapTo(mutableSetOf()) { it.id }
+    val missingMembers = balances
+        .filter { balance -> balance.memberId !in memberIds }
+        .map { balance ->
+            Member(
+                id = balance.memberId,
+                name = balance.name,
+                initial = balance.initial,
+                isMe = balance.isMe,
+            )
+        }
+
+    return members + missingMembers
+}
+
 @Composable
 private fun DetailTopBar(
     groupName: String,
@@ -358,23 +384,21 @@ private fun DetailMemberAvatarStack(
     fallbackName: String
 ) {
     val visibleMembers = members.take(3)
+    val visibleTargetCount = minOf(3, maxOf(fallbackCount, members.size).coerceAtLeast(1))
     Row(horizontalArrangement = Arrangement.spacedBy((-12).dp)) {
-        if (visibleMembers.isEmpty()) {
-            repeat(minOf(3, fallbackCount.coerceAtLeast(1))) { index ->
-                DetailMemberAvatar(
-                    imageUrl = null,
-                    name = fallbackName,
-                    seed = "$fallbackName-$index"
-                )
-            }
-        } else {
-            visibleMembers.forEach { member ->
-                DetailMemberAvatar(
-                    imageUrl = member.avatarUrl,
-                    name = member.name.ifBlank { member.initial },
-                    seed = member.id
-                )
-            }
+        visibleMembers.forEach { member ->
+            DetailMemberAvatar(
+                imageUrl = member.avatarUrl,
+                name = member.name.ifBlank { member.initial },
+                seed = member.id
+            )
+        }
+        repeat(visibleTargetCount - visibleMembers.size) { index ->
+            DetailMemberAvatar(
+                imageUrl = null,
+                name = fallbackName,
+                seed = "$fallbackName-fallback-$index"
+            )
         }
     }
 }

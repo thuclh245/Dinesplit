@@ -168,26 +168,26 @@ class GroupDetailViewModel(
         firestoreMembers: List<Member>,
         bills: List<Bill>,
     ): List<Member> {
-        if (firestoreMembers.isNotEmpty()) {
-            return firestoreMembers.map { member ->
-                enrichMember(member.copy(isMe = member.id == currentUserId))
-            }
-        }
-
+        val memberById = firestoreMembers.associateBy { it.id }
+        val billMemberIds =
+            bills.flatMap { bill -> bill.shares.keys + bill.payerId }
         val ids =
-            bills
-                .flatMap { bill -> bill.shares.keys + bill.payerId }
+            (firestoreMembers.map { it.id } + billMemberIds)
                 .filter { it.isNotBlank() }
                 .distinct()
 
         return ids.map { id ->
-            val name = fallbackMemberName(id)
-            enrichMember(Member(
-                id = id,
-                name = name,
-                initial = name.firstOrNull()?.uppercase().orEmpty(),
-                isMe = id == currentUserId
-            ))
+            memberById[id]?.copy(isMe = id == currentUserId) ?: run {
+                val name = fallbackMemberName(id)
+                Member(
+                    id = id,
+                    name = name,
+                    initial = name.firstOrNull()?.uppercase().orEmpty(),
+                    isMe = id == currentUserId,
+                )
+            }
+        }.map { member ->
+            enrichMember(member)
         }
     }
 

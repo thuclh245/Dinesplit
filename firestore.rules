@@ -262,7 +262,9 @@ service cloud.firestore {
           'createdAt',
           'updatedAt',
           'deepLinkDestination',
-          'deepLinkTargetId'
+          'deepLinkTargetId',
+          'senderId',
+          'groupId'
         ])
         && data.id == notificationId
         && data.userId == uid
@@ -283,7 +285,11 @@ service cloud.firestore {
         && data.createdAt is number
         && data.updatedAt is number
         && data.deepLinkDestination is string
-        && data.deepLinkTargetId is string;
+        && data.deepLinkTargetId is string
+        && (!data.keys().hasAny(['senderId']) || data.senderId is string)
+        && (!data.keys().hasAny(['groupId']) || data.groupId is string);
+    }
+
     function groupPath(groupId) {
       return /databases/$(database)/documents/groups/$(groupId);
     }
@@ -300,6 +306,16 @@ service cloud.firestore {
     function isGroupOwner(groupId) {
       return signedIn()
         && groupData(groupId).ownerId == request.auth.uid;
+    }
+
+    function validCrossUserSplitReminder(data, uid) {
+      return signedIn()
+        && data.type == 'PAYMENT_PENDING'
+        && data.senderId == request.auth.uid
+        && data.groupId is string
+        && request.auth.uid in groupData(data.groupId).memberIds
+        && uid in groupData(data.groupId).memberIds
+        && exists(/databases/$(database)/documents/groups/$(data.groupId)/bills/$(data.relatedId));
     }
 
     function validNewGroup(data, groupId) {
@@ -446,7 +462,12 @@ service cloud.firestore {
 
       match /notifications/{notificationId} {
         allow read: if isOwner(uid);
-        allow create, update: if isOwner(uid)
+        allow create: if validNotification(request.resource.data, uid, notificationId)
+          && (
+            isOwner(uid)
+            || validCrossUserSplitReminder(request.resource.data, uid)
+          );
+        allow update: if isOwner(uid)
           && validNotification(request.resource.data, uid, notificationId);
         allow delete: if isOwner(uid);
       }

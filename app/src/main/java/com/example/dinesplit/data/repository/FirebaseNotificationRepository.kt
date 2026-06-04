@@ -32,7 +32,7 @@ class FirebaseNotificationRepository private constructor(
     }
 
     override suspend fun insertNotification(notification: Notification) {
-        val uid = requireCurrentUserId()
+        val uid = notification.userId.ifBlank { requireCurrentUserId() }
         firestore
             .collection(COLLECTION_USER_NOTIFICATIONS)
             .document(uid)
@@ -104,6 +104,8 @@ class FirebaseNotificationRepository private constructor(
             updatedAt = getLongDateSafe(FIELD_UPDATED_AT) ?: System.currentTimeMillis(),
             deepLinkDestination = getString(FIELD_DEEP_LINK_DESTINATION)?.takeIf { it.isNotBlank() },
             deepLinkTargetId = getString(FIELD_DEEP_LINK_TARGET_ID)?.takeIf { it.isNotBlank() },
+            senderId = getString(FIELD_SENDER_ID)?.takeIf { it.isNotBlank() },
+            groupId = getString(FIELD_GROUP_ID)?.takeIf { it.isNotBlank() },
         )
     }
 
@@ -120,6 +122,8 @@ class FirebaseNotificationRepository private constructor(
             FIELD_UPDATED_AT to updatedAt,
             FIELD_DEEP_LINK_DESTINATION to deepLinkDestination.orEmpty(),
             FIELD_DEEP_LINK_TARGET_ID to deepLinkTargetId.orEmpty(),
+            FIELD_SENDER_ID to senderId.orEmpty(),
+            FIELD_GROUP_ID to groupId.orEmpty(),
         )
     }
 
@@ -152,6 +156,8 @@ class FirebaseNotificationRepository private constructor(
         private const val FIELD_UPDATED_AT = "updatedAt"
         private const val FIELD_DEEP_LINK_DESTINATION = "deepLinkDestination"
         private const val FIELD_DEEP_LINK_TARGET_ID = "deepLinkTargetId"
+        private const val FIELD_SENDER_ID = "senderId"
+        private const val FIELD_GROUP_ID = "groupId"
 
         @Volatile
         private var INSTANCE: FirebaseNotificationRepository? = null

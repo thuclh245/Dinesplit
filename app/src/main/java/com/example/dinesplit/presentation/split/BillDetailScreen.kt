@@ -96,6 +96,7 @@ fun BillDetailScreen(
         remember(groupId, billId) {
             BillDetailViewModel(
                 repository = AppContainer.splitRepository(context),
+                notificationRepository = AppContainer.notificationRepository(context),
                 groupId = groupId,
                 billId = billId,
                 currentUserId = FirebaseProviders.auth.currentUser?.uid,

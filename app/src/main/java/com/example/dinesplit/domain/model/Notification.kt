@@ -17,6 +17,8 @@ data class Notification(
     // Deep link support for tuần 2
     val deepLinkDestination: String? = null, // NotificationDestination name
     val deepLinkTargetId: String? = null,
+    val senderId: String? = null,
+    val groupId: String? = null,
 )
 
 enum class NotificationType {

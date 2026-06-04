@@ -139,7 +139,7 @@ class CompleteProfileViewModel(application: Application) : AndroidViewModel(appl
 
             updateProfileUseCase(profile)
                 .onSuccess {
-                    // Auto-seed demo data on complete profile so feed/split/personal is populated immediately!
+                    // Keep first-time accounts free of demo split groups.
                     viewModelScope.launch(Dispatchers.IO) {
                         try {
                             val personalRepo = AppContainer.personalRepository(getApplication())

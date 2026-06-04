@@ -108,10 +108,13 @@ class FirebaseSplitRepository(
         members: List<Member>,
     ) {
         val groupRef = firestore.collection("groups").document(group.id)
+        val cleanMembers = members
+            .filter { it.id.isNotBlank() }
+            .distinctBy { it.id }
         val batch = firestore.batch()
 
-        batch.set(groupRef, group.toMap(memberIds = members.map { it.id }))
-        members.forEach { member ->
+        batch.set(groupRef, group.toMap(memberIds = cleanMembers.map { it.id }))
+        cleanMembers.forEach { member ->
             batch.set(groupRef.collection("members").document(member.id), member.toMap())
         }
 
@@ -385,7 +388,7 @@ class FirebaseSplitRepository(
             "id" to id,
             "name" to name,
             "imageUrl" to imageUrl,
-            "memberCount" to memberCount,
+            "memberCount" to memberIds.size,
             "memberIds" to memberIds,
             "leftMemberIds" to emptyList<String>(),
             "ownerId" to ownerId,

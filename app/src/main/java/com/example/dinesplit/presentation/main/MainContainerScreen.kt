@@ -86,9 +86,9 @@ fun MainContainerScreen(
     val navBackStackEntry by mainNavController.currentBackStackEntryAsState()
     val currentDestination = navBackStackEntry?.destination
     
-    val showBottomBar = BottomTab.items.any { tab ->
-        currentDestination?.hierarchy?.any { it.route == tab.route } == true
-    }
+    val currentRoute = currentDestination?.route
+    val selectedBottomTab = currentRoute?.let(::bottomTabForRoute)
+    val showBottomBar = selectedBottomTab != null
 
     val context = androidx.compose.ui.platform.LocalContext.current
     LaunchedEffect(profileViewModel) {
@@ -126,7 +126,6 @@ fun MainContainerScreen(
     var topBarOffsetHeightPx by remember { mutableStateOf(0f) }
     var bottomBarOffsetHeightPx by remember { mutableStateOf(0f) }
 
-    val currentRoute = currentDestination?.route
     val isFeedScreen = currentRoute == AppRoute.Feed.route
 
     val nestedScrollConnection = remember(currentRoute, topBarHeightPx, bottomBarHeightPx) {
@@ -603,9 +602,7 @@ fun MainContainerScreen(
                         .offset { IntOffset(0, bottomBarOffsetHeightPx.roundToInt()) },
                 ) {
                     MainBottomBar(
-                        isTabSelected = { tab ->
-                            currentDestination?.hierarchy?.any { it.route == tab.route } == true
-                        },
+                        selectedTab = selectedBottomTab,
                         onTabSelected = { tab ->
                             mainNavController.navigate(tab.route) {
                                 popUpTo(mainNavController.graph.startDestinationId) {
@@ -622,13 +619,33 @@ fun MainContainerScreen(
     }
 }
 
+private fun bottomTabForRoute(route: String): BottomTab? {
+    return when (route) {
+        AppRoute.Feed.route -> BottomTab.Feed
+        AppRoute.Split.route,
+        AppRoute.GroupList.route -> BottomTab.Split
+        AppRoute.Personal.route -> BottomTab.Personal
+        AppRoute.Profile.route -> BottomTab.Profile
+        else -> null
+    }
+}
+
 @Composable
 private fun MainBottomBar(
-    isTabSelected: (BottomTab) -> Boolean,
+    selectedTab: BottomTab?,
     onTabSelected: (BottomTab) -> Unit,
     modifier: Modifier = Modifier,
 ) {
     val colorScheme = MaterialTheme.colorScheme
+    val tabs = remember {
+        listOf(
+            BottomTab.Feed,
+            BottomTab.Split,
+            BottomTab.Personal,
+            BottomTab.Profile,
+        )
+    }
+
     Surface(
         modifier = modifier
             .fillMaxWidth()
@@ -645,8 +662,8 @@ private fun MainBottomBar(
                 verticalAlignment = Alignment.CenterVertically,
                 horizontalArrangement = Arrangement.SpaceAround,
             ) {
-                BottomTab.items.forEach { tab ->
-                    val selected = isTabSelected(tab)
+                tabs.forEach { tab ->
+                    val selected = selectedTab == tab
 
                     Column(
                         modifier = Modifier
@@ -683,7 +700,7 @@ private fun MainBottomBar(
 private fun MainBottomBarPreview() {
     DineSplitTheme {
         MainBottomBar(
-            isTabSelected = { tab -> tab.route == AppRoute.Feed.route },
+            selectedTab = BottomTab.Feed,
             onTabSelected = {},
         )
     }
