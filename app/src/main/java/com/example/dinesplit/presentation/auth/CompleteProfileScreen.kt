@@ -35,6 +35,7 @@ import com.example.dinesplit.ui.theme.DineSplitTheme
 fun CompleteProfileScreen(
     onBack: () -> Unit,
     onCompleteProfileSuccess: () -> Unit,
+    initialDisplayName: String = "",
     viewModel: CompleteProfileViewModel = viewModel(),
 ) {
     val uiState by viewModel.uiState.collectAsState()
@@ -44,6 +45,12 @@ fun CompleteProfileScreen(
             if (effect is CompleteProfileUiEffect.NavigateToMain) {
                 onCompleteProfileSuccess()
             }
+        }
+    }
+
+    LaunchedEffect(initialDisplayName) {
+        if (initialDisplayName.isNotBlank() && uiState.displayName.isBlank()) {
+            viewModel.onDisplayNameChange(initialDisplayName)
         }
     }
 

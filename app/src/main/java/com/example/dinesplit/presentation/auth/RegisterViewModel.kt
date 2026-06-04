@@ -30,7 +30,7 @@ data class RegisterUiState(
 )
 
 sealed interface RegisterUiEffect {
-    data object NavigateToCompleteProfile : RegisterUiEffect
+    data class NavigateToCompleteProfile(val displayName: String) : RegisterUiEffect
 }
 
 class RegisterViewModel(application: Application) : AndroidViewModel(application) {
@@ -101,7 +101,7 @@ class RegisterViewModel(application: Application) : AndroidViewModel(application
             registerUseCase(current.email.trim(), current.password)
                 .onSuccess {
                     _uiState.value = _uiState.value.copy(isSubmitting = false)
-                    _effect.emit(RegisterUiEffect.NavigateToCompleteProfile)
+                    _effect.emit(RegisterUiEffect.NavigateToCompleteProfile(current.displayName))
                 }
                 .onFailure { throwable ->
                     _uiState.value =

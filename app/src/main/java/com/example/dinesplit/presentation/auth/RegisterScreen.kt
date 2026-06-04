@@ -42,7 +42,7 @@ import kotlinx.coroutines.flow.collectLatest
 @Composable
 fun RegisterScreen(
     onGoToLogin: () -> Unit,
-    onRegisterSuccess: () -> Unit,
+    onRegisterSuccess: (String) -> Unit,
     viewModel: RegisterViewModel = viewModel(),
 ) {
     val uiState by viewModel.uiState.collectAsState()
@@ -50,7 +50,7 @@ fun RegisterScreen(
     LaunchedEffect(viewModel) {
         viewModel.effect.collectLatest { effect ->
             if (effect is RegisterUiEffect.NavigateToCompleteProfile) {
-                onRegisterSuccess()
+                onRegisterSuccess(effect.displayName)
             }
         }
     }
@@ -334,7 +334,10 @@ private fun RegisterContent(
 
                 // Social Options
                 Column(horizontalAlignment = Alignment.CenterHorizontally) {
-                    Row(verticalAlignment = Alignment.CenterVertically) {
+                    Row(
+                        modifier = Modifier.fillMaxWidth(),
+                        verticalAlignment = Alignment.CenterVertically
+                    ) {
                         Box(modifier = Modifier.weight(1f).height(1.dp).background(MaterialTheme.colorScheme.surfaceContainerHighest))
                         Text(
                             "OR CONTINUE WITH",

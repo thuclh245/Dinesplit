@@ -36,6 +36,8 @@ class FeedInteractionViewModel(application: Application) : AndroidViewModel(appl
     private val observeSessionUseCase = AppContainer.observeSessionUseCase(application)
     private val getCurrentUserProfileUseCase = AppContainer.getCurrentUserProfileUseCase(application)
 
+    private val feedRepository = AppContainer.feedRepository()
+
     private val _uiState = MutableStateFlow(FeedInteractionUiState())
     val uiState: StateFlow<FeedInteractionUiState> = _uiState.asStateFlow()
 
@@ -129,38 +131,16 @@ class FeedInteractionViewModel(application: Application) : AndroidViewModel(appl
             val displayName = profile?.displayName?.takeIf { it.isNotBlank() }
                 ?: session.email.substringBefore('@')
 
-            val commentId = UUID.randomUUID().toString()
-            val commentPayload = mapOf(
-                "id" to commentId,
-                "userId" to session.uid,
-                "userName" to displayName,
-                "userAvatarUrl" to profile?.avatarUrl,
-                "message" to trimmed,
-                "createdAt" to System.currentTimeMillis()
+            val comment = com.example.dinesplit.domain.model.Comment(
+                authorUid = session.uid,
+                authorName = displayName,
+                authorAvatar = profile?.avatarUrl ?: "",
+                content = trimmed,
+                createdAt = java.util.Date()
             )
 
             runCatching {
-                firestore.collection("posts")
-                    .document(postId)
-                    .collection("comments")
-                    .document(commentId)
-                    .set(commentPayload)
-                    .awaitFirebase()
-
-                firestore.collection("posts")
-                    .document(postId)
-                    .update("commentsCount", FieldValue.increment(1))
-                    .awaitFirebase()
-            }.onSuccess {
-                if (session.uid != item.post.authorUid) {
-                    triggerSocialNotification(
-                        targetUserId = item.post.authorUid,
-                        title = "New Comment",
-                        subtitle = "$displayName commented on your post",
-                        type = "ACTIVITY_UPDATE",
-                        relatedId = postId
-                    )
-                }
+                feedRepository.addComment(postId, comment)
             }.onFailure { throwable ->
                 _uiState.update { it.copy(errorMessage = FirebaseErrorMapper.toUserMessage(throwable)) }
                 revertCommentCount(postId, item)

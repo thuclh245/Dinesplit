@@ -9,7 +9,14 @@ sealed class AppRoute(val route: String) {
 
     data object Register : AppRoute("register")
 
-    data object CompleteProfile : AppRoute("complete_profile")
+    data object CompleteProfile : AppRoute("complete_profile") {
+        const val ARG_DISPLAY_NAME = "displayName"
+        val routeWithArg = "$route?$ARG_DISPLAY_NAME={$ARG_DISPLAY_NAME}"
+
+        fun createRoute(displayName: String): String {
+            return "$route?$ARG_DISPLAY_NAME=${Uri.encode(displayName)}"
+        }
+    }
 
     data object MainContainer : AppRoute("main") {
         const val ARG_TAB = "tab"

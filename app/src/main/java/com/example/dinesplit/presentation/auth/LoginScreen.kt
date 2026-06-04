@@ -219,7 +219,7 @@ private fun LoginContent(
 
                 // Divider
                 Row(
-                    modifier = Modifier.padding(vertical = AppDimens.spaceMd),
+                    modifier = Modifier.fillMaxWidth().padding(vertical = AppDimens.spaceMd),
                     verticalAlignment = Alignment.CenterVertically,
                 ) {
                     Box(modifier = Modifier.weight(1f).height(1.dp).background(MaterialTheme.colorScheme.surfaceContainerHighest))
@@ -245,7 +245,7 @@ private fun LoginContent(
                 )
             }
 
-            Spacer(modifier = Modifier.weight(1f))
+            Spacer(modifier = Modifier.height(32.dp))
 
             Row(
                 modifier =

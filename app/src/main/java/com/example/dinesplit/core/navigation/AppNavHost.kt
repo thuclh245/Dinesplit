@@ -80,24 +80,35 @@ fun AppNavHost(navController: NavHostController) {
                     onGoToLogin = {
                         navController.navigateUp()
                     },
-                    onRegisterSuccess = {
-                        navController.navigate(AppRoute.CompleteProfile.route)
+                    onRegisterSuccess = { displayName ->
+                        navController.navigate(AppRoute.CompleteProfile.createRoute(displayName))
                     },
                 )
             }
         }
 
-        composable(AppRoute.CompleteProfile.route) {
+        composable(
+            route = AppRoute.CompleteProfile.routeWithArg,
+            arguments = listOf(
+                navArgument(AppRoute.CompleteProfile.ARG_DISPLAY_NAME) {
+                    type = androidx.navigation.NavType.StringType
+                    nullable = true
+                    defaultValue = null
+                }
+            )
+        ) { backStackEntry ->
+            val displayName = backStackEntry.arguments?.getString(AppRoute.CompleteProfile.ARG_DISPLAY_NAME).orEmpty()
             CompleteProfileScreen(
                 onBack = {
                     navController.navigateUp()
                 },
                 onCompleteProfileSuccess = {
                     navController.navigate(NavGraph.MAIN) {
-                        popUpTo(AppRoute.CompleteProfile.route) { inclusive = true }
+                        popUpTo(AppRoute.CompleteProfile.routeWithArg) { inclusive = true }
                         launchSingleTop = true
                     }
                 },
+                initialDisplayName = displayName,
             )
         }
 
