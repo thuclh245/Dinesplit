@@ -43,13 +43,13 @@ fun ProfileScreen(
     savedPosts: List<Post> = emptyList(),
     taggedBills: List<LinkedBillSummary> = emptyList(),
     isLoggingOut: Boolean = false,
-    isSeeding: Boolean = false,
+    isPublic: Boolean = true,
     isSettingsDialogOpen: Boolean = false,
     onCloseSettings: () -> Unit = {},
     bottomPadding: Dp = 80.dp,
     onEditProfile: () -> Unit,
     onOpenSettings: () -> Unit = {},
-    onSeedDemoData: () -> Unit = {},
+    onPrivacyChange: (Boolean) -> Unit = {},
     onOpenSearch: () -> Unit,
     onLogout: () -> Unit,
     onOpenPostDetail: (String) -> Unit = {},
@@ -59,17 +59,7 @@ fun ProfileScreen(
     val resolvedHandle = userHandle.ifBlank { "@" }
     val resolvedBio = userBio.ifBlank { "Add a bio so friends know who they are splitting with." }
     var showLogoutConfirmation by remember { mutableStateOf(false) }
-    var wasSeeding by remember { mutableStateOf(false) }
     var selectedTab by remember { mutableStateOf(0) }
- 
-    LaunchedEffect(isSeeding) {
-        if (isSeeding) {
-            wasSeeding = true
-        } else if (wasSeeding) {
-            onCloseSettings()
-            wasSeeding = false
-        }
-    }
  
     if (showLogoutConfirmation) {
         AlertDialog(
@@ -100,7 +90,7 @@ fun ProfileScreen(
  
     if (isSettingsDialogOpen) {
         AlertDialog(
-            onDismissRequest = { if (!isSeeding) onCloseSettings() },
+            onDismissRequest = onCloseSettings,
             title = {
                 Row(
                     verticalAlignment = Alignment.CenterVertically,
@@ -111,48 +101,40 @@ fun ProfileScreen(
                         contentDescription = null,
                         tint = MaterialTheme.colorScheme.primary,
                     )
-                    Text("Cài đặt Nhà phát triển")
+                    Text("Cài đặt riêng tư")
                 }
             },
             text = {
                 Column(verticalArrangement = Arrangement.spacedBy(12.dp)) {
                     Text(
-                        text = "Gieo dữ liệu mẫu để trải nghiệm đầy đủ các tính năng của ứng dụng (bao gồm giao dịch cá nhân, thông báo và các bài đăng trên Feed).",
+                        text = "Thiết lập chế độ hiển thị tài khoản của bạn. Khi tài khoản là công khai, mọi người đều có thể xem bài viết của bạn. Khi tắt chế độ này, chỉ bạn bè (những người cùng theo dõi nhau) mới xem được.",
                         style = MaterialTheme.typography.bodyMedium,
                     )
-                    if (isSeeding) {
-                        Row(
-                            verticalAlignment = Alignment.CenterVertically,
-                            horizontalArrangement = Arrangement.spacedBy(12.dp),
-                            modifier = Modifier.fillMaxWidth().padding(top = 8.dp),
-                        ) {
-                            CircularProgressIndicator(modifier = Modifier.size(20.dp), strokeWidth = 2.dp)
-                            Text(
-                                "Đang gieo dữ liệu mẫu vào Firestore...",
-                                style = MaterialTheme.typography.bodySmall,
-                                color = MaterialTheme.colorScheme.outline,
-                            )
-                        }
+                    Spacer(modifier = Modifier.height(8.dp))
+                    Row(
+                        modifier = Modifier.fillMaxWidth(),
+                        verticalAlignment = Alignment.CenterVertically,
+                        horizontalArrangement = Arrangement.SpaceBetween
+                    ) {
+                        Text(
+                            text = "Tài khoản Công khai",
+                            style = MaterialTheme.typography.bodyLarge.copy(fontWeight = FontWeight.SemiBold)
+                        )
+                        Switch(
+                            checked = isPublic,
+                            onCheckedChange = onPrivacyChange
+                        )
                     }
                 }
             },
             confirmButton = {
                 Button(
-                    onClick = onSeedDemoData,
-                    enabled = !isSeeding,
+                    onClick = onCloseSettings,
                     colors = ButtonDefaults.buttonColors(containerColor = MaterialTheme.colorScheme.primary),
                 ) {
-                    Text("Gieo dữ liệu", color = Color.White)
+                    Text("Đóng", color = Color.White)
                 }
-            },
-            dismissButton = {
-                TextButton(
-                    onClick = onCloseSettings,
-                    enabled = !isSeeding,
-                ) {
-                    Text("Đóng")
-                }
-            },
+            }
         )
     }
  
@@ -176,7 +158,6 @@ fun ProfileScreen(
                 following = followingCount.toString(),
                 avatarUrl = userAvatarUrl.orEmpty(),
                 onEditProfile = onEditProfile,
-                onOpenSettings = onOpenSettings,
                 isLoggingOut = isLoggingOut,
                 onLogout = { showLogoutConfirmation = true },
                 onFollowingClick = { onNavigateToFollowList(0) },
@@ -267,7 +248,6 @@ private fun ProfileHeader(
     following: String,
     avatarUrl: String,
     onEditProfile: () -> Unit,
-    onOpenSettings: () -> Unit,
     isLoggingOut: Boolean,
     onLogout: () -> Unit,
     onFollowingClick: () -> Unit,
@@ -314,20 +294,10 @@ private fun ProfileHeader(
                     Button(
                         onClick = onEditProfile,
                         shape = RoundedCornerShape(12.dp),
-                        modifier = Modifier.weight(1f).height(40.dp),
+                        modifier = Modifier.fillMaxWidth().height(40.dp),
                         contentPadding = PaddingValues(0.dp),
                     ) {
                         Text("Edit Profile", style = MaterialTheme.typography.labelLarge.copy(fontWeight = FontWeight.Bold))
-                    }
-                    Surface(
-                        onClick = onOpenSettings,
-                        shape = RoundedCornerShape(12.dp),
-                        color = MaterialTheme.colorScheme.surfaceContainer,
-                        modifier = Modifier.size(40.dp),
-                    ) {
-                        Box(contentAlignment = Alignment.Center) {
-                            Icon(Icons.Default.Settings, contentDescription = null, modifier = Modifier.size(20.dp))
-                        }
                     }
                 }
             }
@@ -357,7 +327,6 @@ private fun ProfileHeader(
 
         // Info
         Column(verticalArrangement = Arrangement.spacedBy(4.dp)) {
-            Text(displayName, style = MaterialTheme.typography.bodyLarge.copy(fontWeight = FontWeight.Bold))
             Text(
                 text = bio,
                 style = MaterialTheme.typography.bodyMedium,

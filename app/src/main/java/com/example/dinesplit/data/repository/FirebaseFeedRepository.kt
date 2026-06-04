@@ -107,7 +107,16 @@ class FirebaseFeedRepository(
         }
 
     override suspend fun createPost(post: Post) {
-        firestore.collection("posts").document(post.id).set(post).awaitFirebase()
+        val batch = firestore.batch()
+        val postRef = firestore.collection("posts").document(post.id)
+        batch.set(postRef, post)
+
+        if (!post.authorUid.isNullOrBlank()) {
+            val userRef = firestore.collection("users").document(post.authorUid)
+            batch.update(userRef, "postsCount", com.google.firebase.firestore.FieldValue.increment(1))
+        }
+
+        batch.commit().awaitFirebase()
     }
 
     override suspend fun updatePost(post: Post) {
@@ -115,7 +124,19 @@ class FirebaseFeedRepository(
     }
 
     override suspend fun deletePost(postId: String) {
-        firestore.collection("posts").document(postId).delete().awaitFirebase()
+        val postRef = firestore.collection("posts").document(postId)
+        val postSnap = postRef.get().awaitFirebase()
+        val authorUid = postSnap.getString("authorUid")
+
+        val batch = firestore.batch()
+        batch.delete(postRef)
+
+        if (!authorUid.isNullOrBlank()) {
+            val userRef = firestore.collection("users").document(authorUid)
+            batch.update(userRef, "postsCount", com.google.firebase.firestore.FieldValue.increment(-1))
+        }
+
+        batch.commit().awaitFirebase()
     }
 
     override suspend fun uploadPostImage(

@@ -331,6 +331,7 @@ class FirebaseProfileRepository private constructor(
             FIELD_FCM_TOKEN to fcmToken,
             FIELD_CREATED_AT to (createdAt?.time ?: 0L),
             FIELD_UPDATED_AT to (updatedAt?.time ?: System.currentTimeMillis()),
+            FIELD_IS_PUBLIC to isPublic,
         )
     }
 
@@ -377,6 +378,7 @@ class FirebaseProfileRepository private constructor(
         val fcmToken = getString(FIELD_FCM_TOKEN).orEmpty()
         val createdAt = getDateSafe(FIELD_CREATED_AT)
         val updatedAt = getDateSafe(FIELD_UPDATED_AT) ?: createdAt
+        val isPublic = getBoolean(FIELD_IS_PUBLIC) ?: true
 
         return UserProfile(
             uid = uid,
@@ -393,6 +395,7 @@ class FirebaseProfileRepository private constructor(
             fcmToken = fcmToken,
             createdAt = createdAt,
             updatedAt = updatedAt,
+            isPublic = isPublic,
         )
     }
 
@@ -438,6 +441,7 @@ class FirebaseProfileRepository private constructor(
         private const val FIELD_CREATED_AT = "createdAt"
         private const val FIELD_UPDATED_AT = "updatedAt"
         private const val FIELD_CLAIMED_AT = "claimedAt"
+        private const val FIELD_IS_PUBLIC = "isPublic"
 
         @Volatile
         private var INSTANCE: FirebaseProfileRepository? = null

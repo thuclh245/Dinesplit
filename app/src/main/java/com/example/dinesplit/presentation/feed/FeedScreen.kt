@@ -255,11 +255,11 @@ fun FeedScreen(
                         LoadingBlock(modifier = Modifier.padding(AppDimens.spaceLg), message = "Đang tải bài viết...")
                     }
                 }
-                state.error != null -> {
+                state.errorMessage != null -> {
                     Box(modifier = Modifier.fillMaxSize().padding(top = 64.dp + statusBarHeight), contentAlignment = Alignment.Center) {
                         ErrorStateBlock(
                             title = "Không thể tải bài viết",
-                            subtitle = state.error.orEmpty(),
+                            subtitle = state.errorMessage,
                             retryText = "Thử lại",
                             onRetryClick = onRefresh,
                             modifier = Modifier.padding(AppDimens.spaceLg),
@@ -696,16 +696,16 @@ private fun LinkedBillSummarySection(
     onSettleUp: () -> Unit,
 ) {
     Surface(
-        color = MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.5f),
+        color = MaterialTheme.colorScheme.surfaceContainerHigh.copy(alpha = 0.7f),
         shape = AppShapes.large,
-        border = BorderStroke(1.dp, MaterialTheme.colorScheme.outlineVariant.copy(alpha = 0.5f)),
         modifier = Modifier
             .fillMaxWidth()
             .padding(horizontal = 16.dp, vertical = 8.dp)
+            .border(1.dp, MaterialTheme.colorScheme.outlineVariant.copy(alpha = 0.3f), AppShapes.large)
     ) {
         Column(
-            modifier = Modifier.padding(16.dp),
-            verticalArrangement = Arrangement.spacedBy(12.dp)
+            modifier = Modifier.padding(12.dp),
+            verticalArrangement = Arrangement.spacedBy(8.dp)
         ) {
             Row(
                 verticalAlignment = Alignment.CenterVertically,
@@ -714,43 +714,48 @@ private fun LinkedBillSummarySection(
             ) {
                 Row(
                     verticalAlignment = Alignment.CenterVertically,
-                    horizontalArrangement = Arrangement.spacedBy(8.dp),
-                    modifier = Modifier.weight(1f)
+                    horizontalArrangement = Arrangement.spacedBy(6.dp)
                 ) {
-                    Icon(
-                        imageVector = Icons.Default.ReceiptLong,
-                        contentDescription = null,
-                        tint = MaterialTheme.colorScheme.primary,
-                        modifier = Modifier.size(20.dp)
-                    )
+                    Surface(
+                        color = MaterialTheme.colorScheme.primary.copy(alpha = 0.1f),
+                        shape = CircleShape
+                    ) {
+                        Row(
+                            modifier = Modifier.padding(horizontal = 8.dp, vertical = 4.dp),
+                            verticalAlignment = Alignment.CenterVertically,
+                            horizontalArrangement = Arrangement.spacedBy(4.dp)
+                        ) {
+                            Icon(
+                                imageVector = Icons.Default.ReceiptLong,
+                                contentDescription = null,
+                                tint = MaterialTheme.colorScheme.primary,
+                                modifier = Modifier.size(12.dp)
+                            )
+                            Text(
+                                text = "ĐÃ GẮN HÓA ĐƠN",
+                                style = MaterialTheme.typography.labelSmall.copy(
+                                    fontWeight = FontWeight.Black,
+                                    letterSpacing = 0.5.sp
+                                ),
+                                color = MaterialTheme.colorScheme.primary
+                            )
+                        }
+                    }
                     Text(
                         text = summary.billName,
-                        style = MaterialTheme.typography.titleSmall.copy(fontWeight = FontWeight.Bold),
+                        style = MaterialTheme.typography.labelMedium.copy(fontWeight = FontWeight.Bold),
                         maxLines = 1,
-                        overflow = TextOverflow.Ellipsis
+                        overflow = TextOverflow.Ellipsis,
+                        modifier = Modifier.widthIn(max = 120.dp)
                     )
                 }
                 
                 if (summary.isParticipant) {
-                    Surface(
-                        color = if (summary.isSettled) {
-                            MaterialTheme.colorScheme.secondaryContainer
-                        } else {
-                            MaterialTheme.colorScheme.errorContainer.copy(alpha = 0.2f)
-                        },
-                        shape = CircleShape,
-                        border = BorderStroke(
-                            width = 1.dp,
-                            color = if (summary.isSettled) MaterialTheme.colorScheme.secondary else MaterialTheme.colorScheme.error.copy(alpha = 0.4f)
-                        )
-                    ) {
-                        Text(
-                            text = if (summary.isSettled) "ĐÃ THANH TOÁN" else "CHƯA THANH TOÁN",
-                            modifier = Modifier.padding(horizontal = 8.dp, vertical = 2.dp),
-                            style = MaterialTheme.typography.labelSmall.copy(fontWeight = FontWeight.Bold),
-                            color = if (summary.isSettled) MaterialTheme.colorScheme.onSecondaryContainer else MaterialTheme.colorScheme.error
-                        )
-                    }
+                    Text(
+                        text = if (summary.isSettled) "✓ ĐÃ XONG" else "⚠ CHỜ CHI",
+                        style = MaterialTheme.typography.labelSmall.copy(fontWeight = FontWeight.ExtraBold),
+                        color = if (summary.isSettled) MaterialTheme.colorScheme.secondary else MaterialTheme.colorScheme.error
+                    )
                 }
             }
 
@@ -767,21 +772,21 @@ private fun LinkedBillSummarySection(
                     )
                     Text(
                         text = formatMoney(summary.totalAmount),
-                        style = MaterialTheme.typography.bodyMedium.copy(fontWeight = FontWeight.Bold)
+                        style = MaterialTheme.typography.titleSmall.copy(fontWeight = FontWeight.Bold)
                     )
                 }
                 
                 if (summary.isParticipant) {
                     Column(horizontalAlignment = Alignment.End) {
                         Text(
-                            text = if (summary.isIPayer) "Bạn đã trả trước" else "Phần của bạn",
+                            text = if (summary.isIPayer) "Bạn đã trả trước" else "Bạn còn cần trả",
                             style = MaterialTheme.typography.labelSmall,
                             color = MaterialTheme.colorScheme.onSurfaceVariant
                         )
                         Text(
                             text = formatMoney(summary.myShare),
-                            style = MaterialTheme.typography.bodyMedium.copy(
-                                fontWeight = FontWeight.Bold,
+                            style = MaterialTheme.typography.titleSmall.copy(
+                                fontWeight = FontWeight.ExtraBold,
                                 color = if (summary.isSettled || summary.isMyPaid || summary.isIPayer) {
                                     MaterialTheme.colorScheme.secondary
                                 } else {
@@ -790,71 +795,37 @@ private fun LinkedBillSummarySection(
                             )
                         )
                     }
-                } else {
-                    Column(horizontalAlignment = Alignment.End) {
-                        Text(
-                            text = "Trạng thái",
-                            style = MaterialTheme.typography.labelSmall,
-                            color = MaterialTheme.colorScheme.onSurfaceVariant
-                        )
-                        Text(
-                            text = "Chỉ xem",
-                            style = MaterialTheme.typography.bodyMedium.copy(
-                                fontWeight = FontWeight.Bold,
-                                color = MaterialTheme.colorScheme.outline
-                            )
-                        )
-                    }
                 }
             }
 
-            if (summary.isParticipant) {
-                Row(
-                    modifier = Modifier.fillMaxWidth(),
-                    horizontalArrangement = Arrangement.spacedBy(8.dp)
+            Row(
+                modifier = Modifier.fillMaxWidth(),
+                horizontalArrangement = Arrangement.spacedBy(8.dp)
+            ) {
+                TextButton(
+                    onClick = onViewBill,
+                    modifier = Modifier.weight(1f),
+                    shape = AppShapes.medium,
                 ) {
-                    OutlinedButton(
-                        onClick = onViewBill,
+                    Text(
+                        text = "Xem chi tiết",
+                        style = MaterialTheme.typography.labelMedium.copy(fontWeight = FontWeight.Bold)
+                    )
+                }
+
+                if (summary.isParticipant && !summary.isSettled && !summary.isMyPaid && !summary.isIPayer && summary.myShare > 0.0) {
+                    Button(
+                        onClick = onSettleUp,
                         modifier = Modifier.weight(1f),
                         shape = AppShapes.medium,
-                        border = BorderStroke(1.dp, MaterialTheme.colorScheme.outline.copy(alpha = 0.3f)),
-                        colors = ButtonDefaults.outlinedButtonColors(
-                            contentColor = MaterialTheme.colorScheme.onSurface
+                        colors = ButtonDefaults.buttonColors(
+                            containerColor = MaterialTheme.colorScheme.secondary,
                         )
                     ) {
-                        Icon(
-                            imageVector = Icons.Default.Info,
-                            contentDescription = null,
-                            modifier = Modifier.size(16.dp)
-                        )
-                        Spacer(modifier = Modifier.width(4.dp))
                         Text(
-                            text = "Chi tiết",
-                            style = MaterialTheme.typography.labelMedium.copy(fontWeight = FontWeight.SemiBold)
+                            text = "Thanh toán",
+                            style = MaterialTheme.typography.labelMedium.copy(fontWeight = FontWeight.Bold)
                         )
-                    }
-
-                    if (!summary.isSettled && !summary.isMyPaid && !summary.isIPayer && summary.myShare > 0.0) {
-                        Button(
-                            onClick = onSettleUp,
-                            modifier = Modifier.weight(1f),
-                            shape = AppShapes.medium,
-                            colors = ButtonDefaults.buttonColors(
-                                containerColor = MaterialTheme.colorScheme.secondary,
-                                contentColor = MaterialTheme.colorScheme.onSecondary
-                            )
-                        ) {
-                            Icon(
-                                imageVector = Icons.Default.Payments,
-                                contentDescription = null,
-                                modifier = Modifier.size(16.dp)
-                            )
-                            Spacer(modifier = Modifier.width(4.dp))
-                            Text(
-                                text = "Trả nợ",
-                                style = MaterialTheme.typography.labelMedium.copy(fontWeight = FontWeight.Bold)
-                            )
-                        }
                     }
                 }
             }

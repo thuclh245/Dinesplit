@@ -24,7 +24,7 @@ data class FeedUiState(
     val currentUser: UserProfile? = null,
     val viewedStoryIds: Set<String> = emptySet(),
     val isLoading: Boolean = true,
-    val error: String? = null,
+    val errorMessage: String? = null,
     val isRefreshing: Boolean = false,
     val canLoadMore: Boolean = true,
     val isLoadingMore: Boolean = false,
@@ -34,7 +34,7 @@ data class FeedUiState(
 data class PaginationState(
     val posts: List<Post> = emptyList(),
     val isLoading: Boolean = true,
-    val error: String? = null,
+    val errorMessage: String? = null,
     val isRefreshing: Boolean = false,
     val isLoadingMore: Boolean = false,
     val canLoadMore: Boolean = true,
@@ -91,7 +91,7 @@ class FeedViewModel(application: Application) : AndroidViewModel(application) {
                 currentUser = currentUser,
                 viewedStoryIds = viewedIds,
                 isLoading = pagination.isLoading,
-                error = pagination.error,
+                errorMessage = pagination.errorMessage,
                 isRefreshing = pagination.isRefreshing,
                 canLoadMore = pagination.canLoadMore,
                 isLoadingMore = pagination.isLoadingMore,
@@ -127,7 +127,7 @@ class FeedViewModel(application: Application) : AndroidViewModel(application) {
     private fun loadInitialFeed() {
         feedJob?.cancel()
         feedJob = viewModelScope.launch {
-            _paginationState.value = _paginationState.value.copy(isLoading = true, error = null)
+            _paginationState.value = _paginationState.value.copy(isLoading = true, errorMessage = null)
             try {
                 AppContainer.feedRepository().getFeedPosts().collect { posts ->
                     _paginationState.value = _paginationState.value.copy(
@@ -139,7 +139,7 @@ class FeedViewModel(application: Application) : AndroidViewModel(application) {
                 }
             } catch (e: Exception) {
                 _paginationState.value = _paginationState.value.copy(
-                    error = "Không thể tải bảng tin: ${e.localizedMessage ?: "Lỗi kết nối"}",
+                    errorMessage = "Không thể tải bảng tin: ${e.localizedMessage ?: "Lỗi kết nối"}",
                     isLoading = false
                 )
             }
@@ -153,7 +153,7 @@ class FeedViewModel(application: Application) : AndroidViewModel(application) {
     fun refresh() {
         if (_paginationState.value.isRefreshing) return
         viewModelScope.launch {
-            _paginationState.value = _paginationState.value.copy(isRefreshing = true, error = null)
+            _paginationState.value = _paginationState.value.copy(isRefreshing = true, errorMessage = null)
             try {
                 activeBillJobs.values.forEach { it.cancel() }
                 activeBillJobs.clear()
@@ -162,7 +162,7 @@ class FeedViewModel(application: Application) : AndroidViewModel(application) {
                 loadInitialFeed()
             } catch (e: Exception) {
                 _paginationState.value = _paginationState.value.copy(
-                    error = "Không thể tải lại: ${e.localizedMessage ?: "Lỗi kết nối"}"
+                    errorMessage = "Không thể tải lại: ${e.localizedMessage ?: "Lỗi kết nối"}"
                 )
             } finally {
                 _paginationState.value = _paginationState.value.copy(isRefreshing = false)
@@ -226,7 +226,7 @@ class FeedViewModel(application: Application) : AndroidViewModel(application) {
                 // ROLLBACK: Hoàn tác giao diện về trạng thái cũ nếu Firebase từ chối truy cập hoặc mất mạng
                 _paginationState.value = _paginationState.value.copy(
                     posts = oldPosts,
-                    error = FirebaseErrorMapper.toUserMessage(throwable)
+                    errorMessage = FirebaseErrorMapper.toUserMessage(throwable)
                 )
             }
         }
@@ -254,7 +254,7 @@ class FeedViewModel(application: Application) : AndroidViewModel(application) {
                 // ROLLBACK: Khôi phục tim nếu mạng lỗi
                 _paginationState.value = _paginationState.value.copy(
                     posts = oldPosts,
-                    error = FirebaseErrorMapper.toUserMessage(throwable)
+                    errorMessage = FirebaseErrorMapper.toUserMessage(throwable)
                 )
             }
         }
@@ -330,7 +330,7 @@ class FeedViewModel(application: Application) : AndroidViewModel(application) {
                 // Rollback nếu xóa thất bại
                 _paginationState.value = _paginationState.value.copy(
                     posts = oldPosts,
-                    error = FirebaseErrorMapper.toUserMessage(throwable)
+                    errorMessage = FirebaseErrorMapper.toUserMessage(throwable)
                 )
             }
         }

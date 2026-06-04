@@ -129,6 +129,7 @@ fun CreateGroupScreen(onBack: () -> Unit) {
                     onSearchChange = viewModel::onSearchQueryChange,
                     profiles = uiState.searchResults,
                     selectedMemberIds = uiState.selectedMemberIds,
+                    friendUids = uiState.friendUids,
                     isSearching = uiState.isSearching,
                     onProfileToggle = viewModel::onProfileToggled,
                 )
@@ -287,6 +288,7 @@ private fun CreateGroupMembersSection(
     onSearchChange: (String) -> Unit,
     profiles: List<UserProfile>,
     selectedMemberIds: Set<String>,
+    friendUids: Set<String>,
     isSearching: Boolean,
     onProfileToggle: (UserProfile) -> Unit,
 ) {
@@ -360,9 +362,11 @@ private fun CreateGroupMembersSection(
         ) {
             Column {
                 profiles.forEachIndexed { index, profile ->
+                    val isFriend = friendUids.contains(profile.uid)
                     CreateGroupMemberRow(
                         profile = profile,
                         isSelected = selectedMemberIds.contains(profile.uid),
+                        isFriend = isFriend,
                         onClick = { onProfileToggle(profile) },
                     )
                     if (index < profiles.size - 1) {
@@ -401,6 +405,7 @@ private fun EmptyProfileSearchCard(searchQuery: String) {
 private fun CreateGroupMemberRow(
     profile: UserProfile,
     isSelected: Boolean,
+    isFriend: Boolean,
     onClick: () -> Unit,
 ) {
     val colorScheme = MaterialTheme.colorScheme
@@ -411,7 +416,7 @@ private fun CreateGroupMemberRow(
         modifier =
             Modifier
                 .fillMaxWidth()
-                .clickable { onClick() }
+                .clickable(enabled = isFriend) { onClick() }
                 .padding(16.dp),
         verticalAlignment = Alignment.CenterVertically,
         horizontalArrangement = Arrangement.SpaceBetween,
@@ -422,33 +427,63 @@ private fun CreateGroupMemberRow(
                     Modifier
                         .size(48.dp)
                         .clip(CircleShape)
-                        .background(if (isSelected) colorScheme.primary else colorScheme.outlineVariant),
+                        .background(
+                            if (!isFriend) {
+                                colorScheme.surfaceVariant.copy(alpha = 0.5f)
+                            } else if (isSelected) {
+                                colorScheme.primary
+                            } else {
+                                colorScheme.outlineVariant
+                            }
+                        ),
                 contentAlignment = Alignment.Center,
             ) {
-                Text(initial, color = colorScheme.surfaceContainerLowest, fontWeight = FontWeight.Bold, fontSize = 18.sp)
+                Text(
+                    text = initial,
+                    color = if (isFriend) colorScheme.surfaceContainerLowest else colorScheme.onSurfaceVariant.copy(alpha = 0.5f),
+                    fontWeight = FontWeight.Bold,
+                    fontSize = 18.sp
+                )
             }
             Spacer(modifier = Modifier.width(16.dp))
             Column {
-                Text(displayName, fontWeight = FontWeight.Bold, fontSize = 14.sp, color = colorScheme.onSurface)
                 Text(
-                    text = "@${profile.username}",
-                    fontSize = 12.sp,
-                    color = colorScheme.onSurfaceVariant.copy(alpha = 0.7f),
+                    text = displayName,
+                    fontWeight = FontWeight.Bold,
+                    fontSize = 14.sp,
+                    color = if (isFriend) colorScheme.onSurface else colorScheme.onSurfaceVariant.copy(alpha = 0.5f)
                 )
+                Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(6.dp)) {
+                    Text(
+                        text = "@${profile.username}",
+                        fontSize = 12.sp,
+                        color = colorScheme.onSurfaceVariant.copy(alpha = if (isFriend) 0.7f else 0.4f),
+                    )
+                    if (!isFriend) {
+                        Text(
+                            text = "• Chưa kết bạn",
+                            fontSize = 12.sp,
+                            color = colorScheme.error.copy(alpha = 0.8f),
+                            fontWeight = FontWeight.Medium
+                        )
+                    }
+                }
             }
         }
 
-        if (isSelected) {
-            Icon(Icons.Default.CheckCircle, contentDescription = "Đã chọn", tint = colorScheme.primaryContainer)
-        } else {
-            Box(
-                modifier =
-                    Modifier
-                        .size(24.dp)
-                        .border(2.dp, colorScheme.outlineVariant, CircleShape),
-                contentAlignment = Alignment.Center,
-            ) {
-                Icon(Icons.Default.Add, contentDescription = "Thêm", tint = colorScheme.outlineVariant, modifier = Modifier.size(16.dp))
+        if (isFriend) {
+            if (isSelected) {
+                Icon(Icons.Default.CheckCircle, contentDescription = "Đã chọn", tint = colorScheme.primaryContainer)
+            } else {
+                Box(
+                    modifier =
+                        Modifier
+                            .size(24.dp)
+                            .border(2.dp, colorScheme.outlineVariant, CircleShape),
+                    contentAlignment = Alignment.Center,
+                ) {
+                    Icon(Icons.Default.Add, contentDescription = "Thêm", tint = colorScheme.outlineVariant, modifier = Modifier.size(16.dp))
+                }
             }
         }
     }

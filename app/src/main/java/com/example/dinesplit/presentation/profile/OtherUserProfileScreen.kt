@@ -91,41 +91,79 @@ fun OtherUserProfileScreen(
                             onFollowersClick = { onNavigateToFollowList(profile.uid, 1) }
                         )
 
-                        OtherProfileTabs(selectedTab = selectedTab, onTabSelected = { selectedTab = it })
+                        val isMutualFriend = uiState.isFollowing && uiState.isFollowedByOther
+                        val showPrivateLock = !profile.isPublic && !isMutualFriend
 
-                        when (selectedTab) {
-                            0 -> {
-                                val postsWithImages = uiState.posts.filter { it.imageUrls.isNotEmpty() }
-                                if (postsWithImages.isEmpty()) {
-                                    Box(
-                                        modifier = Modifier
-                                            .fillMaxWidth()
-                                            .padding(vertical = 48.dp),
-                                        contentAlignment = Alignment.Center
-                                    ) {
-                                        Column(
-                                            horizontalAlignment = Alignment.CenterHorizontally,
-                                            verticalArrangement = Arrangement.spacedBy(8.dp)
-                                        ) {
-                                            Icon(
-                                                imageVector = Icons.Default.PhotoLibrary,
-                                                contentDescription = null,
-                                                tint = MaterialTheme.colorScheme.outline.copy(0.6f),
-                                                modifier = Modifier.size(48.dp)
-                                            )
-                                            Text(
-                                                text = "Chưa có bài đăng nào",
-                                                style = MaterialTheme.typography.bodyMedium,
-                                                color = MaterialTheme.colorScheme.outline
-                                            )
-                                        }
-                                    }
-                                } else {
-                                    OtherPhotoGrid(posts = uiState.posts, onPostClick = { /* Can navigate to post detail if needed */ })
+                        if (showPrivateLock) {
+                            Surface(
+                                modifier = Modifier
+                                    .fillMaxWidth()
+                                    .padding(horizontal = 24.dp, vertical = 32.dp),
+                                color = MaterialTheme.colorScheme.surfaceContainerHigh.copy(alpha = 0.6f),
+                                shape = RoundedCornerShape(24.dp),
+                                border = BorderStroke(1.dp, MaterialTheme.colorScheme.outlineVariant.copy(alpha = 0.4f))
+                            ) {
+                                Column(
+                                    modifier = Modifier.padding(24.dp),
+                                    horizontalAlignment = Alignment.CenterHorizontally,
+                                    verticalArrangement = Arrangement.spacedBy(16.dp)
+                                ) {
+                                    Icon(
+                                        imageVector = Icons.Default.Lock,
+                                        contentDescription = "Tài khoản riêng tư",
+                                        tint = MaterialTheme.colorScheme.primary,
+                                        modifier = Modifier.size(48.dp)
+                                    )
+                                    Text(
+                                        text = "Tài khoản này là riêng tư",
+                                        style = MaterialTheme.typography.titleMedium.copy(fontWeight = FontWeight.Bold),
+                                        color = MaterialTheme.colorScheme.onSurface
+                                    )
+                                    Text(
+                                        text = "Hãy kết bạn (theo dõi lẫn nhau) để xem các bài viết và hóa đơn chung.",
+                                        style = MaterialTheme.typography.bodyMedium,
+                                        color = MaterialTheme.colorScheme.onSurfaceVariant,
+                                        textAlign = androidx.compose.ui.text.style.TextAlign.Center
+                                    )
                                 }
                             }
-                            1 -> {
-                                OtherTaggedBillsList(bills = uiState.taggedBills, onBillClick = { _, _ -> })
+                        } else {
+                            OtherProfileTabs(selectedTab = selectedTab, onTabSelected = { selectedTab = it })
+
+                            when (selectedTab) {
+                                0 -> {
+                                    val postsWithImages = uiState.posts.filter { it.imageUrls.isNotEmpty() }
+                                    if (postsWithImages.isEmpty()) {
+                                        Box(
+                                            modifier = Modifier
+                                                .fillMaxWidth()
+                                                .padding(vertical = 48.dp),
+                                            contentAlignment = Alignment.Center
+                                        ) {
+                                            Column(
+                                                horizontalAlignment = Alignment.CenterHorizontally,
+                                                verticalArrangement = Arrangement.spacedBy(8.dp)
+                                            ) {
+                                                Icon(
+                                                    imageVector = Icons.Default.PhotoLibrary,
+                                                    contentDescription = null,
+                                                    tint = MaterialTheme.colorScheme.outline.copy(0.6f),
+                                                    modifier = Modifier.size(48.dp)
+                                                )
+                                                Text(
+                                                    text = "Chưa có bài đăng nào",
+                                                    style = MaterialTheme.typography.bodyMedium,
+                                                    color = MaterialTheme.colorScheme.outline
+                                                )
+                                            }
+                                        }
+                                    } else {
+                                        OtherPhotoGrid(posts = uiState.posts, onPostClick = { /* Can navigate to post detail if needed */ })
+                                    }
+                                }
+                                1 -> {
+                                    OtherTaggedBillsList(bills = uiState.taggedBills, onBillClick = { _, _ -> })
+                                }
                             }
                         }
                         
@@ -256,7 +294,6 @@ private fun OtherProfileHeader(
 
         // Info
         Column(verticalArrangement = Arrangement.spacedBy(4.dp)) {
-            Text(profile.displayName, style = MaterialTheme.typography.bodyLarge.copy(fontWeight = FontWeight.Bold))
             Text(
                 text = resolvedBio,
                 style = MaterialTheme.typography.bodyMedium,

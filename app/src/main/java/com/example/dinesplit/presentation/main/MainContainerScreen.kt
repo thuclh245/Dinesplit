@@ -96,12 +96,6 @@ fun MainContainerScreen(
             when (effect) {
                 ProfileUiEffect.LogoutSuccess -> onLogout()
                 ProfileUiEffect.SaveSuccess -> mainNavController.navigateUp()
-                ProfileUiEffect.SeedSuccess -> {
-                    android.widget.Toast.makeText(context, "Gieo dữ liệu mẫu thành công! Hãy kiểm tra trang chủ và ví của bạn.", android.widget.Toast.LENGTH_LONG).show()
-                }
-                is ProfileUiEffect.SeedError -> {
-                    android.widget.Toast.makeText(context, "Lỗi gieo dữ liệu mẫu: ${effect.message}", android.widget.Toast.LENGTH_LONG).show()
-                }
             }
         }
     }
@@ -282,8 +276,8 @@ fun MainContainerScreen(
                             onBack = { mainNavController.navigateUp() },
                             transactionId = null,
                             initialTransaction = null,
-                            
                             availableCategories = personalUiState.categories,
+                            availableWallets = personalUiState.wallets,
                             onSave = { transaction ->
                                 personalViewModel.addTransaction(transaction)
                                 mainNavController.navigateUp()
@@ -431,13 +425,13 @@ fun MainContainerScreen(
                                     savedPosts = profileUiState.savedPosts,
                                     taggedBills = profileUiState.taggedBills,
                                     isLoggingOut = profileUiState.isLoggingOut,
-                                    isSeeding = profileUiState.isSeeding,
+                                    isPublic = profileUiState.profile?.isPublic ?: true,
                                     isSettingsDialogOpen = profileUiState.isSettingsDialogOpen,
                                     onCloseSettings = { profileViewModel.setSettingsDialogOpen(false) },
                                     bottomPadding = dynamicBottomPadding,
                                     onEditProfile = { mainNavController.navigate(AppRoute.EditProfile.route) },
                                     onOpenSettings = { profileViewModel.setSettingsDialogOpen(true) },
-                                    onSeedDemoData = profileViewModel::seedDemoData,
+                                    onPrivacyChange = profileViewModel::setAccountPrivacy,
                                     onOpenSearch = { mainNavController.navigate(AppRoute.Search.route) },
                                     onLogout = profileViewModel::logout,
                                     onOpenPostDetail = { postId ->

@@ -23,6 +23,7 @@ data class CreateGroupUiState(
     val currentProfile: UserProfile? = null,
     val searchResults: List<UserProfile> = emptyList(),
     val selectedProfiles: List<UserProfile> = emptyList(),
+    val friendUids: Set<String> = emptySet(),
     val isSearching: Boolean = false,
     val isLoading: Boolean = false,
     val isCreated: Boolean = false,
@@ -142,7 +143,14 @@ class CreateGroupViewModel(
             }
 
             val profile = profileRepository.getProfile(uid) ?: fallbackCurrentProfile(uid)
-            _uiState.update { it.copy(currentProfile = profile) }
+            
+            val followersResult = profileRepository.getFollowers(uid)
+            val followingResult = profileRepository.getFollowing(uid)
+            val followerUids = followersResult.getOrDefault(emptyList()).map { it.uid }.toSet()
+            val followingUids = followingResult.getOrDefault(emptyList()).map { it.uid }.toSet()
+            val friends = followerUids.intersect(followingUids)
+
+            _uiState.update { it.copy(currentProfile = profile, friendUids = friends) }
         }
     }
 

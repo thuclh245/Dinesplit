@@ -81,6 +81,24 @@ class PersonalViewModel(application: Application) : AndroidViewModel(application
                 val preparedTransaction = transaction.withUploadedReceiptIfNeeded()
                 repository.insertTransaction(preparedTransaction)
 
+                // Update wallet balance if a walletId is specified
+                preparedTransaction.walletId?.takeIf { it.isNotBlank() }?.let { walletId ->
+                    val walletsList = repository.getWallets()
+                    val matchingWallet = walletsList.firstOrNull { it.id == walletId }
+                    if (matchingWallet != null) {
+                        val newBalance = when (preparedTransaction.type) {
+                            TransactionType.EXPENSE -> matchingWallet.balance - preparedTransaction.amount
+                            TransactionType.INCOME -> matchingWallet.balance + preparedTransaction.amount
+                        }
+                        repository.updateWallet(
+                            matchingWallet.copy(
+                                balance = newBalance,
+                                updatedAt = System.currentTimeMillis()
+                            )
+                        )
+                    }
+                }
+
                 // Kích hoạt thông báo cho giao dịch được thêm
                 val notification =
                     NotificationFactory.transactionAdded(

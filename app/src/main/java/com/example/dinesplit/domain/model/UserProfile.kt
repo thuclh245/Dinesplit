@@ -17,6 +17,7 @@ data class UserProfile(
     val fcmToken: String = "",
     val createdAt: Date? = null,
     val updatedAt: Date? = null,
+    val isPublic: Boolean = true,
 ) {
     fun isComplete(): Boolean {
         return displayName.isNotBlank() && username.isNotBlank()

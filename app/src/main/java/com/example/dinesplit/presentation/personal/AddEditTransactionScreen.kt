@@ -49,6 +49,7 @@ import com.example.dinesplit.core.ui.BackNavigationButton
 import com.example.dinesplit.core.ui.PrimaryButton
 import com.example.dinesplit.data.model.StoredCategory
 import com.example.dinesplit.data.ocr.MlKitReceiptTextRecognizer
+import com.example.dinesplit.domain.model.PersonalWallet
 import com.example.dinesplit.domain.model.Transaction
 import com.example.dinesplit.domain.model.TransactionSource
 import com.example.dinesplit.domain.model.TransactionType
@@ -73,6 +74,8 @@ data class AddEditTransactionInput(
     val note: String = "",
     val receiptImageUrl: String = "",
     val dateMillis: Long = System.currentTimeMillis(),
+    val walletId: String = "",
+    val walletName: String = "",
 )
 
 private val AddEditTransactionInputSaver =
@@ -87,6 +90,8 @@ private val AddEditTransactionInputSaver =
                 "note" to it.note,
                 "receiptImageUrl" to it.receiptImageUrl,
                 "dateMillis" to it.dateMillis,
+                "walletId" to it.walletId,
+                "walletName" to it.walletName,
             )
         },
         restore = {
@@ -99,6 +104,8 @@ private val AddEditTransactionInputSaver =
                 note = it["note"] as String,
                 receiptImageUrl = it["receiptImageUrl"] as String,
                 dateMillis = it["dateMillis"] as Long,
+                walletId = it["walletId"] as? String ?: "",
+                walletName = it["walletName"] as? String ?: "",
             )
         },
     )
@@ -110,11 +117,13 @@ fun AddEditTransactionScreen(
     transactionId: String? = null,
     initialTransaction: Transaction? = null,
     availableCategories: List<StoredCategory> = emptyList(),
+    availableWallets: List<PersonalWallet> = emptyList(),
     onSave: (Transaction) -> Unit = {},
 ) {
     var input by rememberSaveable(stateSaver = AddEditTransactionInputSaver) {
         mutableStateOf(
             if (initialTransaction != null) {
+                val matchingWallet = availableWallets.firstOrNull { it.id == initialTransaction.walletId }
                 AddEditTransactionInput(
                     id = initialTransaction.id,
                     amount = initialTransaction.amount.toString(),
@@ -124,14 +133,21 @@ fun AddEditTransactionScreen(
                     note = initialTransaction.note.orEmpty(),
                     receiptImageUrl = initialTransaction.receiptImageUrl.orEmpty(),
                     dateMillis = initialTransaction.date,
+                    walletId = initialTransaction.walletId.orEmpty(),
+                    walletName = matchingWallet?.name.orEmpty(),
                 )
             } else {
-                AddEditTransactionInput()
+                val defaultWallet = availableWallets.firstOrNull()
+                AddEditTransactionInput(
+                    walletId = defaultWallet?.id.orEmpty(),
+                    walletName = defaultWallet?.name.orEmpty(),
+                )
             },
         )
     }
 
     var showCategoryDropdown by remember { mutableStateOf(false) }
+    var showWalletDropdown by remember { mutableStateOf(false) }
     var showDatePicker by remember { mutableStateOf(false) }
     var validationError by remember { mutableStateOf<String?>(null) }
     var isScanningReceipt by remember { mutableStateOf(false) }
@@ -294,6 +310,63 @@ fun AddEditTransactionScreen(
                 }
             }
 
+            // Wallet - Tài khoản / Ví
+            AppCard {
+                Column(
+                    modifier = Modifier.padding(AppDimens.spaceMd),
+                    verticalArrangement = Arrangement.spacedBy(AppDimens.spaceSm)
+                ) {
+                    Text("Tài khoản / Ví", style = MaterialTheme.typography.labelSmall)
+                    if (availableWallets.isEmpty()) {
+                        Text(
+                            text = "Chưa có ví nào khả dụng. Vui lòng tạo ví trong mục Lập kế hoạch trước.",
+                            style = MaterialTheme.typography.bodySmall,
+                            color = MaterialTheme.colorScheme.error,
+                        )
+                    } else {
+                        Surface(
+                            modifier = Modifier.fillMaxWidth(),
+                            color = MaterialTheme.colorScheme.surface,
+                            shape = MaterialTheme.shapes.medium
+                        ) {
+                            Row(
+                                modifier = Modifier
+                                    .fillMaxWidth()
+                                    .padding(AppDimens.spaceMd),
+                                horizontalArrangement = Arrangement.SpaceBetween,
+                                verticalAlignment = Alignment.CenterVertically
+                            ) {
+                                Text(
+                                    text = input.walletName.ifEmpty { "Chọn ví thanh toán" },
+                                    style = MaterialTheme.typography.bodyMedium
+                                )
+                                TextButton(onClick = { showWalletDropdown = !showWalletDropdown }) {
+                                    Text("Thay đổi")
+                                }
+                            }
+                        }
+                        DropdownMenu(
+                            expanded = showWalletDropdown,
+                            onDismissRequest = { showWalletDropdown = false },
+                            modifier = Modifier.fillMaxWidth(),
+                        ) {
+                            availableWallets.forEach { wallet ->
+                                DropdownMenuItem(
+                                    text = { Text(wallet.name) },
+                                    onClick = {
+                                        input = input.copy(
+                                            walletId = wallet.id,
+                                            walletName = wallet.name,
+                                        )
+                                        showWalletDropdown = false
+                                    },
+                                )
+                            }
+                        }
+                    }
+                }
+            }
+
             // Date - Ngày
              AppCard {
                  Row(
@@ -435,6 +508,7 @@ fun AddEditTransactionScreen(
                          require(input.amount.toDoubleOrNull() != null) { "Số tiền phải là số hợp lệ" }
                          require(input.amount.toDouble() > 0) { "Số tiền phải > 0" }
                          require(input.categoryId.isNotBlank()) { "Danh mục là bắt buộc" }
+                         require(input.walletId.isNotBlank()) { "Tài khoản/Ví là bắt buộc" }
 
                         val transaction =
                             Transaction(
@@ -454,6 +528,7 @@ fun AddEditTransactionScreen(
                                     },
                                 date = input.dateMillis,
                                 createdAt = System.currentTimeMillis(),
+                                walletId = input.walletId.takeIf { it.isNotBlank() },
                             )
                         validationError = null
                         onSave(transaction)

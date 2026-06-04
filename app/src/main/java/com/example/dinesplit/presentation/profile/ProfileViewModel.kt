@@ -37,7 +37,6 @@ data class ProfileUiState(
     val profile: UserProfile? = null,
     val errorMessage: String? = null,
     val isLoggingOut: Boolean = false,
-    val isSeeding: Boolean = false,
     val posts: List<Post> = emptyList(),
     val savedPosts: List<Post> = emptyList(),
     val taggedBills: List<LinkedBillSummary> = emptyList(),
@@ -63,10 +62,6 @@ sealed interface ProfileUiEffect {
     data object LogoutSuccess : ProfileUiEffect
 
     data object SaveSuccess : ProfileUiEffect
-
-    data object SeedSuccess : ProfileUiEffect
-
-    data class SeedError(val message: String) : ProfileUiEffect
 }
 
 class ProfileViewModel(application: Application) : AndroidViewModel(application) {
@@ -339,31 +334,19 @@ class ProfileViewModel(application: Application) : AndroidViewModel(application)
         }
     }
 
-    fun seedDemoData() {
+    fun setAccountPrivacy(isPublic: Boolean) {
         val profile = _profileUiState.value.profile ?: return
-        if (_profileUiState.value.isSeeding) return
-
+        val updatedProfile = profile.copy(isPublic = isPublic)
         viewModelScope.launch {
-            _profileUiState.value = _profileUiState.value.copy(isSeeding = true)
-            try {
-                withContext(Dispatchers.IO) {
-                    val context = getApplication<Application>()
-                    val personalRepo = AppContainer.personalRepository(context)
-                    val notificationRepo = AppContainer.notificationRepository(context)
-                    val feedRepo = AppContainer.feedRepository()
-                    val splitRepo = AppContainer.splitRepository()
-
-                    DemoDataSeeder.seedDemoTransactions(personalRepo, profile.uid)
-                    DemoDataSeeder.seedDemoNotifications(notificationRepo, profile.uid)
-                    DemoDataSeeder.seedDemoSplit(splitRepo, profile.uid)
-                    DemoDataSeeder.seedDemoPosts(feedRepo, profile)
+            updateProfileUseCase(updatedProfile)
+                .onSuccess {
+                    _profileUiState.value = _profileUiState.value.copy(profile = updatedProfile)
                 }
-                _effect.emit(ProfileUiEffect.SeedSuccess)
-            } catch (e: Exception) {
-                _effect.emit(ProfileUiEffect.SeedError(e.message ?: "Failed to seed demo data"))
-            } finally {
-                _profileUiState.value = _profileUiState.value.copy(isSeeding = false)
-            }
+                .onFailure { throwable ->
+                    _profileUiState.value = _profileUiState.value.copy(
+                        errorMessage = "Failed to update privacy: ${throwable.localizedMessage}"
+                    )
+                }
         }
     }
 
