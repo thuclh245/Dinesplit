@@ -7,6 +7,9 @@ import com.example.dinesplit.domain.model.NotificationType
 import com.example.dinesplit.domain.repository.NotificationRepository
 import com.google.android.gms.tasks.Task
 import com.google.firebase.firestore.FirebaseFirestore
+import kotlinx.coroutines.channels.awaitClose
+import kotlinx.coroutines.flow.Flow
+import kotlinx.coroutines.flow.callbackFlow
 import kotlinx.coroutines.suspendCancellableCoroutine
 import kotlin.coroutines.resume
 import kotlin.coroutines.resumeWithException
@@ -15,6 +18,33 @@ class FirebaseNotificationRepository private constructor(
     @Suppress("UNUSED_PARAMETER") context: Context,
     private val firestore: FirebaseFirestore = FirebaseProviders.firestore,
 ) : NotificationRepository {
+    override fun observeNotifications(): Flow<List<Notification>> =
+        callbackFlow {
+            val uid = FirebaseProviders.auth.currentUser?.uid
+            if (uid.isNullOrBlank()) {
+                trySend(emptyList())
+                close()
+                return@callbackFlow
+            }
+
+            val registration =
+                firestore
+                    .collection(COLLECTION_USER_NOTIFICATIONS)
+                    .document(uid)
+                    .collection(COLLECTION_NOTIFICATIONS)
+                    .orderBy(FIELD_CREATED_AT, com.google.firebase.firestore.Query.Direction.DESCENDING)
+                    .addSnapshotListener { snapshot, error ->
+                        if (error != null) {
+                            close(error)
+                            return@addSnapshotListener
+                        }
+
+                        trySend(snapshot?.documents?.mapNotNull { document -> document.toNotification(uid) }.orEmpty())
+                    }
+
+            awaitClose { registration.remove() }
+        }
+
     override suspend fun getNotifications(): List<Notification> {
         val uid = requireCurrentUserId()
         val snapshot =

@@ -77,6 +77,7 @@ fun HomeTopBar(
     onAvatarClick: () -> Unit = {},
     onOpenSearch: (() -> Unit)? = null,
     onOpenNotifications: (() -> Unit)? = null,
+    notificationUnreadCount: Int = 0,
     onOpenSettings: (() -> Unit)? = null,
 ) {
     Surface(
@@ -191,11 +192,32 @@ fun HomeTopBar(
                 }
                 if (onOpenNotifications != null) {
                     IconButton(onClick = onOpenNotifications) {
-                        Icon(
-                            imageVector = Icons.Default.Notifications,
-                            contentDescription = "Thông báo",
-                            tint = MaterialTheme.colorScheme.primary,
-                        )
+                        BadgedBox(
+                            badge = {
+                                if (notificationUnreadCount > 0) {
+                                    Badge(
+                                        containerColor = MaterialTheme.colorScheme.error,
+                                        contentColor = MaterialTheme.colorScheme.onError,
+                                    ) {
+                                        Text(
+                                            text = if (notificationUnreadCount > 99) "99+" else notificationUnreadCount.toString(),
+                                            style = MaterialTheme.typography.labelSmall,
+                                        )
+                                    }
+                                }
+                            },
+                        ) {
+                            Icon(
+                                imageVector = Icons.Default.Notifications,
+                                contentDescription =
+                                    if (notificationUnreadCount > 0) {
+                                        "Thông báo, $notificationUnreadCount chưa đọc"
+                                    } else {
+                                        "Thông báo"
+                                    },
+                                tint = MaterialTheme.colorScheme.primary,
+                            )
+                        }
                     }
                 }
                 if (onOpenSettings != null) {

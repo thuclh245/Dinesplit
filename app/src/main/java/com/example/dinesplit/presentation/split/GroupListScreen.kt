@@ -20,12 +20,15 @@ import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.automirrored.filled.ArrowBack
 import androidx.compose.material.icons.filled.Add
 import androidx.compose.material.icons.filled.Notifications
 import androidx.compose.material.icons.filled.Search
 import androidx.compose.material.icons.filled.Star
 import androidx.compose.material3.Button
 import androidx.compose.material3.ButtonDefaults
+import androidx.compose.material3.Badge
+import androidx.compose.material3.BadgedBox
 import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
 import androidx.compose.material3.CircularProgressIndicator
@@ -48,6 +51,7 @@ import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.example.dinesplit.core.common.AppContainer
@@ -73,6 +77,11 @@ fun GroupListScreen(
     onNavigateToGroupDetail: (String) -> Unit,
     onNavigateToCreateGroup: () -> Unit,
     onNavigateToAllGroups: () -> Unit,
+    bottomPadding: Dp = 80.dp,
+    onBack: () -> Unit = {},
+    onOpenSearch: () -> Unit = {},
+    onOpenNotifications: () -> Unit = {},
+    notificationUnreadCount: Int = 0,
 ) {
     val colorScheme = MaterialTheme.colorScheme
     val context = LocalContext.current
@@ -86,12 +95,20 @@ fun GroupListScreen(
 
     Scaffold(
         containerColor = colorScheme.surface,
-        topBar = { GroupTopBar() },
+        topBar = {
+            GroupTopBar(
+                onBack = onBack,
+                onOpenSearch = onOpenSearch,
+                onOpenNotifications = onOpenNotifications,
+                notificationUnreadCount = notificationUnreadCount,
+            )
+        },
         floatingActionButton = {
             FloatingActionButton(
                 onClick = onNavigateToCreateGroup,
                 containerColor = colorScheme.primaryContainer,
                 shape = CircleShape,
+                modifier = Modifier.padding(bottom = bottomPadding),
             ) {
                 Icon(Icons.Default.Add, contentDescription = "Tạo nhóm", tint = colorScheme.onPrimaryContainer)
             }
@@ -103,7 +120,7 @@ fun GroupListScreen(
                     .fillMaxSize()
                     .padding(paddingValues)
                     .padding(horizontal = 20.dp),
-            contentPadding = PaddingValues(top = 16.dp, bottom = 100.dp),
+            contentPadding = PaddingValues(top = 16.dp, bottom = bottomPadding + 100.dp),
             verticalArrangement = Arrangement.spacedBy(16.dp),
         ) {
             item {
@@ -186,16 +203,26 @@ fun GroupListScreen(
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
-fun GroupTopBar() {
+fun GroupTopBar(
+    onBack: () -> Unit,
+    onOpenSearch: () -> Unit,
+    onOpenNotifications: () -> Unit,
+    notificationUnreadCount: Int,
+) {
     val colorScheme = MaterialTheme.colorScheme
     TopAppBar(
+        navigationIcon = {
+            IconButton(onClick = onBack) {
+                Icon(Icons.AutoMirrored.Filled.ArrowBack, contentDescription = "Quay lại")
+            }
+        },
         title = { Text("Nhóm của bạn", fontWeight = FontWeight.Bold) },
         actions = {
-            IconButton(onClick = { }) {
+            IconButton(onClick = onOpenSearch) {
                 Icon(Icons.Default.Search, contentDescription = "Tìm kiếm")
             }
-            IconButton(onClick = { }) {
-                Icon(Icons.Default.Notifications, contentDescription = "Thông báo")
+            IconButton(onClick = onOpenNotifications) {
+                NotificationBellIcon(notificationUnreadCount = notificationUnreadCount)
             }
         },
         colors =
@@ -203,6 +230,35 @@ fun GroupTopBar() {
                 containerColor = colorScheme.surface.copy(alpha = 0.9f),
             ),
     )
+}
+
+@Composable
+private fun NotificationBellIcon(notificationUnreadCount: Int) {
+    BadgedBox(
+        badge = {
+            if (notificationUnreadCount > 0) {
+                Badge(
+                    containerColor = MaterialTheme.colorScheme.error,
+                    contentColor = MaterialTheme.colorScheme.onError,
+                ) {
+                    Text(
+                        text = if (notificationUnreadCount > 99) "99+" else notificationUnreadCount.toString(),
+                        style = MaterialTheme.typography.labelSmall,
+                    )
+                }
+            }
+        },
+    ) {
+        Icon(
+            Icons.Default.Notifications,
+            contentDescription =
+                if (notificationUnreadCount > 0) {
+                    "Thông báo, $notificationUnreadCount chưa đọc"
+                } else {
+                    "Thông báo"
+                },
+        )
+    }
 }
 
 @Composable
