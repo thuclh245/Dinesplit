@@ -48,6 +48,7 @@ class SearchViewModel(application: Application) : AndroidViewModel(application) 
             observeSessionUseCase().collect { session ->
                 currentUserId = session?.uid
                 loadExploreData()
+                loadMyFollowRelations()
             }
         }
 
@@ -172,6 +173,26 @@ class SearchViewModel(application: Application) : AndroidViewModel(application) 
         loadRecentSearches()
         loadSuggestedPeople()
         loadTrendingPlaces()
+    }
+
+    fun loadMyFollowRelations() {
+        val uid = currentUserId ?: return
+        viewModelScope.launch(Dispatchers.IO) {
+            try {
+                val myFollowingsResult = profileRepository.getFollowing(uid).getOrDefault(emptyList())
+                val myFollowersResult = profileRepository.getFollowers(uid).getOrDefault(emptyList())
+                val myFollowings = myFollowingsResult.map { it.uid }.toSet()
+                val myFollowers = myFollowersResult.map { it.uid }.toSet()
+                _uiState.update {
+                    it.copy(
+                        myFollowingIds = myFollowings,
+                        myFollowerIds = myFollowers
+                    )
+                }
+            } catch (e: Exception) {
+                // Ignore
+            }
+        }
     }
 
     fun loadRecentSearches() {

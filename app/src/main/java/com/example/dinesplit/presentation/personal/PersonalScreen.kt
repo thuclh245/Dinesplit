@@ -149,13 +149,6 @@ fun PersonalScreen(
     }
 
     Scaffold(
-        topBar = {
-            HomeTopBar(
-                userAvatarUrl = userAvatarUrl,
-                title = "Cá nhân",
-                onOpenSearch = onOpenSearch
-            )
-        },
         floatingActionButton = {
             FloatingActionButton(
                 onClick = onAddTransaction,

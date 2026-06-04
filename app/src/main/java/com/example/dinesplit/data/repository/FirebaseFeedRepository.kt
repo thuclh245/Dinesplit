@@ -438,12 +438,7 @@ class FirebaseFeedRepository(
     }
 
     private fun isRealPost(post: Post): Boolean {
-        val author = post.authorUid
         val id = post.id
-        return !id.startsWith("demo_post_") &&
-                !author.startsWith("demo_user_") &&
-                author != "chef_hoang_uid" &&
-                author != "foodie_lan_uid" &&
-                author != "cafe_huy_uid"
+        return !id.startsWith("demo_post_")
     }
 }

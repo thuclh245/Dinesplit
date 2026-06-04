@@ -195,13 +195,6 @@ fun FeedScreen(
 
     Scaffold(
         contentWindowInsets = WindowInsets(0, 0, 0, 0),
-        topBar = {
-            HomeTopBar(
-                userAvatarUrl = userAvatarUrl,
-                onOpenNotifications = onOpenNotifications,
-                onOpenSearch = onOpenSearch
-            )
-        },
         // CỐ ĐỊNH NÚT NỔI TOÀN CỤC: Giúp nút bấm hiển thị mượt mà trên mọi trạng thái nội dung
         floatingActionButton = {
             Column(

@@ -82,7 +82,7 @@ fun SearchTopBar(
                 ) {
                     if (query.isEmpty()) {
                         Text(
-                            "Tìm kiếm món ăn, người dùng, địa điểm...",
+                            "Tìm kiếm...",
                             style = MaterialTheme.typography.bodyMedium,
                             color = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.6f),
                         )
@@ -157,6 +157,8 @@ fun RecentSearchChip(
 @Composable
 fun SearchPersonCard(
     user: UserProfile,
+    isFollowing: Boolean = false,
+    isFollower: Boolean = false,
     onClick: () -> Unit,
 ) {
     AppCard(
@@ -172,7 +174,8 @@ fun SearchPersonCard(
         ) {
             Row(
                 verticalAlignment = Alignment.CenterVertically,
-                horizontalArrangement = Arrangement.spacedBy(AppDimens.spaceMd)
+                horizontalArrangement = Arrangement.spacedBy(AppDimens.spaceMd),
+                modifier = Modifier.weight(1f)
             ) {
                 DineAvatarImage(
                     imageUrl = user.avatarUrl,
@@ -194,19 +197,35 @@ fun SearchPersonCard(
                 }
             }
 
+            val buttonText = when {
+                isFollowing && isFollower -> "Bạn bè"
+                isFollowing -> "Đang theo dõi"
+                else -> "Xem hồ sơ"
+            }
+
+            val isStatus = isFollowing
+
             Button(
                 onClick = onClick,
                 shape = CircleShape,
                 colors =
                     ButtonDefaults.buttonColors(
-                        containerColor = MaterialTheme.colorScheme.primary.copy(alpha = 0.1f),
-                        contentColor = MaterialTheme.colorScheme.primary,
+                        containerColor = if (isStatus) {
+                            MaterialTheme.colorScheme.surfaceContainer
+                        } else {
+                            MaterialTheme.colorScheme.primary.copy(alpha = 0.1f)
+                        },
+                        contentColor = if (isStatus) {
+                            MaterialTheme.colorScheme.onSurfaceVariant
+                        } else {
+                            MaterialTheme.colorScheme.primary
+                        },
                     ),
                 contentPadding = PaddingValues(horizontal = AppDimens.spaceMd, vertical = 6.dp),
                 modifier = Modifier.height(36.dp),
             ) {
                 Text(
-                    "Xem hồ sơ",
+                    buttonText,
                     style = MaterialTheme.typography.labelLarge.copy(fontWeight = FontWeight.Bold)
                 )
             }

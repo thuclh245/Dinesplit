@@ -42,6 +42,10 @@ fun SearchScreen(
     val uiState by viewModel.uiState.collectAsState()
     var selectedPlaceForDetail by remember { mutableStateOf<PlaceUiModel?>(null) }
 
+    LaunchedEffect(Unit) {
+        viewModel.loadMyFollowRelations()
+    }
+
     if (selectedPlaceForDetail != null) {
         val place = selectedPlaceForDetail!!
         AlertDialog(
@@ -237,9 +241,13 @@ fun SearchScreen(
                                     items = state.suggestedPeople,
                                     key = { "suggested_${it.uid}" }
                                 ) { user ->
+                                    val isFollowing = uiState.myFollowingIds.contains(user.uid)
+                                    val isFollower = uiState.myFollowerIds.contains(user.uid)
                                     Box(modifier = Modifier.padding(horizontal = AppDimens.spaceLg)) {
                                         SearchPersonCard(
                                             user = user,
+                                            isFollowing = isFollowing,
+                                            isFollower = isFollower,
                                             onClick = { onOpenUserProfile(user.uid) }
                                         )
                                     }
@@ -307,9 +315,13 @@ fun SearchScreen(
                                             items = state.peopleResults.take(3),
                                             key = { "result_person_all_${it.uid}" }
                                         ) { user ->
+                                            val isFollowing = uiState.myFollowingIds.contains(user.uid)
+                                            val isFollower = uiState.myFollowerIds.contains(user.uid)
                                             Box(modifier = Modifier.padding(horizontal = AppDimens.spaceLg)) {
                                                 SearchPersonCard(
                                                     user = user,
+                                                    isFollowing = isFollowing,
+                                                    isFollower = isFollower,
                                                     onClick = { onOpenUserProfile(user.uid) }
                                                 )
                                             }
@@ -380,9 +392,13 @@ fun SearchScreen(
                                         items = state.peopleResults,
                                         key = { "result_person_only_${it.uid}" }
                                     ) { user ->
+                                        val isFollowing = uiState.myFollowingIds.contains(user.uid)
+                                        val isFollower = uiState.myFollowerIds.contains(user.uid)
                                         Box(modifier = Modifier.padding(horizontal = AppDimens.spaceLg)) {
                                             SearchPersonCard(
                                                 user = user,
+                                                isFollowing = isFollowing,
+                                                isFollower = isFollower,
                                                 onClick = { onOpenUserProfile(user.uid) }
                                             )
                                         }

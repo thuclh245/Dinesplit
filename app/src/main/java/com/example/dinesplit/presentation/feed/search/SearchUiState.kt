@@ -15,6 +15,9 @@ data class SearchUiState(
     val peopleResults: List<UserProfile> = emptyList(),
     val placeResults: List<PlaceUiModel> = emptyList(),
 
+    val myFollowingIds: Set<String> = emptySet(),
+    val myFollowerIds: Set<String> = emptySet(),
+
     val isLoading: Boolean = false,
     val errorMessage: String? = null,
     val hasSearched: Boolean = false

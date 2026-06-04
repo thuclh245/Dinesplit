@@ -131,7 +131,7 @@ fun MainContainerScreen(
     val nestedScrollConnection = remember(currentRoute, topBarHeightPx, bottomBarHeightPx) {
         object : NestedScrollConnection {
             override fun onPreScroll(available: Offset, source: NestedScrollSource): Offset {
-                if (!showBottomBar || !isFeedScreen) {
+                if (!showBottomBar) {
                     topBarOffsetHeightPx = 0f
                     bottomBarOffsetHeightPx = 0f
                     return Offset.Zero
