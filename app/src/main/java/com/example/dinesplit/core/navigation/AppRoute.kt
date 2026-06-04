@@ -51,10 +51,19 @@ sealed class AppRoute(val route: String) {
 
     data object CreateBill : AppRoute("create_bill") {
         const val ARG_GROUP_ID = "groupId"
-        val routeWithArg = "$route/{$ARG_GROUP_ID}"
+        const val ARG_BILL_ID = "billId"
+        val routeWithArg = "$route/{$ARG_GROUP_ID}?$ARG_BILL_ID={$ARG_BILL_ID}"
 
-        fun createRoute(groupId: String): String {
-            return "$route/$groupId"
+        fun createRoute(
+            groupId: String,
+            billId: String? = null,
+        ): String {
+            val baseRoute = "$route/${Uri.encode(groupId)}"
+            return if (billId.isNullOrBlank()) {
+                baseRoute
+            } else {
+                "$baseRoute?$ARG_BILL_ID=${Uri.encode(billId)}"
+            }
         }
     }
 

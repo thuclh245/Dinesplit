@@ -65,6 +65,7 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.example.dinesplit.core.common.AppContainer
+import com.example.dinesplit.core.firebase.FirebaseProviders
 import com.example.dinesplit.core.ui.DineAvatarImage
 import com.example.dinesplit.core.ui.PrimaryButton
 import com.example.dinesplit.domain.model.Bill
@@ -77,13 +78,19 @@ import kotlinx.coroutines.launch
 fun CreateBillScreen(
     onBack: () -> Unit,
     groupId: String = "g1",
+    billId: String? = null,
     viewModel: CreateBillViewModel? = null,
     onBillSavedForPersonal: (Bill) -> Unit = {},
 ) {
     val context = LocalContext.current
     val vm =
-        viewModel ?: remember(groupId) {
-            CreateBillViewModel(repository = AppContainer.splitRepository(context), groupId = groupId)
+        viewModel ?: remember(groupId, billId) {
+            CreateBillViewModel(
+                repository = AppContainer.splitRepository(context),
+                groupId = groupId,
+                currentUserId = FirebaseProviders.auth.currentUser?.uid,
+                editBillId = billId,
+            )
         }
     val uiState by vm.uiState.collectAsState()
     val snackbarHostState = remember { SnackbarHostState() }
@@ -96,6 +103,7 @@ fun CreateBillScreen(
                 onBack = onBack,
                 onSave = vm::saveBill,
                 isLoading = uiState.isLoading,
+                isEditMode = uiState.isEditMode || !billId.isNullOrBlank(),
             )
         },
         snackbarHost = { SnackbarHost(snackbarHostState) },
@@ -178,6 +186,7 @@ fun CreateBillScreen(
             Box(modifier = Modifier.align(Alignment.BottomCenter)) {
                 CreateBillBottomAction(
                     isLoading = uiState.isLoading,
+                    isEditMode = uiState.isEditMode || !billId.isNullOrBlank(),
                     onConfirm = vm::saveBill,
                 )
             }
@@ -203,6 +212,7 @@ private fun CreateBillTopBar(
     onBack: () -> Unit,
     onSave: () -> Unit,
     isLoading: Boolean,
+    isEditMode: Boolean,
 ) {
     val colorScheme = MaterialTheme.colorScheme
     Row(
@@ -220,7 +230,7 @@ private fun CreateBillTopBar(
         }
 
         Text(
-            text = "Tạo hóa đơn",
+            text = if (isEditMode) "Sửa hóa đơn" else "Tạo hóa đơn",
             style = MaterialTheme.typography.titleMedium,
             fontWeight = FontWeight.ExtraBold,
             color = colorScheme.primary,
@@ -862,6 +872,7 @@ private fun AvatarBubble(
 @Composable
 private fun CreateBillBottomAction(
     isLoading: Boolean = false,
+    isEditMode: Boolean = false,
     onConfirm: () -> Unit,
 ) {
     val colorScheme = MaterialTheme.colorScheme
@@ -881,7 +892,7 @@ private fun CreateBillBottomAction(
                 .navigationBarsPadding(),
     ) {
         PrimaryButton(
-            text = "Xác nhận hóa đơn",
+            text = if (isEditMode) "Lưu thay đổi" else "Xác nhận hóa đơn",
             onClick = onConfirm,
             enabled = !isLoading,
             isLoading = isLoading,

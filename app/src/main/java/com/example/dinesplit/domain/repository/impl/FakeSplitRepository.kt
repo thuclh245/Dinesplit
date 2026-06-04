@@ -58,8 +58,9 @@ class FakeSplitRepository : SplitRepository {
     override suspend fun deleteBill(
         groupId: String,
         billId: String,
+        userId: String,
     ): Result<Unit> {
-        if (lastSavedBill?.id == billId) {
+        if (lastSavedBill?.groupId == groupId && lastSavedBill?.id == billId) {
             lastSavedBill = null
         }
         return Result.success(Unit)

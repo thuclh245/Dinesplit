@@ -44,7 +44,9 @@ data class Bill(
     val items: List<BillItem> = emptyList(),
     val shares: Map<String, Double> = emptyMap(), // MemberId -> Amount
     val paidMemberIds: List<String> = emptyList(),
+    val createdBy: String = "",
     val date: Long = System.currentTimeMillis(),
+    val updatedAt: Long = date,
 ) {
     fun paymentStatusFor(memberId: String): PaymentStatus {
         return when {

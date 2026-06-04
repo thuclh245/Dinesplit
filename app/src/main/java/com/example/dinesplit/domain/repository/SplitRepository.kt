@@ -41,6 +41,7 @@ interface SplitRepository {
     suspend fun deleteBill(
         groupId: String,
         billId: String,
+        userId: String,
     ): Result<Unit>
 
     suspend fun markBillMemberPaid(

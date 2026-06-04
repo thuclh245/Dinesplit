@@ -26,6 +26,8 @@ data class CreateBillUiState(
     val isLoading: Boolean = false,
     val isSaved: Boolean = false,
     val savedBill: Bill? = null,
+    val isEditMode: Boolean = false,
+    val originalBill: Bill? = null,
     val error: String? = null,
     val isUsingFallbackMembers: Boolean = false,
 )
@@ -41,12 +43,15 @@ class CreateBillViewModel(
     private val repository: SplitRepository,
     private val groupId: String,
     private val autoLoadMembers: Boolean = true,
+    private val currentUserId: String? = null,
+    private val editBillId: String? = null,
 ) : ViewModel() {
     private val _uiState = MutableStateFlow(CreateBillUiState())
     val uiState: StateFlow<CreateBillUiState> = _uiState.asStateFlow()
 
     val billItems = mutableStateListOf<BillItem>()
     val customAmounts = mutableStateMapOf<String, String>()
+    private var hasAppliedEditBill = false
 
     init {
         if (autoLoadMembers) {
@@ -55,6 +60,10 @@ class CreateBillViewModel(
             applyMembers(fallbackBillMembers, isFallback = true)
         }
         billItems.add(BillItem(name = "Món 1", price = 0.0, sharedByMemberIds = emptyList()))
+        if (!editBillId.isNullOrBlank()) {
+            _uiState.update { it.copy(isEditMode = true, isLoading = true) }
+            loadBillForEdit(editBillId)
+        }
     }
 
     private fun loadGroupMembers() {
@@ -69,12 +78,93 @@ class CreateBillViewModel(
         }
     }
 
+    private fun loadBillForEdit(billId: String) {
+        viewModelScope.launch {
+            repository.getBill(groupId, billId).collect { bill ->
+                when {
+                    bill == null -> {
+                        _uiState.update {
+                            it.copy(
+                                isEditMode = true,
+                                isLoading = false,
+                                error = "Không tìm thấy hóa đơn",
+                            )
+                        }
+                    }
+
+                    bill.createdBy != currentUserId -> {
+                        _uiState.update {
+                            it.copy(
+                                isEditMode = true,
+                                isLoading = false,
+                                originalBill = bill,
+                                error = "Chỉ người tạo hóa đơn mới có quyền sửa hóa đơn",
+                            )
+                        }
+                    }
+
+                    !hasAppliedEditBill -> applyBillForEdit(bill)
+
+                    else -> {
+                        _uiState.update {
+                            it.copy(
+                                isEditMode = true,
+                                isLoading = false,
+                                originalBill = bill,
+                            )
+                        }
+                    }
+                }
+            }
+        }
+    }
+
+    private fun applyBillForEdit(bill: Bill) {
+        hasAppliedEditBill = true
+        billItems.clear()
+        if (bill.method == SplitMethod.ITEMIZED && bill.items.isNotEmpty()) {
+            billItems.addAll(bill.items)
+        } else {
+            billItems.add(BillItem(name = "Món 1", price = 0.0, sharedByMemberIds = emptyList()))
+        }
+
+        customAmounts.clear()
+        bill.shares.forEach { (memberId, amount) ->
+            customAmounts[memberId] = amountToInputString(amount)
+        }
+
+        _uiState.update {
+            it.copy(
+                billName = bill.name,
+                totalAmountStr = amountToInputString(bill.totalAmount),
+                selectedMethod = bill.method,
+                selectedMemberIds = bill.shares.keys,
+                payerId = bill.payerId,
+                isEditMode = true,
+                isLoading = false,
+                originalBill = bill,
+                error = null,
+            )
+        }
+    }
+
     private fun applyMembers(
         members: List<Member>,
         isFallback: Boolean = false,
     ) {
-        val selectedIds = members.map { it.id }.toSet()
-        val payerId = members.firstOrNull { it.isMe }?.id ?: members.firstOrNull()?.id.orEmpty()
+        val state = _uiState.value
+        val selectedIds =
+            if (state.isEditMode || state.originalBill != null) {
+                state.selectedMemberIds.ifEmpty { state.originalBill?.shares?.keys ?: emptySet() }
+            } else {
+                members.map { it.id }.toSet()
+            }
+        val payerId =
+            if (state.isEditMode || state.originalBill != null) {
+                state.payerId.ifBlank { state.originalBill?.payerId.orEmpty() }
+            } else {
+                members.firstOrNull { it.isMe }?.id ?: members.firstOrNull()?.id.orEmpty()
+            }
         _uiState.update {
             it.copy(
                 members = members,
@@ -154,6 +244,21 @@ class CreateBillViewModel(
             return Result.failure(IllegalStateException("Đang thực hiện tác vụ"))
         }
         val billName = currentState.billName.trim().ifBlank { "Hóa đơn mới" }
+        val originalBill = currentState.originalBill
+        val normalizedCurrentUserId = currentUserId.orEmpty()
+
+        if (currentState.isEditMode) {
+            val creatorId = originalBill?.createdBy.orEmpty()
+            if (creatorId.isBlank() || creatorId != normalizedCurrentUserId) {
+                val message = "Chỉ người tạo hóa đơn mới có quyền sửa hóa đơn"
+                _uiState.update { it.copy(error = message) }
+                return Result.failure(IllegalStateException(message))
+            }
+        } else if (normalizedCurrentUserId.isBlank()) {
+            val message = "Bạn cần đăng nhập để tạo hóa đơn"
+            _uiState.update { it.copy(error = message) }
+            return Result.failure(IllegalStateException(message))
+        }
 
         validateBillInput(currentState)?.let { error ->
             _uiState.update { it.copy(error = error) }
@@ -167,8 +272,17 @@ class CreateBillViewModel(
                 _uiState.update { it.copy(error = message) }
                 return Result.failure(IllegalArgumentException(message))
             }
+        val paidMemberIds =
+            if (currentState.isEditMode) {
+                (originalBill?.paidMemberIds.orEmpty() + currentState.payerId)
+                    .filter { memberId -> memberId == currentState.payerId || memberId in shares.keys }
+                    .distinct()
+            } else {
+                listOf(currentState.payerId)
+            }
         val bill =
             Bill(
+                id = originalBill?.id ?: java.util.UUID.randomUUID().toString(),
                 groupId = groupId,
                 name = billName,
                 totalAmount = totalAmount,
@@ -176,7 +290,9 @@ class CreateBillViewModel(
                 method = currentState.selectedMethod,
                 items = if (currentState.selectedMethod == SplitMethod.ITEMIZED) billItems.toList() else emptyList(),
                 shares = shares,
-                paidMemberIds = listOf(currentState.payerId),
+                paidMemberIds = paidMemberIds,
+                createdBy = originalBill?.createdBy?.ifBlank { normalizedCurrentUserId } ?: normalizedCurrentUserId,
+                date = originalBill?.date ?: System.currentTimeMillis(),
             )
 
         _uiState.update { it.copy(isLoading = true, error = null) }
@@ -185,7 +301,7 @@ class CreateBillViewModel(
             if (result.isSuccess) {
                 it.copy(isLoading = false, isSaved = true, savedBill = bill)
             } else {
-                it.copy(isLoading = false, error = "Không thể lưu hóa đơn")
+                it.copy(isLoading = false, error = result.exceptionOrNull()?.message ?: "Không thể lưu hóa đơn")
             }
         }
         return result
@@ -263,6 +379,10 @@ class CreateBillViewModel(
         return memberIds.associateWith { memberId ->
             customAmounts[memberId]?.toDoubleOrNull() ?: 0.0
         }
+    }
+
+    private fun amountToInputString(amount: Double): String {
+        return amount.toLong().toString()
     }
 
     private fun String.onlyDigits(): String {

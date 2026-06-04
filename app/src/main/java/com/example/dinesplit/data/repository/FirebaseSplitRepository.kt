@@ -18,6 +18,7 @@ import com.google.firebase.firestore.SetOptions
 import kotlinx.coroutines.channels.awaitClose
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.callbackFlow
+import kotlinx.coroutines.launch
 import kotlinx.coroutines.suspendCancellableCoroutine
 import kotlin.coroutines.resume
 import kotlin.coroutines.resumeWithException
@@ -191,54 +192,122 @@ class FirebaseSplitRepository(
 
     override fun getGroupMembers(groupId: String): Flow<List<Member>> =
         callbackFlow {
-            val membersColl = firestore.collection("groups").document(groupId).collection("members")
-            val registration: ListenerRegistration =
+            val groupRef = firestore.collection("groups").document(groupId)
+            val membersColl = groupRef.collection("members")
+            var latestGroupSnapshot: DocumentSnapshot? = null
+            var latestMembersSnapshot: QuerySnapshot? = null
+
+            fun emitMembers() {
+                val membersSnapshot = latestMembersSnapshot ?: return
+                launch {
+                    trySend(membersSnapshot.toMembersWithGroupFallback(latestGroupSnapshot))
+                }
+            }
+
+            val groupRegistration: ListenerRegistration =
+                groupRef.addSnapshotListener { snapshot, error ->
+                    if (error != null) {
+                        close(error)
+                        return@addSnapshotListener
+                    }
+                    latestGroupSnapshot = snapshot
+                    emitMembers()
+                }
+
+            val membersRegistration: ListenerRegistration =
                 membersColl.addSnapshotListener { snapshot, error ->
                     if (error != null) {
                         close(error)
                         return@addSnapshotListener
                     }
                     if (snapshot != null) {
-                        trySend(snapshot.toMembers())
+                        latestMembersSnapshot = snapshot
+                        emitMembers()
                     }
                 }
 
-            awaitClose { registration.remove() }
+            awaitClose {
+                groupRegistration.remove()
+                membersRegistration.remove()
+            }
         }
 
     override suspend fun saveBill(bill: Bill): Result<Unit> {
         return runCatching {
+            val currentUserId = FirebaseProviders.auth.currentUser?.uid.orEmpty()
+            require(currentUserId.isNotBlank()) { "Bạn cần đăng nhập để lưu hóa đơn" }
+            require(bill.createdBy.isNotBlank()) { "Thiếu người tạo hóa đơn" }
+
             val groupRef = firestore.collection("groups").document(bill.groupId)
             val billsColl = groupRef.collection("bills")
             val docRef = billsColl.document(bill.id)
-            docRef.set(bill.toMap(), SetOptions.merge()).awaitFirebase()
-            groupRef.update(
+
+            val groupSnapshot = groupRef.get().awaitFirebase()
+            val currentGroupTotal = groupSnapshot.getDouble("totalExpense") ?: 0.0
+            val existingBillSnapshot = docRef.get().awaitFirebase()
+            val previousAmount =
+                if (existingBillSnapshot.exists()) {
+                    val existingCreator = existingBillSnapshot.getString("createdBy").orEmpty()
+                    require(existingCreator == currentUserId) {
+                        "Chỉ người tạo hóa đơn mới có quyền sửa hóa đơn"
+                    }
+                    existingBillSnapshot.getDouble("totalAmount") ?: 0.0
+                } else {
+                    require(bill.createdBy == currentUserId) {
+                        "Chỉ người đang đăng nhập mới có thể tạo hóa đơn"
+                    }
+                    0.0
+                }
+            val updatedGroupTotal = (currentGroupTotal + bill.totalAmount - previousAmount).coerceAtLeast(0.0)
+            val now = System.currentTimeMillis()
+            val billToSave = bill.copy(updatedAt = now)
+            val batch = firestore.batch()
+
+            batch.set(docRef, billToSave.toMap(), SetOptions.merge())
+            batch.update(
+                groupRef,
                 mapOf(
-                    "totalExpense" to FieldValue.increment(bill.totalAmount),
-                    "updatedAt" to System.currentTimeMillis(),
+                    "totalExpense" to updatedGroupTotal,
+                    "updatedAt" to now,
                 ),
-            ).awaitFirebase()
+            )
+            batch.commit().awaitFirebase()
         }
     }
 
-    override suspend fun deleteBill(groupId: String, billId: String): Result<Unit> {
+    override suspend fun deleteBill(
+        groupId: String,
+        billId: String,
+        userId: String,
+    ): Result<Unit> {
         return runCatching {
+            require(userId.isNotBlank()) { "Bạn cần đăng nhập để xóa hóa đơn" }
+
             val groupRef = firestore.collection("groups").document(groupId)
             val billRef = groupRef.collection("bills").document(billId)
             val billSnapshot = billRef.get().awaitFirebase()
-            if (billSnapshot.exists()) {
-                val totalAmount = billSnapshot.getDouble("totalAmount") ?: 0.0
-                val batch = firestore.batch()
-                batch.delete(billRef)
-                batch.update(
-                    groupRef,
-                    mapOf(
-                        "totalExpense" to FieldValue.increment(-totalAmount),
-                        "updatedAt" to System.currentTimeMillis()
-                    )
-                )
-                batch.commit().awaitFirebase()
+            if (!billSnapshot.exists()) return@runCatching
+
+            val creatorId = billSnapshot.getString("createdBy").orEmpty()
+            require(creatorId == userId) {
+                "Chỉ người tạo hóa đơn mới có quyền xóa hóa đơn"
             }
+
+            val groupSnapshot = groupRef.get().awaitFirebase()
+            val currentGroupTotal = groupSnapshot.getDouble("totalExpense") ?: 0.0
+            val billTotal = billSnapshot.getDouble("totalAmount") ?: 0.0
+            val now = System.currentTimeMillis()
+            val batch = firestore.batch()
+
+            batch.delete(billRef)
+            batch.update(
+                groupRef,
+                mapOf(
+                    "totalExpense" to (currentGroupTotal - billTotal).coerceAtLeast(0.0),
+                    "updatedAt" to now,
+                ),
+            )
+            batch.commit().awaitFirebase()
         }
     }
 
@@ -306,6 +375,31 @@ class FirebaseSplitRepository(
         )
     }
 
+    private suspend fun QuerySnapshot.toMembersWithGroupFallback(groupSnapshot: DocumentSnapshot?): List<Member> {
+        val currentUserId = FirebaseProviders.auth.currentUser?.uid
+        val members = toMembers()
+        val knownMemberIds = members.mapTo(mutableSetOf()) { it.id }
+        val missingGroupMemberIds =
+            groupSnapshot
+                ?.getStringListField("memberIds")
+                .orEmpty()
+                .filter { memberId -> memberId.isNotBlank() && memberId !in knownMemberIds }
+
+        val fallbackMembers =
+            missingGroupMemberIds.map { memberId ->
+                firestore.collection("users")
+                    .document(memberId)
+                    .get()
+                    .awaitFirebase()
+                    .toMemberFromUserProfile(memberId, currentUserId)
+                    ?: fallbackMember(memberId, currentUserId)
+            }
+
+        return (members + fallbackMembers)
+            .distinctBy { it.id }
+            .sortedWith(compareByDescending<Member> { it.id == currentUserId }.thenBy { it.name })
+    }
+
     private fun QuerySnapshot.toMembers(): List<Member> {
         val currentUserId = FirebaseProviders.auth.currentUser?.uid
         val rawMembers = documents.mapNotNull { doc ->
@@ -316,15 +410,8 @@ class FirebaseSplitRepository(
             val isMe = doc.getBoolean("isMe") ?: false
             Member(id = id, name = name, initial = initial, avatarUrl = avatarUrl, isMe = isMe)
         }
-        val hasCurrentUserMember = !currentUserId.isNullOrBlank() &&
-            rawMembers.any { it.id == currentUserId }
 
         return rawMembers
-            .filterNot { member ->
-                hasCurrentUserMember &&
-                    member.id != currentUserId &&
-                    member.isMe
-            }
             .map { member ->
                 if (currentUserId.isNullOrBlank()) {
                     member
@@ -333,6 +420,40 @@ class FirebaseSplitRepository(
                 }
             }
             .distinctBy { it.id }
+    }
+
+    private fun DocumentSnapshot.toMemberFromUserProfile(
+        memberId: String,
+        currentUserId: String?,
+    ): Member? {
+        if (!exists()) return null
+
+        val name =
+            getString("displayName")?.takeIf { it.isNotBlank() }
+                ?: getString("username")?.takeIf { it.isNotBlank() }
+                ?: getString("email")?.takeIf { it.isNotBlank() }
+                ?: return null
+
+        return Member(
+            id = getString("uid")?.takeIf { it.isNotBlank() } ?: memberId,
+            name = name,
+            initial = name.firstOrNull()?.uppercase().orEmpty(),
+            avatarUrl = getString("avatarUrl").orEmpty(),
+            isMe = memberId == currentUserId,
+        )
+    }
+
+    private fun fallbackMember(
+        memberId: String,
+        currentUserId: String?,
+    ): Member {
+        val name = if (memberId == currentUserId) "Bạn" else memberId
+        return Member(
+            id = memberId,
+            name = name,
+            initial = name.firstOrNull()?.uppercase().orEmpty(),
+            isMe = memberId == currentUserId,
+        )
     }
 
     private fun QuerySnapshot.toBills(): List<Bill> {
@@ -357,7 +478,9 @@ class FirebaseSplitRepository(
             items = getBillItems(),
             shares = getShares(),
             paidMemberIds = getPaidMemberIds(),
+            createdBy = getString("createdBy").orEmpty(),
             date = getLongDateSafe("date") ?: 0L,
+            updatedAt = getLongDateSafe("updatedAt") ?: getLongDateSafe("date") ?: 0L,
         )
     }
 
@@ -431,7 +554,9 @@ class FirebaseSplitRepository(
             "items" to items.map { it.toMap() },
             "shares" to shares,
             "paidMemberIds" to paidMemberIds,
+            "createdBy" to createdBy,
             "date" to date,
+            "updatedAt" to updatedAt,
         )
     }
 

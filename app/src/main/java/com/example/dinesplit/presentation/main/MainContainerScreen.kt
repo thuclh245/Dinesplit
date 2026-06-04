@@ -503,12 +503,32 @@ fun MainContainerScreen(
                         )
                     }
                     
-                    composable(AppRoute.CreateBill.routeWithArg) { backStackEntry ->
+                    composable(
+                        route = AppRoute.CreateBill.routeWithArg,
+                        arguments = listOf(
+                            navArgument(AppRoute.CreateBill.ARG_GROUP_ID) {
+                                type = NavType.StringType
+                            },
+                            navArgument(AppRoute.CreateBill.ARG_BILL_ID) {
+                                type = NavType.StringType
+                                nullable = true
+                                defaultValue = null
+                            },
+                        ),
+                    ) { backStackEntry ->
                         val groupId = backStackEntry.arguments?.getString(AppRoute.CreateBill.ARG_GROUP_ID).orEmpty()
+                        val billId = backStackEntry.arguments?.getString(AppRoute.CreateBill.ARG_BILL_ID)
                         CreateBillScreen(
                             groupId = groupId,
+                            billId = billId,
                             onBack = { mainNavController.navigateUp() },
-                            onBillSavedForPersonal = personalViewModel::addSplitBillTransaction,
+                            onBillSavedForPersonal = { bill ->
+                                if (billId.isNullOrBlank()) {
+                                    personalViewModel.addSplitBillTransaction(bill)
+                                } else {
+                                    personalViewModel.reconcileSplitBillTransaction(bill)
+                                }
+                            },
                         )
                     }
                     
@@ -519,6 +539,11 @@ fun MainContainerScreen(
                             groupId = groupId,
                             billId = billId,
                             onBack = { mainNavController.navigateUp() },
+                            onEditBill = { editGroupId, editBillId ->
+                                mainNavController.navigate(AppRoute.CreateBill.createRoute(editGroupId, editBillId))
+                            },
+                            onBillChangedForPersonal = personalViewModel::reconcileSplitBillTransaction,
+                            onBillRemovedForPersonal = personalViewModel::removeSplitBillTransaction,
                         )
                     }
                     

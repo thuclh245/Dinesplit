@@ -92,6 +92,9 @@ fun BillDetailScreen(
     groupId: String,
     billId: String,
     onBack: () -> Unit,
+    onEditBill: (groupId: String, billId: String) -> Unit = { _, _ -> },
+    onBillChangedForPersonal: (Bill) -> Unit = {},
+    onBillRemovedForPersonal: (groupId: String, billId: String) -> Unit = { _, _ -> },
 ) {
     val context = LocalContext.current
     val viewModel =
@@ -107,8 +110,24 @@ fun BillDetailScreen(
     val uiState by viewModel.uiState.collectAsState()
     val colorScheme = MaterialTheme.colorScheme
     val snackbarHostState = remember { SnackbarHostState() }
-
     var showDeleteDialog by remember { mutableStateOf(false) }
+
+    LaunchedEffect(uiState.bill) {
+        uiState.bill?.let(onBillChangedForPersonal)
+    }
+
+    LaunchedEffect(uiState.isLoading, uiState.bill, groupId, billId) {
+        if (!uiState.isLoading && uiState.bill == null) {
+            onBillRemovedForPersonal(groupId, billId)
+        }
+    }
+
+    LaunchedEffect(uiState.isDeleted) {
+        if (uiState.isDeleted) {
+            onBillRemovedForPersonal(groupId, billId)
+            onBack()
+        }
+    }
 
     LaunchedEffect(uiState.paymentMessage) {
         uiState.paymentMessage?.let { message ->
@@ -117,32 +136,17 @@ fun BillDetailScreen(
         }
     }
 
-    if (showDeleteDialog) {
-        AlertDialog(
-            onDismissRequest = { showDeleteDialog = false },
-            title = { Text("Xóa hóa đơn?") },
-            text = { Text("Bạn có chắc chắn muốn xóa hóa đơn này không? Hành động này không thể hoàn tác.") },
-            confirmButton = {
-                TextButton(
-                    onClick = {
-                        showDeleteDialog = false
-                        viewModel.deleteBill(onSuccess = onBack)
-                    }
-                ) {
-                    Text("Xóa", color = MaterialTheme.colorScheme.error)
-                }
-            },
-            dismissButton = {
-                TextButton(onClick = { showDeleteDialog = false }) {
-                    Text("Hủy")
-                }
-            }
-        )
-    }
-
     Scaffold(
         containerColor = colorScheme.surface,
-        topBar = { BdTopBar(onBack = onBack, onDeleteClick = { showDeleteDialog = true }) },
+        topBar = {
+            BdTopBar(
+                onBack = onBack,
+                canManageBill = uiState.canManageBill,
+                isDeleting = uiState.isDeleting,
+                onEdit = { onEditBill(groupId, billId) },
+                onDelete = { showDeleteDialog = true },
+            )
+        },
         snackbarHost = { SnackbarHost(snackbarHostState) },
         bottomBar = {
             uiState.bill?.let { bill ->
@@ -216,12 +220,42 @@ fun BillDetailScreen(
 
         }
     }
+
+    if (showDeleteDialog) {
+        AlertDialog(
+            onDismissRequest = { if (!uiState.isDeleting) showDeleteDialog = false },
+            title = { Text("Xóa hóa đơn?") },
+            text = { Text("Hành động này sẽ xóa bill khỏi nhóm và gỡ khoản chi đồng bộ trong Ví cá nhân.") },
+            confirmButton = {
+                TextButton(
+                    enabled = !uiState.isDeleting,
+                    onClick = {
+                        showDeleteDialog = false
+                        viewModel.deleteBill()
+                    },
+                ) {
+                    Text("Xóa", color = colorScheme.error, fontWeight = FontWeight.Bold)
+                }
+            },
+            dismissButton = {
+                TextButton(
+                    enabled = !uiState.isDeleting,
+                    onClick = { showDeleteDialog = false },
+                ) {
+                    Text("Hủy")
+                }
+            },
+        )
+    }
 }
 
 @Composable
 private fun BdTopBar(
     onBack: () -> Unit,
-    onDeleteClick: () -> Unit,
+    canManageBill: Boolean,
+    isDeleting: Boolean,
+    onEdit: () -> Unit,
+    onDelete: () -> Unit,
 ) {
     val colorScheme = MaterialTheme.colorScheme
     var menuExpanded by remember { mutableStateOf(false) }
@@ -251,25 +285,38 @@ private fun BdTopBar(
             color = colorScheme.onSurface,
         )
 
-        Box {
-            IconButton(onClick = { menuExpanded = true }, modifier = Modifier.size(40.dp)) {
-                Icon(
-                    imageVector = Icons.Default.MoreVert,
-                    contentDescription = "Tùy chọn",
-                    tint = colorScheme.primary,
-                )
-            }
-            DropdownMenu(
-                expanded = menuExpanded,
-                onDismissRequest = { menuExpanded = false }
-            ) {
-                DropdownMenuItem(
-                    text = { Text("Xóa hóa đơn", color = colorScheme.error) },
-                    onClick = {
-                        menuExpanded = false
-                        onDeleteClick()
-                    }
-                )
+        Box(modifier = Modifier.size(40.dp), contentAlignment = Alignment.Center) {
+            if (canManageBill) {
+                IconButton(
+                    onClick = { menuExpanded = true },
+                    enabled = !isDeleting,
+                    modifier = Modifier.size(40.dp),
+                ) {
+                    Icon(
+                        imageVector = Icons.Default.MoreVert,
+                        contentDescription = "Tùy chọn",
+                        tint = colorScheme.primary,
+                    )
+                }
+                DropdownMenu(
+                    expanded = menuExpanded,
+                    onDismissRequest = { menuExpanded = false },
+                ) {
+                    DropdownMenuItem(
+                        text = { Text("Sửa hóa đơn") },
+                        onClick = {
+                            menuExpanded = false
+                            onEdit()
+                        },
+                    )
+                    DropdownMenuItem(
+                        text = { Text("Xóa hóa đơn", color = colorScheme.error) },
+                        onClick = {
+                            menuExpanded = false
+                            onDelete()
+                        },
+                    )
+                }
             }
         }
     }

@@ -371,7 +371,9 @@ service cloud.firestore {
           'items',
           'shares',
           'paidMemberIds',
-          'date'
+          'createdBy',
+          'date',
+          'updatedAt'
         ])
         && data.id == billId
         && data.groupId == groupId
@@ -387,7 +389,44 @@ service cloud.firestore {
         && data.paidMemberIds is list
         && data.paidMemberIds.hasOnly([data.payerId])
         && data.paidMemberIds.hasAll([data.payerId])
-        && data.date is int;
+        && data.createdBy == request.auth.uid
+        && data.date is int
+        && data.updatedAt is int;
+    }
+
+    function validEditedBill(data, previous, groupId, billId) {
+      return data.keys().hasOnly([
+          'id',
+          'groupId',
+          'name',
+          'totalAmount',
+          'payerId',
+          'method',
+          'items',
+          'shares',
+          'paidMemberIds',
+          'createdBy',
+          'date',
+          'updatedAt'
+        ])
+        && data.id == billId
+        && data.groupId == groupId
+        && data.name is string
+        && data.name.size() > 0
+        && (data.totalAmount is int || data.totalAmount is float)
+        && data.totalAmount > 0
+        && data.payerId in groupData(groupId).memberIds
+        && data.method in ['EQUAL', 'CUSTOM', 'ITEMIZED']
+        && data.items is list
+        && data.shares is map
+        && data.shares.keys().hasOnly(groupData(groupId).memberIds)
+        && data.paidMemberIds is list
+        && data.paidMemberIds.hasOnly(groupData(groupId).memberIds)
+        && data.paidMemberIds.hasAll([data.payerId])
+        && previous.createdBy == request.auth.uid
+        && data.createdBy == previous.createdBy
+        && data.date is int
+        && data.updatedAt is int;
     }
 
     match /users/{uid} {
@@ -487,7 +526,9 @@ service cloud.firestore {
       allow update: if isGroupMember(groupId)
         && request.resource.data.diff(resource.data).affectedKeys()
           .hasOnly(['totalExpense', 'updatedAt'])
-        && request.resource.data.totalExpense >= resource.data.totalExpense;
+        && (request.resource.data.totalExpense is int || request.resource.data.totalExpense is float)
+        && request.resource.data.totalExpense >= 0
+        && request.resource.data.updatedAt is int;
 
       allow update: if isGroupMember(groupId)
         && request.resource.data.diff(resource.data).affectedKeys()
@@ -550,7 +591,11 @@ service cloud.firestore {
             )
           );
 
-        allow delete: if isGroupOwner(groupId);
+        allow update: if isGroupMember(groupId)
+          && validEditedBill(request.resource.data, resource.data, groupId, billId);
+
+        allow delete: if isGroupMember(groupId)
+          && resource.data.createdBy == request.auth.uid;
       }
     }
   }

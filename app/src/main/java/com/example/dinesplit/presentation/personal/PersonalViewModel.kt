@@ -122,55 +122,104 @@ class PersonalViewModel(application: Application) : AndroidViewModel(application
             runCatching {
                 val uid = currentUserId()
                 if (uid.isBlank()) return@runCatching
-
-                val categories = _categories.value.ifEmpty { repository.getCategories() }
-                val category =
-                    categories.firstOrNull { it.type == TransactionType.EXPENSE && it.id == "c_food" }
-                        ?: categories.firstOrNull { it.type == TransactionType.EXPENSE }
-                        ?: return@runCatching
-                val amount =
-                    when {
-                        bill.payerId == uid -> bill.totalAmount
-                        bill.shares[uid] != null -> bill.shares[uid].orZero()
-                        else -> 0.0
-                    }
-                if (amount <= 0.0) return@runCatching
-
-                val splitTransaction =
-                    Transaction(
-                        id = "split_${bill.id}",
-                        userId = uid,
-                        amount = amount,
-                        type = TransactionType.EXPENSE,
-                        categoryId = category.id,
-                        category = category.name,
-                        note = "Hóa đơn chia tách: ${bill.name}",
-                        date = bill.date,
-                        createdAt = System.currentTimeMillis(),
-                        source = TransactionSource.SPLIT,
-                        sourceGroupId = bill.groupId,
-                        sourceBillId = bill.id,
-                    )
-
-                repository.insertTransaction(splitTransaction)
-                notificationRepository.insertNotification(
-                    NotificationFactory.fromPersonalTrigger(
-                        PersonalNotificationTrigger(
-                            relatedId = splitTransaction.id,
-                            label = bill.name,
-                            amount = amount,
-                            categoryName = category.name,
-                            triggerType = PersonalTriggerType.SPLIT_BRIDGED_TO_PERSONAL,
-                        ),
-                        uid,
-                    ),
-                )
+                syncSplitBillTransactionForCurrentUser(bill = bill, uid = uid, emitNotification = true)
                 refreshStateInternal(showLoading = false)
             }.onFailure { throwable ->
                 setError(throwable)
             }
         }
     }
+
+    fun removeSplitBillTransaction(
+        groupId: String,
+        billId: String,
+    ) {
+        viewModelScope.launch(Dispatchers.IO) {
+            runCatching {
+                if (groupId.isBlank() || billId.isBlank()) return@runCatching
+                repository.deleteTransaction(splitTransactionId(groupId, billId))
+                refreshStateInternal(showLoading = false)
+            }.onFailure { throwable ->
+                setError(throwable)
+            }
+        }
+    }
+
+    fun reconcileSplitBillTransaction(bill: Bill) {
+        viewModelScope.launch(Dispatchers.IO) {
+            runCatching {
+                val uid = currentUserId()
+                if (uid.isBlank()) return@runCatching
+                syncSplitBillTransactionForCurrentUser(bill = bill, uid = uid, emitNotification = false)
+                refreshStateInternal(showLoading = false)
+            }.onFailure { throwable ->
+                setError(throwable)
+            }
+        }
+    }
+
+    private suspend fun syncSplitBillTransactionForCurrentUser(
+        bill: Bill,
+        uid: String,
+        emitNotification: Boolean = false,
+    ) {
+        val transactionId = splitTransactionId(bill.groupId, bill.id)
+        val legacyTransactionId = "split_${bill.id}"
+        val amount = bill.shares[uid] ?: 0.0
+        if (amount <= 0.0) {
+            repository.deleteTransaction(transactionId)
+            if (legacyTransactionId != transactionId) {
+                repository.deleteTransaction(legacyTransactionId)
+            }
+            return
+        }
+
+        val categories = _categories.value.ifEmpty { repository.getCategories() }
+        val category =
+            categories.firstOrNull { it.type == TransactionType.EXPENSE && it.id == "c_food" }
+                ?: categories.firstOrNull { it.type == TransactionType.EXPENSE }
+                ?: return
+        val splitTransaction =
+            Transaction(
+                id = transactionId,
+                userId = uid,
+                amount = amount,
+                type = TransactionType.EXPENSE,
+                categoryId = category.id,
+                category = category.name,
+                note = "Hóa đơn chia tách: ${bill.name}",
+                date = bill.date,
+                createdAt = System.currentTimeMillis(),
+                source = TransactionSource.SPLIT,
+                sourceGroupId = bill.groupId,
+                sourceBillId = bill.id,
+            )
+
+        repository.updateTransaction(splitTransaction)
+        if (legacyTransactionId != transactionId) {
+            repository.deleteTransaction(legacyTransactionId)
+        }
+        if (emitNotification) {
+            notificationRepository.insertNotification(
+                NotificationFactory.fromPersonalTrigger(
+                    PersonalNotificationTrigger(
+                        relatedId = splitTransaction.id,
+                        label = bill.name,
+                        amount = amount,
+                        categoryName = category.name,
+                        triggerType = PersonalTriggerType.SPLIT_BRIDGED_TO_PERSONAL,
+                    ),
+                    uid,
+                ),
+            )
+        }
+    }
+
+    private fun splitTransactionId(
+        groupId: String,
+        billId: String,
+    ): String = "split_${groupId}_$billId"
+
 
     fun addCategory(
         name: String,

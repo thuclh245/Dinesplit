@@ -204,6 +204,7 @@ object DemoDataSeeder {
                         userId to 150000.0,
                     ),
                 paidMemberIds = listOf("chef_hoang_uid", "foodie_lan_uid"),
+                createdBy = userId,
                 date = System.currentTimeMillis() - 1000 * 60 * 60 * 24,
             )
 

@@ -78,6 +78,17 @@ class FirebasePersonalRepository private constructor(
         insertTransaction(transaction)
     }
 
+    override suspend fun deleteTransaction(transactionId: String) {
+        val uid = requireCurrentUserId()
+        firestore
+            .collection(COLLECTION_USER_PERSONAL)
+            .document(uid)
+            .collection(COLLECTION_TRANSACTIONS)
+            .document(transactionId)
+            .delete()
+            .awaitFirebase()
+    }
+
     override suspend fun uploadReceiptImage(
         transactionId: String,
         receiptUri: Uri,

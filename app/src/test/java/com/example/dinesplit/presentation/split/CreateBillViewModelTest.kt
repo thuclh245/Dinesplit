@@ -12,7 +12,7 @@ class CreateBillViewModelTest {
     fun `members load and saveBill produces correct shares for equal split`() =
         runBlocking {
             val repo = FakeSplitRepository()
-            val vm = CreateBillViewModel(repository = repo, groupId = "g1", autoLoadMembers = false)
+            val vm = CreateBillViewModel(repository = repo, groupId = "g1", autoLoadMembers = false, currentUserId = "1")
 
             // set members from fake repo directly for deterministic test
             vm.setMembersForTest(repo.getCurrentMembers())
@@ -40,7 +40,7 @@ class CreateBillViewModelTest {
     fun `custom split uses provided custom amounts`() =
         runBlocking {
             val repo = FakeSplitRepository()
-            val vm = CreateBillViewModel(repository = repo, groupId = "g1", autoLoadMembers = false)
+            val vm = CreateBillViewModel(repository = repo, groupId = "g1", autoLoadMembers = false, currentUserId = "1")
 
             vm.setMembersForTest(repo.getCurrentMembers())
 
@@ -66,7 +66,7 @@ class CreateBillViewModelTest {
     fun `itemized split divides items among sharers correctly`() =
         runBlocking {
             val repo = FakeSplitRepository()
-            val vm = CreateBillViewModel(repository = repo, groupId = "g1", autoLoadMembers = false)
+            val vm = CreateBillViewModel(repository = repo, groupId = "g1", autoLoadMembers = false, currentUserId = "1")
 
             vm.setMembersForTest(repo.getCurrentMembers())
 
@@ -94,7 +94,7 @@ class CreateBillViewModelTest {
     fun `switching to itemized keeps entered total as first item price`() =
         runBlocking {
             val repo = FakeSplitRepository()
-            val vm = CreateBillViewModel(repository = repo, groupId = "g1", autoLoadMembers = false)
+            val vm = CreateBillViewModel(repository = repo, groupId = "g1", autoLoadMembers = false, currentUserId = "1")
 
             vm.onTotalAmountChange("250000")
             vm.onMethodSelect(SplitMethod.ITEMIZED)
@@ -106,7 +106,7 @@ class CreateBillViewModelTest {
     fun `custom split rejects amounts that do not match total`() =
         runBlocking {
             val repo = FakeSplitRepository()
-            val vm = CreateBillViewModel(repository = repo, groupId = "g1", autoLoadMembers = false)
+            val vm = CreateBillViewModel(repository = repo, groupId = "g1", autoLoadMembers = false, currentUserId = "1")
 
             vm.setMembersForTest(repo.getCurrentMembers())
             vm.onTotalAmountChange("300")
@@ -125,7 +125,7 @@ class CreateBillViewModelTest {
     fun `equal split distributes remainder as whole dong`() =
         runBlocking {
             val repo = FakeSplitRepository()
-            val vm = CreateBillViewModel(repository = repo, groupId = "g1", autoLoadMembers = false)
+            val vm = CreateBillViewModel(repository = repo, groupId = "g1", autoLoadMembers = false, currentUserId = "1")
 
             vm.setMembersForTest(repo.getCurrentMembers())
             vm.onTotalAmountChange("100")

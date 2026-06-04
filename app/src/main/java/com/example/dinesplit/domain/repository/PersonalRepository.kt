@@ -17,6 +17,8 @@ interface PersonalRepository {
 
     suspend fun updateTransaction(transaction: Transaction)
 
+    suspend fun deleteTransaction(transactionId: String)
+
     suspend fun uploadReceiptImage(
         transactionId: String,
         receiptUri: Uri,
