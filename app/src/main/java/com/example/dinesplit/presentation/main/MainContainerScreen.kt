@@ -37,6 +37,7 @@ import com.example.dinesplit.presentation.feed.CreatePostViewModel
 import com.example.dinesplit.presentation.feed.FeedRoute
 import com.example.dinesplit.presentation.feed.PostDetailScreen
 import com.example.dinesplit.presentation.feed.SearchScreen
+import com.example.dinesplit.presentation.notification.NotificationViewModel
 import com.example.dinesplit.presentation.personal.AddEditTransactionScreen
 import com.example.dinesplit.presentation.personal.CategoryManagementScreen
 import com.example.dinesplit.presentation.personal.HistoryScreen
@@ -78,17 +79,20 @@ fun MainContainerScreen(
     val mainNavController = rememberNavController()
     val profileViewModel: ProfileViewModel = viewModel()
     val personalViewModel: PersonalViewModel = viewModel()
+    val notificationViewModel: NotificationViewModel = viewModel()
     val profileUiState by profileViewModel.profileUiState.collectAsState()
     val editProfileUiState by profileViewModel.editUiState.collectAsState()
     val personalUiState by personalViewModel.uiState.collectAsState()
     val personalChartState by personalViewModel.chartState.collectAsState()
     val personalReminders by personalViewModel.reminders.collectAsState()
+    val notificationUiState by notificationViewModel.uiState.collectAsState()
     val navBackStackEntry by mainNavController.currentBackStackEntryAsState()
     val currentDestination = navBackStackEntry?.destination
     
     val currentRoute = currentDestination?.route
     val selectedBottomTab = currentRoute?.let(::bottomTabForRoute)
     val showBottomBar = selectedBottomTab != null
+    val showHomeTopBar = showBottomBar && currentRoute != AppRoute.GroupList.route
 
     val context = androidx.compose.ui.platform.LocalContext.current
     LaunchedEffect(profileViewModel) {
@@ -202,7 +206,7 @@ fun MainContainerScreen(
                             bottomPadding = dynamicBottomPadding,
                             onOpenNotifications = onOpenNotifications,
                             onOpenSearch = { mainNavController.navigate(AppRoute.Search.route) },
-                            onNewGroup = { mainNavController.navigate(AppRoute.GroupList.route) },
+                            onNewGroup = { mainNavController.navigate(AppRoute.CreateGroup.route) },
                             onNewExpense = { mainNavController.navigate(AppRoute.GroupList.route) },
                             onViewAllGroups = { mainNavController.navigate(AppRoute.GroupList.route) },
                             onGroupClick = { groupId ->
@@ -221,6 +225,11 @@ fun MainContainerScreen(
                             },
                             onNavigateToCreateGroup = { mainNavController.navigate(AppRoute.CreateGroup.route) },
                             onNavigateToAllGroups = { /* already here */ },
+                            bottomPadding = dynamicBottomPadding,
+                            onBack = { mainNavController.navigateUp() },
+                            onOpenSearch = { mainNavController.navigate(AppRoute.Search.route) },
+                            onOpenNotifications = onOpenNotifications,
+                            notificationUnreadCount = notificationUiState.unreadCount,
                         )
                     }
 
@@ -558,7 +567,7 @@ fun MainContainerScreen(
                 }
             }
 
-            if (showBottomBar) {
+            if (showHomeTopBar) {
                 val title = when {
                     currentRoute?.contains(AppRoute.Feed.route) == true -> "DineSplit"
                     currentRoute?.contains(AppRoute.Split.route) == true -> "Split Bill"
@@ -590,10 +599,13 @@ fun MainContainerScreen(
                         },
                         onOpenSearch = if (currentRoute?.contains(AppRoute.Profile.route) == true) null else { { mainNavController.navigate(AppRoute.Search.route) } },
                         onOpenNotifications = if (currentRoute?.contains(AppRoute.Profile.route) == true) null else onOpenNotifications,
+                        notificationUnreadCount = notificationUiState.unreadCount,
                         onOpenSettings = if (currentRoute?.contains(AppRoute.Profile.route) == true) { { profileViewModel.setSettingsDialogOpen(true) } } else null,
                     )
                 }
+            }
 
+            if (showBottomBar) {
                 Box(
                     modifier = Modifier
                         .align(Alignment.BottomCenter)

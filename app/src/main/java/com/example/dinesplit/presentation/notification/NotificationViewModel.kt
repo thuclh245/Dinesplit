@@ -15,6 +15,8 @@ import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
+import kotlinx.coroutines.flow.catch
+import kotlinx.coroutines.flow.collectLatest
 import kotlinx.coroutines.launch
 
 class NotificationViewModel(application: Application) : AndroidViewModel(application) {
@@ -27,7 +29,33 @@ class NotificationViewModel(application: Application) : AndroidViewModel(applica
     val uiState: StateFlow<NotificationUiState> = _uiState.asStateFlow()
 
     init {
-        refreshNotifications()
+        observeNotifications()
+    }
+
+    private fun observeNotifications() {
+        viewModelScope.launch(Dispatchers.IO) {
+            _uiState.value = _uiState.value.copy(isLoading = true, errorMessage = null)
+            repository.observeNotifications()
+                .catch { throwable ->
+                    _notifications.value = emptyList()
+                    _uiState.value =
+                        _uiState.value.copy(
+                            isLoading = false,
+                            currentUserId = currentUserId(),
+                            errorMessage = FirebaseErrorMapper.toUserMessage(throwable),
+                        )
+                }
+                .collectLatest { notifications ->
+                    _notifications.value = notifications
+                    _uiState.value =
+                        _uiState.value.copy(
+                            isLoading = false,
+                            errorMessage = null,
+                            currentUserId = currentUserId(),
+                            unreadCount = notifications.count { !it.isRead },
+                        )
+                }
+        }
     }
 
     fun refreshNotifications() {
