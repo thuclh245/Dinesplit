@@ -11,6 +11,7 @@ import androidx.compose.material.icons.automirrored.filled.ArrowBack
 import androidx.compose.material.icons.filled.Add
 import androidx.compose.material.icons.filled.Notifications
 import androidx.compose.material.icons.filled.Search
+import androidx.compose.material.icons.filled.Settings
 import androidx.compose.material3.*
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
@@ -76,6 +77,7 @@ fun HomeTopBar(
     onAvatarClick: () -> Unit = {},
     onOpenSearch: (() -> Unit)? = null,
     onOpenNotifications: (() -> Unit)? = null,
+    onOpenSettings: (() -> Unit)? = null,
 ) {
     Surface(
         color = MaterialTheme.colorScheme.background,
@@ -192,6 +194,15 @@ fun HomeTopBar(
                         Icon(
                             imageVector = Icons.Default.Notifications,
                             contentDescription = "Thông báo",
+                            tint = MaterialTheme.colorScheme.primary,
+                        )
+                    }
+                }
+                if (onOpenSettings != null) {
+                    IconButton(onClick = onOpenSettings) {
+                        Icon(
+                            imageVector = Icons.Default.Settings,
+                            contentDescription = "Settings",
                             tint = MaterialTheme.colorScheme.primary,
                         )
                     }

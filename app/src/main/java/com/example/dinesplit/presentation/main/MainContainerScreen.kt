@@ -52,6 +52,7 @@ import com.example.dinesplit.presentation.personal.toHistoryItems
 import com.example.dinesplit.presentation.personal.toManagedCategories
 import com.example.dinesplit.presentation.personal.toTransactionType
 import com.example.dinesplit.presentation.profile.EditProfileScreen
+import com.example.dinesplit.presentation.profile.FollowListScreen
 import com.example.dinesplit.presentation.profile.OtherUserProfileScreen
 import com.example.dinesplit.presentation.profile.ProfileScreen
 import com.example.dinesplit.presentation.profile.ProfileUiEffect
@@ -431,8 +432,11 @@ fun MainContainerScreen(
                                     taggedBills = profileUiState.taggedBills,
                                     isLoggingOut = profileUiState.isLoggingOut,
                                     isSeeding = profileUiState.isSeeding,
+                                    isSettingsDialogOpen = profileUiState.isSettingsDialogOpen,
+                                    onCloseSettings = { profileViewModel.setSettingsDialogOpen(false) },
                                     bottomPadding = dynamicBottomPadding,
                                     onEditProfile = { mainNavController.navigate(AppRoute.EditProfile.route) },
+                                    onOpenSettings = { profileViewModel.setSettingsDialogOpen(true) },
                                     onSeedDemoData = profileViewModel::seedDemoData,
                                     onOpenSearch = { mainNavController.navigate(AppRoute.Search.route) },
                                     onLogout = profileViewModel::logout,
@@ -442,6 +446,12 @@ fun MainContainerScreen(
                                     onBillClick = { groupId, billId ->
                                         mainNavController.navigate(AppRoute.BillDetail.createRoute(groupId, billId))
                                     },
+                                    onNavigateToFollowList = { tabIndex ->
+                                        val myUid = profileUiState.profile?.uid.orEmpty()
+                                        if (myUid.isNotEmpty()) {
+                                            mainNavController.navigate(AppRoute.FollowList.createRoute(myUid, tabIndex))
+                                        }
+                                    }
                                 )
                             }
                         }
@@ -517,7 +527,40 @@ fun MainContainerScreen(
                     
                     composable(AppRoute.OtherUserProfile.routeWithArg) { backStackEntry ->
                         val userName = backStackEntry.arguments?.getString(AppRoute.OtherUserProfile.ARG_USER) ?: ""
-                        OtherUserProfileScreen(userName = userName, onBack = { mainNavController.navigateUp() })
+                        OtherUserProfileScreen(
+                            userName = userName,
+                            onBack = { mainNavController.navigateUp() },
+                            onNavigateToFollowList = { uid, tabIndex ->
+                                mainNavController.navigate(AppRoute.FollowList.createRoute(uid, tabIndex))
+                            }
+                        )
+                    }
+
+                    composable(
+                        route = AppRoute.FollowList.routeWithArg,
+                        arguments = listOf(
+                            navArgument(AppRoute.FollowList.ARG_INITIAL_TAB) {
+                                type = NavType.IntType
+                                defaultValue = 0
+                            }
+                        )
+                    ) { backStackEntry ->
+                        val userId = backStackEntry.arguments?.getString(AppRoute.FollowList.ARG_USER_ID).orEmpty()
+                        val initialTab = backStackEntry.arguments?.getInt(AppRoute.FollowList.ARG_INITIAL_TAB) ?: 0
+                        FollowListScreen(
+                            userId = userId,
+                            initialTab = initialTab,
+                            onBack = { mainNavController.navigateUp() },
+                            onUserClick = { clickedUserId ->
+                                if (clickedUserId == profileUiState.profile?.uid) {
+                                    mainNavController.navigate(AppRoute.Profile.route) {
+                                        popUpTo(AppRoute.Feed.route)
+                                    }
+                                } else {
+                                    mainNavController.navigate(AppRoute.OtherUserProfile.createRoute(clickedUserId))
+                                }
+                            }
+                        )
                     }
                 }
             }
@@ -552,8 +595,9 @@ fun MainContainerScreen(
                                 }
                             }
                         },
-                        onOpenSearch = { mainNavController.navigate(AppRoute.Search.route) },
-                        onOpenNotifications = onOpenNotifications,
+                        onOpenSearch = if (currentRoute?.contains(AppRoute.Profile.route) == true) null else { { mainNavController.navigate(AppRoute.Search.route) } },
+                        onOpenNotifications = if (currentRoute?.contains(AppRoute.Profile.route) == true) null else onOpenNotifications,
+                        onOpenSettings = if (currentRoute?.contains(AppRoute.Profile.route) == true) { { profileViewModel.setSettingsDialogOpen(true) } } else null,
                     )
                 }
 

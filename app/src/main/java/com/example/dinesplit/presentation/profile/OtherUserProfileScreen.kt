@@ -1,130 +1,511 @@
 package com.example.dinesplit.presentation.profile
 
-import androidx.compose.foundation.background
-import androidx.compose.foundation.layout.Arrangement
-import androidx.compose.foundation.layout.Box
-import androidx.compose.foundation.layout.Column
-import androidx.compose.foundation.layout.Row
-import androidx.compose.foundation.layout.fillMaxSize
-import androidx.compose.foundation.layout.fillMaxWidth
-import androidx.compose.foundation.layout.height
-import androidx.compose.foundation.layout.padding
-import androidx.compose.foundation.lazy.grid.GridCells
-import androidx.compose.foundation.lazy.grid.LazyVerticalGrid
-import androidx.compose.foundation.lazy.grid.items
+import android.app.Application
+import androidx.compose.foundation.*
+import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.shape.CircleShape
-import androidx.compose.material3.MaterialTheme
-import androidx.compose.material3.Text
-import androidx.compose.material3.TextButton
-import androidx.compose.runtime.Composable
-import androidx.compose.runtime.getValue
-import androidx.compose.runtime.mutableStateOf
-import androidx.compose.runtime.remember
-import androidx.compose.runtime.setValue
+import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.automirrored.filled.ArrowBack
+import androidx.compose.material.icons.filled.*
+import androidx.compose.material3.*
+import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.draw.clip
-import com.example.dinesplit.core.ui.AppButton
-import com.example.dinesplit.core.ui.AppCard
+import androidx.compose.ui.draw.drawBehind
+import androidx.compose.ui.graphics.Brush
+import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.graphics.vector.ImageVector
+import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.text.style.TextOverflow
+import androidx.compose.ui.unit.dp
+import androidx.compose.ui.unit.sp
+import androidx.lifecycle.viewmodel.compose.viewModel
 import com.example.dinesplit.core.ui.AppDimens
 import com.example.dinesplit.core.ui.AppScaffold
+import com.example.dinesplit.core.ui.DineAvatarImage
+import com.example.dinesplit.core.ui.DineGridImage
+import com.example.dinesplit.core.ui.ErrorStateBlock
+import com.example.dinesplit.core.ui.LoadingBlock
+import com.example.dinesplit.domain.model.LinkedBillSummary
+import com.example.dinesplit.domain.model.Post
+import com.example.dinesplit.domain.model.UserProfile
+import java.text.NumberFormat
+import java.util.Locale
 
 @Composable
 fun OtherUserProfileScreen(
-    userName: String,
+    userName: String, // represents the target user's UID (passed from navigation)
     onBack: () -> Unit = {},
+    onNavigateToFollowList: (String, Int) -> Unit = { _, _ -> },
 ) {
-    var isFollowing by remember { mutableStateOf(false) }
-    val photoPlaceholders = List(12) { index -> "Photo ${index + 1}" }
+    val context = LocalContext.current
+    val application = context.applicationContext as Application
+    val vm: OtherUserProfileViewModel = viewModel(
+        factory = OtherUserProfileViewModel.Factory(application, userName)
+    )
+    val uiState by vm.uiState.collectAsState()
+    var selectedTab by remember { mutableStateOf(0) }
 
     AppScaffold(
-        title = "Profile",
+        title = uiState.profile?.username?.let { "@$it" } ?: "Hồ sơ",
         navigationIcon = {
-            TextButton(onClick = onBack) {
-                Text("Back")
+            IconButton(onClick = onBack) {
+                Icon(Icons.AutoMirrored.Filled.ArrowBack, contentDescription = "Quay lại")
             }
         },
     ) {
-        Column(
-            modifier = Modifier.fillMaxSize(),
-            verticalArrangement = Arrangement.spacedBy(AppDimens.spaceLg),
-        ) {
-            AppCard {
-                Column(verticalArrangement = Arrangement.spacedBy(AppDimens.spaceMd)) {
-                    Row(
-                        horizontalArrangement = Arrangement.spacedBy(AppDimens.spaceMd),
-                        verticalAlignment = Alignment.CenterVertically,
-                    ) {
-                        Box(
-                            modifier =
-                                Modifier
-                                    .clip(CircleShape)
-                                    .background(MaterialTheme.colorScheme.primaryContainer)
-                                    .padding(AppDimens.space2Xl),
-                            contentAlignment = Alignment.Center,
-                        ) {
-                            Text(
-                                text = userName.take(1).uppercase(),
-                                style = MaterialTheme.typography.titleLarge,
-                                color = MaterialTheme.colorScheme.onPrimaryContainer,
-                            )
-                        }
-
-                        Column(verticalArrangement = Arrangement.spacedBy(AppDimens.spaceXs)) {
-                            Text(
-                                text = userName,
-                                style = MaterialTheme.typography.titleLarge,
-                                color = MaterialTheme.colorScheme.primary,
-                            )
-                            Text(
-                                text = "Coffee lover and split planner",
-                                style = MaterialTheme.typography.bodyMedium,
-                                color = MaterialTheme.colorScheme.onSurfaceVariant,
-                            )
-                            Text(
-                                text = "1.2k followers",
-                                style = MaterialTheme.typography.labelLarge,
-                            )
-                        }
-                    }
-
-                    AppButton(
-                        text = if (isFollowing) "Following" else "Follow",
-                        onClick = { isFollowing = !isFollowing },
+        when {
+            uiState.isLoading -> {
+                Box(modifier = Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
+                    LoadingBlock(message = "Đang tải hồ sơ...")
+                }
+            }
+            uiState.errorMessage != null && uiState.profile == null -> {
+                Box(modifier = Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
+                    ErrorStateBlock(
+                        title = "Lỗi tải hồ sơ",
+                        subtitle = uiState.errorMessage ?: "Không tìm thấy người dùng này.",
+                        retryText = "Quay lại",
+                        onRetryClick = onBack
                     )
                 }
             }
-
-            Text(
-                text = "Recent Posts",
-                style = MaterialTheme.typography.titleMedium,
-                color = MaterialTheme.colorScheme.primary,
-            )
-
-            LazyVerticalGrid(
-                columns = GridCells.Fixed(3),
-                modifier = Modifier.fillMaxSize(),
-                horizontalArrangement = Arrangement.spacedBy(AppDimens.spaceSm),
-                verticalArrangement = Arrangement.spacedBy(AppDimens.spaceSm),
-            ) {
-                items(photoPlaceholders) { item ->
-                    Box(
-                        modifier =
-                            Modifier
-                                .fillMaxWidth()
-                                .height(AppDimens.space2Xl * 2)
-                                .clip(MaterialTheme.shapes.medium)
-                                .background(MaterialTheme.colorScheme.primaryContainer),
-                        contentAlignment = Alignment.Center,
+            else -> {
+                val profile = uiState.profile
+                if (profile != null) {
+                    Column(
+                        modifier = Modifier
+                            .fillMaxSize()
+                            .verticalScroll(rememberScrollState()),
                     ) {
-                        Text(
-                            text = item,
-                            style = MaterialTheme.typography.bodySmall,
-                            color = MaterialTheme.colorScheme.onPrimaryContainer,
+                        OtherProfileHeader(
+                            profile = profile,
+                            isFollowing = uiState.isFollowing,
+                            isFollowedByOther = uiState.isFollowedByOther,
+                            isFollowActionBusy = uiState.isFollowActionBusy,
+                            postsCount = uiState.posts.size,
+                            onToggleFollow = vm::toggleFollow,
+                            onFollowingClick = { onNavigateToFollowList(profile.uid, 0) },
+                            onFollowersClick = { onNavigateToFollowList(profile.uid, 1) }
                         )
+
+                        OtherProfileTabs(selectedTab = selectedTab, onTabSelected = { selectedTab = it })
+
+                        when (selectedTab) {
+                            0 -> {
+                                val postsWithImages = uiState.posts.filter { it.imageUrls.isNotEmpty() }
+                                if (postsWithImages.isEmpty()) {
+                                    Box(
+                                        modifier = Modifier
+                                            .fillMaxWidth()
+                                            .padding(vertical = 48.dp),
+                                        contentAlignment = Alignment.Center
+                                    ) {
+                                        Column(
+                                            horizontalAlignment = Alignment.CenterHorizontally,
+                                            verticalArrangement = Arrangement.spacedBy(8.dp)
+                                        ) {
+                                            Icon(
+                                                imageVector = Icons.Default.PhotoLibrary,
+                                                contentDescription = null,
+                                                tint = MaterialTheme.colorScheme.outline.copy(0.6f),
+                                                modifier = Modifier.size(48.dp)
+                                            )
+                                            Text(
+                                                text = "Chưa có bài đăng nào",
+                                                style = MaterialTheme.typography.bodyMedium,
+                                                color = MaterialTheme.colorScheme.outline
+                                            )
+                                        }
+                                    }
+                                } else {
+                                    OtherPhotoGrid(posts = uiState.posts, onPostClick = { /* Can navigate to post detail if needed */ })
+                                }
+                            }
+                            1 -> {
+                                OtherTaggedBillsList(bills = uiState.taggedBills, onBillClick = { _, _ -> })
+                            }
+                        }
+                        
+                        Spacer(modifier = Modifier.height(40.dp))
                     }
                 }
             }
         }
     }
+}
+
+@Composable
+private fun OtherProfileHeader(
+    profile: UserProfile,
+    isFollowing: Boolean,
+    isFollowedByOther: Boolean,
+    isFollowActionBusy: Boolean,
+    postsCount: Int,
+    onToggleFollow: () -> Unit,
+    onFollowingClick: () -> Unit,
+    onFollowersClick: () -> Unit,
+) {
+    val resolvedBio = profile.bio.ifBlank { "Người dùng này chưa cập nhật tiểu sử." }
+
+    Column(modifier = Modifier.padding(24.dp)) {
+        Row(
+            modifier = Modifier.fillMaxWidth(),
+            verticalAlignment = Alignment.CenterVertically,
+            horizontalArrangement = Arrangement.spacedBy(24.dp),
+        ) {
+            // Avatar with Gradient Ring
+            Box(
+                modifier = Modifier
+                    .size(100.dp)
+                    .background(
+                        Brush.sweepGradient(
+                            listOf(
+                                MaterialTheme.colorScheme.primary,
+                                MaterialTheme.colorScheme.primaryContainer,
+                                MaterialTheme.colorScheme.primary,
+                            ),
+                        ),
+                        CircleShape,
+                    )
+                    .padding(3.dp),
+            ) {
+                DineAvatarImage(
+                    imageUrl = profile.avatarUrl,
+                    name = profile.displayName,
+                    modifier = Modifier
+                        .fillMaxSize()
+                        .border(4.dp, MaterialTheme.colorScheme.background, CircleShape),
+                    size = 94.dp,
+                )
+            }
+
+            Column(modifier = Modifier.weight(1f), verticalArrangement = Arrangement.spacedBy(16.dp)) {
+                Text(
+                    text = if (profile.username.isNotBlank()) "@${profile.username}" else "@user",
+                    style = MaterialTheme.typography.headlineSmall.copy(fontWeight = FontWeight.ExtraBold),
+                    maxLines = 1,
+                    overflow = TextOverflow.Ellipsis
+                )
+
+                Row(horizontalArrangement = Arrangement.spacedBy(12.dp)) {
+                    Button(
+                        onClick = onToggleFollow,
+                        enabled = !isFollowActionBusy,
+                        shape = RoundedCornerShape(12.dp),
+                        modifier = Modifier.weight(1f).height(40.dp),
+                        colors = ButtonDefaults.buttonColors(
+                            containerColor = if (isFollowing) {
+                                MaterialTheme.colorScheme.surfaceContainer
+                            } else {
+                                MaterialTheme.colorScheme.primary
+                            },
+                            contentColor = if (isFollowing) {
+                                MaterialTheme.colorScheme.onSurface
+                            } else {
+                                MaterialTheme.colorScheme.onPrimary
+                            }
+                        ),
+                        contentPadding = PaddingValues(0.dp),
+                    ) {
+                        if (isFollowActionBusy) {
+                            CircularProgressIndicator(
+                                modifier = Modifier.size(18.dp),
+                                strokeWidth = 2.dp,
+                                color = if (isFollowing) MaterialTheme.colorScheme.onSurface else MaterialTheme.colorScheme.onPrimary
+                            )
+                        } else {
+                            Text(
+                                text = when {
+                                    isFollowing && isFollowedByOther -> "Bạn bè"
+                                    isFollowing -> "Đang theo dõi"
+                                    isFollowedByOther -> "Theo dõi lại"
+                                    else -> "Theo dõi"
+                                },
+                                style = MaterialTheme.typography.labelLarge.copy(fontWeight = FontWeight.Bold)
+                            )
+                        }
+                    }
+                }
+            }
+        }
+
+        Spacer(modifier = Modifier.height(24.dp))
+
+        // Stats
+        Row(
+            modifier = Modifier.fillMaxWidth(),
+            horizontalArrangement = Arrangement.spacedBy(32.dp),
+        ) {
+            OtherStatItem(label = "Bài viết", value = postsCount.toString())
+            OtherStatItem(
+                label = "Người theo dõi",
+                value = profile.followersCount.toString(),
+                modifier = Modifier.clickable { onFollowersClick() }
+            )
+            OtherStatItem(
+                label = "Đang theo dõi",
+                value = profile.followingCount.toString(),
+                modifier = Modifier.clickable { onFollowingClick() }
+            )
+        }
+
+        Spacer(modifier = Modifier.height(16.dp))
+
+        // Info
+        Column(verticalArrangement = Arrangement.spacedBy(4.dp)) {
+            Text(profile.displayName, style = MaterialTheme.typography.bodyLarge.copy(fontWeight = FontWeight.Bold))
+            Text(
+                text = resolvedBio,
+                style = MaterialTheme.typography.bodyMedium,
+                color = MaterialTheme.colorScheme.onSurfaceVariant,
+                maxLines = 4,
+                overflow = TextOverflow.Ellipsis,
+            )
+        }
+    }
+}
+
+@Composable
+private fun OtherStatItem(
+    label: String,
+    value: String,
+    modifier: Modifier = Modifier,
+) {
+    Column(modifier = modifier) {
+        Text(value, style = MaterialTheme.typography.titleMedium.copy(fontWeight = FontWeight.Black))
+        Text(
+            label.uppercase(),
+            style = MaterialTheme.typography.labelSmall.copy(fontWeight = FontWeight.Bold, letterSpacing = 1.sp),
+            color = MaterialTheme.colorScheme.outlineVariant,
+        )
+    }
+}
+
+@Composable
+private fun OtherProfileTabs(
+    selectedTab: Int,
+    onTabSelected: (Int) -> Unit,
+) {
+    val tabs = listOf(
+        TabInfo("Bài viết", Icons.Default.GridView),
+        TabInfo("Hóa đơn chung", Icons.Default.ReceiptLong),
+    )
+    val primaryColor = MaterialTheme.colorScheme.primary
+
+    Column {
+        Row(modifier = Modifier.fillMaxWidth().height(AppDimens.buttonHeight)) {
+            tabs.forEachIndexed { index, tab ->
+                val isSelected = selectedTab == index
+                Box(
+                    modifier = Modifier
+                        .weight(1f)
+                        .fillMaxHeight()
+                        .clickable { onTabSelected(index) }
+                        .drawBehind {
+                            if (isSelected) {
+                                drawLine(
+                                    color = primaryColor,
+                                    start = androidx.compose.ui.geometry.Offset(0f, size.height),
+                                    end = androidx.compose.ui.geometry.Offset(size.width, size.height),
+                                    strokeWidth = 2.dp.toPx(),
+                                )
+                            }
+                        },
+                    contentAlignment = Alignment.Center,
+                ) {
+                    Row(
+                        verticalAlignment = Alignment.CenterVertically,
+                        horizontalArrangement = Arrangement.spacedBy(8.dp)
+                    ) {
+                        Icon(
+                            imageVector = tab.icon,
+                            contentDescription = tab.label,
+                            tint = if (isSelected) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.outlineVariant,
+                            modifier = Modifier.size(20.dp),
+                        )
+                        Text(
+                            text = tab.label,
+                            style = MaterialTheme.typography.labelMedium.copy(fontWeight = FontWeight.Bold),
+                            color = if (isSelected) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.outlineVariant
+                        )
+                    }
+                }
+            }
+        }
+        Box(modifier = Modifier.fillMaxWidth().height(1.dp).background(MaterialTheme.colorScheme.surfaceContainer))
+    }
+}
+
+@Composable
+private fun OtherPhotoGrid(
+    posts: List<Post>,
+    onPostClick: (String) -> Unit,
+) {
+    val postsWithImages = posts.filter { it.imageUrls.isNotEmpty() }
+    Column(modifier = Modifier.padding(horizontal = 4.dp, vertical = 8.dp)) {
+        val rows = postsWithImages.chunked(3)
+        rows.forEach { rowPosts ->
+            Row(modifier = Modifier.fillMaxWidth().padding(vertical = 2.dp), horizontalArrangement = Arrangement.spacedBy(4.dp)) {
+                rowPosts.forEach { post ->
+                    val url = post.imageUrls.first()
+                    DineGridImage(
+                        imageUrl = url,
+                        contentDescription = null,
+                        modifier = Modifier
+                            .weight(1f)
+                            .aspectRatio(1f)
+                            .clickable { onPostClick(post.id) },
+                    )
+                }
+                repeat(3 - rowPosts.size) {
+                    Spacer(modifier = Modifier.weight(1f))
+                }
+            }
+        }
+    }
+}
+
+@Composable
+private fun OtherTaggedBillsList(
+    bills: List<LinkedBillSummary>,
+    onBillClick: (String, String) -> Unit
+) {
+    if (bills.isEmpty()) {
+        Box(
+            modifier = Modifier
+                .fillMaxWidth()
+                .padding(vertical = 48.dp),
+            contentAlignment = Alignment.Center
+        ) {
+            Column(
+                horizontalAlignment = Alignment.CenterHorizontally,
+                verticalArrangement = Arrangement.spacedBy(8.dp)
+            ) {
+                Icon(
+                    imageVector = Icons.Default.ReceiptLong,
+                    contentDescription = null,
+                    tint = MaterialTheme.colorScheme.outline.copy(0.6f),
+                    modifier = Modifier.size(48.dp)
+                )
+                Text(
+                    text = "Không có hoạt động chia tiền chung",
+                    style = MaterialTheme.typography.bodyMedium,
+                    color = MaterialTheme.colorScheme.outline
+                )
+            }
+        }
+    } else {
+        Column(
+            modifier = Modifier
+                .fillMaxWidth()
+                .padding(horizontal = 16.dp, vertical = 12.dp),
+            verticalArrangement = Arrangement.spacedBy(12.dp)
+        ) {
+            bills.forEach { summary ->
+                Surface(
+                    color = MaterialTheme.colorScheme.surfaceContainerHigh,
+                    shape = RoundedCornerShape(16.dp),
+                    border = BorderStroke(1.dp, MaterialTheme.colorScheme.outlineVariant.copy(alpha = 0.5f)),
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .clickable { onBillClick(summary.groupId, summary.billId) }
+                ) {
+                    Column(
+                        modifier = Modifier.padding(16.dp),
+                        verticalArrangement = Arrangement.spacedBy(12.dp)
+                    ) {
+                        Row(
+                            verticalAlignment = Alignment.CenterVertically,
+                            horizontalArrangement = Arrangement.SpaceBetween,
+                            modifier = Modifier.fillMaxWidth()
+                        ) {
+                            Row(
+                                verticalAlignment = Alignment.CenterVertically,
+                                horizontalArrangement = Arrangement.spacedBy(8.dp),
+                                modifier = Modifier.weight(1f)
+                            ) {
+                                Icon(
+                                    imageVector = Icons.Default.ReceiptLong,
+                                    contentDescription = null,
+                                    tint = MaterialTheme.colorScheme.primary,
+                                    modifier = Modifier.size(20.dp)
+                                )
+                                Text(
+                                    text = summary.billName,
+                                    style = MaterialTheme.typography.titleSmall.copy(fontWeight = FontWeight.Bold),
+                                    maxLines = 1,
+                                    overflow = TextOverflow.Ellipsis
+                                )
+                            }
+                            
+                            Surface(
+                                color = if (summary.isSettled) {
+                                    MaterialTheme.colorScheme.secondaryContainer
+                                } else {
+                                    MaterialTheme.colorScheme.errorContainer.copy(alpha = 0.2f)
+                                },
+                                shape = CircleShape,
+                                border = BorderStroke(
+                                    width = 1.dp,
+                                    color = if (summary.isSettled) MaterialTheme.colorScheme.secondary else MaterialTheme.colorScheme.error.copy(alpha = 0.4f)
+                                )
+                            ) {
+                                Text(
+                                    text = if (summary.isSettled) "ĐÃ THANH TOÁN" else "CHƯA THANH TOÁN",
+                                    modifier = Modifier.padding(horizontal = 8.dp, vertical = 2.dp),
+                                    style = MaterialTheme.typography.labelSmall.copy(fontWeight = FontWeight.Bold),
+                                    color = if (summary.isSettled) MaterialTheme.colorScheme.onSecondaryContainer else MaterialTheme.colorScheme.error
+                                )
+                            }
+                        }
+                        
+                        Row(
+                            modifier = Modifier.fillMaxWidth(),
+                            horizontalArrangement = Arrangement.SpaceBetween,
+                            verticalAlignment = Alignment.CenterVertically
+                        ) {
+                            Column {
+                                Text(
+                                    text = "Tổng hóa đơn",
+                                    style = MaterialTheme.typography.labelSmall,
+                                    color = MaterialTheme.colorScheme.onSurfaceVariant
+                                )
+                                Text(
+                                    text = otherFormatMoney(summary.totalAmount),
+                                    style = MaterialTheme.typography.bodyMedium.copy(fontWeight = FontWeight.Bold)
+                                )
+                            }
+                            
+                            Column(horizontalAlignment = Alignment.End) {
+                                Text(
+                                    text = if (summary.isIPayer) "Họ đã trả trước" else "Phần của họ",
+                                    style = MaterialTheme.typography.labelSmall,
+                                    color = MaterialTheme.colorScheme.onSurfaceVariant
+                                )
+                                Text(
+                                    text = otherFormatMoney(summary.myShare),
+                                    style = MaterialTheme.typography.bodyMedium.copy(
+                                        fontWeight = FontWeight.Bold,
+                                        color = if (summary.isSettled || summary.isMyPaid || summary.isIPayer) {
+                                            MaterialTheme.colorScheme.secondary
+                                        } else {
+                                            MaterialTheme.colorScheme.error
+                                        }
+                                    )
+                                )
+                            }
+                        }
+                    }
+                }
+            }
+        }
+    }
+}
+
+private fun otherFormatMoney(amount: Double): String {
+    val formatter = NumberFormat.getCurrencyInstance(Locale("vi", "VN"))
+    return formatter.format(amount)
 }

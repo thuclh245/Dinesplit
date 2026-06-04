@@ -221,7 +221,7 @@ private fun CompleteProfileContent(
                         value = uiState.displayName,
                         onValueChange = onDisplayNameChange,
                         label = "DISPLAY NAME",
-                        placeholder = "e.g. Alex Thompson",
+                        placeholder = "e.g. Linh Trần",
                         error = uiState.displayNameError,
                     )
 
@@ -236,7 +236,7 @@ private fun CompleteProfileContent(
                             value = uiState.username,
                             onValueChange = onUsernameChange,
                             modifier = Modifier.fillMaxWidth(),
-                            placeholder = { Text("alexsplit", color = MaterialTheme.colorScheme.outline.copy(alpha = 0.5f)) },
+                            placeholder = { Text("ten_dang_nhap", color = MaterialTheme.colorScheme.outline.copy(alpha = 0.5f)) },
                             leadingIcon = {
                                 Text(
                                     "@",
@@ -487,8 +487,8 @@ fun CompleteProfileScreenPreview() {
         CompleteProfileContent(
             uiState =
                 CompleteProfileUiState(
-                    displayName = "Alex Thompson",
-                    username = "alexsplit",
+                    displayName = "Linh Trần",
+                    username = "linhtran",
                 ),
             onDisplayNameChange = {},
             onUsernameChange = {},

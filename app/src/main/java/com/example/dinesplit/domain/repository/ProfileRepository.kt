@@ -23,4 +23,14 @@ interface ProfileRepository {
     suspend fun saveRecentSearch(uid: String, query: String): Result<Unit>
 
     suspend fun clearRecentSearches(uid: String): Result<Unit>
+
+    suspend fun followUser(currentUid: String, targetUid: String): Result<Unit>
+
+    suspend fun unfollowUser(currentUid: String, targetUid: String): Result<Unit>
+
+    suspend fun isFollowing(currentUid: String, targetUid: String): Result<Boolean>
+
+    suspend fun getFollowers(uid: String): Result<List<UserProfile>>
+
+    suspend fun getFollowing(uid: String): Result<List<UserProfile>>
 }

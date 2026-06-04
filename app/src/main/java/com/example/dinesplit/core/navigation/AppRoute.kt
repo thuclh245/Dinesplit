@@ -71,6 +71,16 @@ sealed class AppRoute(val route: String) {
         }
     }
 
+    data object FollowList : AppRoute("follow_list") {
+        const val ARG_USER_ID = "userId"
+        const val ARG_INITIAL_TAB = "initialTab"
+        val routeWithArg = "$route/{$ARG_USER_ID}?$ARG_INITIAL_TAB={$ARG_INITIAL_TAB}"
+
+        fun createRoute(userId: String, initialTab: Int = 0): String {
+            return "$route/$userId?$ARG_INITIAL_TAB=$initialTab"
+        }
+    }
+
     data object Split : AppRoute("split")
 
     data object GroupList : AppRoute("group_list")

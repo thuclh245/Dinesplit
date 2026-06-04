@@ -41,6 +41,7 @@ data class ProfileUiState(
     val posts: List<Post> = emptyList(),
     val savedPosts: List<Post> = emptyList(),
     val taggedBills: List<LinkedBillSummary> = emptyList(),
+    val isSettingsDialogOpen: Boolean = false,
 )
 
 data class EditProfileUiState(
@@ -364,5 +365,9 @@ class ProfileViewModel(application: Application) : AndroidViewModel(application)
                 _profileUiState.value = _profileUiState.value.copy(isSeeding = false)
             }
         }
+    }
+
+    fun setSettingsDialogOpen(open: Boolean) {
+        _profileUiState.value = _profileUiState.value.copy(isSettingsDialogOpen = open)
     }
 }

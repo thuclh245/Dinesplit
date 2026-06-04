@@ -44,6 +44,8 @@ fun ProfileScreen(
     taggedBills: List<LinkedBillSummary> = emptyList(),
     isLoggingOut: Boolean = false,
     isSeeding: Boolean = false,
+    isSettingsDialogOpen: Boolean = false,
+    onCloseSettings: () -> Unit = {},
     bottomPadding: Dp = 80.dp,
     onEditProfile: () -> Unit,
     onOpenSettings: () -> Unit = {},
@@ -52,11 +54,11 @@ fun ProfileScreen(
     onLogout: () -> Unit,
     onOpenPostDetail: (String) -> Unit = {},
     onBillClick: (String, String) -> Unit = { _, _ -> },
+    onNavigateToFollowList: (Int) -> Unit = {},
 ) {
     val resolvedHandle = userHandle.ifBlank { "@" }
     val resolvedBio = userBio.ifBlank { "Add a bio so friends know who they are splitting with." }
     var showLogoutConfirmation by remember { mutableStateOf(false) }
-    var showSettingsDialog by remember { mutableStateOf(false) }
     var wasSeeding by remember { mutableStateOf(false) }
     var selectedTab by remember { mutableStateOf(0) }
  
@@ -64,7 +66,7 @@ fun ProfileScreen(
         if (isSeeding) {
             wasSeeding = true
         } else if (wasSeeding) {
-            showSettingsDialog = false
+            onCloseSettings()
             wasSeeding = false
         }
     }
@@ -96,9 +98,9 @@ fun ProfileScreen(
         )
     }
  
-    if (showSettingsDialog) {
+    if (isSettingsDialogOpen) {
         AlertDialog(
-            onDismissRequest = { if (!isSeeding) showSettingsDialog = false },
+            onDismissRequest = { if (!isSeeding) onCloseSettings() },
             title = {
                 Row(
                     verticalAlignment = Alignment.CenterVertically,
@@ -145,7 +147,7 @@ fun ProfileScreen(
             },
             dismissButton = {
                 TextButton(
-                    onClick = { showSettingsDialog = false },
+                    onClick = onCloseSettings,
                     enabled = !isSeeding,
                 ) {
                     Text("Đóng")
@@ -174,9 +176,11 @@ fun ProfileScreen(
                 following = followingCount.toString(),
                 avatarUrl = userAvatarUrl.orEmpty(),
                 onEditProfile = onEditProfile,
-                onOpenSettings = { showSettingsDialog = true },
+                onOpenSettings = onOpenSettings,
                 isLoggingOut = isLoggingOut,
                 onLogout = { showLogoutConfirmation = true },
+                onFollowingClick = { onNavigateToFollowList(0) },
+                onFollowersClick = { onNavigateToFollowList(1) }
             )
 
             ProfileTabs(selectedTab = selectedTab, onTabSelected = { selectedTab = it })
@@ -266,6 +270,8 @@ private fun ProfileHeader(
     onOpenSettings: () -> Unit,
     isLoggingOut: Boolean,
     onLogout: () -> Unit,
+    onFollowingClick: () -> Unit,
+    onFollowersClick: () -> Unit,
 ) {
     Column(modifier = Modifier.padding(24.dp)) {
         Row(
@@ -335,8 +341,16 @@ private fun ProfileHeader(
             horizontalArrangement = Arrangement.spacedBy(32.dp),
         ) {
             StatItem(label = "Posts", value = posts)
-            StatItem(label = "Followers", value = followers)
-            StatItem(label = "Following", value = following)
+            StatItem(
+                label = "Followers",
+                value = followers,
+                modifier = Modifier.clickable { onFollowersClick() }
+            )
+            StatItem(
+                label = "Following",
+                value = following,
+                modifier = Modifier.clickable { onFollowingClick() }
+            )
         }
 
         Spacer(modifier = Modifier.height(16.dp))
@@ -381,8 +395,9 @@ private fun ProfileHeader(
 private fun StatItem(
     label: String,
     value: String,
+    modifier: Modifier = Modifier,
 ) {
-    Column {
+    Column(modifier = modifier) {
         Text(value, style = MaterialTheme.typography.titleMedium.copy(fontWeight = FontWeight.Black))
         Text(
             label.uppercase(),

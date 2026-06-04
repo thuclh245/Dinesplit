@@ -168,6 +168,146 @@ class FirebaseProfileRepository private constructor(
         }
     }
 
+    override suspend fun getFollowers(uid: String): Result<List<UserProfile>> {
+        return runCatching {
+            val snapshot = firestore.collection(COLLECTION_USERS)
+                .whereArrayContains("followingIds", uid)
+                .get()
+                .awaitFirebase()
+            snapshot.documents.mapNotNull { doc ->
+                doc.toUserProfile(doc.id)
+            }
+        }
+    }
+
+    override suspend fun getFollowing(uid: String): Result<List<UserProfile>> {
+        return runCatching {
+            val snapshot = firestore.collection(COLLECTION_USERS)
+                .whereArrayContains("followerIds", uid)
+                .get()
+                .awaitFirebase()
+            snapshot.documents.mapNotNull { doc ->
+                doc.toUserProfile(doc.id)
+            }
+        }
+    }
+
+    override suspend fun isFollowing(currentUid: String, targetUid: String): Result<Boolean> {
+        return runCatching {
+            val userDoc = firestore.collection(COLLECTION_USERS)
+                .document(currentUid)
+                .get()
+                .awaitFirebase()
+            val followingList = (userDoc.get("followingIds") as? List<*>)?.mapNotNull { it?.toString() } ?: emptyList()
+            
+            if (followingList.contains(targetUid)) {
+                true
+            } else {
+                val subDoc = firestore.collection(COLLECTION_USERS)
+                    .document(currentUid)
+                    .collection("following")
+                    .document(targetUid)
+                    .get()
+                    .awaitFirebase()
+                subDoc.exists()
+            }
+        }
+    }
+
+    override suspend fun followUser(currentUid: String, targetUid: String): Result<Unit> {
+        return runCatching {
+            val userRef = firestore.collection(COLLECTION_USERS).document(currentUid)
+            val targetRef = firestore.collection(COLLECTION_USERS).document(targetUid)
+            val followingSubRef = userRef.collection("following").document(targetUid)
+            val followersSubRef = targetRef.collection("followers").document(currentUid)
+
+            firestore.runTransaction { transaction ->
+                val userSnap = transaction.get(userRef)
+                val targetSnap = transaction.get(targetRef)
+
+                val followingIds = (userSnap.get("followingIds") as? List<*>)?.mapNotNull { it?.toString() } ?: emptyList()
+                val followerIds = (targetSnap.get("followerIds") as? List<*>)?.mapNotNull { it?.toString() } ?: emptyList()
+
+                if (!followingIds.contains(targetUid)) {
+                    val newFollowingIds = followingIds + targetUid
+                    val currentFollowingCount = userSnap.getLong("followingCount") ?: 0L
+                    transaction.update(userRef, "followingIds", newFollowingIds, "followingCount", currentFollowingCount + 1)
+                }
+
+                if (!followerIds.contains(currentUid)) {
+                    val newFollowerIds = followerIds + currentUid
+                    val currentFollowersCount = targetSnap.getLong("followersCount") ?: 0L
+                    transaction.update(targetRef, "followerIds", newFollowerIds, "followersCount", currentFollowersCount + 1)
+                }
+
+                transaction.set(followingSubRef, mapOf("followedAt" to System.currentTimeMillis()))
+                transaction.set(followersSubRef, mapOf("followedAt" to System.currentTimeMillis()))
+
+                val displayNameA = userSnap.getString("displayName") ?: "Ai đó"
+                val usernameA = userSnap.getString("username") ?: ""
+
+                if (currentUid != targetUid) {
+                    val notificationId = "${System.currentTimeMillis()}_follow_${currentUid}"
+                    val notificationRef = firestore.collection("user_notifications")
+                        .document(targetUid)
+                        .collection("notifications")
+                        .document(notificationId)
+
+                    val notificationMap = mapOf(
+                        "id" to notificationId,
+                        "userId" to targetUid,
+                        "title" to "$displayNameA đã bắt đầu theo dõi bạn",
+                        "subtitle" to if (usernameA.isNotEmpty()) "@$usernameA" else "",
+                        "type" to "ACTIVITY_UPDATE",
+                        "relatedId" to currentUid,
+                        "isRead" to false,
+                        "createdAt" to System.currentTimeMillis(),
+                        "updatedAt" to System.currentTimeMillis(),
+                        "deepLinkDestination" to "PROFILE",
+                        "deepLinkTargetId" to currentUid
+                    )
+                    transaction.set(notificationRef, notificationMap)
+                }
+            }.awaitFirebase()
+            Unit
+        }
+    }
+
+    override suspend fun unfollowUser(currentUid: String, targetUid: String): Result<Unit> {
+        return runCatching {
+            val userRef = firestore.collection(COLLECTION_USERS).document(currentUid)
+            val targetRef = firestore.collection(COLLECTION_USERS).document(targetUid)
+            val followingSubRef = userRef.collection("following").document(targetUid)
+            val followersSubRef = targetRef.collection("followers").document(currentUid)
+
+            firestore.runTransaction { transaction ->
+                val userSnap = transaction.get(userRef)
+                val targetSnap = transaction.get(targetRef)
+
+                val followingIds = (userSnap.get("followingIds") as? List<*>)?.mapNotNull { it?.toString() } ?: emptyList()
+                val followerIds = (targetSnap.get("followerIds") as? List<*>)?.mapNotNull { it?.toString() } ?: emptyList()
+
+                if (followingIds.contains(targetUid)) {
+                    val newFollowingIds = followingIds - targetUid
+                    val currentFollowingCount = userSnap.getLong("followingCount") ?: 0L
+                    val newCount = maxOf(0L, currentFollowingCount - 1)
+                    transaction.update(userRef, "followingIds", newFollowingIds, "followingCount", newCount)
+                }
+
+                if (followerIds.contains(currentUid)) {
+                    val newFollowerIds = followerIds - currentUid
+                    val currentFollowersCount = targetSnap.getLong("followersCount") ?: 0L
+                    val newCount = maxOf(0L, currentFollowersCount - 1)
+                    transaction.update(targetRef, "followerIds", newFollowerIds, "followersCount", newCount)
+                }
+
+                transaction.delete(followingSubRef)
+                transaction.delete(followersSubRef)
+            }.awaitFirebase()
+            Unit
+        }
+    }
+
     private fun profileDocument(uid: String) = firestore.collection(COLLECTION_USERS).document(uid)
 
     private fun usernameClaimDocument(usernameLower: String) = firestore.collection(COLLECTION_USERNAME_CLAIMS).document(usernameLower)
