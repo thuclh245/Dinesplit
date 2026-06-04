@@ -22,6 +22,8 @@ import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.text.BasicTextField
+import androidx.compose.foundation.text.KeyboardOptions
+import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
 import androidx.compose.material.icons.filled.Add
@@ -354,6 +356,7 @@ private fun CreateBillMainInfoCard(
                         singleLine = true,
                         maxLines = 1,
                         textStyle = TextStyle(fontSize = 32.sp, fontWeight = FontWeight.ExtraBold, color = colorScheme.primary),
+                        keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number),
                         modifier =
                             Modifier
                                 .fillMaxWidth()
@@ -548,6 +551,7 @@ private fun DineInteractiveInputBox(
     textStyle: TextStyle = TextStyle.Default,
     singleLine: Boolean = true,
     maxLines: Int = 1,
+    keyboardOptions: KeyboardOptions = KeyboardOptions.Default,
 ) {
     val colorScheme = MaterialTheme.colorScheme
     var isFocused by remember { mutableStateOf(false) }
@@ -580,6 +584,7 @@ private fun DineInteractiveInputBox(
             textStyle = textStyle,
             singleLine = singleLine,
             maxLines = maxLines,
+            keyboardOptions = keyboardOptions,
             modifier =
                 Modifier
                     .fillMaxWidth()
@@ -639,6 +644,7 @@ private fun CustomSplitDetailsList(
                         enabled = included,
                         placeholder = "0 đ",
                         textStyle = TextStyle(fontSize = 14.sp, fontWeight = FontWeight.Bold, color = colorScheme.primary),
+                        keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number),
                         modifier = Modifier.width(104.dp),
                     )
                 }
@@ -691,6 +697,7 @@ private fun ItemizedSplitDetailsList(
                             },
                             placeholder = "0 đ",
                             textStyle = TextStyle(fontSize = 15.sp, fontWeight = FontWeight.Bold, color = colorScheme.primary),
+                            keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number),
                             modifier = Modifier.width(112.dp),
                         )
                     }

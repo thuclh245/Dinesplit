@@ -142,6 +142,7 @@ class CreateBillViewModel(
     }
 
     fun saveBill() {
+        if (_uiState.value.isLoading || _uiState.value.isSaved) return
         viewModelScope.launch {
             saveBillBlocking()
         }
@@ -149,6 +150,9 @@ class CreateBillViewModel(
 
     suspend fun saveBillBlocking(): Result<Unit> {
         val currentState = _uiState.value
+        if (currentState.isLoading || currentState.isSaved) {
+            return Result.failure(IllegalStateException("Đang thực hiện tác vụ"))
+        }
         val billName = currentState.billName.trim().ifBlank { "Hóa đơn mới" }
 
         validateBillInput(currentState)?.let { error ->

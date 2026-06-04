@@ -36,8 +36,8 @@ class FirebaseFeedRepository(
                                 }.getOrNull()
                             } ?: emptyList()
 
-                        // Show all Firestore posts
-                        val realPosts = posts
+                        // Filter out seed/mock posts
+                        val realPosts = posts.filter { isRealPost(it) }
 
                         if (currentUserId.isNullOrBlank()) {
                             trySend(realPosts.filter { it.visibility == "public" })
@@ -95,8 +95,8 @@ class FirebaseFeedRepository(
                                     doc.toObject(Post::class.java)?.copy(id = doc.id)
                                 }.getOrNull()
                             } ?: emptyList()
-                        // Show all Firestore posts
-                        val realPosts = posts
+                        // Filter out seed/mock posts
+                        val realPosts = posts.filter { isRealPost(it) }
                         // Keep only own posts for profile grid
                         val filtered = realPosts.filter { post ->
                             post.authorUid == userId
@@ -275,7 +275,7 @@ class FirebaseFeedRepository(
                             }.getOrNull()
                         } ?: emptyList()
                         
-                        val filtered = posts.filter { savedIds.contains(it.id) }
+                        val filtered = posts.filter { savedIds.contains(it.id) && isRealPost(it) }
                         trySend(filtered)
                     }
             }
@@ -377,8 +377,8 @@ class FirebaseFeedRepository(
             }.getOrNull()
         }
 
-        // Show all Firestore posts
-        val realPosts = posts
+        // Filter out seed/mock posts
+        val realPosts = posts.filter { isRealPost(it) }
 
         val currentUserId = FirebaseProviders.auth.currentUser?.uid
         if (currentUserId.isNullOrBlank()) {
@@ -435,5 +435,15 @@ class FirebaseFeedRepository(
                 }
             }
         }
+    }
+
+    private fun isRealPost(post: Post): Boolean {
+        val author = post.authorUid
+        val id = post.id
+        return !id.startsWith("demo_post_") &&
+                !author.startsWith("demo_user_") &&
+                author != "chef_hoang_uid" &&
+                author != "foodie_lan_uid" &&
+                author != "cafe_huy_uid"
     }
 }

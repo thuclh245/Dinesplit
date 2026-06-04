@@ -6,16 +6,27 @@ import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.LazyRow
 import androidx.compose.foundation.lazy.items
+import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.filled.Star
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.layout.ContentScale
+import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
+import android.content.Intent
+import android.net.Uri
+import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.ui.draw.clip
+import androidx.compose.ui.graphics.Color
+import coil.compose.AsyncImage
 import com.example.dinesplit.core.ui.AppDimens
 import com.example.dinesplit.core.ui.EmptyStateBlock
 import com.example.dinesplit.core.ui.ErrorStateBlock
 import com.example.dinesplit.core.ui.LoadingBlock
+import com.example.dinesplit.presentation.feed.search.PlaceUiModel
 import com.example.dinesplit.presentation.feed.search.SearchFilter
 import com.example.dinesplit.presentation.feed.search.SearchViewModel
 import com.example.dinesplit.presentation.feed.search.components.*
@@ -27,7 +38,87 @@ fun SearchScreen(
     onOpenUserProfile: (String) -> Unit, // Đã kết nối luồng click mở trang cá nhân người khác
     viewModel: SearchViewModel = androidx.lifecycle.viewmodel.compose.viewModel()
 ) {
+    val context = LocalContext.current
     val uiState by viewModel.uiState.collectAsState()
+    var selectedPlaceForDetail by remember { mutableStateOf<PlaceUiModel?>(null) }
+
+    if (selectedPlaceForDetail != null) {
+        val place = selectedPlaceForDetail!!
+        AlertDialog(
+            onDismissRequest = { selectedPlaceForDetail = null },
+            confirmButton = {
+                Button(
+                    onClick = {
+                        val mapUri = Uri.parse("geo:0,0?q=${Uri.encode(place.name)}")
+                        val mapIntent = Intent(Intent.ACTION_VIEW, mapUri).apply {
+                            setPackage("com.google.android.apps.maps")
+                        }
+                        try {
+                            context.startActivity(mapIntent)
+                        } catch (e: Exception) {
+                            val webUri = Uri.parse("https://www.google.com/maps/search/?api=1&query=${Uri.encode(place.name)}")
+                            val webIntent = Intent(Intent.ACTION_VIEW, webUri)
+                            context.startActivity(webIntent)
+                        }
+                        selectedPlaceForDetail = null
+                    }
+                ) {
+                    Text("Xem trên Google Maps")
+                }
+            },
+            dismissButton = {
+                TextButton(onClick = { selectedPlaceForDetail = null }) {
+                    Text("Đóng")
+                }
+            },
+            title = {
+                Text(
+                    text = place.name,
+                    fontWeight = FontWeight.Bold,
+                    style = MaterialTheme.typography.titleLarge
+                )
+            },
+            text = {
+                Column(
+                    verticalArrangement = Arrangement.spacedBy(8.dp),
+                    modifier = Modifier.fillMaxWidth()
+                ) {
+                    if (place.image.isNotEmpty()) {
+                        AsyncImage(
+                            model = place.image,
+                            contentDescription = place.name,
+                            modifier = Modifier
+                                .fillMaxWidth()
+                                .height(140.dp)
+                                .clip(RoundedCornerShape(12.dp)),
+                            contentScale = ContentScale.Crop
+                        )
+                    }
+                    Text(
+                        text = "Danh mục: ${place.category}",
+                        style = MaterialTheme.typography.bodyMedium
+                    )
+                    Row(
+                        horizontalArrangement = Arrangement.spacedBy(16.dp),
+                        verticalAlignment = Alignment.CenterVertically
+                    ) {
+                        Row(verticalAlignment = Alignment.CenterVertically) {
+                            Icon(
+                                imageVector = Icons.Default.Star,
+                                contentDescription = null,
+                                tint = Color(0xFFFFB300),
+                                modifier = Modifier.size(16.dp)
+                            )
+                            Spacer(modifier = Modifier.width(4.dp))
+                            Text(text = place.rating, fontWeight = FontWeight.Bold)
+                        }
+                        Text(text = "Giá: ${place.priceRange}")
+                        Text(text = "Khoảng cách: ${place.distance}")
+                    }
+                }
+            }
+        )
+    }
 
     Scaffold(
         topBar = {
@@ -173,7 +264,7 @@ fun SearchScreen(
                                     Box(modifier = Modifier.padding(horizontal = AppDimens.spaceLg)) {
                                         SearchPlaceCard(
                                             place = place,
-                                            onClick = { /* Xử lý nếu mở chi tiết địa điểm */ }
+                                            onClick = { selectedPlaceForDetail = place }
                                         )
                                     }
                                 }
@@ -262,7 +353,7 @@ fun SearchScreen(
                                             Box(modifier = Modifier.padding(horizontal = AppDimens.spaceLg)) {
                                                 SearchPlaceCard(
                                                     place = place,
-                                                    onClick = { /* Xử lý mở vị trí map */ }
+                                                    onClick = { selectedPlaceForDetail = place }
                                                 )
                                             }
                                         }
@@ -306,7 +397,7 @@ fun SearchScreen(
                                         Box(modifier = Modifier.padding(horizontal = AppDimens.spaceLg)) {
                                             SearchPlaceCard(
                                                 place = place,
-                                                onClick = { /* Xử lý click */ }
+                                                onClick = { selectedPlaceForDetail = place }
                                             )
                                         }
                                     }

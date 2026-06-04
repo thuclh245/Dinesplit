@@ -38,6 +38,11 @@ interface SplitRepository {
 
     suspend fun saveBill(bill: Bill): Result<Unit>
 
+    suspend fun deleteBill(
+        groupId: String,
+        billId: String,
+    ): Result<Unit>
+
     suspend fun markBillMemberPaid(
         groupId: String,
         billId: String,

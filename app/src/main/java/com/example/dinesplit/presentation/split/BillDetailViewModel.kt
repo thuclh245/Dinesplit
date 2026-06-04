@@ -132,6 +132,29 @@ class BillDetailViewModel(
         }
     }
 
+    fun deleteBill(onSuccess: () -> Unit) {
+        viewModelScope.launch {
+            _uiState.update { it.copy(isUpdatingPayment = true) }
+            val result = repository.deleteBill(groupId, billId)
+            _uiState.update {
+                if (result.isSuccess) {
+                    it.copy(
+                        isUpdatingPayment = false,
+                        paymentMessage = "Đã xóa hóa đơn",
+                    )
+                } else {
+                    it.copy(
+                        isUpdatingPayment = false,
+                        paymentMessage = result.exceptionOrNull()?.message ?: "Không thể xóa hóa đơn",
+                    )
+                }
+            }
+            if (result.isSuccess) {
+                onSuccess()
+            }
+        }
+    }
+
     fun consumePaymentMessage() {
         _uiState.update { it.copy(paymentMessage = null) }
     }

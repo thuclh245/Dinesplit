@@ -221,6 +221,27 @@ class FirebaseSplitRepository(
         }
     }
 
+    override suspend fun deleteBill(groupId: String, billId: String): Result<Unit> {
+        return runCatching {
+            val groupRef = firestore.collection("groups").document(groupId)
+            val billRef = groupRef.collection("bills").document(billId)
+            val billSnapshot = billRef.get().awaitFirebase()
+            if (billSnapshot.exists()) {
+                val totalAmount = billSnapshot.getDouble("totalAmount") ?: 0.0
+                val batch = firestore.batch()
+                batch.delete(billRef)
+                batch.update(
+                    groupRef,
+                    mapOf(
+                        "totalExpense" to FieldValue.increment(-totalAmount),
+                        "updatedAt" to System.currentTimeMillis()
+                    )
+                )
+                batch.commit().awaitFirebase()
+            }
+        }
+    }
+
     override suspend fun markBillMemberPaid(
         groupId: String,
         billId: String,

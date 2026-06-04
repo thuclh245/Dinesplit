@@ -26,6 +26,7 @@ import androidx.compose.material.icons.automirrored.filled.ArrowBack
 import androidx.compose.material.icons.automirrored.filled.ReceiptLong
 import androidx.compose.material.icons.filled.Check
 import androidx.compose.material.icons.filled.MoreVert
+import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.Button
 import androidx.compose.material3.ButtonDefaults
 import androidx.compose.material3.Card
@@ -41,6 +42,7 @@ import androidx.compose.material3.Scaffold
 import androidx.compose.material3.SnackbarHost
 import androidx.compose.material3.SnackbarHostState
 import androidx.compose.material3.Text
+import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.collectAsState
@@ -106,6 +108,8 @@ fun BillDetailScreen(
     val colorScheme = MaterialTheme.colorScheme
     val snackbarHostState = remember { SnackbarHostState() }
 
+    var showDeleteDialog by remember { mutableStateOf(false) }
+
     LaunchedEffect(uiState.paymentMessage) {
         uiState.paymentMessage?.let { message ->
             snackbarHostState.showSnackbar(message)
@@ -113,9 +117,32 @@ fun BillDetailScreen(
         }
     }
 
+    if (showDeleteDialog) {
+        AlertDialog(
+            onDismissRequest = { showDeleteDialog = false },
+            title = { Text("Xóa hóa đơn?") },
+            text = { Text("Bạn có chắc chắn muốn xóa hóa đơn này không? Hành động này không thể hoàn tác.") },
+            confirmButton = {
+                TextButton(
+                    onClick = {
+                        showDeleteDialog = false
+                        viewModel.deleteBill(onSuccess = onBack)
+                    }
+                ) {
+                    Text("Xóa", color = MaterialTheme.colorScheme.error)
+                }
+            },
+            dismissButton = {
+                TextButton(onClick = { showDeleteDialog = false }) {
+                    Text("Hủy")
+                }
+            }
+        )
+    }
+
     Scaffold(
         containerColor = colorScheme.surface,
-        topBar = { BdTopBar(onBack = onBack) },
+        topBar = { BdTopBar(onBack = onBack, onDeleteClick = { showDeleteDialog = true }) },
         snackbarHost = { SnackbarHost(snackbarHostState) },
         bottomBar = {
             uiState.bill?.let { bill ->
@@ -192,8 +219,12 @@ fun BillDetailScreen(
 }
 
 @Composable
-private fun BdTopBar(onBack: () -> Unit) {
+private fun BdTopBar(
+    onBack: () -> Unit,
+    onDeleteClick: () -> Unit,
+) {
     val colorScheme = MaterialTheme.colorScheme
+    var menuExpanded by remember { mutableStateOf(false) }
 
     Row(
         modifier =
@@ -220,12 +251,26 @@ private fun BdTopBar(onBack: () -> Unit) {
             color = colorScheme.onSurface,
         )
 
-        IconButton(onClick = { }, modifier = Modifier.size(40.dp)) {
-            Icon(
-                imageVector = Icons.Default.MoreVert,
-                contentDescription = "Tùy chọn",
-                tint = colorScheme.primary,
-            )
+        Box {
+            IconButton(onClick = { menuExpanded = true }, modifier = Modifier.size(40.dp)) {
+                Icon(
+                    imageVector = Icons.Default.MoreVert,
+                    contentDescription = "Tùy chọn",
+                    tint = colorScheme.primary,
+                )
+            }
+            DropdownMenu(
+                expanded = menuExpanded,
+                onDismissRequest = { menuExpanded = false }
+            ) {
+                DropdownMenuItem(
+                    text = { Text("Xóa hóa đơn", color = colorScheme.error) },
+                    onClick = {
+                        menuExpanded = false
+                        onDeleteClick()
+                    }
+                )
+            }
         }
     }
 }

@@ -52,6 +52,8 @@ class FeedViewModel(application: Application) : AndroidViewModel(application) {
     private val _viewedStoryIds = MutableStateFlow<Set<String>>(emptySet())
     private val _linkedBillSummaries = MutableStateFlow<Map<String, LinkedBillSummary>>(emptyMap())
     private val _currentUserProfile = MutableStateFlow<UserProfile?>(null)
+    private val _initialLikedPostIds = MutableStateFlow<Set<String>>(emptySet())
+    private var shouldUpdateInitialLikes = true
 
     private val activeBillJobs = mutableMapOf<String, Job>()
 
@@ -62,6 +64,7 @@ class FeedViewModel(application: Application) : AndroidViewModel(application) {
             observeSessionUseCase(),
             _viewedStoryIds,
             _currentUserProfile,
+            _initialLikedPostIds,
         ) { array ->
             @Suppress("UNCHECKED_CAST")
             val pagination = array[0] as PaginationState
@@ -71,6 +74,8 @@ class FeedViewModel(application: Application) : AndroidViewModel(application) {
             @Suppress("UNCHECKED_CAST")
             val viewedIds = array[3] as Set<String>
             val currentUser = array[4] as UserProfile?
+            @Suppress("UNCHECKED_CAST")
+            val initialLikedIds = array[5] as Set<String>
 
             val currentUserId = session?.uid.orEmpty()
 
@@ -79,7 +84,7 @@ class FeedViewModel(application: Application) : AndroidViewModel(application) {
             // Sort posts: Liked posts are moved to the end of the list, sorted by creation date descending within groups
             val sortedPosts = finalizedPosts.sortedWith(
                 compareBy<Post> { post ->
-                    val isLiked = currentUserId.isNotEmpty() && post.likedBy.contains(currentUserId)
+                    val isLiked = initialLikedIds.contains(post.id)
                     if (isLiked) 1 else 0
                 }.thenByDescending { post ->
                     post.createdAt?.time ?: 0L
@@ -107,6 +112,15 @@ class FeedViewModel(application: Application) : AndroidViewModel(application) {
         loadInitialFeed()
         viewModelScope.launch {
             observeSessionUseCase().collect { session ->
+                shouldUpdateInitialLikes = true
+                val currentUserId = session?.uid.orEmpty()
+                val currentPosts = _paginationState.value.posts
+                if (currentUserId.isNotEmpty()) {
+                    _initialLikedPostIds.value = currentPosts.filter { it.likedBy.contains(currentUserId) }.map { it.id }.toSet()
+                } else {
+                    _initialLikedPostIds.value = emptySet()
+                }
+
                 if (session != null) {
                     observeBillSummaries(_paginationState.value.posts)
                     try {
@@ -125,11 +139,21 @@ class FeedViewModel(application: Application) : AndroidViewModel(application) {
     private var feedJob: Job? = null
 
     private fun loadInitialFeed() {
+        shouldUpdateInitialLikes = true
         feedJob?.cancel()
         feedJob = viewModelScope.launch {
             _paginationState.value = _paginationState.value.copy(isLoading = true, errorMessage = null)
             try {
                 AppContainer.feedRepository().getFeedPosts().collect { posts ->
+                    if (shouldUpdateInitialLikes) {
+                        val currentUserId = FirebaseProviders.auth.currentUser?.uid.orEmpty()
+                        if (currentUserId.isNotEmpty()) {
+                            _initialLikedPostIds.value = posts.filter { it.likedBy.contains(currentUserId) }.map { it.id }.toSet()
+                        } else {
+                            _initialLikedPostIds.value = emptySet()
+                        }
+                        shouldUpdateInitialLikes = false
+                    }
                     _paginationState.value = _paginationState.value.copy(
                         posts = posts,
                         canLoadMore = false,

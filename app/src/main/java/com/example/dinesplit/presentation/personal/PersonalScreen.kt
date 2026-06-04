@@ -219,28 +219,6 @@ fun PersonalScreen(
                     )
                 }
 
-                if (prioritySignals.isNotEmpty()) {
-                    item {
-                        PriorityAlertSection(
-                            signals = prioritySignals,
-                            onOpenHistory = onOpenHistory,
-                            onOpenReminders = onOpenReminders,
-                        )
-                    }
-                }
-
-                if (autopilotActions.isNotEmpty()) {
-                    item {
-                        AutopilotQueue(
-                            actions = autopilotActions,
-                            onOpenHistory = onOpenHistory,
-                            onOpenReminders = onOpenReminders,
-                            onOpenRecurringPlans = onOpenRecurringPlans,
-                            onOpenGoalPlans = onOpenGoalPlans,
-                            onOpenWalletPlans = onOpenWalletPlans,
-                        )
-                    }
-                }
 
                 item {
                     PersonalActionGrid(
