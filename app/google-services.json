@@ -12,7 +12,20 @@
           "package_name": "com.example.dinesplit"
         }
       },
-      "oauth_client": [],
+      "oauth_client": [
+        {
+          "client_id": "59006843188-1nbi4gthrh9gst2tpe5iq06q59tm7h15.apps.googleusercontent.com",
+          "client_type": 1,
+          "android_info": {
+            "package_name": "com.example.dinesplit",
+            "certificate_hash": "9a916c6ccfc91966bd3f10686fbefe3649ad2d1e"
+          }
+        },
+        {
+          "client_id": "59006843188-ok7s2fm5q4826eaqce5enf7aaf5oelhr.apps.googleusercontent.com",
+          "client_type": 3
+        }
+      ],
       "api_key": [
         {
           "current_key": "AIzaSyBVgv-CsLb4GHizsBbbWwc6SJUn66cvkQI"
@@ -20,11 +33,15 @@
       ],
       "services": {
         "appinvite_service": {
-          "other_platform_oauth_client": []
+          "other_platform_oauth_client": [
+            {
+              "client_id": "59006843188-ok7s2fm5q4826eaqce5enf7aaf5oelhr.apps.googleusercontent.com",
+              "client_type": 3
+            }
+          ]
         }
       }
     }
   ],
   "configuration_version": "1"
 }
-

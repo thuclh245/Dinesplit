@@ -1,5 +1,8 @@
 package com.example.dinesplit.presentation.auth
 
+import android.app.Activity
+import androidx.activity.compose.rememberLauncherForActivityResult
+import androidx.activity.result.contract.ActivityResultContracts
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.*
@@ -22,6 +25,7 @@ import androidx.compose.ui.draw.shadow
 import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.layout.ContentScale
+import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.input.ImeAction
 import androidx.compose.ui.text.input.KeyboardType
@@ -37,6 +41,9 @@ import com.example.dinesplit.core.ui.DineSplitButton
 import com.example.dinesplit.core.ui.DineSplitOutlinedButton
 import com.example.dinesplit.core.ui.DineSplitTextField
 import com.example.dinesplit.ui.theme.DineSplitTheme
+import com.google.android.gms.auth.api.signin.GoogleSignIn
+import com.google.android.gms.auth.api.signin.GoogleSignInOptions
+import com.google.android.gms.common.api.ApiException
 import kotlinx.coroutines.flow.collectLatest
 
 @Composable
@@ -46,6 +53,35 @@ fun LoginScreen(
     viewModel: LoginViewModel = viewModel(),
 ) {
     val uiState by viewModel.uiState.collectAsState()
+    val context = LocalContext.current
+    val googleSignInClient =
+        remember(context) {
+            val options =
+                GoogleSignInOptions.Builder(GoogleSignInOptions.DEFAULT_SIGN_IN)
+                    .requestIdToken(context.getString(com.example.dinesplit.R.string.default_web_client_id))
+                    .requestEmail()
+                    .build()
+            GoogleSignIn.getClient(context, options)
+        }
+    val googleSignInLauncher =
+        rememberLauncherForActivityResult(ActivityResultContracts.StartActivityForResult()) { result ->
+            if (result.resultCode != Activity.RESULT_OK) {
+                return@rememberLauncherForActivityResult
+            }
+
+            val task = GoogleSignIn.getSignedInAccountFromIntent(result.data)
+            try {
+                val account = task.getResult(ApiException::class.java)
+                val idToken = account.idToken
+                if (idToken.isNullOrBlank()) {
+                    viewModel.onGoogleSignInError("Google did not return an ID token. Please try again.")
+                } else {
+                    viewModel.loginWithGoogle(idToken)
+                }
+            } catch (e: ApiException) {
+                viewModel.onGoogleSignInError("Google sign-in failed. Please try again.")
+            }
+        }
 
     LaunchedEffect(viewModel) {
         viewModel.effect.collectLatest { effect ->
@@ -60,6 +96,11 @@ fun LoginScreen(
         onEmailChange = viewModel::onEmailChange,
         onPasswordChange = viewModel::onPasswordChange,
         onSubmit = viewModel::submit,
+        onGoogleSignIn = {
+            googleSignInClient.signOut().addOnCompleteListener {
+                googleSignInLauncher.launch(googleSignInClient.signInIntent)
+            }
+        },
         onGoToRegister = onGoToRegister,
     )
 }
@@ -70,6 +111,7 @@ private fun LoginContent(
     onEmailChange: (String) -> Unit,
     onPasswordChange: (String) -> Unit,
     onSubmit: () -> Unit,
+    onGoogleSignIn: () -> Unit,
     onGoToRegister: () -> Unit,
 ) {
     Box(modifier = Modifier.fillMaxSize()) {
@@ -234,7 +276,7 @@ private fun LoginContent(
 
                 DineSplitOutlinedButton(
                     text = "Google",
-                    onClick = { /* Google Sign In */ },
+                    onClick = onGoogleSignIn,
                     icon = {
                         AsyncImage(
                             model = "https://lh3.googleusercontent.com/aida-public/AB6AXuD3-5nU9KPj_Hs_UC9WFY9-eI6ZoanHilU8-FP0y2Z0yUjs__2H_sCJtrhbFEjh8z935q1mRmNyWkOKmTF31Qnr7UMVgXDUFaaY1i_Ll7DIKYx66AVwk18lQtplYDytARQ4c9gU4lxTrOhSIM5U48S4u_tcqAj821pr1082nimz0kbaFPFdlsPcphSKqv8EXbeYZdO1J8vArnX_cJH7xINCj9b9W0BjV3JXowL_BBf4NQDyzZ483yfi3nG6z8L2cq6BuUGiOEyYR1U",
@@ -281,6 +323,7 @@ fun LoginScreenPreview() {
             onEmailChange = {},
             onPasswordChange = {},
             onSubmit = {},
+            onGoogleSignIn = {},
             onGoToRegister = {},
         )
     }
