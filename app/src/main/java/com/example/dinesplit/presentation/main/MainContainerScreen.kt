@@ -76,6 +76,8 @@ import kotlin.math.roundToInt
 fun MainContainerScreen(
     initialTabRoute: String = AppRoute.Feed.route,
     pendingRoute: String? = null,
+    returnToNotifications: Boolean = false,
+    onReturnToNotifications: () -> Unit = {},
     onOpenNotifications: () -> Unit,
     onOpenAssistant: () -> Unit,
     onLogout: () -> Unit,
@@ -87,6 +89,7 @@ fun MainContainerScreen(
     val profileUiState by profileViewModel.profileUiState.collectAsState()
     val editProfileUiState by profileViewModel.editUiState.collectAsState()
     val personalUiState by personalViewModel.uiState.collectAsState()
+    val personalAllTransactions by personalViewModel.allTransactions.collectAsState()
     val personalChartState by personalViewModel.chartState.collectAsState()
     val personalReminders by personalViewModel.reminders.collectAsState()
     val notificationUiState by notificationViewModel.uiState.collectAsState()
@@ -108,12 +111,12 @@ fun MainContainerScreen(
         }
     }
 
-    LaunchedEffect(initialTabRoute, pendingRoute) {
+    LaunchedEffect(initialTabRoute, pendingRoute, returnToNotifications) {
         if (initialTabRoute != AppRoute.Feed.route) {
             mainNavController.navigate(initialTabRoute) {
                 popUpTo(AppRoute.Feed.route) { saveState = true }
                 launchSingleTop = true
-                restoreState = true
+                restoreState = !returnToNotifications
             }
         }
 
@@ -121,6 +124,15 @@ fun MainContainerScreen(
             mainNavController.navigate(pendingRoute) {
                 launchSingleTop = true
             }
+        }
+    }
+
+    val navigateBackFromNotificationTarget = {
+        if (returnToNotifications) {
+            onReturnToNotifications()
+        } else {
+            mainNavController.navigateUp()
+            Unit
         }
     }
 
@@ -255,7 +267,7 @@ fun MainContainerScreen(
                         val groupId = backStackEntry.arguments?.getString(AppRoute.GroupDetail.ARG_ID).orEmpty()
                         GroupDetailScreen(
                             groupId = groupId,
-                            onBack = { mainNavController.navigateUp() },
+                            onBack = navigateBackFromNotificationTarget,
                             onNavigateToCreateBill = {
                                 mainNavController.navigate(AppRoute.CreateBill.createRoute(groupId))
                             },
@@ -337,8 +349,8 @@ fun MainContainerScreen(
                         val transactionId = backStackEntry.arguments?.getString(AppRoute.TransactionDetail.ARG_ID).orEmpty()
                         TransactionDetailScreen(
                             transactionId = transactionId,
-                            transaction = personalUiState.transactions.firstOrNull { it.id == transactionId },
-                            onBack = { mainNavController.navigateUp() },
+                            transaction = personalAllTransactions.firstOrNull { it.id == transactionId },
+                            onBack = navigateBackFromNotificationTarget,
                         )
                     }
                     
@@ -367,7 +379,7 @@ fun MainContainerScreen(
                             onDeleteCategory = { category ->
                                 personalViewModel.deleteCategory(category.id)
                             },
-                            onBack = { mainNavController.navigateUp() },
+                            onBack = navigateBackFromNotificationTarget,
                         )
                     }
                     
@@ -382,13 +394,13 @@ fun MainContainerScreen(
                             onDeleteReminder = { reminderId ->
                                 personalViewModel.deleteSpendingReminder(reminderId)
                             },
-                            onBack = { mainNavController.navigateUp() },
+                            onBack = navigateBackFromNotificationTarget,
                         )
                     }
                     
                     composable(AppRoute.PersonalInsights.route) {
                         PersonalIntelligenceScreen(
-                            onBack = { mainNavController.navigateUp() },
+                            onBack = navigateBackFromNotificationTarget,
                             uiState = personalUiState,
                             chartState = personalChartState,
                             reminderCount = personalReminders.size,
@@ -409,7 +421,7 @@ fun MainContainerScreen(
                         ),
                     ) { backStackEntry ->
                         PersonalPlansScreen(
-                            onBack = { mainNavController.navigateUp() },
+                            onBack = navigateBackFromNotificationTarget,
                             initialFocus = PersonalPlanFocus.fromRouteValue(
                                 backStackEntry.arguments?.getString(AppRoute.PersonalPlans.ARG_FOCUS),
                             ),
@@ -560,7 +572,7 @@ fun MainContainerScreen(
                         BillDetailScreen(
                             groupId = groupId,
                             billId = billId,
-                            onBack = { mainNavController.navigateUp() },
+                            onBack = navigateBackFromNotificationTarget,
                             onEditBill = { editGroupId, editBillId ->
                                 mainNavController.navigate(AppRoute.CreateBill.createRoute(editGroupId, editBillId))
                             },
@@ -571,14 +583,14 @@ fun MainContainerScreen(
                     
                     composable(AppRoute.PostDetail.routeWithArg) { backStackEntry ->
                         val postId = backStackEntry.arguments?.getString(AppRoute.PostDetail.ARG_ID) ?: ""
-                        PostDetailScreen(postId = postId, onBack = { mainNavController.navigateUp() })
+                        PostDetailScreen(postId = postId, onBack = navigateBackFromNotificationTarget)
                     }
                     
                     composable(AppRoute.OtherUserProfile.routeWithArg) { backStackEntry ->
                         val userName = backStackEntry.arguments?.getString(AppRoute.OtherUserProfile.ARG_USER) ?: ""
                         OtherUserProfileScreen(
                             userName = userName,
-                            onBack = { mainNavController.navigateUp() },
+                            onBack = navigateBackFromNotificationTarget,
                             onNavigateToFollowList = { uid, tabIndex ->
                                 mainNavController.navigate(AppRoute.FollowList.createRoute(uid, tabIndex))
                             }

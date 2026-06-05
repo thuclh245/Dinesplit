@@ -303,7 +303,7 @@ class FeedViewModel(application: Application) : AndroidViewModel(application) {
             "isRead" to false,
             "createdAt" to System.currentTimeMillis(),
             "updatedAt" to System.currentTimeMillis(),
-            "deepLinkDestination" to "POST_DETAIL",
+            "deepLinkDestination" to "ACTIVITY_DETAIL",
             "deepLinkTargetId" to relatedId
         )
         

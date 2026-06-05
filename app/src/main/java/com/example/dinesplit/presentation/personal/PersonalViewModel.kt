@@ -28,6 +28,7 @@ import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
+import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.launch
 import java.util.Calendar
 import java.util.UUID
@@ -41,10 +42,14 @@ class PersonalViewModel(application: Application) : AndroidViewModel(application
     private val minUpdateIntervalMs = 500L // Debounce: min 500ms between updates
     private val repository = AppContainer.personalRepository(application)
     private val notificationRepository = AppContainer.notificationRepository(application)
+    private val splitRepository = AppContainer.splitRepository(application)
     private val currentMonthFilter = MutableStateFlow<MonthYearFilter?>(null)
 
     private val _transactions = MutableStateFlow<List<Transaction>>(emptyList())
     val transactions: StateFlow<List<Transaction>> = _transactions.asStateFlow()
+
+    private val _allTransactions = MutableStateFlow<List<Transaction>>(emptyList())
+    val allTransactions: StateFlow<List<Transaction>> = _allTransactions.asStateFlow()
 
     private val _categories = MutableStateFlow<List<StoredCategory>>(emptyList())
     val categories: StateFlow<List<StoredCategory>> = _categories.asStateFlow()
@@ -213,6 +218,33 @@ class PersonalViewModel(application: Application) : AndroidViewModel(application
                 ),
             )
         }
+    }
+
+    private suspend fun syncSplitBillsForCurrentUser(uid: String) {
+        if (uid.isBlank()) return
+
+        val activeSplitTransactionIds = mutableSetOf<String>()
+        val groups = splitRepository.getGroups().first()
+
+        groups.forEach { group ->
+            val bills = splitRepository.getBills(group.id).first()
+            bills.forEach { bill ->
+                val transactionId = splitTransactionId(bill.groupId, bill.id)
+                if ((bill.shares[uid] ?: 0.0) > 0.0) {
+                    activeSplitTransactionIds += transactionId
+                }
+                syncSplitBillTransactionForCurrentUser(
+                    bill = bill,
+                    uid = uid,
+                    emitNotification = false,
+                )
+            }
+        }
+
+        repository.getAllTransactions()
+            .filter { transaction -> transaction.source == TransactionSource.SPLIT }
+            .filter { transaction -> transaction.id !in activeSplitTransactionIds }
+            .forEach { transaction -> repository.deleteTransaction(transaction.id) }
     }
 
     private fun splitTransactionId(
@@ -589,7 +621,14 @@ class PersonalViewModel(application: Application) : AndroidViewModel(application
             val recurringRules = repository.getRecurringRules()
             val goals = repository.getGoals()
             val wallets = repository.getWallets()
+            _categories.value = categories
+
+            runCatching {
+                syncSplitBillsForCurrentUser(currentUserId())
+            }
+
             val allTransactions = repository.getAllTransactions()
+            _allTransactions.value = allTransactions
 
             // Tối ưu hóa bộ nhớ: tải giao dịch tháng hiện tại trước.
             val monthFilter = currentMonthFilter.value
@@ -662,6 +701,7 @@ class PersonalViewModel(application: Application) : AndroidViewModel(application
             }
         }.onFailure { throwable ->
             _transactions.value = emptyList()
+            _allTransactions.value = emptyList()
             _categories.value = emptyList()
             _recurringRules.value = emptyList()
             _goals.value = emptyList()

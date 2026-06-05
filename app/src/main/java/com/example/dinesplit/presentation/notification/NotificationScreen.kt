@@ -69,9 +69,12 @@ fun NotificationScreen(
     val notifications by viewModel.notifications.collectAsState()
     val uiState by viewModel.uiState.collectAsState()
     var selectedFilter by rememberSaveable { mutableStateOf(NotificationFilter.ALL) }
-    val filteredNotifications = notifications.filter { it.matches(selectedFilter) }
-    val newNotifications = filteredNotifications.filter { !it.isRead }
-    val earlierNotifications = filteredNotifications.filter { it.isRead }
+    val filteredNotifications =
+        notifications
+            .filter { it.matches(selectedFilter) }
+            .sortedByDescending { it.createdAt }
+    val newNotifications = filteredNotifications
+    val earlierNotifications = emptyList<Notification>()
 
     AppScaffold(
         title = "Thông báo",

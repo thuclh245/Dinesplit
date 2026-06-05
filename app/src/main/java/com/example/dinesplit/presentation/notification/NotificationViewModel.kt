@@ -46,13 +46,14 @@ class NotificationViewModel(application: Application) : AndroidViewModel(applica
                         )
                 }
                 .collectLatest { notifications ->
-                    _notifications.value = notifications
+                    val orderedNotifications = notifications.orderedNewestFirst()
+                    _notifications.value = orderedNotifications
                     _uiState.value =
                         _uiState.value.copy(
                             isLoading = false,
                             errorMessage = null,
                             currentUserId = currentUserId(),
-                            unreadCount = notifications.count { !it.isRead },
+                            unreadCount = orderedNotifications.count { !it.isRead },
                         )
                 }
         }
@@ -63,7 +64,7 @@ class NotificationViewModel(application: Application) : AndroidViewModel(applica
             _uiState.value = _uiState.value.copy(isLoading = true, errorMessage = null)
 
             runCatching {
-                val notifications = repository.getNotifications()
+                val notifications = repository.getNotifications().orderedNewestFirst()
                 _notifications.value = notifications
                 _uiState.value =
                     _uiState.value.copy(
@@ -98,7 +99,7 @@ class NotificationViewModel(application: Application) : AndroidViewModel(applica
                 unreadNotifications.forEach { notification ->
                     repository.markAsRead(notification.id)
                 }
-                _notifications.value = _notifications.value.map { it.copy(isRead = true) }
+                _notifications.value = _notifications.value.map { it.copy(isRead = true) }.orderedNewestFirst()
                 _uiState.value = _uiState.value.copy(unreadCount = 0)
             }.onFailure { throwable ->
                 _uiState.value =
@@ -145,7 +146,7 @@ class NotificationViewModel(application: Application) : AndroidViewModel(applica
                         } else {
                             notification
                         }
-                    }
+                    }.orderedNewestFirst()
                 _uiState.value =
                     _uiState.value.copy(
                         unreadCount = _notifications.value.count { !it.isRead },
@@ -163,7 +164,7 @@ class NotificationViewModel(application: Application) : AndroidViewModel(applica
         viewModelScope.launch(Dispatchers.IO) {
             runCatching {
                 repository.insertNotification(notification)
-                _notifications.value = listOf(notification) + _notifications.value
+                _notifications.value = (listOf(notification) + _notifications.value).orderedNewestFirst()
                 _uiState.value =
                     _uiState.value.copy(
                         unreadCount = _notifications.value.count { !it.isRead },
@@ -179,6 +180,14 @@ class NotificationViewModel(application: Application) : AndroidViewModel(applica
 
     private fun currentUserId(): String {
         return FirebaseProviders.auth.currentUser?.uid.orEmpty()
+    }
+
+    private fun List<Notification>.orderedNewestFirst(): List<Notification> {
+        return sortedWith(
+            compareByDescending<Notification> { it.createdAt }
+                .thenByDescending { it.updatedAt }
+                .thenByDescending { it.id }
+        )
     }
 }
 

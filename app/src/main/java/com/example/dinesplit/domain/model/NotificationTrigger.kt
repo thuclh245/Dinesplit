@@ -127,6 +127,8 @@ object NotificationFactory {
             updatedAt = System.currentTimeMillis(),
             deepLinkDestination = destination,
             deepLinkTargetId = trigger.billId,
+            senderId = trigger.triggeredByUserId,
+            groupId = trigger.groupId,
         )
     }
 

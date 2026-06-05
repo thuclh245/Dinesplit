@@ -39,7 +39,13 @@ class FirebaseNotificationRepository private constructor(
                             return@addSnapshotListener
                         }
 
-                        trySend(snapshot?.documents?.mapNotNull { document -> document.toNotification(uid) }.orEmpty().withoutLegacyDemoNotifications())
+                        trySend(
+                            snapshot?.documents
+                                ?.mapNotNull { document -> document.toNotification(uid) }
+                                .orEmpty()
+                                .withoutLegacyDemoNotifications()
+                                .orderedNewestFirst()
+                        )
                     }
 
             awaitClose { registration.remove() }
@@ -58,7 +64,7 @@ class FirebaseNotificationRepository private constructor(
 
         return snapshot.documents.mapNotNull { document ->
             document.toNotification(uid)
-        }.withoutLegacyDemoNotifications()
+        }.withoutLegacyDemoNotifications().orderedNewestFirst()
     }
 
     override suspend fun insertNotification(notification: Notification) {
@@ -159,6 +165,14 @@ class FirebaseNotificationRepository private constructor(
 
     private fun List<Notification>.withoutLegacyDemoNotifications(): List<Notification> {
         return filterNot { notification -> notification.isLegacyDemoNotification() }
+    }
+
+    private fun List<Notification>.orderedNewestFirst(): List<Notification> {
+        return sortedWith(
+            compareByDescending<Notification> { it.createdAt }
+                .thenByDescending { it.updatedAt }
+                .thenByDescending { it.id }
+        )
     }
 
     private fun Notification.isLegacyDemoNotification(): Boolean {

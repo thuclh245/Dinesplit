@@ -130,6 +130,10 @@ fun AppNavHost(navController: NavHostController) {
                             nullable = true
                             defaultValue = null
                         },
+                        navArgument(AppRoute.MainContainer.ARG_RETURN_TO_NOTIFICATIONS) {
+                            type = NavType.BoolType
+                            defaultValue = false
+                        },
                     ),
             ) { backStackEntry ->
                 val initialTabRoute =
@@ -143,10 +147,20 @@ fun AppNavHost(navController: NavHostController) {
                         ?.getString(AppRoute.MainContainer.ARG_TARGET)
                         ?.let(Uri::decode)
                         ?.takeIf { it.isNotBlank() }
+                val returnToNotifications =
+                    backStackEntry.arguments?.getBoolean(AppRoute.MainContainer.ARG_RETURN_TO_NOTIFICATIONS) == true
 
                 MainContainerScreen(
                     initialTabRoute = initialTabRoute,
                     pendingRoute = pendingRoute,
+                    returnToNotifications = returnToNotifications,
+                    onReturnToNotifications = {
+                        if (!navController.navigateUp()) {
+                            navController.navigate(AppRoute.Notifications.route) {
+                                launchSingleTop = true
+                            }
+                        }
+                    },
                     onOpenNotifications = {
                         navController.navigate(AppRoute.Notifications.route)
                     },
@@ -173,7 +187,7 @@ fun AppNavHost(navController: NavHostController) {
                     }
                 },
                 onNotificationClick = { notification ->
-                    navController.navigate(notification.toMainContainerRoute()) {
+                    navController.navigate(notification.toMainContainerRoute(returnToNotifications = true)) {
                         launchSingleTop = true
                     }
                 },
@@ -186,16 +200,22 @@ fun AppNavHost(navController: NavHostController) {
     }
 }
 
-private fun Notification.toMainContainerRoute(): String {
+private fun Notification.toMainContainerRoute(returnToNotifications: Boolean = false): String {
     val destination = deepLinkDestination
-    val targetId = deepLinkTargetId
+    val targetId = deepLinkTargetId?.takeIf { it.isNotBlank() }
+    val relatedTargetId = relatedId?.takeIf { it.isNotBlank() }
+    val senderTargetId = senderId?.takeIf { it.isNotBlank() }
+    val billTargetId = targetId ?: relatedTargetId
+    val activityTargetId = targetId ?: relatedTargetId
+    val profileTargetId = targetId ?: senderTargetId ?: relatedTargetId
 
     return when {
         // Activity/Feed detail
-        destination == "ACTIVITY_DETAIL" && !targetId.isNullOrBlank() -> {
+        (destination == "ACTIVITY_DETAIL" || destination == "POST_DETAIL") && !activityTargetId.isNullOrBlank() -> {
             AppRoute.MainContainer.createRoute(
                 tab = AppRoute.Feed.route,
-                target = AppRoute.PostDetail.createRoute(targetId),
+                target = AppRoute.PostDetail.createRoute(activityTargetId),
+                returnToNotifications = returnToNotifications,
             )
         }
         // Personal transaction detail
@@ -203,6 +223,7 @@ private fun Notification.toMainContainerRoute(): String {
             AppRoute.MainContainer.createRoute(
                 tab = AppRoute.Personal.route,
                 target = AppRoute.TransactionDetail.createRoute(targetId),
+                returnToNotifications = returnToNotifications,
             )
         }
         // Spending reminders (budget alert)
@@ -210,42 +231,51 @@ private fun Notification.toMainContainerRoute(): String {
             AppRoute.MainContainer.createRoute(
                 tab = AppRoute.Personal.route,
                 target = AppRoute.SpendingReminders.route,
+                returnToNotifications = returnToNotifications,
             )
         }
         destination == "CATEGORY_MANAGEMENT" -> {
             AppRoute.MainContainer.createRoute(
                 tab = AppRoute.Personal.route,
                 target = AppRoute.CategoryManagement.route,
+                returnToNotifications = returnToNotifications,
             )
         }
         destination == "PERSONAL_PLANS" -> {
             AppRoute.MainContainer.createRoute(
                 tab = AppRoute.Personal.route,
                 target = AppRoute.PersonalPlans.route,
+                returnToNotifications = returnToNotifications,
             )
         }
         destination == "PERSONAL" -> {
             AppRoute.MainContainer.createRoute(
                 tab = AppRoute.Personal.route,
+                returnToNotifications = returnToNotifications,
             )
         }
         // Split bill detail
-        destination == "SPLIT_DETAIL" && !targetId.isNullOrBlank() -> {
+        destination == "SPLIT_DETAIL" && !billTargetId.isNullOrBlank() && !groupId.isNullOrBlank() -> {
             AppRoute.MainContainer.createRoute(
                 tab = AppRoute.Split.route,
+                target = AppRoute.BillDetail.createRoute(groupId, billTargetId),
+                returnToNotifications = returnToNotifications,
             )
         }
         // Split settle/payment
-        destination == "SPLIT_SETTLE" && !targetId.isNullOrBlank() -> {
+        destination == "SPLIT_SETTLE" && !billTargetId.isNullOrBlank() && !groupId.isNullOrBlank() -> {
             AppRoute.MainContainer.createRoute(
                 tab = AppRoute.Split.route,
+                target = AppRoute.BillDetail.createRoute(groupId, billTargetId),
+                returnToNotifications = returnToNotifications,
             )
         }
         // Other user profile (from activity)
-        destination == "PROFILE" && !targetId.isNullOrBlank() -> {
+        destination == "PROFILE" && !profileTargetId.isNullOrBlank() -> {
             AppRoute.MainContainer.createRoute(
-                tab = AppRoute.Profile.route,
-                target = AppRoute.OtherUserProfile.createRoute(targetId),
+                tab = AppRoute.Feed.route,
+                target = AppRoute.OtherUserProfile.createRoute(profileTargetId),
+                returnToNotifications = returnToNotifications,
             )
         }
         // Fallback: route to split tab if payment/bill notification
@@ -257,20 +287,27 @@ private fun Notification.toMainContainerRoute(): String {
                 NotificationType.SPLIT_COMPLETED,
             )
         -> {
-            AppRoute.MainContainer.createRoute(tab = AppRoute.Split.route)
+            AppRoute.MainContainer.createRoute(
+                tab = AppRoute.Split.route,
+                returnToNotifications = returnToNotifications,
+            )
         }
         // Fallback: route to activity/feed if activity update
         type == NotificationType.ACTIVITY_UPDATE -> {
-            AppRoute.MainContainer.createRoute(tab = AppRoute.Feed.route)
+            AppRoute.MainContainer.createRoute(
+                tab = AppRoute.Feed.route,
+                returnToNotifications = returnToNotifications,
+            )
         }
         // Fallback: route to personal if transaction alert
         type == NotificationType.TRANSACTION_ALERT -> {
             AppRoute.MainContainer.createRoute(
                 tab = AppRoute.Personal.route,
                 target = AppRoute.SpendingReminders.route,
+                returnToNotifications = returnToNotifications,
             )
         }
         // Default fallback
-        else -> AppRoute.MainContainer.createRoute()
+        else -> AppRoute.MainContainer.createRoute(returnToNotifications = returnToNotifications)
     }
 }

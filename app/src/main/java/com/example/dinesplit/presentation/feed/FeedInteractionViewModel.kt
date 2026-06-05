@@ -167,7 +167,7 @@ class FeedInteractionViewModel(application: Application) : AndroidViewModel(appl
             "isRead" to false,
             "createdAt" to now,
             "updatedAt" to now,
-            "deepLinkDestination" to "POST_DETAIL",
+            "deepLinkDestination" to "ACTIVITY_DETAIL",
             "deepLinkTargetId" to relatedId
         )
         

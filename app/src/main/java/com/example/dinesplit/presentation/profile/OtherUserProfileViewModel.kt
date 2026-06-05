@@ -10,6 +10,7 @@ import com.example.dinesplit.core.firebase.FirebaseProviders
 import com.example.dinesplit.domain.model.LinkedBillSummary
 import com.example.dinesplit.domain.model.Post
 import com.example.dinesplit.domain.model.UserProfile
+import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
@@ -32,7 +33,7 @@ data class OtherUserProfileUiState(
 
 class OtherUserProfileViewModel(
     application: Application,
-    private val targetUid: String
+    private val targetUserRef: String
 ) : AndroidViewModel(application) {
 
     private val profileRepo = AppContainer.profileRepository(application)
@@ -43,27 +44,30 @@ class OtherUserProfileViewModel(
     val uiState: StateFlow<OtherUserProfileUiState> = _uiState.asStateFlow()
 
     private val currentUserId = FirebaseProviders.auth.currentUser?.uid
+    private var resolvedTargetUid: String = targetUserRef
 
     init {
         loadData()
     }
 
+    @OptIn(ExperimentalCoroutinesApi::class)
     fun loadData() {
-        if (targetUid.isBlank()) {
+        if (targetUserRef.isBlank()) {
             _uiState.value = OtherUserProfileUiState(isLoading = false, errorMessage = "User not found")
             return
         }
 
         _uiState.value = _uiState.value.copy(isLoading = true, errorMessage = null)
 
-        // 1. Load profile & follow status
         viewModelScope.launch {
             try {
-                val profile = profileRepo.getProfile(targetUid)
+                val profile = resolveTargetProfile(targetUserRef)
                 if (profile == null) {
                     _uiState.value = _uiState.value.copy(isLoading = false, errorMessage = "Profile not found")
                     return@launch
                 }
+                val targetUid = profile.uid
+                resolvedTargetUid = targetUid
 
                 val following = if (!currentUserId.isNullOrBlank()) {
                     profileRepo.isFollowing(currentUserId, targetUid).getOrDefault(false)
@@ -83,62 +87,72 @@ class OtherUserProfileViewModel(
                     isFollowing = following,
                     isFollowedByOther = followedByOther
                 )
+
+                launch {
+                    feedRepo.getUserPosts(targetUid).collect { userPosts ->
+                        _uiState.value = _uiState.value.copy(posts = userPosts)
+                    }
+                }
+
+                if (!currentUserId.isNullOrBlank()) {
+                    launch {
+                        splitRepo.getGroups().flatMapLatest { groups ->
+                            if (groups.isEmpty()) {
+                                flowOf(emptyList<LinkedBillSummary>())
+                            } else {
+                                val billFlows = groups.map { group ->
+                                    splitRepo.getBills(group.id).map { bills ->
+                                        bills.filter { bill ->
+                                            bill.payerId == targetUid || bill.shares.containsKey(targetUid)
+                                        }.map { bill ->
+                                            val isIPayer = bill.payerId == targetUid
+                                            val myShare = bill.shares[targetUid] ?: 0.0
+                                            val isMyPaid = targetUid in bill.paidMemberIds
+                                            val isSettled = bill.status == com.example.dinesplit.domain.model.BillStatus.SETTLED
+
+                                            LinkedBillSummary(
+                                                billId = bill.id,
+                                                groupId = group.id,
+                                                billName = bill.name,
+                                                totalAmount = bill.totalAmount,
+                                                isSettled = isSettled,
+                                                myShare = myShare,
+                                                isMyPaid = isMyPaid,
+                                                isIPayer = isIPayer,
+                                                isParticipant = true
+                                            )
+                                        }
+                                    }
+                                }
+                                combine(billFlows) { arrays ->
+                                    arrays.flatMap { it }.sortedByDescending { it.billId }
+                                }
+                            }
+                        }.collect { summaries ->
+                            _uiState.value = _uiState.value.copy(taggedBills = summaries)
+                        }
+                    }
+                }
             } catch (e: Exception) {
                 _uiState.value = _uiState.value.copy(isLoading = false, errorMessage = e.localizedMessage ?: "Error loading profile")
             }
         }
+    }
 
-        // 2. Load user's posts
-        viewModelScope.launch {
-            feedRepo.getUserPosts(targetUid).collect { userPosts ->
-                _uiState.value = _uiState.value.copy(posts = userPosts)
-            }
-        }
+    private suspend fun resolveTargetProfile(target: String): UserProfile? {
+        val cleanTarget = target.trim().removePrefix("@")
+        profileRepo.getProfile(cleanTarget)?.let { return it }
 
-        // 3. Load tagged bills from groups shared with the current user
-        if (!currentUserId.isNullOrBlank()) {
-            viewModelScope.launch {
-                splitRepo.getGroups().flatMapLatest { groups ->
-                    if (groups.isEmpty()) {
-                        flowOf(emptyList<LinkedBillSummary>())
-                    } else {
-                        val billFlows = groups.map { group ->
-                            splitRepo.getBills(group.id).map { bills ->
-                                bills.filter { bill ->
-                                    bill.payerId == targetUid || bill.shares.containsKey(targetUid)
-                                }.map { bill ->
-                                    val isIPayer = bill.payerId == targetUid
-                                    val myShare = bill.shares[targetUid] ?: 0.0
-                                    val isMyPaid = targetUid in bill.paidMemberIds
-                                    val isSettled = bill.status == com.example.dinesplit.domain.model.BillStatus.SETTLED
-                                    
-                                    LinkedBillSummary(
-                                        billId = bill.id,
-                                        groupId = group.id,
-                                        billName = bill.name,
-                                        totalAmount = bill.totalAmount,
-                                        isSettled = isSettled,
-                                        myShare = myShare,
-                                        isMyPaid = isMyPaid,
-                                        isIPayer = isIPayer,
-                                        isParticipant = true
-                                    )
-                                }
-                            }
-                        }
-                        combine(billFlows) { arrays ->
-                            arrays.flatMap { it }.sortedByDescending { it.billId }
-                        }
-                    }
-                }.collect { summaries ->
-                    _uiState.value = _uiState.value.copy(taggedBills = summaries)
-                }
+        return profileRepo.searchProfiles(cleanTarget, limit = 5)
+            .getOrDefault(emptyList())
+            .firstOrNull { profile ->
+                profile.uid == cleanTarget || profile.username.equals(cleanTarget, ignoreCase = true)
             }
-        }
     }
 
     fun toggleFollow() {
         val currentUid = currentUserId ?: return
+        val targetUid = resolvedTargetUid
         val state = _uiState.value
         if (state.profile == null || state.isFollowActionBusy) return
 

@@ -21,16 +21,20 @@ sealed class AppRoute(val route: String) {
     data object MainContainer : AppRoute("main") {
         const val ARG_TAB = "tab"
         const val ARG_TARGET = "target"
-        val routeWithArgs = "$route?$ARG_TAB={$ARG_TAB}&$ARG_TARGET={$ARG_TARGET}"
+        const val ARG_RETURN_TO_NOTIFICATIONS = "returnToNotifications"
+        val routeWithArgs =
+            "$route?$ARG_TAB={$ARG_TAB}&$ARG_TARGET={$ARG_TARGET}&$ARG_RETURN_TO_NOTIFICATIONS={$ARG_RETURN_TO_NOTIFICATIONS}"
 
         fun createRoute(
             tab: String? = null,
             target: String? = null,
+            returnToNotifications: Boolean = false,
         ): String {
             val args =
                 buildList {
                     if (!tab.isNullOrBlank()) add("$ARG_TAB=${Uri.encode(tab)}")
                     if (!target.isNullOrBlank()) add("$ARG_TARGET=${Uri.encode(target)}")
+                    if (returnToNotifications) add("$ARG_RETURN_TO_NOTIFICATIONS=true")
                 }
             return if (args.isEmpty()) route else "$route?${args.joinToString("&")}"
         }
@@ -45,7 +49,7 @@ sealed class AppRoute(val route: String) {
         val routeWithArg = "$route/{$ARG_ID}"
 
         fun createRoute(postId: String): String {
-            return "$route/$postId"
+            return "$route/${Uri.encode(postId)}"
         }
     }
 
@@ -83,7 +87,7 @@ sealed class AppRoute(val route: String) {
         val routeWithArg = "$route/{$ARG_USER}"
 
         fun createRoute(userName: String): String {
-            return "$route/$userName"
+            return "$route/${Uri.encode(userName)}"
         }
     }
 
@@ -108,7 +112,7 @@ sealed class AppRoute(val route: String) {
         val routeWithArg = "$route/{$ARG_ID}"
 
         fun createRoute(groupId: String): String {
-            return "$route/$groupId"
+            return "$route/${Uri.encode(groupId)}"
         }
     }
 
@@ -130,7 +134,7 @@ sealed class AppRoute(val route: String) {
             groupId: String,
             billId: String,
         ): String {
-            return "$route/$groupId/$billId"
+            return "$route/${Uri.encode(groupId)}/${Uri.encode(billId)}"
         }
     }
 
@@ -155,7 +159,7 @@ sealed class AppRoute(val route: String) {
         val routeWithArg = "$route/{$ARG_ID}"
 
         fun createRoute(transactionId: String): String {
-            return "$route/$transactionId"
+            return "$route/${Uri.encode(transactionId)}"
         }
     }
 
