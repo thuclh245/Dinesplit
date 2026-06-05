@@ -233,9 +233,9 @@ private fun LoginContent(
                     modifier = Modifier
                         .align(Alignment.End)
                         .padding(end = AppDimens.spaceXs)
-                        .clip(RoundedCornerShape(4.dp))
+                        .clip(RoundedCornerShape(AppDimens.radiusSm))
                         .clickable { /* Handle forgot password */ }
-                        .padding(horizontal = 8.dp, vertical = 8.dp),
+                        .padding(horizontal = AppDimens.spaceSm, vertical = AppDimens.spaceSm),
                     contentAlignment = Alignment.Center
                 ) {
                     Text(
@@ -282,7 +282,7 @@ private fun LoginContent(
                 )
             }
 
-            Spacer(modifier = Modifier.height(32.dp))
+            Spacer(modifier = Modifier.height(AppDimens.space2Xl))
 
             Row(
                 modifier =

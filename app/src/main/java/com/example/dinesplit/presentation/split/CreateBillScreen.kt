@@ -68,6 +68,8 @@ import com.example.dinesplit.core.firebase.FirebaseProviders
 import com.example.dinesplit.core.ui.DineAvatarImage
 import com.example.dinesplit.core.ui.PrimaryButton
 import com.example.dinesplit.core.ui.AppTextField
+import com.example.dinesplit.core.ui.AppDimens
+import com.example.dinesplit.core.ui.AppShapes
 import com.example.dinesplit.domain.model.Bill
 import com.example.dinesplit.domain.model.BillItem
 import com.example.dinesplit.domain.model.Member
@@ -116,8 +118,8 @@ fun CreateBillScreen(
         ) {
             LazyColumn(
                 modifier = Modifier.fillMaxSize(),
-                contentPadding = PaddingValues(start = 24.dp, end = 24.dp, top = 16.dp, bottom = 132.dp),
-                verticalArrangement = Arrangement.spacedBy(24.dp),
+                contentPadding = PaddingValues(start = AppDimens.spaceXl, end = AppDimens.spaceXl, top = AppDimens.spaceLg, bottom = 132.dp),
+                verticalArrangement = Arrangement.spacedBy(AppDimens.spaceXl),
             ) {
                 if (uiState.isUsingFallbackMembers) {
                     item { FallbackMembersNotice() }
@@ -221,11 +223,11 @@ private fun CreateBillTopBar(
                 .fillMaxWidth()
                 .statusBarsPadding()
                 .background(colorScheme.surfaceContainerLowest.copy(alpha = 0.96f))
-                .padding(horizontal = 24.dp, vertical = 14.dp),
+                .padding(horizontal = AppDimens.spaceXl, vertical = AppDimens.spaceMd),
         verticalAlignment = Alignment.CenterVertically,
         horizontalArrangement = Arrangement.SpaceBetween,
     ) {
-        IconButton(onClick = onBack, modifier = Modifier.size(32.dp)) {
+        IconButton(onClick = onBack, modifier = Modifier.size(AppDimens.space2Xl)) {
             Icon(Icons.AutoMirrored.Filled.ArrowBack, contentDescription = "Quay lại", tint = colorScheme.primary)
         }
 
@@ -251,17 +253,17 @@ private fun FallbackMembersNotice() {
     val colorScheme = MaterialTheme.colorScheme
     AppCard(
         modifier = Modifier.fillMaxWidth(),
-        contentPadding = PaddingValues(14.dp),
+        contentPadding = PaddingValues(AppDimens.spaceLg),
     ) {
         Row(
             modifier = Modifier.fillMaxWidth(),
             verticalAlignment = Alignment.CenterVertically,
         ) {
             Icon(Icons.Default.Info, contentDescription = null, tint = colorScheme.primary, modifier = Modifier.size(18.dp))
-            Spacer(modifier = Modifier.width(10.dp))
+            Spacer(modifier = Modifier.width(AppDimens.spaceSm))
             Text(
                 text = "Nhóm cũ chưa có danh sách thành viên thật, app đang dùng danh sách mặc định để tiếp tục tạo hóa đơn.",
-                fontSize = 12.sp,
+                style = MaterialTheme.typography.bodySmall,
                 color = colorScheme.onSurfaceVariant,
             )
         }
@@ -281,7 +283,7 @@ private fun CreateBillMainInfoCard(
         modifier = Modifier.fillMaxWidth(),
         contentPadding = PaddingValues(0.dp),
     ) {
-        Column(modifier = Modifier.padding(20.dp)) {
+        Column(modifier = Modifier.padding(AppDimens.spaceLg)) {
             AppTextField(
                 value = billName,
                 onValueChange = onNameChange,
@@ -299,7 +301,7 @@ private fun CreateBillMainInfoCard(
             )
 
             if (isTotalAmountEditable) {
-                Spacer(modifier = Modifier.height(20.dp))
+                Spacer(modifier = Modifier.height(AppDimens.spaceLg))
                 Text(
                     text = "TỔNG CỘNG (đ)",
                     style = MaterialTheme.typography.labelMedium,
@@ -307,7 +309,7 @@ private fun CreateBillMainInfoCard(
                     color = colorScheme.onSurfaceVariant.copy(alpha = 0.6f),
                     letterSpacing = 1.sp,
                 )
-                Spacer(modifier = Modifier.height(6.dp))
+                Spacer(modifier = Modifier.height(AppDimens.spaceXs))
                 AppTextField(
                     value = formatCurrencyInput(totalAmount),
                     onValueChange = onTotalAmountChange,
@@ -315,12 +317,12 @@ private fun CreateBillMainInfoCard(
                     placeholder = "0",
                     singleLine = true,
                     maxLines = 1,
-                    textStyle = TextStyle(fontSize = 32.sp, fontWeight = FontWeight.ExtraBold, color = colorScheme.primary),
+                    textStyle = MaterialTheme.typography.displaySmall.copy(color = colorScheme.primary, fontWeight = FontWeight.ExtraBold),
                     keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number),
                     modifier = Modifier.fillMaxWidth()
                 )
             } else {
-                Spacer(modifier = Modifier.height(20.dp))
+                Spacer(modifier = Modifier.height(AppDimens.spaceLg))
                 Text(
                     text = "TỔNG CỘNG (đ)",
                     style = MaterialTheme.typography.labelMedium,
@@ -328,32 +330,32 @@ private fun CreateBillMainInfoCard(
                     color = colorScheme.onSurfaceVariant.copy(alpha = 0.6f),
                     letterSpacing = 1.sp,
                 )
-                Spacer(modifier = Modifier.height(6.dp))
+                Spacer(modifier = Modifier.height(AppDimens.spaceXs))
                 Text(
                     text = formatCurrencyInput(totalAmount).ifBlank { "0" },
-                    fontSize = 32.sp,
+                    style = MaterialTheme.typography.displaySmall,
                     fontWeight = FontWeight.ExtraBold,
                     color = colorScheme.primary,
-                    modifier = Modifier.padding(start = 4.dp),
+                    modifier = Modifier.padding(start = AppDimens.spaceXs),
                 )
             }
 
-            Spacer(modifier = Modifier.height(16.dp))
+            Spacer(modifier = Modifier.height(AppDimens.spaceLg))
             Row(
                 verticalAlignment = Alignment.CenterVertically,
                 modifier =
                     Modifier
-                        .background(colorScheme.surfaceContainerLow, RoundedCornerShape(12.dp))
-                        .padding(horizontal = 16.dp, vertical = 8.dp),
+                        .background(colorScheme.surfaceContainerLow, AppShapes.medium)
+                        .padding(horizontal = AppDimens.spaceLg, vertical = AppDimens.spaceSm),
             ) {
                 Icon(
                     Icons.Default.DateRange,
                     contentDescription = null,
                     tint = colorScheme.onSurfaceVariant,
-                    modifier = Modifier.size(16.dp),
+                    modifier = Modifier.size(AppDimens.spaceLg),
                 )
-                Spacer(modifier = Modifier.width(8.dp))
-                Text(text = "Hôm nay", fontSize = 14.sp, fontWeight = FontWeight.SemiBold, color = colorScheme.onSurfaceVariant)
+                Spacer(modifier = Modifier.width(AppDimens.spaceSm))
+                Text(text = "Hôm nay", style = MaterialTheme.typography.bodyMedium.copy(fontWeight = FontWeight.SemiBold), color = colorScheme.onSurfaceVariant)
             }
         }
     }
@@ -375,7 +377,7 @@ private fun CreateBillPayerSection(
             style = MaterialTheme.typography.labelSmall,
             fontWeight = FontWeight.Bold,
             color = colorScheme.onSurfaceVariant.copy(alpha = 0.7f),
-            modifier = Modifier.padding(start = 4.dp, bottom = 8.dp),
+            modifier = Modifier.padding(start = AppDimens.spaceXs, bottom = AppDimens.spaceSm),
         )
 
         OutlinedAppCard(
@@ -387,7 +389,7 @@ private fun CreateBillPayerSection(
                     Modifier
                         .fillMaxWidth()
                         .clickable { expanded = true }
-                        .padding(16.dp),
+                        .padding(AppDimens.spaceLg),
                 verticalAlignment = Alignment.CenterVertically,
                 horizontalArrangement = Arrangement.SpaceBetween,
             ) {
@@ -407,7 +409,7 @@ private fun CreateBillPayerSection(
                     Spacer(modifier = Modifier.width(12.dp))
                     Column {
                         Text(payer?.name ?: "Không có", fontWeight = FontWeight.Bold, color = colorScheme.onSurface)
-                        Text("Trả toàn bộ hóa đơn", fontSize = 12.sp, color = colorScheme.onSurfaceVariant)
+                        Text("Trả toàn bộ hóa đơn", style = MaterialTheme.typography.bodySmall, color = colorScheme.onSurfaceVariant)
                     }
                 }
                 Icon(Icons.Default.KeyboardArrowDown, contentDescription = "Đổi người", tint = colorScheme.onSurfaceVariant)
@@ -442,10 +444,10 @@ private fun CreateBillSplitMethodTabs(
 
     Surface(
         color = colorScheme.surfaceContainerLow,
-        shape = RoundedCornerShape(50),
+        shape = AppShapes.full,
         modifier = Modifier.fillMaxWidth(),
     ) {
-        Row(modifier = Modifier.padding(4.dp), verticalAlignment = Alignment.CenterVertically) {
+        Row(modifier = Modifier.padding(AppDimens.spaceXs), verticalAlignment = Alignment.CenterVertically) {
             tabs.forEach { (method, label) ->
                 val selected = method == selectedMethod
                 Box(
@@ -456,21 +458,21 @@ private fun CreateBillSplitMethodTabs(
                                 if (selected) {
                                     Modifier.background(
                                         brush = Brush.verticalGradient(listOf(colorScheme.primaryContainer, colorScheme.primary)),
-                                        shape = RoundedCornerShape(50),
+                                        shape = AppShapes.full,
                                     )
                                 } else {
                                     Modifier
                                 },
                             )
                             .clickable { onMethodSelect(method) }
-                            .padding(vertical = 10.dp),
+                            .padding(vertical = AppDimens.spaceSm),
                     contentAlignment = Alignment.Center,
                 ) {
                     Text(
                         label,
                         color = if (selected) colorScheme.surfaceContainerLowest else colorScheme.onSurfaceVariant.copy(alpha = 0.7f),
                         fontWeight = FontWeight.Bold,
-                        fontSize = 13.sp,
+                        style = MaterialTheme.typography.labelLarge.copy(fontWeight = FontWeight.Bold),
                     )
                 }
             }
@@ -517,7 +519,7 @@ private fun CustomSplitDetailsList(
                     modifier =
                         Modifier
                             .fillMaxWidth()
-                            .padding(16.dp),
+                            .padding(AppDimens.spaceLg),
                     verticalAlignment = Alignment.CenterVertically,
                     horizontalArrangement = Arrangement.SpaceBetween,
                 ) {
@@ -529,12 +531,12 @@ private fun CustomSplitDetailsList(
                         verticalAlignment = Alignment.CenterVertically,
                     ) {
                         AvatarBubble(member = member, selected = included)
-                        Spacer(modifier = Modifier.width(12.dp))
+                        Spacer(modifier = Modifier.width(AppDimens.spaceMd))
                         Column {
                             Text(member.name, fontWeight = FontWeight.Bold, color = colorScheme.onSurface)
                             Text(
                                 if (included) "Tính vào hóa đơn" else "Không tham gia",
-                                fontSize = 12.sp,
+                                style = MaterialTheme.typography.bodySmall,
                                 color = colorScheme.onSurfaceVariant,
                             )
                         }
@@ -546,7 +548,7 @@ private fun CustomSplitDetailsList(
                         label = "",
                         placeholder = "0 đ",
                         enabled = included,
-                        textStyle = TextStyle(fontSize = 14.sp, fontWeight = FontWeight.Bold, color = colorScheme.primary),
+                        textStyle = MaterialTheme.typography.bodyMedium.copy(fontWeight = FontWeight.Bold, color = colorScheme.primary),
                         keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number),
                         modifier = Modifier.width(104.dp),
                         minHeight = 40.dp
@@ -571,25 +573,25 @@ private fun ItemizedSplitDetailsList(
         modifier = Modifier.fillMaxWidth(),
         contentPadding = PaddingValues(0.dp),
     ) {
-        Column(modifier = Modifier.padding(16.dp), verticalArrangement = Arrangement.spacedBy(14.dp)) {
+        Column(modifier = Modifier.padding(AppDimens.spaceLg), verticalArrangement = Arrangement.spacedBy(AppDimens.spaceMd)) {
             billItems.forEachIndexed { index, item ->
                 Column(
                     modifier =
                         Modifier
                             .fillMaxWidth()
-                            .background(colorScheme.surfaceContainerLow, RoundedCornerShape(14.dp))
-                            .padding(14.dp),
+                            .background(colorScheme.surfaceContainerLow, AppShapes.large)
+                            .padding(AppDimens.spaceLg),
                 ) {
                     Row(
                         verticalAlignment = Alignment.CenterVertically,
-                        horizontalArrangement = Arrangement.spacedBy(12.dp),
+                        horizontalArrangement = Arrangement.spacedBy(AppDimens.spaceMd),
                     ) {
                         AppTextField(
                             value = item.name,
                             onValueChange = { onUpdateItem(item.copy(name = it)) },
                             label = "",
                             placeholder = "Tên món ăn",
-                            textStyle = TextStyle(fontSize = 15.sp, fontWeight = FontWeight.Bold, color = colorScheme.onSurface),
+                            textStyle = MaterialTheme.typography.bodyMedium.copy(fontWeight = FontWeight.Bold, color = colorScheme.onSurface),
                             modifier = Modifier.weight(1f),
                             minHeight = 40.dp
                         )
@@ -601,7 +603,7 @@ private fun ItemizedSplitDetailsList(
                             },
                             label = "",
                             placeholder = "0 đ",
-                            textStyle = TextStyle(fontSize = 15.sp, fontWeight = FontWeight.Bold, color = colorScheme.primary),
+                            textStyle = MaterialTheme.typography.bodyMedium.copy(fontWeight = FontWeight.Bold, color = colorScheme.primary),
                             keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number),
                             modifier = Modifier.width(112.dp),
                             minHeight = 40.dp
@@ -609,41 +611,41 @@ private fun ItemizedSplitDetailsList(
                     }
                     Text(
                         text = "Nhập giá món và chọn người cùng ăn món này",
-                        fontSize = 11.sp,
+                        style = MaterialTheme.typography.labelSmall,
                         color = colorScheme.onSurfaceVariant,
-                        modifier = Modifier.padding(top = 8.dp),
+                        modifier = Modifier.padding(top = AppDimens.spaceSm),
                     )
-                    Spacer(modifier = Modifier.height(10.dp))
-                    Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+                    Spacer(modifier = Modifier.height(AppDimens.spaceSm))
+                    Row(horizontalArrangement = Arrangement.spacedBy(AppDimens.spaceSm)) {
                         members.forEach { member ->
                             val selected = item.sharedByMemberIds.contains(member.id)
                             Box(
                                 modifier =
                                     Modifier
-                                        .clip(RoundedCornerShape(50))
+                                        .clip(AppShapes.full)
                                         .background(if (selected) colorScheme.primary else colorScheme.surfaceContainerHigh)
                                         .clickable {
                                             val ids = item.sharedByMemberIds.toMutableList()
                                             if (selected) ids.remove(member.id) else ids.add(member.id)
                                             onUpdateItem(item.copy(sharedByMemberIds = ids))
                                         }
-                                        .padding(horizontal = 10.dp, vertical = 6.dp),
+                                        .padding(horizontal = AppDimens.spaceSm, vertical = AppDimens.spaceXs),
                             ) {
                                 Text(
                                     member.initial,
                                     color = if (selected) colorScheme.surfaceContainerLowest else colorScheme.onSurfaceVariant,
-                                    fontSize = 12.sp,
+                                    style = MaterialTheme.typography.bodySmall.copy(fontWeight = FontWeight.Bold),
                                     fontWeight = FontWeight.Bold,
                                 )
                             }
                         }
                     }
                     if (billItems.size > 1) {
-                        Spacer(modifier = Modifier.height(8.dp))
+                        Spacer(modifier = Modifier.height(AppDimens.spaceSm))
                         Text(
                             text = "Xóa món ${index + 1}",
                             color = colorScheme.error,
-                            fontSize = 12.sp,
+                            style = MaterialTheme.typography.bodySmall.copy(fontWeight = FontWeight.Bold),
                             fontWeight = FontWeight.Bold,
                             modifier = Modifier.clickable { onRemoveItem(item) },
                         )
@@ -655,9 +657,9 @@ private fun ItemizedSplitDetailsList(
                 modifier =
                     Modifier
                         .fillMaxWidth()
-                        .clip(RoundedCornerShape(14.dp))
+                        .clip(AppShapes.large)
                         .clickable { onAddItem() }
-                        .padding(14.dp),
+                        .padding(AppDimens.spaceLg),
                 horizontalArrangement = Arrangement.Center,
                 verticalAlignment = Alignment.CenterVertically,
             ) {
@@ -719,7 +721,7 @@ private fun SplitMemberListCard(
                             Text(member.name, fontWeight = FontWeight.Bold, color = colorScheme.onSurface)
                             Text(
                                 text = if (included) "Đang tham gia" else "Không tham gia",
-                                fontSize = 12.sp,
+                                style = MaterialTheme.typography.bodySmall,
                                 fontWeight = FontWeight.Medium,
                                 color = if (member.isMe) colorScheme.primary else colorScheme.onSurfaceVariant,
                             )
@@ -782,7 +784,7 @@ private fun CreateBillBottomAction(
                             endY = 100f,
                         ),
                 )
-                .padding(horizontal = 24.dp, vertical = 24.dp)
+                .padding(horizontal = AppDimens.spaceXl, vertical = AppDimens.spaceXl)
                 .navigationBarsPadding(),
     ) {
         PrimaryButton(

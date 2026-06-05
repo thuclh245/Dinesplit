@@ -364,7 +364,7 @@ private fun MonthlyCommandCard(
                             imageVector = Icons.Default.AutoGraph,
                             contentDescription = null,
                             tint = onAccent,
-                            modifier = Modifier.size(16.dp),
+                            modifier = Modifier.size(AppDimens.spaceLg),
                         )
                         Text(
                             text = "${score.value}",
@@ -508,7 +508,7 @@ private fun MonthRunwayBar(
             modifier =
                 Modifier
                     .fillMaxWidth()
-                    .height(8.dp),
+                    .height(AppDimens.spaceSm),
             color = contentColor,
             trackColor = contentColor.copy(alpha = 0.24f),
         )
@@ -971,7 +971,7 @@ private fun SectionHeader(
                     Icon(
                         imageVector = Icons.Default.Refresh,
                         contentDescription = null,
-                        modifier = Modifier.size(16.dp),
+                        modifier = Modifier.size(AppDimens.spaceLg),
                     )
                 }
                 Text(text = actionLabel)

@@ -67,6 +67,7 @@ import java.util.Locale
 @Composable
 fun FeedRoute(
     userAvatarUrl: String?,
+    bottomPadding: Dp = 80.dp,
     onOpenNotifications: () -> Unit,
     onOpenSearch: () -> Unit,
     onSettleUp: (String, String) -> Unit,
@@ -94,6 +95,7 @@ fun FeedRoute(
     FeedScreen(
         uiState = uiState,
         userAvatarUrl = userAvatarUrl,
+        bottomPadding = bottomPadding,
         onOpenNotifications = onOpenNotifications,
         onOpenSearch = onOpenSearch,
         onCreatePost = onNavigateToCreatePost,
@@ -199,18 +201,18 @@ fun FeedScreen(
         floatingActionButton = {
             Column(
                 horizontalAlignment = Alignment.End,
-                verticalArrangement = Arrangement.spacedBy(12.dp),
+                verticalArrangement = Arrangement.spacedBy(AppDimens.spaceMd),
                 modifier = Modifier.padding(bottom = bottomPadding),
             ) {
                 Surface(
                     color = MaterialTheme.colorScheme.surfaceContainerLowest.copy(alpha = 0.92f),
                     shape = CircleShape,
-                    modifier = Modifier.shadow(8.dp, CircleShape),
+                    modifier = Modifier.shadow(AppDimens.level3, CircleShape),
                 ) {
                     Row(
-                        modifier = Modifier.padding(horizontal = 12.dp, vertical = 6.dp),
+                        modifier = Modifier.padding(horizontal = AppDimens.spaceMd, vertical = 6.dp),
                         verticalAlignment = Alignment.CenterVertically,
-                        horizontalArrangement = Arrangement.spacedBy(8.dp),
+                        horizontalArrangement = Arrangement.spacedBy(AppDimens.spaceSm),
                     ) {
                         Icon(Icons.Default.Group, contentDescription = null, modifier = Modifier.size(14.dp), tint = MaterialTheme.colorScheme.primary)
                         Text("${uiState.posts.size} BÀI", style = MaterialTheme.typography.labelSmall.copy(fontWeight = FontWeight.Black))
@@ -275,7 +277,7 @@ fun FeedScreen(
                     LazyColumn(
                         state = listState,
                         modifier = Modifier.fillMaxSize().background(MaterialTheme.colorScheme.background),
-                        contentPadding = PaddingValues(top = 64.dp + statusBarHeight, bottom = 96.dp),
+                        contentPadding = PaddingValues(top = 64.dp + statusBarHeight, bottom = bottomPadding + 40.dp),
                     ) {
                         // KHOẢNH KHẮC BẠN BÈ (STORY COMPONENT) INTEGRATION
                         item {
@@ -402,13 +404,13 @@ private fun RecentGroupVibes(
 
         if (posts.isEmpty() && currentUser == null) {
             LazyRow(
-                contentPadding = PaddingValues(horizontal = 24.dp),
-                horizontalArrangement = Arrangement.spacedBy(16.dp),
+                contentPadding = PaddingValues(horizontal = AppDimens.spaceXl),
+                horizontalArrangement = Arrangement.spacedBy(AppDimens.spaceLg),
             ) {
                 items(vibes) { vibe ->
                     Column(
                         horizontalAlignment = Alignment.CenterHorizontally,
-                        verticalArrangement = Arrangement.spacedBy(8.dp),
+                        verticalArrangement = Arrangement.spacedBy(AppDimens.spaceSm),
                     ) {
                         Box(
                             modifier = Modifier
@@ -432,14 +434,14 @@ private fun RecentGroupVibes(
                                     },
                                     CircleShape,
                                 )
-                                .padding(4.dp),
+                                .padding(AppDimens.spaceXs),
                         ) {
                             DineAvatarImage(
                                 imageUrl = vibe.avatar,
                                 name = vibe.name,
                                 modifier = Modifier
                                     .fillMaxSize()
-                                    .border(4.dp, MaterialTheme.colorScheme.background, CircleShape),
+                                    .border(AppDimens.spaceXs, MaterialTheme.colorScheme.background, CircleShape),
                                 size = 72.dp,
                             )
                         }
@@ -453,8 +455,8 @@ private fun RecentGroupVibes(
             }
         } else {
             LazyRow(
-                contentPadding = PaddingValues(horizontal = 24.dp),
-                horizontalArrangement = Arrangement.spacedBy(16.dp),
+                contentPadding = PaddingValues(horizontal = AppDimens.spaceXl),
+                horizontalArrangement = Arrangement.spacedBy(AppDimens.spaceLg),
             ) {
                 if (currentUser != null) {
                     item {
@@ -462,7 +464,7 @@ private fun RecentGroupVibes(
                             modifier = Modifier
                                 .width(100.dp)
                                 .height(150.dp)
-                                .clip(RoundedCornerShape(20.dp))
+                                .clip(AppShapes.large)
                                 .background(MaterialTheme.colorScheme.primaryContainer)
                                 .clickable {
                                     if (myActivePost != null) {
@@ -508,7 +510,7 @@ private fun RecentGroupVibes(
                             Box(
                                 modifier = Modifier
                                     .align(Alignment.TopStart)
-                                    .padding(8.dp)
+                                    .padding(AppDimens.spaceSm)
                                     .size(36.dp)
                                     .background(
                                         Brush.sweepGradient(
@@ -585,7 +587,7 @@ private fun RecentGroupVibes(
                         modifier = Modifier
                             .width(100.dp)
                             .height(150.dp)
-                            .clip(RoundedCornerShape(20.dp))
+                            .clip(AppShapes.large)
                             .background(MaterialTheme.colorScheme.primaryContainer)
                             .clickable { onVibeClick(post) },
                     ) {
@@ -624,7 +626,7 @@ private fun RecentGroupVibes(
                         Box(
                             modifier = Modifier
                                 .align(Alignment.TopStart)
-                                .padding(8.dp)
+                                .padding(AppDimens.spaceSm)
                                 .size(36.dp)
                                 .background(
                                     Brush.sweepGradient(
@@ -693,12 +695,12 @@ private fun LinkedBillSummarySection(
         shape = AppShapes.large,
         modifier = Modifier
             .fillMaxWidth()
-            .padding(horizontal = 16.dp, vertical = 8.dp)
+            .padding(horizontal = AppDimens.spaceLg, vertical = AppDimens.spaceSm)
             .border(1.dp, MaterialTheme.colorScheme.outlineVariant.copy(alpha = 0.3f), AppShapes.large)
     ) {
         Column(
-            modifier = Modifier.padding(12.dp),
-            verticalArrangement = Arrangement.spacedBy(8.dp)
+            modifier = Modifier.padding(AppDimens.spaceMd),
+            verticalArrangement = Arrangement.spacedBy(AppDimens.spaceSm)
         ) {
             Row(
                 verticalAlignment = Alignment.CenterVertically,
@@ -714,15 +716,15 @@ private fun LinkedBillSummarySection(
                         shape = CircleShape
                     ) {
                         Row(
-                            modifier = Modifier.padding(horizontal = 8.dp, vertical = 4.dp),
+                            modifier = Modifier.padding(horizontal = AppDimens.spaceSm, vertical = AppDimens.spaceXs),
                             verticalAlignment = Alignment.CenterVertically,
-                            horizontalArrangement = Arrangement.spacedBy(4.dp)
+                            horizontalArrangement = Arrangement.spacedBy(AppDimens.spaceXs)
                         ) {
                             Icon(
                                 imageVector = Icons.Default.ReceiptLong,
                                 contentDescription = null,
                                 tint = MaterialTheme.colorScheme.primary,
-                                modifier = Modifier.size(12.dp)
+                                modifier = Modifier.size(AppDimens.spaceMd)
                             )
                             Text(
                                 text = "ĐÃ GẮN HÓA ĐƠN",
@@ -793,7 +795,7 @@ private fun LinkedBillSummarySection(
 
             Row(
                 modifier = Modifier.fillMaxWidth(),
-                horizontalArrangement = Arrangement.spacedBy(8.dp)
+                horizontalArrangement = Arrangement.spacedBy(AppDimens.spaceSm)
             ) {
                 TextButton(
                     onClick = onViewBill,
@@ -857,13 +859,13 @@ private fun SocialSplitCard(
     ) {
         Column {
             Row(
-                modifier = Modifier.fillMaxWidth().padding(16.dp),
+                modifier = Modifier.fillMaxWidth().padding(AppDimens.spaceLg),
                 verticalAlignment = Alignment.Top,
                 horizontalArrangement = Arrangement.SpaceBetween,
             ) {
                 Row(
                     verticalAlignment = Alignment.CenterVertically,
-                    horizontalArrangement = Arrangement.spacedBy(12.dp),
+                    horizontalArrangement = Arrangement.spacedBy(AppDimens.spaceMd),
                     modifier = Modifier.weight(1f).clickable { onAuthorClick() },
                 ) {
                     DineAvatarImage(
@@ -881,12 +883,12 @@ private fun SocialSplitCard(
                         Spacer(modifier = Modifier.height(2.dp))
                         Row(
                             verticalAlignment = Alignment.CenterVertically,
-                            horizontalArrangement = Arrangement.spacedBy(4.dp),
+                            horizontalArrangement = Arrangement.spacedBy(AppDimens.spaceXs),
                         ) {
                             Icon(
                                 imageVector = Icons.Default.LocationOn,
                                 contentDescription = null,
-                                modifier = Modifier.size(12.dp),
+                                modifier = Modifier.size(AppDimens.spaceMd),
                                 tint = MaterialTheme.colorScheme.outline,
                             )
                             Text(
@@ -901,7 +903,7 @@ private fun SocialSplitCard(
                             Icon(
                                 imageVector = if (post.visibility == "public") Icons.Default.Public else Icons.Default.People,
                                 contentDescription = null,
-                                modifier = Modifier.size(12.dp),
+                                modifier = Modifier.size(AppDimens.spaceMd),
                                 tint = MaterialTheme.colorScheme.outline,
                             )
                             Text(
@@ -912,7 +914,7 @@ private fun SocialSplitCard(
                         }
                     }
                 }
-                Box(modifier = Modifier.offset(x = 8.dp, y = (-8).dp)) {
+                Box(modifier = Modifier.offset(x = AppDimens.spaceSm, y = -AppDimens.spaceSm)) {
                     IconButton(onClick = { showMenu = true }) {
                         Icon(
                             imageVector = Icons.Default.MoreHoriz,
@@ -952,16 +954,16 @@ private fun SocialSplitCard(
             DinePostImage(
                 imageUrl = post.imageUrls.firstOrNull(),
                 contentDescription = post.caption,
-                modifier = Modifier.padding(horizontal = 8.dp).aspectRatio(1f),
-                shape = RoundedCornerShape(16.dp),
+                modifier = Modifier.padding(horizontal = AppDimens.spaceSm).aspectRatio(1f),
+                shape = AppShapes.large,
             )
 
             Row(
-                modifier = Modifier.padding(horizontal = 16.dp, vertical = 8.dp).fillMaxWidth(),
+                modifier = Modifier.padding(horizontal = AppDimens.spaceLg, vertical = AppDimens.spaceSm).fillMaxWidth(),
                 verticalAlignment = Alignment.CenterVertically,
                 horizontalArrangement = Arrangement.SpaceBetween,
             ) {
-                Row(horizontalArrangement = Arrangement.spacedBy(8.dp), verticalAlignment = Alignment.CenterVertically) {
+                Row(horizontalArrangement = Arrangement.spacedBy(AppDimens.spaceSm), verticalAlignment = Alignment.CenterVertically) {
                     Row(verticalAlignment = Alignment.CenterVertically) {
                         IconButton(
                             onClick = if (isLikedByMe) onUnlike else onLike,
@@ -971,7 +973,7 @@ private fun SocialSplitCard(
                                 imageVector = if (isLikedByMe) Icons.Filled.Favorite else Icons.Outlined.FavoriteBorder,
                                 contentDescription = null,
                                 tint = if (isLikedByMe) MaterialTheme.colorScheme.error else MaterialTheme.colorScheme.onSurface,
-                                modifier = Modifier.size(24.dp),
+                                modifier = Modifier.size(AppDimens.spaceXl),
                             )
                         }
                         if (post.likesCount > 0) {
@@ -1000,7 +1002,7 @@ private fun SocialSplitCard(
                         imageVector = if (isSavedByMe) Icons.Filled.Bookmark else Icons.Outlined.BookmarkBorder,
                         contentDescription = if (isSavedByMe) "Unsave" else "Save",
                         tint = if (isSavedByMe) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.onSurface,
-                        modifier = Modifier.size(24.dp)
+                        modifier = Modifier.size(AppDimens.spaceXl)
                     )
                 }
             }
@@ -1017,7 +1019,7 @@ private fun SocialSplitCard(
                     Box(
                         modifier = Modifier
                             .fillMaxWidth()
-                            .padding(horizontal = 16.dp, vertical = 8.dp)
+                            .padding(horizontal = AppDimens.spaceLg, vertical = AppDimens.spaceSm)
                             .height(100.dp)
                             .background(MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.2f), AppShapes.large),
                         contentAlignment = Alignment.Center
@@ -1037,7 +1039,7 @@ private fun SocialSplitCard(
                     append(post.caption)
                 },
                 style = MaterialTheme.typography.bodySmall,
-                modifier = Modifier.padding(horizontal = 16.dp).padding(bottom = 16.dp),
+                modifier = Modifier.padding(horizontal = AppDimens.spaceLg).padding(bottom = AppDimens.spaceLg),
                 maxLines = 2,
                 overflow = TextOverflow.Ellipsis,
             )
@@ -1070,7 +1072,7 @@ private fun AsymmetricSplitCard(
                     verticalAlignment = Alignment.CenterVertically,
                     horizontalArrangement = Arrangement.spacedBy(AppDimens.spaceSm),
                 ) {
-                    DineAvatarImage(imageUrl = userAvatar, name = userName, modifier = Modifier.size(24.dp).border(1.dp, AppColors.surfaceWhite, CircleShape), size = 24.dp)
+                    DineAvatarImage(imageUrl = userAvatar, name = userName, modifier = Modifier.size(AppDimens.spaceXl).border(1.dp, AppColors.surfaceWhite, CircleShape), size = AppDimens.spaceXl)
                     Text(userName, style = MaterialTheme.typography.labelSmall.copy(fontWeight = FontWeight.Bold), color = AppColors.surfaceWhite)
                 }
             }
@@ -1090,12 +1092,12 @@ private fun AsymmetricSplitCard(
                 }
 
                 Column(verticalArrangement = Arrangement.spacedBy(AppDimens.spaceMd)) {
-                    Row(horizontalArrangement = Arrangement.spacedBy((-8).dp)) {
+                    Row(horizontalArrangement = Arrangement.spacedBy(-AppDimens.spaceSm)) {
                         participantsAvatars.forEach { url ->
-                            DineAvatarImage(imageUrl = url, name = null, modifier = Modifier.size(32.dp).border(2.dp, MaterialTheme.colorScheme.surfaceContainerLowest, CircleShape), size = 32.dp)
+                            DineAvatarImage(imageUrl = url, name = null, modifier = Modifier.size(AppDimens.space2Xl).border(2.dp, MaterialTheme.colorScheme.surfaceContainerLowest, CircleShape), size = AppDimens.space2Xl)
                         }
                         if (extraParticipants > 0) {
-                            Box(modifier = Modifier.size(32.dp).border(2.dp, MaterialTheme.colorScheme.surfaceContainerLowest, CircleShape).background(MaterialTheme.colorScheme.primary, CircleShape), contentAlignment = Alignment.Center) {
+                            Box(modifier = Modifier.size(AppDimens.space2Xl).border(2.dp, MaterialTheme.colorScheme.surfaceContainerLowest, CircleShape).background(MaterialTheme.colorScheme.primary, CircleShape), contentAlignment = Alignment.Center) {
                                 Text("+$extraParticipants", style = MaterialTheme.typography.labelSmall.copy(fontWeight = FontWeight.Bold), color = AppColors.surfaceWhite)
                             }
                         }
@@ -1127,7 +1129,7 @@ private fun EditorialMomentCard(image: String, title: String, status: String) {
                 Text(status.uppercase(), style = MaterialTheme.typography.labelSmall.copy(fontWeight = FontWeight.Bold, letterSpacing = 2.sp), color = AppColors.surfaceWhite.copy(alpha = 0.6f))
                 Text(title, style = MaterialTheme.typography.titleLarge.copy(fontWeight = FontWeight.Bold), color = AppColors.surfaceWhite)
             }
-            Surface(color = AppColors.surfaceWhite.copy(alpha = 0.1f), shape = CircleShape, modifier = Modifier.size(48.dp), border = BorderStroke(1.dp, AppColors.surfaceWhite.copy(alpha = 0.2f))) {
+            Surface(color = AppColors.surfaceWhite.copy(alpha = 0.1f), shape = CircleShape, modifier = Modifier.size(AppDimens.space4Xl), border = BorderStroke(1.dp, AppColors.surfaceWhite.copy(alpha = 0.2f))) {
                 Box(contentAlignment = Alignment.Center) {
                     Icon(Icons.Default.Add, contentDescription = null, tint = AppColors.surfaceWhite)
                 }

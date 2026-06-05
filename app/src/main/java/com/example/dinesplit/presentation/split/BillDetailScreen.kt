@@ -35,6 +35,8 @@ import com.example.dinesplit.core.ui.ElevatedAppCard
 import com.example.dinesplit.core.ui.PrimaryButton
 import com.example.dinesplit.core.ui.SecondaryButton
 import com.example.dinesplit.core.ui.TertiaryButton
+import com.example.dinesplit.core.ui.AppDimens
+import com.example.dinesplit.core.ui.AppShapes
 import com.example.dinesplit.domain.model.QrPayment
 import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.DropdownMenu
@@ -186,9 +188,9 @@ fun BillDetailScreen(
                 Modifier
                     .fillMaxSize()
                     .padding(paddingValues)
-                    .padding(horizontal = 24.dp),
-            contentPadding = PaddingValues(top = 16.dp, bottom = 100.dp),
-            verticalArrangement = Arrangement.spacedBy(24.dp),
+                    .padding(horizontal = AppDimens.spaceXl),
+            contentPadding = PaddingValues(top = AppDimens.spaceLg, bottom = 100.dp),
+            verticalArrangement = Arrangement.spacedBy(AppDimens.spaceXl),
         ) {
             when {
                 uiState.isLoading ->
@@ -197,7 +199,7 @@ fun BillDetailScreen(
                             modifier =
                                 Modifier
                                     .fillMaxWidth()
-                                    .padding(top = 48.dp),
+                                    .padding(top = AppDimens.space4Xl),
                             contentAlignment = Alignment.Center,
                         ) {
                             CircularProgressIndicator()
@@ -286,7 +288,7 @@ private fun BdTopBar(
                 .fillMaxWidth()
                 .statusBarsPadding()
                 .background(colorScheme.surfaceContainerLowest.copy(alpha = 0.98f))
-                .padding(horizontal = 12.dp, vertical = 10.dp),
+                .padding(horizontal = AppDimens.spaceMd, vertical = AppDimens.spaceSm),
         verticalAlignment = Alignment.CenterVertically,
         horizontalArrangement = Arrangement.SpaceBetween,
     ) {
@@ -300,8 +302,7 @@ private fun BdTopBar(
 
         Text(
             text = "Chi tiết hóa đơn",
-            fontSize = 18.sp,
-            fontWeight = FontWeight.Bold,
+            style = MaterialTheme.typography.titleSmall.copy(fontWeight = FontWeight.Bold),
             color = colorScheme.onSurface,
         )
 
@@ -358,7 +359,7 @@ private fun BdReceiptHeaderCard(
             modifier =
                 Modifier
                     .fillMaxWidth()
-                    .padding(24.dp),
+                    .padding(AppDimens.spaceXl),
             horizontalAlignment = Alignment.CenterHorizontally,
         ) {
             Box(
@@ -373,52 +374,49 @@ private fun BdReceiptHeaderCard(
                     imageVector = Icons.AutoMirrored.Filled.ReceiptLong,
                     contentDescription = null,
                     tint = colorScheme.primary,
-                    modifier = Modifier.size(32.dp),
+                    modifier = Modifier.size(AppDimens.iconLg),
                 )
             }
 
-            Spacer(modifier = Modifier.height(16.dp))
+            Spacer(modifier = Modifier.height(AppDimens.spaceLg))
 
             Text(
                 text = bill.name,
-                fontSize = 24.sp,
-                fontWeight = FontWeight.ExtraBold,
+                style = MaterialTheme.typography.titleLarge.copy(fontWeight = FontWeight.ExtraBold),
                 color = colorScheme.onSurface,
                 maxLines = 2,
                 overflow = TextOverflow.Ellipsis,
             )
-            Spacer(modifier = Modifier.height(4.dp))
+            Spacer(modifier = Modifier.height(AppDimens.spaceXs))
             Text(
                 text = formatDate(bill.date),
-                fontSize = 14.sp,
-                fontWeight = FontWeight.Medium,
+                style = MaterialTheme.typography.bodyMedium.copy(fontWeight = FontWeight.Medium),
                 color = colorScheme.onSurfaceVariant,
             )
 
-            Spacer(modifier = Modifier.height(22.dp))
+            Spacer(modifier = Modifier.height(AppDimens.spaceXl))
 
             Text(
                 text = "${formatAmount(bill.totalAmount)} đ",
-                fontSize = 34.sp,
-                fontWeight = FontWeight.ExtraBold,
+                style = MaterialTheme.typography.headlineLarge.copy(fontWeight = FontWeight.ExtraBold),
                 color = colorScheme.onSurface,
                 maxLines = 1,
                 overflow = TextOverflow.Ellipsis,
             )
 
-            Spacer(modifier = Modifier.height(22.dp))
+            Spacer(modifier = Modifier.height(AppDimens.spaceXl))
 
             Row(
                 verticalAlignment = Alignment.CenterVertically,
                 modifier =
                     Modifier
-                        .background(colorScheme.surfaceContainerLow, RoundedCornerShape(50))
-                        .padding(horizontal = 16.dp, vertical = 8.dp),
+                        .background(colorScheme.surfaceContainerLow, AppShapes.full)
+                        .padding(horizontal = AppDimens.spaceLg, vertical = AppDimens.spaceSm),
             ) {
                 Box(
                     modifier =
                         Modifier
-                            .size(24.dp)
+                            .size(AppDimens.spaceXl)
                             .clip(CircleShape)
                             .background(colorScheme.onSurfaceVariant),
                     contentAlignment = Alignment.Center,
@@ -426,28 +424,25 @@ private fun BdReceiptHeaderCard(
                     Text(
                         text = payerInitial,
                         color = colorScheme.surfaceContainerLowest,
-                        fontSize = 12.sp,
-                        fontWeight = FontWeight.Bold,
+                        style = MaterialTheme.typography.bodySmall.copy(fontWeight = FontWeight.Bold),
                     )
                 }
-                Spacer(modifier = Modifier.width(8.dp))
+                Spacer(modifier = Modifier.width(AppDimens.spaceSm))
                 Text(
                     text = "Thanh toán bởi ",
-                    fontSize = 12.sp,
-                    fontWeight = FontWeight.SemiBold,
+                    style = MaterialTheme.typography.bodySmall.copy(fontWeight = FontWeight.SemiBold),
                     color = colorScheme.onSurfaceVariant,
                 )
                 Text(
                     text = payerName,
-                    fontSize = 12.sp,
-                    fontWeight = FontWeight.Bold,
+                    style = MaterialTheme.typography.bodySmall.copy(fontWeight = FontWeight.Bold),
                     color = colorScheme.onSurface,
                     maxLines = 1,
                     overflow = TextOverflow.Ellipsis,
                 )
             }
 
-            Spacer(modifier = Modifier.height(28.dp))
+            Spacer(modifier = Modifier.height(AppDimens.space2Xl))
 
             HorizontalDivider(
                 color = colorScheme.outlineVariant.copy(alpha = 0.5f),
@@ -470,11 +465,9 @@ private fun BdSplitBreakdown(
     Column {
         Text(
             text = "CHI TIẾT CHIA TIỀN",
-            fontSize = 11.sp,
-            fontWeight = FontWeight.Bold,
+            style = MaterialTheme.typography.labelSmall.copy(fontWeight = FontWeight.Bold, letterSpacing = 1.5.sp),
             color = colorScheme.onSurfaceVariant.copy(alpha = 0.7f),
-            letterSpacing = 1.5.sp,
-            modifier = Modifier.padding(start = 8.dp, bottom = 12.dp),
+            modifier = Modifier.padding(start = AppDimens.spaceSm, bottom = AppDimens.spaceMd),
         )
 
         AppCard(
@@ -520,7 +513,7 @@ private fun BdSplitRow(
         Box(
             modifier =
                 Modifier
-                    .width(4.dp)
+                    .width(AppDimens.spaceXs)
                     .fillMaxHeight()
                     .background(if (row.isMe) colorScheme.primary else Color.Transparent),
         )
@@ -529,7 +522,7 @@ private fun BdSplitRow(
             modifier =
                 Modifier
                     .fillMaxWidth()
-                    .padding(horizontal = 16.dp, vertical = 16.dp),
+                    .padding(horizontal = AppDimens.spaceLg, vertical = AppDimens.spaceLg),
             verticalAlignment = Alignment.CenterVertically,
             horizontalArrangement = Arrangement.SpaceBetween,
         ) {
@@ -551,7 +544,7 @@ private fun BdSplitRow(
                         fontWeight = FontWeight.Bold,
                     )
                 }
-                Spacer(modifier = Modifier.width(12.dp))
+                Spacer(modifier = Modifier.width(AppDimens.spaceMd))
                 Column {
                     Text(
                         text = row.name,
@@ -563,8 +556,7 @@ private fun BdSplitRow(
                     if (row.isPayer) {
                         Text(
                             text = "CHỦ CHI",
-                            fontSize = 10.sp,
-                            fontWeight = FontWeight.Bold,
+                            style = MaterialTheme.typography.labelSmall.copy(fontWeight = FontWeight.Bold),
                             color = colorScheme.primary,
                         )
                     }
@@ -578,13 +570,13 @@ private fun BdSplitRow(
                     color = if (row.isMe) colorScheme.primary else colorScheme.onSurface,
                     maxLines = 1,
                 )
-                Spacer(modifier = Modifier.height(4.dp))
+                Spacer(modifier = Modifier.height(AppDimens.spaceXs))
 
                 if (row.isPaid) {
                     Row(
                         modifier =
                             Modifier
-                                .background(colorScheme.secondaryContainer, RoundedCornerShape(50))
+                                .background(colorScheme.secondaryContainer, AppShapes.full)
                                 .padding(horizontal = 6.dp, vertical = 2.dp),
                         verticalAlignment = Alignment.CenterVertically,
                     ) {
@@ -597,8 +589,7 @@ private fun BdSplitRow(
                         Spacer(modifier = Modifier.width(2.dp))
                         Text(
                             text = "ĐÃ TRẢ",
-                            fontSize = 9.sp,
-                            fontWeight = FontWeight.Bold,
+                            style = MaterialTheme.typography.labelSmall.copy(fontWeight = FontWeight.Bold),
                             color = colorScheme.secondary,
                         )
                     }
@@ -606,14 +597,13 @@ private fun BdSplitRow(
                     Row(
                         modifier =
                             Modifier
-                                .background(colorScheme.surfaceContainerHigh, RoundedCornerShape(50))
+                                .background(colorScheme.surfaceContainerHigh, AppShapes.full)
                                 .padding(horizontal = 6.dp, vertical = 2.dp),
                         verticalAlignment = Alignment.CenterVertically,
                     ) {
                         Text(
                             text = "CHƯA TRẢ",
-                            fontSize = 9.sp,
-                            fontWeight = FontWeight.Bold,
+                            style = MaterialTheme.typography.labelSmall.copy(fontWeight = FontWeight.Bold),
                             color = colorScheme.onSurfaceVariant,
                         )
                     }
@@ -656,11 +646,9 @@ private fun BdItemBreakdown(items: List<BillItem>) {
     Column {
         Text(
             text = "MÓN ĐÃ CHIA",
-            fontSize = 11.sp,
-            fontWeight = FontWeight.Bold,
+            style = MaterialTheme.typography.labelSmall.copy(fontWeight = FontWeight.Bold, letterSpacing = 1.5.sp),
             color = colorScheme.onSurfaceVariant.copy(alpha = 0.7f),
-            letterSpacing = 1.5.sp,
-            modifier = Modifier.padding(start = 8.dp, bottom = 12.dp),
+            modifier = Modifier.padding(start = AppDimens.spaceSm, bottom = AppDimens.spaceMd),
         )
 
         AppCard(
@@ -673,29 +661,27 @@ private fun BdItemBreakdown(items: List<BillItem>) {
                         modifier =
                             Modifier
                                 .fillMaxWidth()
-                                .padding(16.dp),
+                                .padding(AppDimens.spaceLg),
                         horizontalArrangement = Arrangement.SpaceBetween,
                         verticalAlignment = Alignment.CenterVertically,
                     ) {
                         Column(modifier = Modifier.weight(1f)) {
                             Text(
                                 text = item.name,
-                                fontSize = 14.sp,
-                                fontWeight = FontWeight.Bold,
+                                style = MaterialTheme.typography.bodyMedium.copy(fontWeight = FontWeight.Bold),
                                 color = colorScheme.onSurface,
                                 maxLines = 1,
                                 overflow = TextOverflow.Ellipsis,
                             )
                             Text(
                                 text = "${item.sharedByMemberIds.size} người chia",
-                                fontSize = 12.sp,
+                                style = MaterialTheme.typography.bodySmall,
                                 color = colorScheme.onSurfaceVariant,
                             )
                         }
                         Text(
                             text = "${formatAmount(item.price)} đ",
-                            fontSize = 14.sp,
-                            fontWeight = FontWeight.Bold,
+                            style = MaterialTheme.typography.bodyMedium.copy(fontWeight = FontWeight.Bold),
                             color = colorScheme.primary,
                         )
                     }
@@ -717,26 +703,24 @@ private fun BdFooterInfo(bill: Bill) {
         modifier = Modifier.fillMaxWidth(),
         contentPadding = PaddingValues(0.dp),
     ) {
-        Column(modifier = Modifier.padding(16.dp), verticalArrangement = Arrangement.spacedBy(12.dp)) {
+        Column(modifier = Modifier.padding(AppDimens.spaceLg), verticalArrangement = Arrangement.spacedBy(AppDimens.spaceMd)) {
             Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.SpaceBetween) {
-                Text("Mã hóa đơn", fontSize = 12.sp, fontWeight = FontWeight.Medium, color = colorScheme.onSurfaceVariant)
+                Text("Mã hóa đơn", style = MaterialTheme.typography.bodySmall.copy(fontWeight = FontWeight.Medium), color = colorScheme.onSurfaceVariant)
                 Text(
                     "#${bill.id.takeLast(6).uppercase()}",
-                    fontSize = 12.sp,
-                    fontWeight = FontWeight.Bold,
+                    style = MaterialTheme.typography.bodySmall.copy(fontWeight = FontWeight.Bold),
                     fontFamily = FontFamily.Monospace,
                 )
             }
             Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.SpaceBetween) {
-                Text("Kiểu chia", fontSize = 12.sp, fontWeight = FontWeight.Medium, color = colorScheme.onSurfaceVariant)
-                Text(formatSplitMethod(bill.method), fontSize = 12.sp, fontWeight = FontWeight.Bold)
+                Text("Kiểu chia", style = MaterialTheme.typography.bodySmall.copy(fontWeight = FontWeight.Medium), color = colorScheme.onSurfaceVariant)
+                Text(formatSplitMethod(bill.method), style = MaterialTheme.typography.bodySmall.copy(fontWeight = FontWeight.Bold))
             }
             Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.SpaceBetween) {
-                Text("Trạng thái", fontSize = 12.sp, fontWeight = FontWeight.Medium, color = colorScheme.onSurfaceVariant)
+                Text("Trạng thái", style = MaterialTheme.typography.bodySmall.copy(fontWeight = FontWeight.Medium), color = colorScheme.onSurfaceVariant)
                 Text(
                     text = if (isSettled) "Đã thanh toán" else "Còn mở",
-                    fontSize = 12.sp,
-                    fontWeight = FontWeight.Bold,
+                    style = MaterialTheme.typography.bodySmall.copy(fontWeight = FontWeight.Bold),
                     color = if (isSettled) colorScheme.secondary else colorScheme.primary,
                 )
             }
@@ -753,12 +737,12 @@ private fun BdMessageCard(
 
     AppCard(
         modifier = Modifier.fillMaxWidth(),
-        contentPadding = PaddingValues(20.dp),
+        contentPadding = PaddingValues(AppDimens.spaceLg),
     ) {
         Column {
-            Text(title, fontSize = 16.sp, fontWeight = FontWeight.Bold, color = colorScheme.onSurface)
-            Spacer(modifier = Modifier.height(6.dp))
-            Text(message, fontSize = 13.sp, color = colorScheme.onSurfaceVariant)
+            Text(title, style = MaterialTheme.typography.bodyLarge.copy(fontWeight = FontWeight.Bold), color = colorScheme.onSurface)
+            Spacer(modifier = Modifier.height(AppDimens.spaceXs))
+            Text(message, style = MaterialTheme.typography.bodyMedium, color = colorScheme.onSurfaceVariant)
         }
     }
 }
@@ -781,13 +765,13 @@ private fun BdBottomAction(
             Modifier
                 .fillMaxWidth()
                 .background(colorScheme.surfaceContainerLowest.copy(alpha = 0.96f))
-                .padding(horizontal = 16.dp, vertical = 14.dp)
+                .padding(horizontal = AppDimens.spaceLg, vertical = AppDimens.spaceMd)
                 .navigationBarsPadding(),
     ) {
         if (canPay) {
             Row(
                 modifier = Modifier.fillMaxWidth(),
-                horizontalArrangement = Arrangement.spacedBy(12.dp)
+                horizontalArrangement = Arrangement.spacedBy(AppDimens.spaceMd)
             ) {
                 // Manual mark as paid button
                 SecondaryButton(
@@ -855,14 +839,13 @@ private fun QrPaymentDialog(
             ) {
                 Text(
                     text = "Quét mã VietQR",
-                    fontSize = 20.sp,
-                    fontWeight = FontWeight.Bold,
+                    style = MaterialTheme.typography.titleMedium.copy(fontWeight = FontWeight.Bold),
                     color = colorScheme.onSurface
                 )
-                Spacer(modifier = Modifier.height(4.dp))
+                Spacer(modifier = Modifier.height(AppDimens.spaceXs))
                 Text(
                     text = "Thanh toán hóa đơn cho $payerName",
-                    fontSize = 14.sp,
+                    style = MaterialTheme.typography.bodyMedium,
                     color = colorScheme.onSurfaceVariant
                 )
             }
@@ -875,8 +858,8 @@ private fun QrPaymentDialog(
                 Box(
                     modifier = Modifier
                         .size(220.dp)
-                        .background(Color.White, RoundedCornerShape(12.dp))
-                        .padding(8.dp),
+                        .background(Color.White, AppShapes.medium)
+                        .padding(AppDimens.spaceSm),
                     contentAlignment = Alignment.Center
                 ) {
                     coil.compose.AsyncImage(
@@ -885,11 +868,11 @@ private fun QrPaymentDialog(
                         modifier = Modifier.fillMaxSize()
                     )
                 }
-                Spacer(modifier = Modifier.height(16.dp))
+                Spacer(modifier = Modifier.height(AppDimens.spaceLg))
 
                 AppCard(
                     modifier = Modifier.fillMaxWidth(),
-                    contentPadding = PaddingValues(12.dp),
+                    contentPadding = PaddingValues(AppDimens.spaceMd),
                 ) {
                     Column(
                         verticalArrangement = Arrangement.spacedBy(6.dp)
@@ -898,27 +881,27 @@ private fun QrPaymentDialog(
                             modifier = Modifier.fillMaxWidth(),
                             horizontalArrangement = Arrangement.SpaceBetween
                         ) {
-                            Text("Số tiền:", fontSize = 12.sp, color = colorScheme.onSurfaceVariant)
-                            Text("${formatAmount(payment.amount)} đ", fontSize = 12.sp, fontWeight = FontWeight.Bold, color = colorScheme.onSurface)
+                            Text("Số tiền:", style = MaterialTheme.typography.bodySmall, color = colorScheme.onSurfaceVariant)
+                            Text("${formatAmount(payment.amount)} đ", style = MaterialTheme.typography.bodySmall.copy(fontWeight = FontWeight.Bold), color = colorScheme.onSurface)
                         }
                         Row(
                             modifier = Modifier.fillMaxWidth(),
                             horizontalArrangement = Arrangement.SpaceBetween
                         ) {
-                            Text("Nội dung:", fontSize = 12.sp, color = colorScheme.onSurfaceVariant)
-                            Text(payment.description, fontSize = 12.sp, fontWeight = FontWeight.Bold, color = colorScheme.primary)
+                            Text("Nội dung:", style = MaterialTheme.typography.bodySmall, color = colorScheme.onSurfaceVariant)
+                            Text(payment.description, style = MaterialTheme.typography.bodySmall.copy(fontWeight = FontWeight.Bold), color = colorScheme.primary)
                         }
                         Row(
                             modifier = Modifier.fillMaxWidth(),
                             horizontalArrangement = Arrangement.SpaceBetween
                         ) {
-                            Text("Trạng thái:", fontSize = 12.sp, color = colorScheme.onSurfaceVariant)
-                            Text(payment.status, fontSize = 12.sp, fontWeight = FontWeight.Bold, color = if (payment.status == "VERIFIED") colorScheme.secondary else colorScheme.primary)
+                            Text("Trạng thái:", style = MaterialTheme.typography.bodySmall, color = colorScheme.onSurfaceVariant)
+                            Text(payment.status, style = MaterialTheme.typography.bodySmall.copy(fontWeight = FontWeight.Bold), color = if (payment.status == "VERIFIED") colorScheme.secondary else colorScheme.primary)
                         }
                     }
                 }
 
-                Spacer(modifier = Modifier.height(8.dp))
+                Spacer(modifier = Modifier.height(AppDimens.spaceSm))
                 Text(
                     text = "Đang chờ hệ thống xác nhận thanh toán...",
                     fontSize = 11.sp,

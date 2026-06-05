@@ -23,6 +23,7 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.input.ImeAction
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
+import com.example.dinesplit.ui.theme.StatusWarningDark
 import com.example.dinesplit.core.ui.AppCard
 import com.example.dinesplit.core.ui.AppDimens
 import com.example.dinesplit.core.ui.AppShapes
@@ -96,7 +97,7 @@ fun RecentSearchChip(
             Icon(
                 Icons.Default.History,
                 contentDescription = null,
-                modifier = Modifier.size(16.dp),
+                modifier = Modifier.size(AppDimens.spaceLg),
                 tint = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.6f),
             )
             Text(
@@ -108,7 +109,7 @@ fun RecentSearchChip(
                 Icons.Default.Close,
                 contentDescription = "Xóa",
                 modifier = Modifier
-                    .size(16.dp)
+                    .size(AppDimens.spaceLg)
                     .clip(CircleShape)
                     .clickable { onDeleteClick() },
                 tint = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.6f),
@@ -143,7 +144,7 @@ fun SearchPersonCard(
                 DineAvatarImage(
                     imageUrl = user.avatarUrl,
                     name = user.displayName,
-                    size = 48.dp
+                    size = AppDimens.space4Xl
                 )
                 Column {
                     Text(
@@ -222,18 +223,18 @@ fun SearchPlaceCard(
                         .padding(AppDimens.spaceMd),
                     shape = CircleShape,
                     color = MaterialTheme.colorScheme.surfaceContainerLowest.copy(alpha = 0.9f),
-                    shadowElevation = 2.dp,
+                    shadowElevation = AppDimens.level1,
                 ) {
                     Row(
-                        modifier = Modifier.padding(horizontal = AppDimens.spaceSm, vertical = 4.dp),
+                        modifier = Modifier.padding(horizontal = AppDimens.spaceSm, vertical = AppDimens.spaceXs),
                         verticalAlignment = Alignment.CenterVertically,
-                        horizontalArrangement = Arrangement.spacedBy(4.dp),
+                        horizontalArrangement = Arrangement.spacedBy(AppDimens.spaceXs),
                     ) {
                         Icon(
                             Icons.Default.Star,
                             contentDescription = null,
-                            tint = Color(0xFFFFB300),
-                            modifier = Modifier.size(16.dp),
+                            tint = StatusWarningDark,
+                            modifier = Modifier.size(AppDimens.spaceLg),
                         )
                         Text(
                             text = place.rating,
@@ -307,7 +308,7 @@ fun SearchPostCard(
                     DineAvatarImage(
                         imageUrl = post.authorAvatar,
                         name = post.authorName,
-                        size = 40.dp
+                        size = AppDimens.space3Xl
                     )
                 }
                 Column {
@@ -319,7 +320,7 @@ fun SearchPostCard(
                     if (!post.location.isNullOrBlank()) {
                         Row(
                             verticalAlignment = Alignment.CenterVertically,
-                            horizontalArrangement = Arrangement.spacedBy(4.dp)
+                            horizontalArrangement = Arrangement.spacedBy(AppDimens.spaceXs)
                         ) {
                             Icon(
                                 Icons.Default.Place,
@@ -333,7 +334,7 @@ fun SearchPostCard(
                                 color = MaterialTheme.colorScheme.primary,
                                 maxLines = 1,
                                 overflow = TextOverflow.Ellipsis
-                            )
+                              )
                         }
                     }
                 }
@@ -367,7 +368,7 @@ fun SearchPostCard(
             ) {
                 Row(
                     verticalAlignment = Alignment.CenterVertically,
-                    horizontalArrangement = Arrangement.spacedBy(4.dp)
+                    horizontalArrangement = Arrangement.spacedBy(AppDimens.spaceXs)
                 ) {
                     Icon(
                         Icons.Default.Favorite,
@@ -384,7 +385,7 @@ fun SearchPostCard(
 
                 Row(
                     verticalAlignment = Alignment.CenterVertically,
-                    horizontalArrangement = Arrangement.spacedBy(4.dp)
+                    horizontalArrangement = Arrangement.spacedBy(AppDimens.spaceXs)
                 ) {
                     Icon(
                         Icons.AutoMirrored.Filled.Comment,

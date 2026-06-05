@@ -357,7 +357,6 @@ private fun DetailTopBar(
         }
 
         Row(
-            modifier = Modifier.clickable(onClick = onLeaveClick),
             verticalAlignment = Alignment.CenterVertically,
         ) {
             DetailMemberAvatarStack(
@@ -366,11 +365,17 @@ private fun DetailTopBar(
                 fallbackName = groupName
             )
             Spacer(modifier = Modifier.width(AppDimens.spaceSm))
-            Icon(
-                imageVector = Icons.AutoMirrored.Filled.ExitToApp,
+            AppIconButton(
+                onClick = onLeaveClick,
                 contentDescription = "Rời nhóm",
-                tint = colorScheme.outline,
-                modifier = Modifier.size(AppDimens.spaceXl),
+                icon = {
+                    Icon(
+                        imageVector = Icons.AutoMirrored.Filled.ExitToApp,
+                        contentDescription = null,
+                        tint = colorScheme.outline,
+                        modifier = Modifier.size(AppDimens.spaceXl),
+                    )
+                }
             )
         }
 
@@ -566,6 +571,7 @@ private fun DetailSummaryCard(
             verticalAlignment = Alignment.Bottom,
         ) {
             Text(
+                text = formatAmount(totalExpense),
                 style = MaterialTheme.typography.headlineLarge.copy(fontWeight = FontWeight.ExtraBold),
                 color = colorScheme.onSurface,
                 maxLines = 1,

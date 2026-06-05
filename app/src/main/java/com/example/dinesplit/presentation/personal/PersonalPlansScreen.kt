@@ -23,7 +23,6 @@ import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.LinearProgressIndicator
 import androidx.compose.material3.MaterialTheme
-import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
@@ -43,6 +42,7 @@ import com.example.dinesplit.core.ui.AppCard
 import com.example.dinesplit.core.ui.AppDimens
 import com.example.dinesplit.core.ui.AppScaffold
 import com.example.dinesplit.core.ui.AppShapes
+import com.example.dinesplit.core.ui.AppTextField
 import com.example.dinesplit.core.ui.BackNavigationButton
 import com.example.dinesplit.core.ui.PrimaryButton
 import com.example.dinesplit.data.model.StoredCategory
@@ -376,25 +376,22 @@ private fun RecurringPlanSection(
          subtitle = "Theo dõi các hóa đơn cố định và thu nhập trước khi chúng được nhập."
      ) {
          TypeChips(selectedType = type, onTypeSelected = { type = it })
-         OutlinedTextField(
+         AppTextField(
              value = name,
              onValueChange = { name = it },
-             label = { Text("Tên") },
-             singleLine = true,
+             label = "Tên",
              modifier = Modifier.fillMaxWidth()
          )
-         OutlinedTextField(
+         AppTextField(
              value = amount,
              onValueChange = { value -> if (value.all { it.isDigit() }) amount = value },
-             label = { Text("Số tiền") },
-             singleLine = true,
+             label = "Số tiền",
              modifier = Modifier.fillMaxWidth()
          )
-         OutlinedTextField(
+         AppTextField(
              value = day,
              onValueChange = { value -> if (value.all { it.isDigit() }) day = value.take(2) },
-             label = { Text("Ngày trong tháng") },
-             singleLine = true,
+             label = "Ngày trong tháng",
              modifier = Modifier.fillMaxWidth()
          )
          PrimaryButton(
@@ -443,25 +440,22 @@ private fun GoalPlanSection(
          title = "Mục tiêu và thử thách",
          subtitle = "Biến ngân sách thành tiến độ mà bạn có thể nhìn thấy."
      ) {
-         OutlinedTextField(
+         AppTextField(
              value = title,
              onValueChange = { title = it },
-             label = { Text("Tiêu đề mục tiêu") },
-             singleLine = true,
+             label = "Tiêu đề mục tiêu",
              modifier = Modifier.fillMaxWidth()
          )
-         OutlinedTextField(
+         AppTextField(
              value = target,
              onValueChange = { value -> if (value.all { it.isDigit() }) target = value },
-             label = { Text("Số tiền mục tiêu") },
-             singleLine = true,
+             label = "Số tiền mục tiêu",
              modifier = Modifier.fillMaxWidth()
          )
-         OutlinedTextField(
+         AppTextField(
              value = current,
              onValueChange = { value -> if (value.all { it.isDigit() }) current = value },
-             label = { Text("Số tiền hiện tại") },
-             singleLine = true,
+             label = "Số tiền hiện tại",
              modifier = Modifier.fillMaxWidth()
          )
          PrimaryButton(
@@ -587,18 +581,16 @@ private fun WalletPlanSection(
                   )
               }
           }
-          OutlinedTextField(
+          AppTextField(
              value = name,
              onValueChange = { name = it },
-             label = { Text("Tên ví") },
-             singleLine = true,
+             label = "Tên ví",
              modifier = Modifier.fillMaxWidth()
          )
-         OutlinedTextField(
+         AppTextField(
              value = balance,
              onValueChange = { value -> if (value.all { it.isDigit() }) balance = value },
-             label = { Text("Số dư ban đầu") },
-             singleLine = true,
+             label = "Số dư ban đầu",
              modifier = Modifier.fillMaxWidth()
          )
          PrimaryButton(

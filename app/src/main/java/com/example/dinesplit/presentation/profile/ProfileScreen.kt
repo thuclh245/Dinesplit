@@ -22,6 +22,7 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.example.dinesplit.core.ui.AppCard
 import com.example.dinesplit.core.ui.AppDimens
+import com.example.dinesplit.core.ui.AppShapes
 import com.example.dinesplit.core.ui.DineAvatarImage
 import com.example.dinesplit.core.ui.DineGridImage
 import com.example.dinesplit.core.ui.PrimaryButton
@@ -96,7 +97,7 @@ fun ProfileScreen(
             title = {
                 Row(
                     verticalAlignment = Alignment.CenterVertically,
-                    horizontalArrangement = Arrangement.spacedBy(8.dp),
+                    horizontalArrangement = Arrangement.spacedBy(AppDimens.spaceSm),
                 ) {
                     Icon(
                         imageVector = Icons.Default.Settings,
@@ -107,12 +108,12 @@ fun ProfileScreen(
                 }
             },
             text = {
-                Column(verticalArrangement = Arrangement.spacedBy(12.dp)) {
+                Column(verticalArrangement = Arrangement.spacedBy(AppDimens.spaceMd)) {
                     Text(
                         text = "Thiết lập chế độ hiển thị tài khoản của bạn. Khi tài khoản là công khai, mọi người đều có thể xem bài viết của bạn. Khi tắt chế độ này, chỉ bạn bè (những người cùng theo dõi nhau) mới xem được.",
                         style = MaterialTheme.typography.bodyMedium,
                     )
-                    Spacer(modifier = Modifier.height(8.dp))
+                    Spacer(modifier = Modifier.height(AppDimens.spaceSm))
                     Row(
                         modifier = Modifier.fillMaxWidth(),
                         verticalAlignment = Alignment.CenterVertically,
@@ -175,18 +176,18 @@ fun ProfileScreen(
                         Box(
                             modifier = Modifier
                                 .fillMaxWidth()
-                                .padding(vertical = 48.dp),
+                                .padding(vertical = AppDimens.space4Xl),
                             contentAlignment = Alignment.Center
                         ) {
                             Column(
                                 horizontalAlignment = Alignment.CenterHorizontally,
-                                verticalArrangement = Arrangement.spacedBy(8.dp)
+                                verticalArrangement = Arrangement.spacedBy(AppDimens.spaceSm)
                             ) {
                                 Icon(
                                     imageVector = Icons.Default.PhotoLibrary,
                                     contentDescription = null,
                                     tint = MaterialTheme.colorScheme.outline.copy(0.6f),
-                                    modifier = Modifier.size(48.dp)
+                                    modifier = Modifier.size(AppDimens.space4Xl)
                                 )
                                 Text(
                                     text = "Chưa có bài đăng nào",
@@ -205,18 +206,18 @@ fun ProfileScreen(
                         Box(
                             modifier = Modifier
                                 .fillMaxWidth()
-                                .padding(vertical = 48.dp),
+                                .padding(vertical = AppDimens.space4Xl),
                             contentAlignment = Alignment.Center
                         ) {
                             Column(
                                 horizontalAlignment = Alignment.CenterHorizontally,
-                                verticalArrangement = Arrangement.spacedBy(8.dp)
+                                verticalArrangement = Arrangement.spacedBy(AppDimens.spaceSm)
                             ) {
                                 Icon(
                                     imageVector = Icons.Default.BookmarkBorder,
                                     contentDescription = null,
                                     tint = MaterialTheme.colorScheme.outline.copy(0.6f),
-                                    modifier = Modifier.size(48.dp)
+                                    modifier = Modifier.size(AppDimens.space4Xl)
                                 )
                                 Text(
                                     text = "Chưa có bài viết đã lưu",
@@ -255,11 +256,11 @@ private fun ProfileHeader(
     onFollowingClick: () -> Unit,
     onFollowersClick: () -> Unit,
 ) {
-    Column(modifier = Modifier.padding(24.dp)) {
+    Column(modifier = Modifier.padding(AppDimens.spaceXl)) {
         Row(
             modifier = Modifier.fillMaxWidth(),
             verticalAlignment = Alignment.CenterVertically,
-            horizontalArrangement = Arrangement.spacedBy(24.dp),
+            horizontalArrangement = Arrangement.spacedBy(AppDimens.spaceXl),
         ) {
             // Avatar with Gradient Ring
             Box(
@@ -284,15 +285,15 @@ private fun ProfileHeader(
                     modifier =
                         Modifier
                             .fillMaxSize()
-                            .border(4.dp, MaterialTheme.colorScheme.background, CircleShape),
+                            .border(AppDimens.radiusSm, MaterialTheme.colorScheme.background, CircleShape),
                     size = 94.dp,
                 )
             }
 
-            Column(modifier = Modifier.weight(1f), verticalArrangement = Arrangement.spacedBy(16.dp)) {
+            Column(modifier = Modifier.weight(1f), verticalArrangement = Arrangement.spacedBy(AppDimens.spaceLg)) {
                 Text(userName, style = MaterialTheme.typography.headlineSmall.copy(fontWeight = FontWeight.ExtraBold))
 
-                Row(horizontalArrangement = Arrangement.spacedBy(12.dp)) {
+                Row(horizontalArrangement = Arrangement.spacedBy(AppDimens.spaceMd)) {
                     PrimaryButton(
                         text = "Edit Profile",
                         onClick = onEditProfile,
@@ -302,12 +303,12 @@ private fun ProfileHeader(
             }
         }
 
-        Spacer(modifier = Modifier.height(24.dp))
+        Spacer(modifier = Modifier.height(AppDimens.spaceXl))
 
         // Stats
         Row(
             modifier = Modifier.fillMaxWidth(),
-            horizontalArrangement = Arrangement.spacedBy(32.dp),
+            horizontalArrangement = Arrangement.spacedBy(AppDimens.space2Xl),
         ) {
             StatItem(label = "Posts", value = posts)
             StatItem(
@@ -322,10 +323,10 @@ private fun ProfileHeader(
             )
         }
 
-        Spacer(modifier = Modifier.height(16.dp))
+        Spacer(modifier = Modifier.height(AppDimens.spaceLg))
 
         // Info
-        Column(verticalArrangement = Arrangement.spacedBy(4.dp)) {
+        Column(verticalArrangement = Arrangement.spacedBy(AppDimens.spaceXs)) {
             Text(
                 text = bio,
                 style = MaterialTheme.typography.bodyMedium,
@@ -440,7 +441,7 @@ private fun ProfileTabs(
                         imageVector = tab.icon,
                         contentDescription = tab.label,
                         tint = if (isSelected) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.outlineVariant,
-                        modifier = Modifier.size(24.dp),
+                        modifier = Modifier.size(AppDimens.spaceXl),
                     )
                 }
             }
@@ -455,10 +456,10 @@ private fun PhotoGrid(
     onPostClick: (String) -> Unit,
 ) {
     val postsWithImages = posts.filter { it.imageUrls.isNotEmpty() }
-    Column(modifier = Modifier.padding(horizontal = 4.dp)) {
+    Column(modifier = Modifier.padding(horizontal = AppDimens.spaceXs)) {
         val rows = postsWithImages.chunked(3)
         rows.forEach { rowPosts ->
-            Row(modifier = Modifier.fillMaxWidth().padding(vertical = 2.dp), horizontalArrangement = Arrangement.spacedBy(4.dp)) {
+            Row(modifier = Modifier.fillMaxWidth().padding(vertical = AppDimens.spaceXs / 2), horizontalArrangement = Arrangement.spacedBy(AppDimens.spaceXs)) {
                 rowPosts.forEach { post ->
                     val url = post.imageUrls.first()
                     DineGridImage(
@@ -490,18 +491,18 @@ private fun TaggedBillsList(
         Box(
             modifier = Modifier
                 .fillMaxWidth()
-                .padding(vertical = 48.dp),
+                .padding(vertical = AppDimens.space4Xl),
             contentAlignment = Alignment.Center
         ) {
             Column(
                 horizontalAlignment = Alignment.CenterHorizontally,
-                verticalArrangement = Arrangement.spacedBy(8.dp)
+                verticalArrangement = Arrangement.spacedBy(AppDimens.spaceSm)
             ) {
                 Icon(
                     imageVector = Icons.Default.ReceiptLong,
                     contentDescription = null,
                     tint = MaterialTheme.colorScheme.outline.copy(0.6f),
-                    modifier = Modifier.size(48.dp)
+                    modifier = Modifier.size(AppDimens.space4Xl)
                 )
                 Text(
                     text = "Chưa có hoạt động chia tiền nào",
@@ -514,21 +515,21 @@ private fun TaggedBillsList(
         Column(
             modifier = Modifier
                 .fillMaxWidth()
-                .padding(horizontal = 16.dp, vertical = 8.dp),
-            verticalArrangement = Arrangement.spacedBy(12.dp)
+                .padding(horizontal = AppDimens.spaceLg, vertical = AppDimens.spaceSm),
+            verticalArrangement = Arrangement.spacedBy(AppDimens.spaceMd)
         ) {
             bills.forEach { summary ->
                 Surface(
                     color = MaterialTheme.colorScheme.surfaceContainerHigh,
-                    shape = RoundedCornerShape(16.dp),
+                    shape = AppShapes.large,
                     border = BorderStroke(1.dp, MaterialTheme.colorScheme.outlineVariant.copy(alpha = 0.5f)),
                     modifier = Modifier
                         .fillMaxWidth()
                         .clickable { onBillClick(summary.groupId, summary.billId) }
                 ) {
                     Column(
-                        modifier = Modifier.padding(16.dp),
-                        verticalArrangement = Arrangement.spacedBy(12.dp)
+                        modifier = Modifier.padding(AppDimens.spaceLg),
+                        verticalArrangement = Arrangement.spacedBy(AppDimens.spaceMd)
                       ) {
                         Row(
                             verticalAlignment = Alignment.CenterVertically,
@@ -537,7 +538,7 @@ private fun TaggedBillsList(
                         ) {
                             Row(
                                 verticalAlignment = Alignment.CenterVertically,
-                                horizontalArrangement = Arrangement.spacedBy(8.dp),
+                                horizontalArrangement = Arrangement.spacedBy(AppDimens.spaceSm),
                                 modifier = Modifier.weight(1f)
                             ) {
                                 Icon(
@@ -568,7 +569,7 @@ private fun TaggedBillsList(
                             ) {
                                 Text(
                                     text = if (summary.isSettled) "ĐÃ THANH TOÁN" else "CHƯA THANH TOÁN",
-                                    modifier = Modifier.padding(horizontal = 8.dp, vertical = 2.dp),
+                                    modifier = Modifier.padding(horizontal = AppDimens.spaceSm, vertical = AppDimens.spaceXs / 2),
                                     style = MaterialTheme.typography.labelSmall.copy(fontWeight = FontWeight.Bold),
                                     color = if (summary.isSettled) MaterialTheme.colorScheme.onSecondaryContainer else MaterialTheme.colorScheme.error
                                 )

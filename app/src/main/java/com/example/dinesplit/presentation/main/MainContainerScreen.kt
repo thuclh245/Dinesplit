@@ -63,6 +63,7 @@ import com.example.dinesplit.presentation.split.CreateBillScreen
 import com.example.dinesplit.presentation.split.CreateGroupScreen
 import com.example.dinesplit.presentation.split.GroupDetailScreen
 import com.example.dinesplit.presentation.split.GroupListScreen
+import com.example.dinesplit.presentation.split.SettleSummaryScreen
 import com.example.dinesplit.presentation.split.SplitScreen
 import com.example.dinesplit.ui.theme.DineSplitTheme
 import kotlinx.coroutines.flow.collectLatest
@@ -182,6 +183,7 @@ fun MainContainerScreen(
                     composable(AppRoute.Feed.route) {
                         FeedRoute(
                             userAvatarUrl = profileUiState.profile?.avatarUrl,
+                            bottomPadding = dynamicBottomPadding,
                             onOpenNotifications = onOpenNotifications,
                             onOpenSearch = { mainNavController.navigate(AppRoute.Search.route) },
                             onNavigateToCreatePost = { mainNavController.navigate(AppRoute.CreatePost.route) },
@@ -215,6 +217,9 @@ fun MainContainerScreen(
                             onBillClick = { groupId, billId ->
                                 mainNavController.navigate(AppRoute.BillDetail.createRoute(groupId, billId))
                             },
+                            onNavigateToSettleSummary = { groupId ->
+                                mainNavController.navigate(AppRoute.SettleSummary.createRoute(groupId))
+                            },
                         )
                     }
 
@@ -230,6 +235,9 @@ fun MainContainerScreen(
                             onOpenSearch = { mainNavController.navigate(AppRoute.Search.route) },
                             onOpenNotifications = onOpenNotifications,
                             notificationUnreadCount = notificationUiState.unreadCount,
+                            onNavigateToSettleSummary = { groupId ->
+                                mainNavController.navigate(AppRoute.SettleSummary.createRoute(groupId))
+                            },
                         )
                     }
 
@@ -248,6 +256,14 @@ fun MainContainerScreen(
                             onNavigateToBillDetail = { billId ->
                                 mainNavController.navigate(AppRoute.BillDetail.createRoute(groupId, billId))
                             },
+                        )
+                    }
+
+                    composable(AppRoute.SettleSummary.routeWithArg) { backStackEntry ->
+                        val groupId = backStackEntry.arguments?.getString(AppRoute.SettleSummary.ARG_ID).orEmpty()
+                        SettleSummaryScreen(
+                            groupId = groupId,
+                            onBack = { mainNavController.navigateUp() },
                         )
                     }
                     

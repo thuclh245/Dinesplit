@@ -41,6 +41,8 @@ import com.example.dinesplit.core.ui.PrimaryButton
 import com.example.dinesplit.core.ui.AppIconButton
 import com.example.dinesplit.core.ui.AppTextField
 import com.example.dinesplit.core.ui.PasswordTextField
+import com.example.dinesplit.core.ui.AppDimens
+import com.example.dinesplit.core.ui.AppShapes
 import kotlinx.coroutines.flow.collectLatest
 
 @Composable
@@ -112,8 +114,8 @@ private fun RegisterContent(
                     Modifier
                         .fillMaxWidth()
                         .statusBarsPadding()
-                        .height(64.dp)
-                        .padding(horizontal = 16.dp),
+                        .height(AppDimens.textFieldMinHeight)
+                        .padding(horizontal = AppDimens.screenHorizontal),
                 verticalAlignment = Alignment.CenterVertically,
                 horizontalArrangement = Arrangement.SpaceBetween,
             ) {
@@ -147,14 +149,14 @@ private fun RegisterContent(
                 modifier =
                     Modifier
                         .fillMaxSize()
-                        .padding(horizontal = 32.dp)
+                        .padding(horizontal = AppDimens.space2Xl)
                         .verticalScroll(rememberScrollState()),
-                verticalArrangement = Arrangement.spacedBy(32.dp),
+                verticalArrangement = Arrangement.spacedBy(AppDimens.space2Xl),
             ) {
-                Spacer(modifier = Modifier.height(24.dp))
+                Spacer(modifier = Modifier.height(AppDimens.spaceXl))
 
                 // Editorial Hero
-                Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
+                Column(verticalArrangement = Arrangement.spacedBy(AppDimens.spaceSm)) {
                     Text(
                         text =
                             buildAnnotatedString {
@@ -182,7 +184,7 @@ private fun RegisterContent(
                 }
 
                 // Form Fields
-                Column(verticalArrangement = Arrangement.spacedBy(24.dp)) {
+                Column(verticalArrangement = Arrangement.spacedBy(AppDimens.spaceXl)) {
                     AppTextField(
                         value = uiState.displayName,
                         onValueChange = onDisplayNameChange,
@@ -231,7 +233,7 @@ private fun RegisterContent(
                 Row(
                     modifier = Modifier.fillMaxWidth(),
                     verticalAlignment = Alignment.Top,
-                    horizontalArrangement = Arrangement.spacedBy(12.dp),
+                    horizontalArrangement = Arrangement.spacedBy(AppDimens.spaceMd),
                 ) {
                     Checkbox(
                         checked = uiState.isTermsAccepted,
@@ -241,7 +243,7 @@ private fun RegisterContent(
                                 checkedColor = MaterialTheme.colorScheme.primary,
                                 uncheckedColor = MaterialTheme.colorScheme.outlineVariant,
                             ),
-                        modifier = Modifier.offset(y = (-8).dp),
+                        modifier = Modifier.offset(y = -AppDimens.spaceSm),
                     )
                     val uriHandler = androidx.compose.ui.platform.LocalUriHandler.current
                     val annotatedText =
@@ -282,7 +284,7 @@ private fun RegisterContent(
                         onClick = { offset ->
                             annotatedText.getStringAnnotations(tag = "TERMS", start = offset, end = offset)
                                 .firstOrNull()?.let { annotation ->
-                                    uriHandler.openUri(annotation.item)
+                                     uriHandler.openUri(annotation.item)
                                 }
                             annotatedText.getStringAnnotations(tag = "PRIVACY", start = offset, end = offset)
                                 .firstOrNull()?.let { annotation ->
@@ -299,7 +301,7 @@ private fun RegisterContent(
                         style = MaterialTheme.typography.bodySmall,
                         color = MaterialTheme.colorScheme.error,
                         textAlign = androidx.compose.ui.text.style.TextAlign.Center,
-                        modifier = Modifier.fillMaxWidth().padding(bottom = 8.dp),
+                        modifier = Modifier.fillMaxWidth().padding(bottom = AppDimens.spaceSm),
                     )
                 }
 
@@ -320,16 +322,16 @@ private fun RegisterContent(
                         Box(modifier = Modifier.weight(1f).height(1.dp).background(MaterialTheme.colorScheme.surfaceContainerHighest))
                         Text(
                             "OR CONTINUE WITH",
-                            modifier = Modifier.padding(horizontal = 16.dp),
+                            modifier = Modifier.padding(horizontal = AppDimens.spaceLg),
                             style = MaterialTheme.typography.labelSmall.copy(fontWeight = FontWeight.Bold, letterSpacing = 1.sp),
                             color = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.6f),
                         )
                         Box(modifier = Modifier.weight(1f).height(1.dp).background(MaterialTheme.colorScheme.surfaceContainerHighest))
                     }
 
-                    Spacer(modifier = Modifier.height(24.dp))
+                    Spacer(modifier = Modifier.height(AppDimens.spaceXl))
 
-                    Row(horizontalArrangement = Arrangement.spacedBy(16.dp)) {
+                    Row(horizontalArrangement = Arrangement.spacedBy(AppDimens.spaceLg)) {
                         SocialButton(
                             iconUrl = "https://lh3.googleusercontent.com/aida-public/AB6AXuDpWtz23je5m8QkrgSxY1hqrDjt1DKEZ76ut_Cm8QeQRLBPHsAi9iPqcxSguk7cBDFu4WZRrH3QWg9pIgu3LdiwV-Tx2a0SXTLMK09ccp1RjZIAeylTpK6eW4YJztV_7lSJ5QuCOobycH1z6FYrl6tmau9FeGqrWtMCVmKps7wLwKNj69piYwl40TEYqfXG1YZkNvX-dAtkvcvT1jhTmEDaKaU1XG0DOwoiPWhk8zBdb_eVZ9Vcjr95baVidGx4Qmd3h8jNcIRvYn0",
                             label = "Google",
@@ -348,7 +350,7 @@ private fun RegisterContent(
                     modifier =
                         Modifier
                             .fillMaxWidth()
-                            .padding(vertical = 32.dp)
+                            .padding(vertical = AppDimens.space2Xl)
                             .clickable { onGoToLogin() },
                     horizontalArrangement = Arrangement.Center,
                 ) {
@@ -378,8 +380,8 @@ private fun SocialButton(
 ) {
     Surface(
         onClick = { },
-        modifier = modifier.height(52.dp),
-        shape = RoundedCornerShape(12.dp),
+        modifier = modifier.height(AppDimens.buttonHeight),
+        shape = AppShapes.medium,
         color = MaterialTheme.colorScheme.surfaceContainerLowest,
         border = BorderStroke(1.dp, MaterialTheme.colorScheme.outlineVariant.copy(alpha = 0.15f)),
     ) {
@@ -393,7 +395,7 @@ private fun SocialButton(
             } else if (imageVector != null) {
                 Icon(imageVector = imageVector, contentDescription = null, modifier = Modifier.size(20.dp), tint = Color.Black)
             }
-            Spacer(modifier = Modifier.width(8.dp))
+            Spacer(modifier = Modifier.width(AppDimens.spaceSm))
             Text(
                 text = label,
                 style = MaterialTheme.typography.labelLarge.copy(fontWeight = FontWeight.Bold),

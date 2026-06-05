@@ -21,9 +21,7 @@ import androidx.compose.material3.FilterChip
 import androidx.compose.material3.FilterChipDefaults
 import androidx.compose.material3.HorizontalDivider
 import androidx.compose.material3.MaterialTheme
-import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.Text
-import androidx.compose.material3.TextFieldDefaults
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
@@ -41,6 +39,7 @@ import androidx.compose.ui.text.style.TextOverflow
 import com.example.dinesplit.core.ui.AppCard
 import com.example.dinesplit.core.ui.AppDimens
 import com.example.dinesplit.core.ui.AppScaffold
+import com.example.dinesplit.core.ui.SearchTextField
 import com.example.dinesplit.core.ui.BackNavigationButton
 import com.example.dinesplit.core.ui.EmptyStateBlock
 import com.example.dinesplit.domain.model.TransactionType
@@ -159,17 +158,13 @@ fun HistoryScreen(
                 }
             }
 
-            OutlinedTextField(
+            SearchTextField(
                 value = query,
                 onValueChange = { query = it },
+                label = "",
+                placeholder = "Tìm kiếm giao dịch...",
+                onClearClick = { query = "" },
                 modifier = Modifier.fillMaxWidth(),
-                placeholder = { Text("Tìm kiếm giao dịch...") },
-                singleLine = true,
-                colors =
-                    TextFieldDefaults.colors(
-                        focusedContainerColor = MaterialTheme.colorScheme.surface,
-                        unfocusedContainerColor = MaterialTheme.colorScheme.surface,
-                    ),
             )
 
             // Type filter buttons - Nút bộ lọc loại

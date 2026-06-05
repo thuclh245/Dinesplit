@@ -112,6 +112,15 @@ sealed class AppRoute(val route: String) {
         }
     }
 
+    data object SettleSummary : AppRoute("settle_summary") {
+        const val ARG_ID = "groupId"
+        val routeWithArg = "$route/{$ARG_ID}"
+
+        fun createRoute(groupId: String): String {
+            return "$route/${Uri.encode(groupId)}"
+        }
+    }
+
     data object BillDetail : AppRoute("bill_detail") {
         const val ARG_GROUP_ID = "groupId"
         const val ARG_BILL_ID = "billId"

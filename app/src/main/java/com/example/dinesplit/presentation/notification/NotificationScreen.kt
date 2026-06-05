@@ -183,7 +183,7 @@ private fun NotificationOverviewCard(
                 Box(
                     modifier =
                         Modifier
-                            .size(48.dp)
+                            .size(AppDimens.space4Xl)
                             .clip(CircleShape)
                             .background(MaterialTheme.colorScheme.primary.copy(alpha = 0.12f)),
                     contentAlignment = Alignment.Center,
@@ -403,7 +403,7 @@ private fun NotificationItemCard(
         modifier = Modifier.fillMaxWidth(),
         shape = AppShapes.large,
         color = containerColor,
-        tonalElevation = if (isUnread) 2.dp else 0.dp,
+        tonalElevation = if (isUnread) AppDimens.level1 else AppDimens.level0,
     ) {
         Box(
             modifier =
@@ -416,7 +416,7 @@ private fun NotificationItemCard(
                     modifier =
                         Modifier
                             .align(Alignment.CenterStart)
-                            .width(4.dp)
+                            .width(AppDimens.spaceXs)
                             .height(72.dp)
                             .clip(AppShapes.full)
                             .background(accentColor),
@@ -439,7 +439,7 @@ private fun NotificationItemCard(
                 Box(
                     modifier =
                         Modifier
-                            .size(48.dp)
+                            .size(AppDimens.space4Xl)
                             .clip(CircleShape)
                             .background(accentColor.copy(alpha = if (isUnread) 0.14f else 0.10f)),
                     contentAlignment = Alignment.Center,
@@ -448,7 +448,7 @@ private fun NotificationItemCard(
                         imageVector = icon,
                         contentDescription = null,
                         tint = accentColor,
-                        modifier = Modifier.size(24.dp),
+                        modifier = Modifier.size(AppDimens.spaceXl),
                     )
                 }
 

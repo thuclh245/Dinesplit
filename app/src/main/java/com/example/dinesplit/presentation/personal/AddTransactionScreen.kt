@@ -40,6 +40,7 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.example.dinesplit.core.ui.AppDimens
 import com.example.dinesplit.core.ui.AppScaffold
+import com.example.dinesplit.core.ui.AppTextField
 import com.example.dinesplit.core.ui.BackNavigationButton
 import com.example.dinesplit.core.ui.PrimaryButton
 import com.example.dinesplit.core.ui.SecondaryButton
@@ -211,16 +212,16 @@ fun AddTransactionScreen(
                  label = { Text("Ngày") }
              )
 
-             OutlinedTextField(
-                 modifier = Modifier.fillMaxWidth(),
+             AppTextField(
                  value = note,
                  onValueChange = { note = it },
-                 label = { Text("Ghi chú (tùy chọn)") },
-                 placeholder = { Text("Thêm ghi chú...") },
-                 minLines = 2,
+                 label = "Ghi chú (tùy chọn)",
+                 placeholder = "Thêm ghi chú...",
+                 singleLine = false,
                  keyboardOptions = KeyboardOptions(
                      capitalization = KeyboardCapitalization.Sentences
-                 )
+                 ),
+                 modifier = Modifier.fillMaxWidth()
              )
 
              PrimaryButton(

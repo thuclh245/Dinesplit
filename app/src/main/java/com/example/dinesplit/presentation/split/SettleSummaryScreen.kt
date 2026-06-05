@@ -17,13 +17,10 @@ import androidx.compose.foundation.layout.statusBarsPadding
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.shape.CircleShape
-import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
 import androidx.compose.material.icons.automirrored.filled.ArrowForward
 import androidx.compose.material.icons.filled.Star
-import androidx.compose.material3.Card
-import androidx.compose.material3.CardDefaults
 import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.HorizontalDivider
 import androidx.compose.material3.Icon
@@ -31,6 +28,9 @@ import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Surface
+import com.example.dinesplit.core.ui.AppCard
+import com.example.dinesplit.core.ui.AppDimens
+import com.example.dinesplit.core.ui.AppShapes
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.collectAsState
@@ -146,7 +146,7 @@ fun SettleSummaryScreen(
                         Modifier
                             .fillMaxSize()
                             .padding(paddingValues)
-                            .padding(horizontal = 24.dp),
+                            .padding(horizontal = AppDimens.spaceXl),
                     title = "Không thể tải số dư",
                     message = uiState.error.orEmpty(),
                 )
@@ -180,10 +180,10 @@ fun SettleSummaryScreen(
                     item {
                         Text(
                             text = "Số dư được tính từ các hóa đơn chưa được đánh dấu thanh toán.",
-                            fontSize = 12.sp,
+                            style = MaterialTheme.typography.bodySmall,
                             color = MaterialTheme.colorScheme.onSurfaceVariant,
                             textAlign = TextAlign.Center,
-                            modifier = Modifier.padding(horizontal = 12.dp),
+                            modifier = Modifier.padding(horizontal = AppDimens.spaceMd),
                         )
                     }
                 }
@@ -204,7 +204,7 @@ private fun SettleTopBar(
                 .fillMaxWidth()
                 .background(colorScheme.surfaceContainerLowest)
                 .statusBarsPadding()
-                .padding(horizontal = 12.dp, vertical = 10.dp),
+                .padding(horizontal = AppDimens.spaceMd, vertical = 10.dp),
         verticalAlignment = Alignment.CenterVertically,
     ) {
         IconButton(onClick = onBack, modifier = Modifier.size(40.dp)) {
@@ -219,19 +219,18 @@ private fun SettleTopBar(
             modifier =
                 Modifier
                     .weight(1f)
-                    .padding(horizontal = 8.dp),
+                    .padding(horizontal = AppDimens.spaceSm),
             horizontalAlignment = Alignment.CenterHorizontally,
         ) {
             Text(
                 text = "Chốt sổ",
-                fontSize = 18.sp,
-                fontWeight = FontWeight.Bold,
+                style = MaterialTheme.typography.titleMedium.copy(fontWeight = FontWeight.Bold),
                 color = colorScheme.onSurface,
             )
             if (!groupName.isNullOrBlank()) {
                 Text(
                     text = groupName,
-                    fontSize = 12.sp,
+                    style = MaterialTheme.typography.bodySmall,
                     color = colorScheme.onSurfaceVariant,
                     maxLines = 1,
                     overflow = TextOverflow.Ellipsis,
@@ -239,7 +238,7 @@ private fun SettleTopBar(
             }
         }
 
-        Spacer(modifier = Modifier.size(40.dp))
+        Spacer(modifier = Modifier.size(AppDimens.space3Xl))
     }
 }
 
@@ -275,17 +274,16 @@ private fun SettleHeroSection(settlementCount: Int) {
 
         Text(
             text = title,
-            fontSize = 24.sp,
-            fontWeight = FontWeight.ExtraBold,
+            style = MaterialTheme.typography.headlineSmall.copy(fontWeight = FontWeight.ExtraBold),
             color = colorScheme.onSurface,
             textAlign = TextAlign.Center,
         )
 
-        Spacer(modifier = Modifier.height(8.dp))
+        Spacer(modifier = Modifier.height(AppDimens.spaceSm))
 
         Text(
             text = subtitle,
-            fontSize = 13.sp,
+            style = MaterialTheme.typography.bodySmall,
             color = colorScheme.onSurfaceVariant,
             textAlign = TextAlign.Center,
         )
@@ -302,7 +300,7 @@ private fun SettleDebtList(debts: List<SettlementDisplayItem>) {
             fontWeight = FontWeight.Bold,
             color = colorScheme.onSurfaceVariant,
             letterSpacing = 1.2.sp,
-            modifier = Modifier.padding(start = 8.dp, bottom = 12.dp),
+            modifier = Modifier.padding(start = AppDimens.spaceSm, bottom = AppDimens.spaceMd),
         )
 
         if (debts.isEmpty()) {
@@ -314,11 +312,9 @@ private fun SettleDebtList(debts: List<SettlementDisplayItem>) {
             return
         }
 
-        Card(
+        AppCard(
             modifier = Modifier.fillMaxWidth(),
-            colors = CardDefaults.cardColors(containerColor = colorScheme.surfaceContainerLowest),
-            elevation = CardDefaults.cardElevation(defaultElevation = 2.dp),
-            shape = RoundedCornerShape(20.dp),
+            contentPadding = PaddingValues(0.dp),
         ) {
             Column {
                 debts.forEachIndexed { index, debt ->
@@ -352,7 +348,7 @@ private fun SettlementRow(debt: SettlementDisplayItem) {
         modifier =
             Modifier
                 .fillMaxWidth()
-                .padding(horizontal = 16.dp, vertical = 14.dp),
+                .padding(horizontal = AppDimens.spaceLg, vertical = 14.dp),
     ) {
         Row(
             modifier = Modifier.fillMaxWidth(),
@@ -365,7 +361,7 @@ private fun SettlementRow(debt: SettlementDisplayItem) {
                 isCurrentUser = debt.relation == SettlementRelation.YouPay,
             )
             Column(
-                modifier = Modifier.padding(horizontal = 8.dp),
+                modifier = Modifier.padding(horizontal = AppDimens.spaceSm),
                 horizontalAlignment = Alignment.CenterHorizontally,
             ) {
                 Text(
@@ -404,14 +400,13 @@ private fun SettlementRow(debt: SettlementDisplayItem) {
         Surface(
             modifier = Modifier.fillMaxWidth(),
             color = accentColor.copy(alpha = 0.10f),
-            shape = RoundedCornerShape(16.dp),
+            shape = AppShapes.large,
         ) {
             Text(
                 text = relationLabel,
                 modifier = Modifier.padding(vertical = 9.dp),
                 textAlign = TextAlign.Center,
-                fontSize = 13.sp,
-                fontWeight = FontWeight.Bold,
+                style = MaterialTheme.typography.labelMedium.copy(fontWeight = FontWeight.Bold),
                 color = accentColor,
             )
         }
@@ -448,8 +443,7 @@ private fun SettlementMember(
         Spacer(modifier = Modifier.height(6.dp))
         Text(
             text = name,
-            fontSize = 12.sp,
-            fontWeight = FontWeight.Bold,
+            style = MaterialTheme.typography.labelSmall.copy(fontWeight = FontWeight.Bold),
             color = colorScheme.onSurface,
             maxLines = 1,
             overflow = TextOverflow.Ellipsis,
@@ -465,7 +459,7 @@ private fun SettleStatsCard(
     val colorScheme = MaterialTheme.colorScheme
     Row(
         modifier = Modifier.fillMaxWidth(),
-        horizontalArrangement = Arrangement.spacedBy(12.dp),
+        horizontalArrangement = Arrangement.spacedBy(AppDimens.spaceMd),
     ) {
         SettleStat(
             modifier = Modifier.weight(1f),
@@ -492,27 +486,31 @@ private fun SettleStat(
     containerColor: Color,
     contentColor: Color,
 ) {
-    Card(
+    AppCard(
         modifier = modifier,
-        colors = CardDefaults.cardColors(containerColor = containerColor),
-        elevation = CardDefaults.cardElevation(defaultElevation = 0.dp),
-        shape = RoundedCornerShape(16.dp),
+        contentPadding = PaddingValues(0.dp),
     ) {
-        Column(modifier = Modifier.padding(horizontal = 14.dp, vertical = 16.dp)) {
-            Text(
-                text = title,
-                fontSize = 10.sp,
-                fontWeight = FontWeight.Bold,
-                color = contentColor,
-            )
-            Spacer(modifier = Modifier.height(8.dp))
-            Text(
-                text = "${formatSettleAmount(amount)} đ",
-                fontSize = 19.sp,
-                fontWeight = FontWeight.Black,
-                color = contentColor,
-                maxLines = 1,
-            )
+        Surface(
+            color = containerColor,
+            shape = AppShapes.xLarge,
+            modifier = Modifier.fillMaxWidth(),
+        ) {
+            Column(modifier = Modifier.padding(horizontal = 14.dp, vertical = AppDimens.spaceLg)) {
+                Text(
+                    text = title,
+                    fontSize = 10.sp,
+                    fontWeight = FontWeight.Bold,
+                    color = contentColor,
+                )
+                Spacer(modifier = Modifier.height(AppDimens.spaceSm))
+                Text(
+                    text = "${formatSettleAmount(amount)} đ",
+                    fontSize = 19.sp,
+                    fontWeight = FontWeight.Black,
+                    color = contentColor,
+                    maxLines = 1,
+                )
+            }
         }
     }
 }
@@ -527,16 +525,12 @@ private fun SettleMessage(
         modifier = modifier,
         contentAlignment = Alignment.Center,
     ) {
-        Card(
+        AppCard(
             modifier = Modifier.fillMaxWidth(),
-            colors =
-                CardDefaults.cardColors(
-                    containerColor = MaterialTheme.colorScheme.surfaceContainerLowest,
-                ),
-            shape = RoundedCornerShape(20.dp),
+            contentPadding = PaddingValues(20.dp),
         ) {
             Column(
-                modifier = Modifier.padding(20.dp),
+                modifier = Modifier.fillMaxWidth(),
                 horizontalAlignment = Alignment.CenterHorizontally,
             ) {
                 Text(
@@ -548,7 +542,7 @@ private fun SettleMessage(
                 Spacer(modifier = Modifier.height(6.dp))
                 Text(
                     text = message,
-                    fontSize = 13.sp,
+                    style = MaterialTheme.typography.bodySmall,
                     color = MaterialTheme.colorScheme.onSurfaceVariant,
                     textAlign = TextAlign.Center,
                 )

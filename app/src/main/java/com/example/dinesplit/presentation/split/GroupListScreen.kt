@@ -34,6 +34,7 @@ import androidx.compose.material3.FloatingActionButton
 import com.example.dinesplit.core.ui.AppCard
 import com.example.dinesplit.core.ui.ClickableAppCard
 import com.example.dinesplit.core.ui.AppDimens
+import com.example.dinesplit.core.ui.AppShapes
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
@@ -84,6 +85,7 @@ fun GroupListScreen(
     onOpenSearch: () -> Unit = {},
     onOpenNotifications: () -> Unit = {},
     notificationUnreadCount: Int = 0,
+    onNavigateToSettleSummary: (String) -> Unit = {},
 ) {
     val colorScheme = MaterialTheme.colorScheme
     val context = LocalContext.current
@@ -128,7 +130,18 @@ fun GroupListScreen(
             item {
                 FinancialSummaryCard(
                     amountYouOwe = uiState.amountYouOwe,
-                    amountYouAreOwed = uiState.amountYouAreOwed
+                    amountYouAreOwed = uiState.amountYouAreOwed,
+                    onSettleUpClick = {
+                        val targetGroup = uiState.groups.firstOrNull { it.yourBalance < 0.0 } ?: uiState.groups.firstOrNull()
+                        if (targetGroup != null) {
+                            onNavigateToSettleSummary(targetGroup.id)
+                        } else {
+                            android.widget.Toast.makeText(context, "Vui lòng chọn hoặc tham gia một nhóm để thực hiện thanh toán.", android.widget.Toast.LENGTH_SHORT).show()
+                        }
+                    },
+                    onRemindClick = {
+                        android.widget.Toast.makeText(context, "Tính năng nhắc nợ đang được phát triển.", android.widget.Toast.LENGTH_SHORT).show()
+                    }
                 )
             }
 
@@ -270,7 +283,9 @@ private fun NotificationBellIcon(notificationUnreadCount: Int) {
 @Composable
 fun FinancialSummaryCard(
     amountYouOwe: Double,
-    amountYouAreOwed: Double
+    amountYouAreOwed: Double,
+    onSettleUpClick: () -> Unit,
+    onRemindClick: () -> Unit,
 ) {
     val colorScheme = MaterialTheme.colorScheme
 
@@ -297,7 +312,7 @@ fun FinancialSummaryCard(
                 Spacer(modifier = Modifier.height(AppDimens.spaceLg))
                 SmallButton(
                     text = "Settle Up",
-                    onClick = { },
+                    onClick = onSettleUpClick,
                     colors = ButtonDefaults.buttonColors(
                         containerColor = colorScheme.primary,
                         contentColor = colorScheme.onPrimary
@@ -326,7 +341,7 @@ fun FinancialSummaryCard(
                 Spacer(modifier = Modifier.height(AppDimens.spaceLg))
                 SmallButton(
                     text = "Remind",
-                    onClick = { },
+                    onClick = onRemindClick,
                     colors = ButtonDefaults.buttonColors(
                         containerColor = colorScheme.secondary,
                         contentColor = colorScheme.onSecondary

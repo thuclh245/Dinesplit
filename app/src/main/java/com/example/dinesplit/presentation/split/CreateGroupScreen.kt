@@ -41,6 +41,8 @@ import com.example.dinesplit.core.ui.AppIconButton
 import com.example.dinesplit.core.ui.AppTextField
 import com.example.dinesplit.core.ui.SearchTextField
 import com.example.dinesplit.core.ui.AppCard
+import com.example.dinesplit.core.ui.AppDimens
+import com.example.dinesplit.core.ui.AppShapes
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.SnackbarHost
 import androidx.compose.material3.SnackbarHostState
@@ -112,9 +114,9 @@ fun CreateGroupScreen(onBack: () -> Unit) {
                 Modifier
                     .fillMaxSize()
                     .padding(paddingValues)
-                    .padding(horizontal = 24.dp),
-            contentPadding = PaddingValues(top = 18.dp, bottom = 120.dp),
-            verticalArrangement = Arrangement.spacedBy(24.dp),
+                    .padding(horizontal = AppDimens.spaceXl),
+            contentPadding = PaddingValues(top = AppDimens.spaceLg, bottom = 120.dp),
+            verticalArrangement = Arrangement.spacedBy(AppDimens.spaceXl),
         ) {
             item {
                 CreateGroupInfoCard(
@@ -155,7 +157,7 @@ private fun CreateGroupTopBar(
                 .fillMaxWidth()
                 .statusBarsPadding()
                 .background(colorScheme.surfaceContainerLowest.copy(alpha = 0.98f))
-                .padding(horizontal = 12.dp, vertical = 10.dp),
+                .padding(horizontal = AppDimens.spaceMd, vertical = AppDimens.spaceSm),
         verticalAlignment = Alignment.CenterVertically,
         horizontalArrangement = Arrangement.SpaceBetween,
     ) {
@@ -169,16 +171,15 @@ private fun CreateGroupTopBar(
 
         Text(
             text = "Tạo nhóm mới",
-            fontSize = 18.sp,
-            fontWeight = FontWeight.Bold,
+            style = MaterialTheme.typography.titleSmall.copy(fontWeight = FontWeight.Bold),
             color = colorScheme.onSurface,
         )
 
         Box(
             modifier = Modifier
-                .clip(RoundedCornerShape(4.dp))
+                .clip(RoundedCornerShape(AppDimens.radiusSm))
                 .clickable(enabled = !isLoading) { onSave() }
-                .padding(horizontal = 12.dp, vertical = 8.dp),
+                .padding(horizontal = AppDimens.spaceMd, vertical = AppDimens.spaceSm),
             contentAlignment = Alignment.Center
         ) {
             Text(
@@ -208,7 +209,7 @@ private fun CreateGroupInfoCard(
             modifier =
                 Modifier
                     .fillMaxWidth()
-                    .padding(20.dp),
+                    .padding(AppDimens.spaceLg),
             horizontalAlignment = Alignment.CenterHorizontally,
         ) {
             Box(contentAlignment = Alignment.BottomEnd) {
@@ -225,7 +226,7 @@ private fun CreateGroupInfoCard(
                 Box(
                     modifier =
                         Modifier
-                            .size(32.dp)
+                            .size(AppDimens.space2Xl)
                             .clip(CircleShape)
                             .background(colorScheme.primaryContainer)
                             .border(2.dp, colorScheme.surfaceContainerLowest, CircleShape),
@@ -235,12 +236,12 @@ private fun CreateGroupInfoCard(
                         Icons.Default.Add,
                         contentDescription = null,
                         tint = colorScheme.surfaceContainerLowest,
-                        modifier = Modifier.size(16.dp),
+                        modifier = Modifier.size(AppDimens.spaceLg),
                     )
                 }
             }
 
-            Spacer(modifier = Modifier.height(20.dp))
+            Spacer(modifier = Modifier.height(AppDimens.spaceLg))
 
             AppTextField(
                 value = groupName,
@@ -250,27 +251,26 @@ private fun CreateGroupInfoCard(
                 modifier = Modifier.fillMaxWidth(),
             )
 
-            Spacer(modifier = Modifier.height(16.dp))
+            Spacer(modifier = Modifier.height(AppDimens.spaceLg))
 
             LazyRow(
                 modifier = Modifier.fillMaxWidth(),
-                horizontalArrangement = Arrangement.spacedBy(8.dp),
+                horizontalArrangement = Arrangement.spacedBy(AppDimens.spaceSm),
             ) {
                 items(categories) { category ->
                     val isSelected = category == selectedCategory
                     Box(
                         modifier =
                             Modifier
-                                .clip(RoundedCornerShape(50))
+                                .clip(AppShapes.full)
                                 .background(if (isSelected) colorScheme.primaryContainer else colorScheme.surfaceContainer)
                                 .clickable { onCategorySelected(category) }
-                                .padding(horizontal = 18.dp, vertical = 8.dp),
+                                .padding(horizontal = AppDimens.spaceLg, vertical = AppDimens.spaceSm),
                     ) {
                         Text(
                             text = category,
                             color = if (isSelected) colorScheme.surfaceContainerLowest else colorScheme.onSurfaceVariant,
-                            fontSize = 14.sp,
-                            fontWeight = FontWeight.Medium,
+                            style = MaterialTheme.typography.bodyMedium.copy(fontWeight = FontWeight.Medium),
                         )
                     }
                 }
@@ -294,11 +294,9 @@ private fun CreateGroupMembersSection(
     Column {
         Text(
             text = "THÊM THÀNH VIÊN",
-            fontSize = 10.sp,
-            fontWeight = FontWeight.Bold,
+            style = MaterialTheme.typography.labelSmall.copy(fontWeight = FontWeight.Bold, letterSpacing = 1.5.sp),
             color = colorScheme.onSurfaceVariant.copy(alpha = 0.7f),
-            letterSpacing = 1.5.sp,
-            modifier = Modifier.padding(start = 8.dp, bottom = 16.dp),
+            modifier = Modifier.padding(start = AppDimens.spaceSm, bottom = AppDimens.spaceLg),
         )
 
         SearchTextField(
@@ -309,20 +307,19 @@ private fun CreateGroupMembersSection(
             modifier = Modifier.fillMaxWidth()
         )
 
-        Spacer(modifier = Modifier.height(16.dp))
+        Spacer(modifier = Modifier.height(AppDimens.spaceLg))
 
         Row(
             modifier =
                 Modifier
                     .fillMaxWidth()
-                    .padding(start = 8.dp, bottom = 8.dp),
+                    .padding(start = AppDimens.spaceSm, bottom = AppDimens.spaceSm),
             verticalAlignment = Alignment.CenterVertically,
             horizontalArrangement = Arrangement.SpaceBetween,
         ) {
             Text(
                 text = if (searchQuery.isBlank()) "Người dùng gần đây" else "Kết quả tìm kiếm",
-                fontSize = 12.sp,
-                fontWeight = FontWeight.SemiBold,
+                style = MaterialTheme.typography.bodySmall.copy(fontWeight = FontWeight.SemiBold),
                 color = colorScheme.onSurfaceVariant.copy(alpha = 0.7f),
             )
             if (isSearching) {
@@ -362,7 +359,7 @@ private fun EmptyProfileSearchCard(searchQuery: String) {
     val colorScheme = MaterialTheme.colorScheme
     AppCard(
         modifier = Modifier.fillMaxWidth(),
-        contentPadding = PaddingValues(18.dp),
+        contentPadding = PaddingValues(AppDimens.spaceLg),
     ) {
         Text(
             text =
@@ -371,7 +368,7 @@ private fun EmptyProfileSearchCard(searchQuery: String) {
                 } else {
                     "Không tìm thấy người dùng phù hợp."
                 },
-            fontSize = 13.sp,
+            style = MaterialTheme.typography.bodyMedium,
             color = colorScheme.onSurfaceVariant,
         )
     }
@@ -393,7 +390,7 @@ private fun CreateGroupMemberRow(
             Modifier
                 .fillMaxWidth()
                 .clickable(enabled = isFriend) { onClick() }
-                .padding(16.dp),
+                .padding(AppDimens.spaceLg),
         verticalAlignment = Alignment.CenterVertically,
         horizontalArrangement = Arrangement.SpaceBetween,
     ) {
@@ -418,29 +415,28 @@ private fun CreateGroupMemberRow(
                     text = initial,
                     color = if (isFriend) colorScheme.surfaceContainerLowest else colorScheme.onSurfaceVariant.copy(alpha = 0.5f),
                     fontWeight = FontWeight.Bold,
-                    fontSize = 18.sp
+                    style = MaterialTheme.typography.titleSmall.copy(fontWeight = FontWeight.Bold),
                 )
             }
-            Spacer(modifier = Modifier.width(16.dp))
+            Spacer(modifier = Modifier.width(AppDimens.spaceLg))
             Column {
                 Text(
                     text = displayName,
                     fontWeight = FontWeight.Bold,
-                    fontSize = 14.sp,
+                    style = MaterialTheme.typography.bodyMedium.copy(fontWeight = FontWeight.Bold),
                     color = if (isFriend) colorScheme.onSurface else colorScheme.onSurfaceVariant.copy(alpha = 0.5f)
                 )
                 Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(6.dp)) {
                     Text(
                         text = "@${profile.username}",
-                        fontSize = 12.sp,
+                        style = MaterialTheme.typography.bodySmall,
                         color = colorScheme.onSurfaceVariant.copy(alpha = if (isFriend) 0.7f else 0.4f),
                     )
                     if (!isFriend) {
                         Text(
                             text = "• Chưa kết bạn",
-                            fontSize = 12.sp,
+                            style = MaterialTheme.typography.bodySmall.copy(fontWeight = FontWeight.Medium),
                             color = colorScheme.error.copy(alpha = 0.8f),
-                            fontWeight = FontWeight.Medium
                         )
                     }
                 }
@@ -454,11 +450,11 @@ private fun CreateGroupMemberRow(
                 Box(
                     modifier =
                         Modifier
-                            .size(24.dp)
+                            .size(AppDimens.spaceXl)
                             .border(2.dp, colorScheme.outlineVariant, CircleShape),
                     contentAlignment = Alignment.Center,
                 ) {
-                    Icon(Icons.Default.Add, contentDescription = "Thêm", tint = colorScheme.outlineVariant, modifier = Modifier.size(16.dp))
+                    Icon(Icons.Default.Add, contentDescription = "Thêm", tint = colorScheme.outlineVariant, modifier = Modifier.size(AppDimens.spaceLg))
                 }
             }
         }
@@ -479,7 +475,7 @@ private fun CreateGroupBottomAction(
             Modifier
                 .fillMaxWidth()
                 .background(colorScheme.surfaceContainerLowest.copy(alpha = 0.96f))
-                .padding(horizontal = 24.dp, vertical = 14.dp)
+                .padding(horizontal = AppDimens.spaceXl, vertical = AppDimens.spaceMd)
                 .navigationBarsPadding(),
     ) {
         Column {
@@ -487,10 +483,10 @@ private fun CreateGroupBottomAction(
                 modifier =
                     Modifier
                         .fillMaxWidth()
-                        .padding(bottom = 14.dp, start = 8.dp),
+                        .padding(bottom = AppDimens.spaceMd, start = AppDimens.spaceSm),
                 verticalAlignment = Alignment.CenterVertically,
             ) {
-                Row(horizontalArrangement = Arrangement.spacedBy((-12).dp)) {
+                Row(horizontalArrangement = Arrangement.spacedBy(-AppDimens.spaceMd)) {
                     val avatarColors = listOf(colorScheme.primary, colorScheme.secondary, colorScheme.tertiary)
                     repeat(minOf(3, selectedCount)) { index ->
                         Box(
@@ -514,15 +510,14 @@ private fun CreateGroupBottomAction(
                                     .border(2.dp, colorScheme.surfaceContainerLowest, CircleShape),
                             contentAlignment = Alignment.Center,
                         ) {
-                            Text("+$extraCount", fontSize = 10.sp, fontWeight = FontWeight.Bold, color = colorScheme.onSurfaceVariant)
+                            Text("+$extraCount", style = MaterialTheme.typography.labelSmall.copy(fontWeight = FontWeight.Bold), color = colorScheme.onSurfaceVariant)
                         }
                     }
                 }
-                Spacer(modifier = Modifier.width(12.dp))
+                Spacer(modifier = Modifier.width(AppDimens.spaceMd))
                 Text(
                     "Đã chọn $selectedCount thành viên",
-                    fontSize = 12.sp,
-                    fontWeight = FontWeight.Medium,
+                    style = MaterialTheme.typography.bodySmall.copy(fontWeight = FontWeight.Medium),
                     color = colorScheme.onSurfaceVariant,
                 )
             }

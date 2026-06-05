@@ -79,6 +79,7 @@ fun SplitScreen(
     onViewAllGroups: () -> Unit,
     onGroupClick: (String) -> Unit,
     onBillClick: (groupId: String, billId: String) -> Unit = { _, _ -> },
+    onNavigateToSettleSummary: (String) -> Unit = {},
 ) {
     val context = LocalContext.current
     val viewModel =
@@ -117,6 +118,17 @@ fun SplitScreen(
                 BalanceSummaryRow(
                     amountYouOwe = uiState.amountYouOwe,
                     amountYouAreOwed = uiState.amountYouAreOwed,
+                    onSettleUpClick = {
+                        val targetGroup = uiState.groups.firstOrNull { it.yourBalance < 0.0 } ?: uiState.groups.firstOrNull()
+                        if (targetGroup != null) {
+                            onNavigateToSettleSummary(targetGroup.id)
+                        } else {
+                            android.widget.Toast.makeText(context, "Vui lòng chọn hoặc tham gia một nhóm để thực hiện thanh toán.", android.widget.Toast.LENGTH_SHORT).show()
+                        }
+                    },
+                    onRemindClick = {
+                        android.widget.Toast.makeText(context, "Tính năng nhắc nợ đang được phát triển.", android.widget.Toast.LENGTH_SHORT).show()
+                    }
                 )
             }
 
@@ -163,6 +175,8 @@ fun SplitScreen(
 private fun BalanceSummaryRow(
     amountYouOwe: Double,
     amountYouAreOwed: Double,
+    onSettleUpClick: () -> Unit,
+    onRemindClick: () -> Unit,
 ) {
     Row(
         modifier =
@@ -175,6 +189,7 @@ private fun BalanceSummaryRow(
             title = "BẠN ĐANG NỢ",
             amount = formatAmount(amountYouOwe),
             buttonText = "Settle Up",
+            onClick = onSettleUpClick,
             modifier = Modifier.weight(1f),
             containerColor = MaterialTheme.colorScheme.surfaceContainerLowest,
             contentColor = MaterialTheme.colorScheme.primary,
@@ -183,6 +198,7 @@ private fun BalanceSummaryRow(
             title = "BẠN ĐƯỢC TRẢ",
             amount = formatAmount(amountYouAreOwed),
             buttonText = "Remind",
+            onClick = onRemindClick,
             modifier = Modifier.weight(1f),
             containerColor = MaterialTheme.colorScheme.surfaceContainerLowest,
             contentColor = MaterialTheme.colorScheme.secondary,
@@ -288,6 +304,7 @@ private fun BalanceCard(
     title: String,
     amount: String,
     buttonText: String,
+    onClick: () -> Unit,
     modifier: Modifier = Modifier,
     containerColor: Color,
     contentColor: Color,
@@ -338,7 +355,7 @@ private fun BalanceCard(
                 }
                 SmallButton(
                     text = buttonText,
-                    onClick = { },
+                    onClick = onClick,
                     shape = CircleShape,
                     colors =
                         ButtonDefaults.buttonColors(

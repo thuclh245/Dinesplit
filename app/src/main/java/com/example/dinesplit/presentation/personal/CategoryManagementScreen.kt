@@ -17,7 +17,6 @@ import androidx.compose.foundation.verticalScroll
 import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.FilterChip
 import androidx.compose.material3.MaterialTheme
-import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.SnackbarHost
 import androidx.compose.material3.SnackbarHostState
 import androidx.compose.material3.Text
@@ -37,6 +36,7 @@ import androidx.compose.ui.unit.dp
 import com.example.dinesplit.core.ui.AppCard
 import com.example.dinesplit.core.ui.AppDimens
 import com.example.dinesplit.core.ui.AppScaffold
+import com.example.dinesplit.core.ui.AppTextField
 import com.example.dinesplit.core.ui.BackNavigationButton
 import com.example.dinesplit.ui.theme.DineSplitTheme
 import kotlinx.coroutines.launch
@@ -475,16 +475,16 @@ private fun CategoryEditorDialog(
         title = { Text(title) },
         text = {
             Column(verticalArrangement = Arrangement.spacedBy(AppDimens.spaceSm)) {
-                OutlinedTextField(
+                AppTextField(
                     value = name,
                     onValueChange = { name = it },
-                    label = { Text("Name") },
-                    singleLine = true,
+                    label = "Name",
                 )
-                OutlinedTextField(
+                AppTextField(
                     value = description,
                     onValueChange = { description = it },
-                    label = { Text("Description") },
+                    label = "Description",
+                    singleLine = false,
                 )
                 Row(horizontalArrangement = Arrangement.spacedBy(AppDimens.spaceSm)) {
                     CategoryTypeFilter.entries.forEach { type ->
