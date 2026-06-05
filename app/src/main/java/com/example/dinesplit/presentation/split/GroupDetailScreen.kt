@@ -39,6 +39,7 @@ import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
+import androidx.compose.material3.ButtonDefaults
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.collectAsState
@@ -59,6 +60,8 @@ import androidx.compose.ui.unit.sp
 import com.example.dinesplit.core.common.AppContainer
 import com.example.dinesplit.core.firebase.FirebaseProviders
 import com.example.dinesplit.core.ui.DineAvatarImage
+import com.example.dinesplit.core.ui.AppIconButton
+import com.example.dinesplit.core.ui.TertiaryButton
 import com.example.dinesplit.domain.model.Bill
 import com.example.dinesplit.domain.model.BillStatus
 import com.example.dinesplit.domain.model.Member
@@ -316,13 +319,17 @@ private fun DetailTopBar(
                 .padding(horizontal = 12.dp, vertical = 12.dp),
         verticalAlignment = Alignment.CenterVertically,
     ) {
-        IconButton(onClick = onBack, modifier = Modifier.size(40.dp)) {
-            Icon(
-                imageVector = Icons.AutoMirrored.Filled.ArrowBack,
-                contentDescription = "Quay lại",
-                tint = colorScheme.outline,
-            )
-        }
+        AppIconButton(
+            onClick = onBack,
+            contentDescription = "Quay lại",
+            icon = {
+                Icon(
+                    imageVector = Icons.AutoMirrored.Filled.ArrowBack,
+                    contentDescription = null,
+                    tint = colorScheme.outline,
+                )
+            }
+        )
 
         Column(
             modifier =
@@ -365,14 +372,18 @@ private fun DetailTopBar(
         }
 
         if (isOwner) {
-            IconButton(onClick = onDeleteClick, modifier = Modifier.size(40.dp)) {
-                Icon(
-                    imageVector = Icons.Default.Delete,
-                    contentDescription = "Xóa nhóm",
-                    tint = colorScheme.error,
-                    modifier = Modifier.size(22.dp),
-                )
-            }
+            AppIconButton(
+                onClick = onDeleteClick,
+                contentDescription = "Xóa nhóm",
+                icon = {
+                    Icon(
+                        imageVector = Icons.Default.Delete,
+                        contentDescription = null,
+                        tint = colorScheme.error,
+                        modifier = Modifier.size(22.dp),
+                    )
+                }
+            )
         }
     }
 }
@@ -462,31 +473,23 @@ private fun LeaveGroupConfirmDialog(
             )
         },
         confirmButton = {
-            TextButton(
+            TertiaryButton(
+                text = "Rời nhóm",
                 onClick = onConfirm,
                 enabled = !isLeaving,
-            ) {
-                if (isLeaving) {
-                    CircularProgressIndicator(
-                        modifier = Modifier.size(16.dp),
-                        strokeWidth = 2.dp,
-                    )
-                } else {
-                    Text(
-                        text = "Rời nhóm",
-                        color = colorScheme.error,
-                        fontWeight = FontWeight.Bold,
-                    )
-                }
-            }
+                isLoading = isLeaving,
+                colors = ButtonDefaults.textButtonColors(
+                    contentColor = colorScheme.error,
+                    disabledContentColor = colorScheme.error.copy(alpha = 0.5f),
+                )
+            )
         },
         dismissButton = {
-            TextButton(
+            TertiaryButton(
+                text = "Hủy",
                 onClick = onDismiss,
                 enabled = !isLeaving,
-            ) {
-                Text("Hủy")
-            }
+            )
         },
     )
 }
@@ -517,31 +520,23 @@ private fun DeleteGroupConfirmDialog(
             )
         },
         confirmButton = {
-            TextButton(
+            TertiaryButton(
+                text = "Xóa",
                 onClick = onConfirm,
                 enabled = !isDeleting,
-            ) {
-                if (isDeleting) {
-                    CircularProgressIndicator(
-                        modifier = Modifier.size(16.dp),
-                        strokeWidth = 2.dp,
-                    )
-                } else {
-                    Text(
-                        text = "Xóa",
-                        color = colorScheme.error,
-                        fontWeight = FontWeight.Bold,
-                    )
-                }
-            }
+                isLoading = isDeleting,
+                colors = ButtonDefaults.textButtonColors(
+                    contentColor = colorScheme.error,
+                    disabledContentColor = colorScheme.error.copy(alpha = 0.5f),
+                )
+            )
         },
         dismissButton = {
-            TextButton(
+            TertiaryButton(
+                text = "Hủy",
                 onClick = onDismiss,
                 enabled = !isDeleting,
-            ) {
-                Text("Hủy")
-            }
+            )
         },
     )
 }

@@ -28,16 +28,27 @@ object AppDimens {
 
     val buttonHeight = 52.dp
     val textFieldMinHeight = 56.dp
+    
+    // Elevation Levels
     val cardElevation = 2.dp
     val elevEditorial = 4.dp // Backward compat: editorial elevation
+    val level0 = 0.dp
+    val level1 = 2.dp
+    val level2 = 4.dp
+    val level3 = 8.dp
 
     val iconLg = 32.dp // Backward compat alias for large icon size
+    
+    // Touch Target standard
+    val minTouchTarget = 48.dp
 }
 
 @Suppress("unused")
 object AppShapes {
+    val small = RoundedCornerShape(8.dp)
     val medium = RoundedCornerShape(AppDimens.radiusMd)
     val large = RoundedCornerShape(AppDimens.radiusLg)
     val xLarge = RoundedCornerShape(AppDimens.radiusXl)
     val full = RoundedCornerShape(AppDimens.radiusFull)
 }
+

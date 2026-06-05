@@ -56,6 +56,8 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.example.dinesplit.core.common.AppContainer
 import com.example.dinesplit.core.ui.DineAvatarImage
+import com.example.dinesplit.core.ui.AppIconButton
+import com.example.dinesplit.core.ui.SmallButton
 import com.example.dinesplit.domain.model.Group
 import com.example.dinesplit.domain.model.Member
 import kotlin.math.abs
@@ -212,18 +214,24 @@ fun GroupTopBar(
     val colorScheme = MaterialTheme.colorScheme
     TopAppBar(
         navigationIcon = {
-            IconButton(onClick = onBack) {
-                Icon(Icons.AutoMirrored.Filled.ArrowBack, contentDescription = "Quay lại")
-            }
+            AppIconButton(
+                onClick = onBack,
+                contentDescription = "Quay lại",
+                icon = { Icon(Icons.AutoMirrored.Filled.ArrowBack, contentDescription = null) }
+            )
         },
         title = { Text("Nhóm của bạn", fontWeight = FontWeight.Bold) },
         actions = {
-            IconButton(onClick = onOpenSearch) {
-                Icon(Icons.Default.Search, contentDescription = "Tìm kiếm")
-            }
-            IconButton(onClick = onOpenNotifications) {
-                NotificationBellIcon(notificationUnreadCount = notificationUnreadCount)
-            }
+            AppIconButton(
+                onClick = onOpenSearch,
+                contentDescription = "Tìm kiếm",
+                icon = { Icon(Icons.Default.Search, contentDescription = null) }
+            )
+            AppIconButton(
+                onClick = onOpenNotifications,
+                contentDescription = "Thông báo",
+                icon = { NotificationBellIcon(notificationUnreadCount = notificationUnreadCount) }
+            )
         },
         colors =
             TopAppBarDefaults.topAppBarColors(
@@ -294,15 +302,15 @@ fun FinancialSummaryCard(
                     fontWeight = FontWeight.ExtraBold,
                 )
                 Spacer(modifier = Modifier.height(16.dp))
-                Button(
+                SmallButton(
+                    text = "Settle Up",
                     onClick = { },
-                    colors = ButtonDefaults.buttonColors(containerColor = colorScheme.primary),
-                    shape = RoundedCornerShape(50),
-                    contentPadding = PaddingValues(horizontal = 16.dp, vertical = 8.dp),
-                    modifier = Modifier.height(36.dp),
-                ) {
-                    Text("Settle Up", fontSize = 13.sp, fontWeight = FontWeight.Bold, color = colorScheme.onPrimary)
-                }
+                    colors = ButtonDefaults.buttonColors(
+                        containerColor = colorScheme.primary,
+                        contentColor = colorScheme.onPrimary
+                    ),
+                    shape = CircleShape,
+                )
             }
         }
 
@@ -328,15 +336,15 @@ fun FinancialSummaryCard(
                     fontWeight = FontWeight.ExtraBold,
                 )
                 Spacer(modifier = Modifier.height(16.dp))
-                Button(
+                SmallButton(
+                    text = "Remind",
                     onClick = { },
-                    colors = ButtonDefaults.buttonColors(containerColor = colorScheme.secondary),
-                    shape = RoundedCornerShape(50),
-                    contentPadding = PaddingValues(horizontal = 16.dp, vertical = 8.dp),
-                    modifier = Modifier.height(36.dp),
-                ) {
-                    Text("Remind", fontSize = 13.sp, fontWeight = FontWeight.Bold, color = colorScheme.onSecondary)
-                }
+                    colors = ButtonDefaults.buttonColors(
+                        containerColor = colorScheme.secondary,
+                        contentColor = colorScheme.onSecondary
+                    ),
+                    shape = CircleShape,
+                )
             }
         }
     }

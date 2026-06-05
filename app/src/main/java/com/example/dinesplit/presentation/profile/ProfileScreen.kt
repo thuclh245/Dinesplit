@@ -24,6 +24,8 @@ import com.example.dinesplit.core.ui.AppCard
 import com.example.dinesplit.core.ui.AppDimens
 import com.example.dinesplit.core.ui.DineAvatarImage
 import com.example.dinesplit.core.ui.DineGridImage
+import com.example.dinesplit.core.ui.PrimaryButton
+import com.example.dinesplit.core.ui.SecondaryButton
 import com.example.dinesplit.domain.model.LinkedBillSummary
 import com.example.dinesplit.domain.model.Post
 import com.example.dinesplit.ui.theme.DineSplitTheme
@@ -291,14 +293,11 @@ private fun ProfileHeader(
                 Text(userName, style = MaterialTheme.typography.headlineSmall.copy(fontWeight = FontWeight.ExtraBold))
 
                 Row(horizontalArrangement = Arrangement.spacedBy(12.dp)) {
-                    Button(
+                    PrimaryButton(
+                        text = "Edit Profile",
                         onClick = onEditProfile,
-                        shape = RoundedCornerShape(12.dp),
-                        modifier = Modifier.fillMaxWidth().height(40.dp),
-                        contentPadding = PaddingValues(0.dp),
-                    ) {
-                        Text("Edit Profile", style = MaterialTheme.typography.labelLarge.copy(fontWeight = FontWeight.Bold))
-                    }
+                        modifier = Modifier.fillMaxWidth(),
+                    )
                 }
             }
         }
@@ -343,20 +342,27 @@ private fun ProfileHeader(
 
         Spacer(modifier = Modifier.height(20.dp))
 
-        OutlinedButton(
+        SecondaryButton(
+            text = if (isLoggingOut) "Đang đăng xuất..." else "Đăng xuất",
             onClick = onLogout,
             enabled = !isLoggingOut,
-            modifier = Modifier.fillMaxWidth().height(46.dp),
-            shape = RoundedCornerShape(12.dp),
-        ) {
-            if (isLoggingOut) {
-                CircularProgressIndicator(modifier = Modifier.size(18.dp), strokeWidth = 2.dp)
-            } else {
-                Icon(Icons.Default.Logout, contentDescription = null, modifier = Modifier.size(18.dp))
+            modifier = Modifier.fillMaxWidth(),
+            icon = {
+                if (isLoggingOut) {
+                    CircularProgressIndicator(
+                        modifier = Modifier.size(18.dp),
+                        strokeWidth = 2.dp,
+                        color = MaterialTheme.colorScheme.onSecondary
+                    )
+                } else {
+                    Icon(
+                        imageVector = Icons.Default.Logout,
+                        contentDescription = null,
+                        modifier = Modifier.size(18.dp)
+                    )
+                }
             }
-            Spacer(modifier = Modifier.width(8.dp))
-            Text(if (isLoggingOut) "Đang đăng xuất..." else "Đăng xuất")
-        }
+        )
     }
 }
 

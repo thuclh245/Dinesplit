@@ -21,7 +21,7 @@ import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
-import androidx.compose.foundation.text.BasicTextField
+
 import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.material.icons.Icons
@@ -68,6 +68,7 @@ import com.example.dinesplit.core.common.AppContainer
 import com.example.dinesplit.core.firebase.FirebaseProviders
 import com.example.dinesplit.core.ui.DineAvatarImage
 import com.example.dinesplit.core.ui.PrimaryButton
+import com.example.dinesplit.core.ui.AppTextField
 import com.example.dinesplit.domain.model.Bill
 import com.example.dinesplit.domain.model.BillItem
 import com.example.dinesplit.domain.model.Member
@@ -286,52 +287,21 @@ private fun CreateBillMainInfoCard(
         shape = RoundedCornerShape(16.dp),
     ) {
         Column(modifier = Modifier.padding(20.dp)) {
-            var isNameFocused by remember { mutableStateOf(false) }
-            Row(
-                verticalAlignment = Alignment.CenterVertically,
-                modifier =
-                    Modifier
-                        .fillMaxWidth()
-                        .border(
-                            width = if (isNameFocused) 1.5.dp else 1.dp,
-                            color = if (isNameFocused) colorScheme.primary else colorScheme.outlineVariant.copy(alpha = 0.4f),
-                            shape = RoundedCornerShape(12.dp),
-                        )
-                        .background(
-                            color = if (isNameFocused) colorScheme.surfaceContainerLowest else colorScheme.surfaceContainerLow,
-                            shape = RoundedCornerShape(12.dp),
-                        )
-                        .padding(horizontal = 12.dp, vertical = 10.dp),
-            ) {
-                Icon(
-                    Icons.Default.Edit,
-                    contentDescription = null,
-                    tint = if (isNameFocused) colorScheme.primary else colorScheme.onSurfaceVariant,
-                    modifier = Modifier.size(20.dp),
-                )
-                Spacer(modifier = Modifier.width(12.dp))
-                Box(modifier = Modifier.weight(1f)) {
-                    if (billName.isEmpty()) {
-                        Text(
-                            "Tên hóa đơn (VD: Lẩu Haidilao)",
-                            color = colorScheme.outline,
-                            fontSize = 16.sp,
-                            fontWeight = FontWeight.Medium,
-                        )
-                    }
-                    BasicTextField(
-                        value = billName,
-                        onValueChange = onNameChange,
-                        singleLine = true,
-                        maxLines = 1,
-                        textStyle = TextStyle(fontSize = 16.sp, fontWeight = FontWeight.Medium, color = colorScheme.onSurface),
-                        modifier =
-                            Modifier
-                                .fillMaxWidth()
-                                .onFocusChanged { isNameFocused = it.isFocused },
+            AppTextField(
+                value = billName,
+                onValueChange = onNameChange,
+                label = "",
+                placeholder = "Tên hóa đơn (VD: Lẩu Haidilao)",
+                leadingIcon = {
+                    Icon(
+                        imageVector = Icons.Default.Edit,
+                        contentDescription = null,
+                        tint = colorScheme.onSurfaceVariant,
+                        modifier = Modifier.size(20.dp)
                     )
-                }
-            }
+                },
+                modifier = Modifier.fillMaxWidth()
+            )
 
             if (isTotalAmountEditable) {
                 Spacer(modifier = Modifier.height(20.dp))
@@ -343,36 +313,17 @@ private fun CreateBillMainInfoCard(
                     letterSpacing = 1.sp,
                 )
                 Spacer(modifier = Modifier.height(6.dp))
-                var isAmountFocused by remember { mutableStateOf(false) }
-                Row(
-                    verticalAlignment = Alignment.CenterVertically,
-                    modifier =
-                        Modifier
-                            .fillMaxWidth()
-                            .border(
-                                width = if (isAmountFocused) 1.5.dp else 1.dp,
-                                color = if (isAmountFocused) colorScheme.primary else colorScheme.outlineVariant.copy(alpha = 0.4f),
-                                shape = RoundedCornerShape(12.dp),
-                            )
-                            .background(
-                                color = if (isAmountFocused) colorScheme.surfaceContainerLowest else colorScheme.surfaceContainerLow,
-                                shape = RoundedCornerShape(12.dp),
-                            )
-                            .padding(horizontal = 16.dp, vertical = 12.dp),
-                ) {
-                    BasicTextField(
-                        value = formatCurrencyInput(totalAmount),
-                        onValueChange = onTotalAmountChange,
-                        singleLine = true,
-                        maxLines = 1,
-                        textStyle = TextStyle(fontSize = 32.sp, fontWeight = FontWeight.ExtraBold, color = colorScheme.primary),
-                        keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number),
-                        modifier =
-                            Modifier
-                                .fillMaxWidth()
-                                .onFocusChanged { isAmountFocused = it.isFocused },
-                    )
-                }
+                AppTextField(
+                    value = formatCurrencyInput(totalAmount),
+                    onValueChange = onTotalAmountChange,
+                    label = "",
+                    placeholder = "0",
+                    singleLine = true,
+                    maxLines = 1,
+                    textStyle = TextStyle(fontSize = 32.sp, fontWeight = FontWeight.ExtraBold, color = colorScheme.primary),
+                    keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number),
+                    modifier = Modifier.fillMaxWidth()
+                )
             } else {
                 Spacer(modifier = Modifier.height(20.dp))
                 Text(
@@ -551,57 +502,7 @@ private fun EqualSplitDetailsList(
     )
 }
 
-@Composable
-private fun DineInteractiveInputBox(
-    value: String,
-    onValueChange: (String) -> Unit,
-    modifier: Modifier = Modifier,
-    enabled: Boolean = true,
-    placeholder: String = "",
-    textStyle: TextStyle = TextStyle.Default,
-    singleLine: Boolean = true,
-    maxLines: Int = 1,
-    keyboardOptions: KeyboardOptions = KeyboardOptions.Default,
-) {
-    val colorScheme = MaterialTheme.colorScheme
-    var isFocused by remember { mutableStateOf(false) }
 
-    Box(
-        modifier =
-            modifier
-                .border(
-                    width = if (isFocused) 1.5.dp else 1.dp,
-                    color = if (isFocused) colorScheme.primary else colorScheme.outlineVariant.copy(alpha = 0.4f),
-                    shape = RoundedCornerShape(12.dp),
-                )
-                .background(
-                    color = if (isFocused) colorScheme.surfaceContainerLowest else colorScheme.surfaceContainerLow,
-                    shape = RoundedCornerShape(12.dp),
-                )
-                .padding(horizontal = 12.dp, vertical = 10.dp),
-    ) {
-        if (value.isEmpty() && placeholder.isNotEmpty()) {
-            Text(
-                text = placeholder,
-                style = textStyle.copy(color = colorScheme.outline),
-            )
-        }
-
-        BasicTextField(
-            value = value,
-            onValueChange = onValueChange,
-            enabled = enabled,
-            textStyle = textStyle,
-            singleLine = singleLine,
-            maxLines = maxLines,
-            keyboardOptions = keyboardOptions,
-            modifier =
-                Modifier
-                    .fillMaxWidth()
-                    .onFocusChanged { isFocused = it.isFocused },
-        )
-    }
-}
 
 @Composable
 private fun CustomSplitDetailsList(
@@ -648,14 +549,16 @@ private fun CustomSplitDetailsList(
                         }
                     }
                     val customAmount = customAmounts[member.id].orEmpty()
-                    DineInteractiveInputBox(
+                    AppTextField(
                         value = formatCurrencyInput(customAmount),
                         onValueChange = { onAmountChange(member.id, it) },
-                        enabled = included,
+                        label = "",
                         placeholder = "0 đ",
+                        enabled = included,
                         textStyle = TextStyle(fontSize = 14.sp, fontWeight = FontWeight.Bold, color = colorScheme.primary),
                         keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number),
                         modifier = Modifier.width(104.dp),
+                        minHeight = 40.dp
                     )
                 }
                 HorizontalDivider(color = colorScheme.outlineVariant.copy(alpha = 0.2f))
@@ -692,23 +595,27 @@ private fun ItemizedSplitDetailsList(
                         verticalAlignment = Alignment.CenterVertically,
                         horizontalArrangement = Arrangement.spacedBy(12.dp),
                     ) {
-                        DineInteractiveInputBox(
+                        AppTextField(
                             value = item.name,
                             onValueChange = { onUpdateItem(item.copy(name = it)) },
+                            label = "",
                             placeholder = "Tên món ăn",
                             textStyle = TextStyle(fontSize = 15.sp, fontWeight = FontWeight.Bold, color = colorScheme.onSurface),
                             modifier = Modifier.weight(1f),
+                            minHeight = 40.dp
                         )
 
-                        DineInteractiveInputBox(
+                        AppTextField(
                             value = if (item.price <= 0.0) "" else formatCurrencyInput(item.price.toLong().toString()),
                             onValueChange = { value ->
                                 onUpdateItem(item.copy(price = value.onlyDigits().toDoubleOrNull() ?: 0.0))
                             },
+                            label = "",
                             placeholder = "0 đ",
                             textStyle = TextStyle(fontSize = 15.sp, fontWeight = FontWeight.Bold, color = colorScheme.primary),
                             keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number),
                             modifier = Modifier.width(112.dp),
+                            minHeight = 40.dp
                         )
                     }
                     Text(

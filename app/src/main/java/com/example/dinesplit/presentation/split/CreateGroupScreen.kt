@@ -22,7 +22,7 @@ import androidx.compose.foundation.lazy.LazyRow
 import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
-import androidx.compose.foundation.text.BasicTextField
+
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
 import androidx.compose.material.icons.filled.Add
@@ -38,6 +38,10 @@ import androidx.compose.material3.HorizontalDivider
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
+import com.example.dinesplit.core.ui.PrimaryButton
+import com.example.dinesplit.core.ui.AppIconButton
+import com.example.dinesplit.core.ui.AppTextField
+import com.example.dinesplit.core.ui.SearchTextField
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.SnackbarHost
 import androidx.compose.material3.SnackbarHostState
@@ -156,7 +160,7 @@ private fun CreateGroupTopBar(
         verticalAlignment = Alignment.CenterVertically,
         horizontalArrangement = Arrangement.SpaceBetween,
     ) {
-        IconButton(onClick = onBack, modifier = Modifier.size(40.dp)) {
+        AppIconButton(onClick = onBack) {
             Icon(
                 imageVector = Icons.AutoMirrored.Filled.ArrowBack,
                 contentDescription = "Quay lại",
@@ -171,13 +175,20 @@ private fun CreateGroupTopBar(
             color = colorScheme.onSurface,
         )
 
-        Text(
-            text = "Lưu",
-            fontSize = 16.sp,
-            fontWeight = FontWeight.Bold,
-            color = if (isLoading) colorScheme.outline else colorScheme.primary,
-            modifier = Modifier.clickable(enabled = !isLoading) { onSave() },
-        )
+        Box(
+            modifier = Modifier
+                .clip(RoundedCornerShape(4.dp))
+                .clickable(enabled = !isLoading) { onSave() }
+                .padding(horizontal = 12.dp, vertical = 8.dp),
+            contentAlignment = Alignment.Center
+        ) {
+            Text(
+                text = "Lưu",
+                fontSize = 16.sp,
+                fontWeight = FontWeight.Bold,
+                color = if (isLoading) colorScheme.outline else colorScheme.primary,
+            )
+        }
     }
 }
 
@@ -235,23 +246,13 @@ private fun CreateGroupInfoCard(
 
             Spacer(modifier = Modifier.height(20.dp))
 
-            Box(
-                modifier =
-                    Modifier
-                        .fillMaxWidth()
-                        .background(colorScheme.surfaceContainerLow, RoundedCornerShape(12.dp))
-                        .padding(horizontal = 16.dp, vertical = 16.dp),
-            ) {
-                if (groupName.isEmpty()) {
-                    Text("Tên nhóm (VD: Chuyến đi Vũng Tàu)", color = colorScheme.outline, fontSize = 14.sp)
-                }
-                BasicTextField(
-                    value = groupName,
-                    onValueChange = onNameChange,
-                    textStyle = TextStyle(fontSize = 14.sp, fontWeight = FontWeight.Medium, color = colorScheme.onSurface),
-                    modifier = Modifier.fillMaxWidth(),
-                )
-            }
+            AppTextField(
+                value = groupName,
+                onValueChange = onNameChange,
+                label = "Tên nhóm",
+                placeholder = "VD: Chuyến đi Vũng Tàu",
+                modifier = Modifier.fillMaxWidth(),
+            )
 
             Spacer(modifier = Modifier.height(16.dp))
 
@@ -304,29 +305,13 @@ private fun CreateGroupMembersSection(
             modifier = Modifier.padding(start = 8.dp, bottom = 16.dp),
         )
 
-        Row(
-            modifier =
-                Modifier
-                    .fillMaxWidth()
-                    .background(colorScheme.surfaceContainerLowest, RoundedCornerShape(50))
-                    .border(1.dp, colorScheme.surfaceContainerHigh, RoundedCornerShape(50))
-                    .padding(horizontal = 16.dp, vertical = 12.dp),
-            verticalAlignment = Alignment.CenterVertically,
-        ) {
-            Icon(Icons.Default.Search, contentDescription = null, tint = colorScheme.outline, modifier = Modifier.size(20.dp))
-            Spacer(modifier = Modifier.width(12.dp))
-            Box(modifier = Modifier.weight(1f)) {
-                if (searchQuery.isEmpty()) {
-                    Text("Tìm theo username...", color = colorScheme.outline, fontSize = 14.sp)
-                }
-                BasicTextField(
-                    value = searchQuery,
-                    onValueChange = onSearchChange,
-                    textStyle = TextStyle(fontSize = 14.sp, color = colorScheme.onSurface),
-                    modifier = Modifier.fillMaxWidth(),
-                )
-            }
-        }
+        SearchTextField(
+            value = searchQuery,
+            onValueChange = onSearchChange,
+            placeholder = "Tìm theo username...",
+            onClearClick = { onSearchChange("") },
+            modifier = Modifier.fillMaxWidth()
+        )
 
         Spacer(modifier = Modifier.height(16.dp))
 
@@ -551,41 +536,13 @@ private fun CreateGroupBottomAction(
                 )
             }
 
-            Button(
+            PrimaryButton(
+                text = "TẠO NHÓM",
                 onClick = onCreateGroup,
+                modifier = Modifier.fillMaxWidth(),
                 enabled = canCreate && !isLoading,
-                modifier =
-                    Modifier
-                        .fillMaxWidth()
-                        .height(56.dp),
-                colors = ButtonDefaults.buttonColors(containerColor = Color.Transparent),
-                contentPadding = PaddingValues(0.dp),
-                shape = RoundedCornerShape(50),
-            ) {
-                Box(
-                    modifier =
-                        Modifier
-                            .fillMaxSize()
-                            .background(brush = Brush.verticalGradient(listOf(colorScheme.primaryContainer, colorScheme.primary))),
-                    contentAlignment = Alignment.Center,
-                ) {
-                    if (isLoading) {
-                        CircularProgressIndicator(
-                            modifier = Modifier.size(22.dp),
-                            color = colorScheme.surfaceContainerLowest,
-                            strokeWidth = 2.dp,
-                        )
-                    } else {
-                        Text(
-                            "TẠO NHÓM",
-                            color = colorScheme.surfaceContainerLowest,
-                            fontSize = 14.sp,
-                            fontWeight = FontWeight.Bold,
-                            letterSpacing = 1.sp,
-                        )
-                    }
-                }
-            }
+                isLoading = isLoading,
+            )
         }
     }
 }

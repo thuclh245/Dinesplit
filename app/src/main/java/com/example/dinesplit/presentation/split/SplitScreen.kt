@@ -43,6 +43,7 @@ import androidx.compose.runtime.getValue
 import androidx.compose.runtime.remember
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import com.example.dinesplit.core.ui.SmallButton
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.draw.shadow
 import androidx.compose.ui.graphics.Brush
@@ -337,7 +338,8 @@ private fun BalanceCard(
                         )
                     }
                 }
-                Button(
+                SmallButton(
+                    text = buttonText,
                     onClick = { },
                     shape = CircleShape,
                     colors =
@@ -357,11 +359,8 @@ private fun BalanceCard(
                             } else {
                                 Modifier
                             },
-                        ),
-                    contentPadding = PaddingValues(horizontal = 16.dp, vertical = 8.dp),
-                ) {
-                    Text(buttonText, style = MaterialTheme.typography.labelSmall.copy(fontWeight = FontWeight.Bold))
-                }
+                        )
+                )
             }
         }
     }

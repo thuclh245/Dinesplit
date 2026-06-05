@@ -26,8 +26,10 @@ import androidx.compose.ui.unit.dp
 import com.example.dinesplit.core.ui.AppCard
 import com.example.dinesplit.core.ui.AppDimens
 import com.example.dinesplit.core.ui.AppShapes
+import com.example.dinesplit.core.ui.SmallButton
 import com.example.dinesplit.core.ui.DineAvatarImage
 import com.example.dinesplit.core.ui.DinePostImage
+import com.example.dinesplit.core.ui.SearchTextField
 import com.example.dinesplit.domain.model.Post
 import com.example.dinesplit.domain.model.UserProfile
 import com.example.dinesplit.presentation.feed.search.PlaceUiModel
@@ -61,54 +63,15 @@ fun SearchTopBar(
                 )
             }
 
-            Row(
-                modifier = Modifier
-                    .weight(1f)
-                    .height(48.dp)
-                    .background(MaterialTheme.colorScheme.surfaceContainerHigh, CircleShape)
-                    .padding(horizontal = 16.dp),
-                verticalAlignment = Alignment.CenterVertically
-            ) {
-                Icon(
-                    Icons.Default.Search,
-                    contentDescription = null,
-                    tint = MaterialTheme.colorScheme.onSurfaceVariant,
-                    modifier = Modifier.size(20.dp)
-                )
-                Spacer(modifier = Modifier.width(8.dp))
-                Box(
-                    modifier = Modifier.weight(1f),
-                    contentAlignment = Alignment.CenterStart
-                ) {
-                    if (query.isEmpty()) {
-                        Text(
-                            "Tìm kiếm...",
-                            style = MaterialTheme.typography.bodyMedium,
-                            color = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.6f),
-                        )
-                    }
-                    BasicTextField(
-                        value = query,
-                        onValueChange = onQueryChange,
-                        modifier = Modifier.fillMaxWidth(),
-                        textStyle = MaterialTheme.typography.bodyMedium.copy(color = MaterialTheme.colorScheme.onSurface),
-                        singleLine = true,
-                        keyboardOptions = KeyboardOptions(imeAction = ImeAction.Search),
-                        keyboardActions = KeyboardActions(onSearch = { onSearchAction() }),
-                        cursorBrush = androidx.compose.ui.graphics.SolidColor(MaterialTheme.colorScheme.primary)
-                    )
-                }
-                if (query.isNotEmpty()) {
-                    Icon(
-                        Icons.Default.Close,
-                        contentDescription = "Xóa từ khóa",
-                        tint = MaterialTheme.colorScheme.onSurfaceVariant,
-                        modifier = Modifier
-                            .size(20.dp)
-                            .clickable { onQueryChange("") }
-                    )
-                }
-            }
+            SearchTextField(
+                value = query,
+                onValueChange = onQueryChange,
+                label = "",
+                placeholder = "Tìm kiếm...",
+                onClearClick = { onQueryChange("") },
+                keyboardActions = KeyboardActions(onSearch = { onSearchAction() }),
+                modifier = Modifier.weight(1f)
+            )
         }
     }
 }
@@ -205,7 +168,8 @@ fun SearchPersonCard(
 
             val isStatus = isFollowing
 
-            Button(
+            SmallButton(
+                text = buttonText,
                 onClick = onClick,
                 shape = CircleShape,
                 colors =
@@ -221,14 +185,8 @@ fun SearchPersonCard(
                             MaterialTheme.colorScheme.primary
                         },
                     ),
-                contentPadding = PaddingValues(horizontal = AppDimens.spaceMd, vertical = 6.dp),
-                modifier = Modifier.height(36.dp),
-            ) {
-                Text(
-                    buttonText,
-                    style = MaterialTheme.typography.labelLarge.copy(fontWeight = FontWeight.Bold)
-                )
-            }
+                modifier = Modifier
+            )
         }
     }
 }

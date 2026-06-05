@@ -33,6 +33,9 @@ import androidx.compose.material3.ButtonDefaults
 import androidx.compose.material3.OutlinedButton
 import androidx.compose.material3.Card
 import com.example.dinesplit.domain.model.QrPayment
+import com.example.dinesplit.core.ui.PrimaryButton
+import com.example.dinesplit.core.ui.SecondaryButton
+import com.example.dinesplit.core.ui.TertiaryButton
 import androidx.compose.material3.CardDefaults
 import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.DropdownMenu
@@ -798,60 +801,31 @@ private fun BdBottomAction(
                 horizontalArrangement = Arrangement.spacedBy(12.dp)
             ) {
                 // Manual mark as paid button
-                OutlinedButton(
+                SecondaryButton(
+                    text = "Báo đã trả",
                     onClick = onMarkPaid,
-                    modifier = Modifier
-                        .weight(1f)
-                        .height(56.dp),
-                    shape = RoundedCornerShape(50),
-                    border = BorderStroke(1.dp, colorScheme.primary),
-                    colors = ButtonDefaults.outlinedButtonColors(
-                        contentColor = colorScheme.primary
-                    )
-                ) {
-                    Icon(
-                        imageVector = Icons.Default.Check,
-                        contentDescription = null,
-                        modifier = Modifier.size(18.dp)
-                    )
-                    Spacer(modifier = Modifier.width(6.dp))
-                    Text(
-                        text = "Báo đã trả",
-                        fontSize = 14.sp,
-                        fontWeight = FontWeight.Bold,
-                        maxLines = 1,
-                        overflow = TextOverflow.Ellipsis
-                    )
-                }
+                    modifier = Modifier.weight(1f),
+                    icon = {
+                        Icon(
+                            imageVector = Icons.Default.Check,
+                            contentDescription = null,
+                            modifier = Modifier.size(18.dp)
+                        )
+                    }
+                )
 
-                // QR payment button
-                Button(
+                PrimaryButton(
+                    text = "Thanh toán QR",
                     onClick = onPayWithQr,
-                    modifier = Modifier
-                        .weight(1.2f)
-                        .height(56.dp),
-                    colors = ButtonDefaults.buttonColors(
-                        containerColor = colorScheme.primary
-                    ),
-                    shape = RoundedCornerShape(50),
-                    elevation = ButtonDefaults.buttonElevation(defaultElevation = 4.dp),
-                ) {
-                    Icon(
-                        imageVector = Icons.AutoMirrored.Filled.ReceiptLong,
-                        contentDescription = null,
-                        tint = colorScheme.onPrimary,
-                        modifier = Modifier.size(18.dp)
-                    )
-                    Spacer(modifier = Modifier.width(6.dp))
-                    Text(
-                        text = "Thanh toán QR",
-                        fontSize = 14.sp,
-                        fontWeight = FontWeight.Bold,
-                        color = colorScheme.onPrimary,
-                        maxLines = 1,
-                        overflow = TextOverflow.Ellipsis
-                    )
-                }
+                    modifier = Modifier.weight(1.2f),
+                    icon = {
+                        Icon(
+                            imageVector = Icons.AutoMirrored.Filled.ReceiptLong,
+                            contentDescription = null,
+                            modifier = Modifier.size(18.dp)
+                        )
+                    }
+                )
             }
         } else {
             val label =
@@ -862,34 +836,13 @@ private fun BdBottomAction(
                     else -> "Không thể thanh toán"
                 }
 
-            Button(
+            PrimaryButton(
+                text = label,
                 onClick = {},
                 enabled = false,
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .height(56.dp),
-                colors = ButtonDefaults.buttonColors(
-                    disabledContainerColor = colorScheme.surfaceContainerHigh,
-                ),
-                shape = RoundedCornerShape(50),
-            ) {
-                if (isUpdating) {
-                    CircularProgressIndicator(
-                        modifier = Modifier.size(18.dp),
-                        color = colorScheme.onSurfaceVariant,
-                        strokeWidth = 2.dp,
-                    )
-                    Spacer(modifier = Modifier.width(8.dp))
-                }
-                Text(
-                    text = label,
-                    fontSize = 15.sp,
-                    fontWeight = FontWeight.Bold,
-                    color = colorScheme.onSurfaceVariant,
-                    maxLines = 1,
-                    overflow = TextOverflow.Ellipsis,
-                )
-            }
+                isLoading = isUpdating,
+                modifier = Modifier.fillMaxWidth()
+            )
         }
     }
 }
@@ -987,18 +940,18 @@ private fun QrPaymentDialog(
             }
         },
         confirmButton = {
-            Button(
+            SecondaryButton(
+                text = "Giả lập Chuyển khoản thành công",
                 onClick = onSimulateSuccess,
-                colors = ButtonDefaults.buttonColors(containerColor = colorScheme.secondaryContainer),
                 modifier = Modifier.fillMaxWidth()
-            ) {
-                Text("Giả lập Chuyển khoản thành công", color = colorScheme.onSecondaryContainer, fontWeight = FontWeight.Bold)
-            }
+            )
         },
         dismissButton = {
-            TextButton(onClick = onCancel, modifier = Modifier.fillMaxWidth()) {
-                Text("Hủy giao dịch")
-            }
+            TertiaryButton(
+                text = "Hủy giao dịch",
+                onClick = onCancel,
+                modifier = Modifier.fillMaxWidth()
+            )
         }
     )
 }

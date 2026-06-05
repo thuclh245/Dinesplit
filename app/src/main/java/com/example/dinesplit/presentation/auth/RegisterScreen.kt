@@ -37,6 +37,10 @@ import androidx.compose.ui.unit.sp
 import androidx.lifecycle.viewmodel.compose.viewModel
 import coil.compose.AsyncImage
 import com.example.dinesplit.ui.theme.DineSplitTheme
+import com.example.dinesplit.core.ui.PrimaryButton
+import com.example.dinesplit.core.ui.AppIconButton
+import com.example.dinesplit.core.ui.AppTextField
+import com.example.dinesplit.core.ui.PasswordTextField
 import kotlinx.coroutines.flow.collectLatest
 
 @Composable
@@ -113,7 +117,7 @@ private fun RegisterContent(
                 verticalAlignment = Alignment.CenterVertically,
                 horizontalArrangement = Arrangement.SpaceBetween,
             ) {
-                IconButton(onClick = onGoToLogin) {
+                AppIconButton(onClick = onGoToLogin) {
                     Icon(
                         imageVector = Icons.Default.ArrowBack,
                         contentDescription = "Back",
@@ -179,48 +183,46 @@ private fun RegisterContent(
 
                 // Form Fields
                 Column(verticalArrangement = Arrangement.spacedBy(24.dp)) {
-                    RegisterTextField(
+                    AppTextField(
                         value = uiState.displayName,
                         onValueChange = onDisplayNameChange,
                         label = "DISPLAY NAME",
                         placeholder = "Foodie Traveler",
-                        icon = Icons.Default.Person,
-                        error = uiState.displayNameError,
+                        leadingIcon = { Icon(imageVector = Icons.Default.Person, contentDescription = null, tint = MaterialTheme.colorScheme.onSurfaceVariant) },
+                        isError = uiState.displayNameError != null,
+                        supportingText = uiState.displayNameError,
                     )
 
-                    RegisterTextField(
+                    AppTextField(
                         value = uiState.email,
                         onValueChange = onEmailChange,
                         label = "EMAIL ADDRESS",
                         placeholder = "hello@dinesplit.com",
-                        icon = Icons.Default.Mail,
-                        error = uiState.emailError,
+                        leadingIcon = { Icon(imageVector = Icons.Default.Mail, contentDescription = null, tint = MaterialTheme.colorScheme.onSurfaceVariant) },
+                        isError = uiState.emailError != null,
+                        supportingText = uiState.emailError,
                         keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Email, imeAction = ImeAction.Next),
                     )
 
-                    var passwordVisible by remember { mutableStateOf(false) }
-                    RegisterTextField(
+                    PasswordTextField(
                         value = uiState.password,
                         onValueChange = onPasswordChange,
                         label = "PASSWORD",
                         placeholder = "••••••••",
-                        icon = Icons.Default.Lock,
-                        error = uiState.passwordError,
-                        isPassword = true,
-                        passwordVisible = passwordVisible,
-                        onTogglePassword = { passwordVisible = !passwordVisible },
+                        leadingIcon = { Icon(imageVector = Icons.Default.Lock, contentDescription = null, tint = MaterialTheme.colorScheme.onSurfaceVariant) },
+                        isError = uiState.passwordError != null,
+                        supportingText = uiState.passwordError,
                         keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Password, imeAction = ImeAction.Next),
                     )
 
-                    RegisterTextField(
+                    PasswordTextField(
                         value = uiState.confirmPassword,
                         onValueChange = onConfirmPasswordChange,
                         label = "CONFIRM PASSWORD",
                         placeholder = "••••••••",
-                        icon = Icons.Default.LockReset,
-                        error = uiState.confirmPasswordError,
-                        isPassword = true,
-                        passwordVisible = false, // Always masked
+                        leadingIcon = { Icon(imageVector = Icons.Default.LockReset, contentDescription = null, tint = MaterialTheme.colorScheme.onSurfaceVariant) },
+                        isError = uiState.confirmPasswordError != null,
+                        supportingText = uiState.confirmPasswordError,
                         keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Password, imeAction = ImeAction.Done),
                     )
                 }
@@ -301,36 +303,13 @@ private fun RegisterContent(
                     )
                 }
 
-                Button(
+                PrimaryButton(
+                    text = "Create Account",
                     onClick = onSubmit,
-                    modifier =
-                        Modifier
-                            .fillMaxWidth()
-                            .height(64.dp)
-                            .shadow(16.dp, RoundedCornerShape(32.dp), spotColor = MaterialTheme.colorScheme.primary.copy(alpha = 0.3f)),
-                    shape = RoundedCornerShape(32.dp),
-                    colors = ButtonDefaults.buttonColors(containerColor = Color.Transparent),
-                    contentPadding = PaddingValues(0.dp),
+                    modifier = Modifier.fillMaxWidth(),
                     enabled = !uiState.isSubmitting,
-                ) {
-                    Box(
-                        modifier =
-                            Modifier
-                                .fillMaxSize()
-                                .background(
-                                    Brush.linearGradient(
-                                        listOf(MaterialTheme.colorScheme.primary, MaterialTheme.colorScheme.primaryContainer),
-                                    ),
-                                ),
-                        contentAlignment = Alignment.Center,
-                    ) {
-                        Text(
-                            text = if (uiState.isSubmitting) "Creating Account..." else "Create Account",
-                            style = MaterialTheme.typography.titleMedium.copy(fontWeight = FontWeight.Bold),
-                            color = MaterialTheme.colorScheme.onPrimary,
-                        )
-                    }
-                }
+                    isLoading = uiState.isSubmitting,
+                )
 
                 // Social Options
                 Column(horizontalAlignment = Alignment.CenterHorizontally) {
@@ -389,70 +368,6 @@ private fun RegisterContent(
     }
 }
 
-@Composable
-private fun RegisterTextField(
-    value: String,
-    onValueChange: (String) -> Unit,
-    label: String,
-    placeholder: String,
-    icon: ImageVector,
-    error: String? = null,
-    isPassword: Boolean = false,
-    passwordVisible: Boolean = false,
-    onTogglePassword: (() -> Unit)? = null,
-    keyboardOptions: KeyboardOptions = KeyboardOptions(imeAction = ImeAction.Next),
-) {
-    Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
-        Text(
-            text = label,
-            style = MaterialTheme.typography.labelSmall.copy(fontWeight = FontWeight.Bold, letterSpacing = 1.sp),
-            color = MaterialTheme.colorScheme.onSurfaceVariant,
-            modifier = Modifier.padding(start = 4.dp),
-        )
-        OutlinedTextField(
-            value = value,
-            onValueChange = onValueChange,
-            modifier = Modifier.fillMaxWidth(),
-            placeholder = { Text(placeholder, color = MaterialTheme.colorScheme.outline.copy(alpha = 0.5f)) },
-            leadingIcon = { Icon(imageVector = icon, contentDescription = null, tint = MaterialTheme.colorScheme.onSurfaceVariant) },
-            trailingIcon =
-                if (isPassword && onTogglePassword != null) {
-                    {
-                        IconButton(onClick = onTogglePassword) {
-                            Icon(
-                                imageVector = if (passwordVisible) Icons.Default.Visibility else Icons.Default.VisibilityOff,
-                                contentDescription = null,
-                            )
-                        }
-                    }
-                } else {
-                    null
-                },
-            visualTransformation = if (isPassword && !passwordVisible) PasswordVisualTransformation() else VisualTransformation.None,
-            isError = error != null,
-            singleLine = true,
-            shape = RoundedCornerShape(12.dp),
-            colors =
-                OutlinedTextFieldDefaults.colors(
-                    unfocusedBorderColor = Color.Transparent,
-                    focusedBorderColor = MaterialTheme.colorScheme.primary.copy(alpha = 0.2f),
-                    unfocusedContainerColor = MaterialTheme.colorScheme.surfaceContainerHighest,
-                    focusedContainerColor = MaterialTheme.colorScheme.surfaceContainerHighest,
-                    errorContainerColor = MaterialTheme.colorScheme.surfaceContainerHighest,
-                    errorBorderColor = MaterialTheme.colorScheme.error,
-                ),
-            keyboardOptions = keyboardOptions,
-        )
-        if (error != null) {
-            Text(
-                text = error,
-                style = MaterialTheme.typography.labelSmall,
-                color = MaterialTheme.colorScheme.error,
-                modifier = Modifier.padding(start = 4.dp),
-            )
-        }
-    }
-}
 
 @Composable
 private fun SocialButton(

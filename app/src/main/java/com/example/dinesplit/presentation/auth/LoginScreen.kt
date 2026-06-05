@@ -37,9 +37,10 @@ import androidx.compose.ui.unit.sp
 import androidx.lifecycle.viewmodel.compose.viewModel
 import coil.compose.AsyncImage
 import com.example.dinesplit.core.ui.AppDimens
-import com.example.dinesplit.core.ui.DineSplitButton
-import com.example.dinesplit.core.ui.DineSplitOutlinedButton
-import com.example.dinesplit.core.ui.DineSplitTextField
+import com.example.dinesplit.core.ui.PrimaryButton;
+import com.example.dinesplit.core.ui.SecondaryButton;
+import com.example.dinesplit.core.ui.AppTextField
+import com.example.dinesplit.core.ui.PasswordTextField
 import com.example.dinesplit.ui.theme.DineSplitTheme
 import com.google.android.gms.auth.api.signin.GoogleSignIn
 import com.google.android.gms.auth.api.signin.GoogleSignInOptions
@@ -208,7 +209,7 @@ private fun LoginContent(
                 modifier = Modifier.fillMaxWidth(),
                 verticalArrangement = Arrangement.spacedBy(AppDimens.spaceLg),
             ) {
-                DineSplitTextField(
+                AppTextField(
                     value = uiState.email,
                     onValueChange = onEmailChange,
                     label = "EMAIL ADDRESS",
@@ -218,41 +219,35 @@ private fun LoginContent(
                     keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Email, imeAction = ImeAction.Next),
                 )
 
-                var passwordVisible by remember { mutableStateOf(false) }
-                DineSplitTextField(
+                PasswordTextField(
                     value = uiState.password,
                     onValueChange = onPasswordChange,
                     label = "PASSWORD",
                     placeholder = "••••••••",
                     isError = uiState.passwordError != null || uiState.submitError != null,
                     supportingText = uiState.passwordError ?: uiState.submitError,
-                    visualTransformation = if (passwordVisible) VisualTransformation.None else PasswordVisualTransformation(),
-                    trailingIcon = {
-                        IconButton(onClick = { passwordVisible = !passwordVisible }) {
-                            Icon(
-                                imageVector = if (passwordVisible) Icons.Default.Visibility else Icons.Default.VisibilityOff,
-                                contentDescription = null,
-                                tint = MaterialTheme.colorScheme.outline,
-                            )
-                        }
-                    },
                     keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Password, imeAction = ImeAction.Done),
                 )
 
-                Text(
-                    text = "Forgot Password?",
-                    style = MaterialTheme.typography.labelMedium.copy(fontWeight = FontWeight.SemiBold),
-                    color = MaterialTheme.colorScheme.primary,
-                    modifier =
-                        Modifier
-                            .align(Alignment.End)
-                            .padding(end = AppDimens.spaceXs)
-                            .clickable { /* Handle forgot password */ },
-                )
+                Box(
+                    modifier = Modifier
+                        .align(Alignment.End)
+                        .padding(end = AppDimens.spaceXs)
+                        .clip(RoundedCornerShape(4.dp))
+                        .clickable { /* Handle forgot password */ }
+                        .padding(horizontal = 8.dp, vertical = 8.dp),
+                    contentAlignment = Alignment.Center
+                ) {
+                    Text(
+                        text = "Forgot Password?",
+                        style = MaterialTheme.typography.labelMedium.copy(fontWeight = FontWeight.SemiBold),
+                        color = MaterialTheme.colorScheme.primary,
+                    )
+                }
 
                 Spacer(modifier = Modifier.height(AppDimens.spaceLg))
 
-                DineSplitButton(
+                PrimaryButton(
                     text = "Sign In",
                     onClick = onSubmit,
                     isLoading = uiState.isSubmitting,
@@ -274,7 +269,7 @@ private fun LoginContent(
                     Box(modifier = Modifier.weight(1f).height(1.dp).background(MaterialTheme.colorScheme.surfaceContainerHighest))
                 }
 
-                DineSplitOutlinedButton(
+                SecondaryButton(
                     text = "Google",
                     onClick = onGoogleSignIn,
                     icon = {

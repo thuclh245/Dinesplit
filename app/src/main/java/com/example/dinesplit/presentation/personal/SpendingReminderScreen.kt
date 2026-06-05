@@ -16,11 +16,13 @@ import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.FilterChip
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
+import androidx.compose.foundation.text.KeyboardOptions
+import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.material3.LinearProgressIndicator
 import androidx.compose.material3.MaterialTheme
-import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
+import com.example.dinesplit.core.ui.AppTextField
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
@@ -229,21 +231,23 @@ private fun CreateReminderDialog(
                     onSelect = { selectedCategoryId = it },
                 )
 
-                OutlinedTextField(
-                     value = budgetAmount,
-                     onValueChange = { budgetAmount = it },
-                     label = { Text("Số Tiền Ngân Sách") },
-                     singleLine = true,
-                     modifier = Modifier.fillMaxWidth()
-                 )
+                AppTextField(
+                    value = budgetAmount,
+                    onValueChange = { budgetAmount = it },
+                    label = "Số Tiền Ngân Sách",
+                    singleLine = true,
+                    keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number),
+                    modifier = Modifier.fillMaxWidth()
+                )
 
-                 OutlinedTextField(
-                     value = thresholdPercent,
-                     onValueChange = { thresholdPercent = it },
-                     label = { Text("Ngưỡng Cảnh Báo (%)") },
-                     singleLine = true,
-                     modifier = Modifier.fillMaxWidth()
-                 )
+                AppTextField(
+                    value = thresholdPercent,
+                    onValueChange = { thresholdPercent = it },
+                    label = "Ngưỡng Cảnh Báo (%)",
+                    singleLine = true,
+                    keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number),
+                    modifier = Modifier.fillMaxWidth()
+                )
 
                  Text("Loại Nhắc Nhở", style = MaterialTheme.typography.labelSmall)
                 Row(

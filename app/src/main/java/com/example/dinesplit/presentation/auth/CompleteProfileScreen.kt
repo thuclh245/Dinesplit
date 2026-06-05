@@ -30,6 +30,8 @@ import androidx.compose.ui.unit.sp
 import androidx.lifecycle.viewmodel.compose.viewModel
 import coil.compose.AsyncImage
 import com.example.dinesplit.ui.theme.DineSplitTheme
+import com.example.dinesplit.core.ui.PrimaryButton
+import com.example.dinesplit.core.ui.AppTextField
 
 @Composable
 fun CompleteProfileScreen(
@@ -224,61 +226,32 @@ private fun CompleteProfileContent(
 
                 // Form Section
                 Column(verticalArrangement = Arrangement.spacedBy(24.dp)) {
-                    ProfileTextField(
+                    AppTextField(
                         value = uiState.displayName,
                         onValueChange = onDisplayNameChange,
                         label = "DISPLAY NAME",
                         placeholder = "e.g. Linh Trần",
-                        error = uiState.displayNameError,
+                        isError = uiState.displayNameError != null,
+                        supportingText = uiState.displayNameError,
                     )
 
-                    Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
-                        Text(
-                            text = "USERNAME",
-                            style = MaterialTheme.typography.labelSmall.copy(fontWeight = FontWeight.Bold, letterSpacing = 1.sp),
-                            color = MaterialTheme.colorScheme.onSurfaceVariant,
-                            modifier = Modifier.padding(start = 4.dp),
-                        )
-                        OutlinedTextField(
-                            value = uiState.username,
-                            onValueChange = onUsernameChange,
-                            modifier = Modifier.fillMaxWidth(),
-                            placeholder = { Text("ten_dang_nhap", color = MaterialTheme.colorScheme.outline.copy(alpha = 0.5f)) },
-                            leadingIcon = {
-                                Text(
-                                    "@",
-                                    style = MaterialTheme.typography.bodyLarge.copy(fontWeight = FontWeight.Bold),
-                                    color = MaterialTheme.colorScheme.onSurfaceVariant,
-                                )
-                            },
-                            isError = uiState.usernameError != null,
-                            singleLine = true,
-                            shape = RoundedCornerShape(12.dp),
-                            colors =
-                                OutlinedTextFieldDefaults.colors(
-                                    unfocusedBorderColor = Color.Transparent,
-                                    focusedBorderColor = MaterialTheme.colorScheme.primaryContainer,
-                                    unfocusedContainerColor = MaterialTheme.colorScheme.surfaceContainerHighest,
-                                    focusedContainerColor = MaterialTheme.colorScheme.surfaceContainerHighest,
-                                    errorContainerColor = MaterialTheme.colorScheme.surfaceContainerHighest,
-                                ),
-                        )
-                        Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(4.dp)) {
-                            Icon(
-                                Icons.Default.Info,
-                                contentDescription = null,
-                                modifier = Modifier.size(14.dp),
-                                tint = MaterialTheme.colorScheme.onSurfaceVariant,
-                            )
+                    AppTextField(
+                        value = uiState.username,
+                        onValueChange = onUsernameChange,
+                        label = "USERNAME",
+                        placeholder = "ten_dang_nhap",
+                        leadingIcon = {
                             Text(
-                                text = uiState.usernameError ?: "Unique handle for splitting bills",
-                                style = MaterialTheme.typography.labelSmall,
-                                color = if (uiState.usernameError != null) MaterialTheme.colorScheme.error else MaterialTheme.colorScheme.onSurfaceVariant,
+                                "@",
+                                style = MaterialTheme.typography.bodyLarge.copy(fontWeight = FontWeight.Bold),
+                                color = MaterialTheme.colorScheme.onSurfaceVariant,
                             )
-                        }
-                    }
+                        },
+                        isError = uiState.usernameError != null,
+                        supportingText = uiState.usernameError ?: "Unique handle for splitting bills",
+                    )
 
-                    ProfileTextField(
+                    AppTextField(
                         value = uiState.bio,
                         onValueChange = onBioChange,
                         label = "SHORT BIO",
@@ -347,41 +320,20 @@ private fun CompleteProfileContent(
                         )
                     }
 
-                    Button(
+                    PrimaryButton(
+                        text = "Complete Profile",
                         onClick = onSubmit,
-                        modifier =
-                            Modifier
-                                .fillMaxWidth()
-                                .height(64.dp)
-                                .shadow(16.dp, RoundedCornerShape(32.dp), spotColor = MaterialTheme.colorScheme.primary.copy(alpha = 0.2f)),
-                        shape = RoundedCornerShape(32.dp),
-                        colors = ButtonDefaults.buttonColors(containerColor = Color.Transparent),
-                        contentPadding = PaddingValues(0.dp),
+                        modifier = Modifier.fillMaxWidth(),
                         enabled = !uiState.isSubmitting,
-                    ) {
-                        Box(
-                            modifier =
-                                Modifier
-                                    .fillMaxSize()
-                                    .background(
-                                        Brush.linearGradient(
-                                            listOf(MaterialTheme.colorScheme.primary, MaterialTheme.colorScheme.primaryContainer),
-                                        ),
-                                    ),
-                            contentAlignment = Alignment.Center,
-                        ) {
-                            Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(12.dp)) {
-                                Text(
-                                    text = if (uiState.isSubmitting) "Completing..." else "Complete Profile",
-                                    style = MaterialTheme.typography.titleMedium.copy(fontWeight = FontWeight.Bold),
-                                    color = MaterialTheme.colorScheme.onPrimary,
-                                )
-                                if (!uiState.isSubmitting) {
-                                    Icon(Icons.Default.ChevronRight, contentDescription = null, tint = MaterialTheme.colorScheme.onPrimary)
-                                }
-                            }
-                        }
-                    }
+                        isLoading = uiState.isSubmitting,
+                        icon = {
+                            Icon(
+                                imageVector = Icons.Default.ChevronRight,
+                                contentDescription = null,
+                                tint = MaterialTheme.colorScheme.onPrimary,
+                            )
+                        },
+                    )
 
                     val primaryColor = MaterialTheme.colorScheme.primary
                     Text(
@@ -405,52 +357,6 @@ private fun CompleteProfileContent(
                     )
                 }
             }
-        }
-    }
-}
-
-@Composable
-private fun ProfileTextField(
-    value: String,
-    onValueChange: (String) -> Unit,
-    label: String,
-    placeholder: String,
-    error: String? = null,
-    singleLine: Boolean = true,
-    maxLines: Int = 1,
-) {
-    Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
-        Text(
-            text = label,
-            style = MaterialTheme.typography.labelSmall.copy(fontWeight = FontWeight.Bold, letterSpacing = 1.sp),
-            color = MaterialTheme.colorScheme.onSurfaceVariant,
-            modifier = Modifier.padding(start = 4.dp),
-        )
-        OutlinedTextField(
-            value = value,
-            onValueChange = onValueChange,
-            modifier = Modifier.fillMaxWidth(),
-            placeholder = { Text(placeholder, color = MaterialTheme.colorScheme.outline.copy(alpha = 0.5f)) },
-            isError = error != null,
-            singleLine = singleLine,
-            maxLines = maxLines,
-            shape = RoundedCornerShape(12.dp),
-            colors =
-                OutlinedTextFieldDefaults.colors(
-                    unfocusedBorderColor = Color.Transparent,
-                    focusedBorderColor = MaterialTheme.colorScheme.primaryContainer,
-                    unfocusedContainerColor = MaterialTheme.colorScheme.surfaceContainerHighest,
-                    focusedContainerColor = MaterialTheme.colorScheme.surfaceContainerHighest,
-                    errorContainerColor = MaterialTheme.colorScheme.surfaceContainerHighest,
-                ),
-        )
-        if (error != null) {
-            Text(
-                text = error,
-                style = MaterialTheme.typography.labelSmall,
-                color = MaterialTheme.colorScheme.error,
-                modifier = Modifier.padding(start = 4.dp),
-            )
         }
     }
 }
