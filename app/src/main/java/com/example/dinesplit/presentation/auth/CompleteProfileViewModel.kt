@@ -143,10 +143,8 @@ class CompleteProfileViewModel(application: Application) : AndroidViewModel(appl
                     viewModelScope.launch(Dispatchers.IO) {
                         try {
                             val personalRepo = AppContainer.personalRepository(getApplication())
-                            val notificationRepo = AppContainer.notificationRepository(getApplication())
 
                             DemoDataSeeder.seedDemoTransactions(personalRepo, profile.uid)
-                            DemoDataSeeder.seedDemoNotifications(notificationRepo, profile.uid)
                         } catch (e: Exception) {
                             e.printStackTrace()
                         }

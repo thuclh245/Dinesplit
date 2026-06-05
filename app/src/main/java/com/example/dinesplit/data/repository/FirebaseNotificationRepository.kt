@@ -39,7 +39,7 @@ class FirebaseNotificationRepository private constructor(
                             return@addSnapshotListener
                         }
 
-                        trySend(snapshot?.documents?.mapNotNull { document -> document.toNotification(uid) }.orEmpty())
+                        trySend(snapshot?.documents?.mapNotNull { document -> document.toNotification(uid) }.orEmpty().withoutLegacyDemoNotifications())
                     }
 
             awaitClose { registration.remove() }
@@ -58,7 +58,7 @@ class FirebaseNotificationRepository private constructor(
 
         return snapshot.documents.mapNotNull { document ->
             document.toNotification(uid)
-        }
+        }.withoutLegacyDemoNotifications()
     }
 
     override suspend fun insertNotification(notification: Notification) {
@@ -155,6 +155,33 @@ class FirebaseNotificationRepository private constructor(
             FIELD_SENDER_ID to senderId.orEmpty(),
             FIELD_GROUP_ID to groupId.orEmpty(),
         )
+    }
+
+    private fun List<Notification>.withoutLegacyDemoNotifications(): List<Notification> {
+        return filterNot { notification -> notification.isLegacyDemoNotification() }
+    }
+
+    private fun Notification.isLegacyDemoNotification(): Boolean {
+        return when {
+            type == NotificationType.TRANSACTION_ALERT &&
+                relatedId == "c_food" &&
+                deepLinkDestination == "SPENDING_REMINDERS" &&
+                title == "Cảnh báo chi tiêu: Ăn ngoài" &&
+                subtitle == "Bạn đã dùng 75% ngân sách 300,000 VND" -> true
+
+            type == NotificationType.PAYMENT_COMPLETED &&
+                relatedId == "bill_123" &&
+                deepLinkDestination == "SPLIT_SETTLE" &&
+                title == "John đã thanh toán cho bạn" -> true
+
+            type == NotificationType.BILL_CREATED &&
+                relatedId == "bill_456" &&
+                deepLinkDestination == "SPLIT_DETAIL" &&
+                title == "Đã tạo hóa đơn mới" &&
+                subtitle == "Kế hoạch chuyến đi cuối tuần - 500,000 VND" -> true
+
+            else -> false
+        }
     }
 
     private suspend fun <T> Task<T>.awaitFirebase(): T {
