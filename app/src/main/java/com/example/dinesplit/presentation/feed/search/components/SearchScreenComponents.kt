@@ -23,8 +23,11 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.input.ImeAction
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
+import androidx.compose.ui.semantics.contentDescription
+import androidx.compose.ui.semantics.semantics
 import com.example.dinesplit.ui.theme.StatusWarningDark
 import com.example.dinesplit.core.ui.AppCard
+import com.example.dinesplit.core.ui.AppIconButton
 import com.example.dinesplit.core.ui.AppDimens
 import com.example.dinesplit.core.ui.AppShapes
 import com.example.dinesplit.core.ui.SmallButton
@@ -105,14 +108,18 @@ fun RecentSearchChip(
                 style = MaterialTheme.typography.labelLarge,
                 color = MaterialTheme.colorScheme.onSurface,
             )
-            Icon(
-                Icons.Default.Close,
+            AppIconButton(
+                onClick = onDeleteClick,
                 contentDescription = "Xóa",
-                modifier = Modifier
-                    .size(AppDimens.spaceLg)
-                    .clip(CircleShape)
-                    .clickable { onDeleteClick() },
-                tint = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.6f),
+                modifier = Modifier.clip(CircleShape),
+                icon = {
+                    Icon(
+                        Icons.Default.Close,
+                        contentDescription = null,
+                        modifier = Modifier.size(AppDimens.spaceLg),
+                        tint = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.6f),
+                    )
+                }
             )
         }
     }
@@ -300,22 +307,25 @@ fun SearchPostCard(
         Column(verticalArrangement = Arrangement.spacedBy(AppDimens.spaceMd)) {
             // Author row
             Row(
-                modifier = Modifier.fillMaxWidth(),
+                modifier = Modifier
+                    .clickable(
+                        onClickLabel = "Xem trang cá nhân"
+                    ) { onAuthorClick() }
+                    .semantics {
+                        contentDescription = "Tác giả ${post.authorName}. Nhấn đúp để xem trang cá nhân."
+                    },
                 verticalAlignment = Alignment.CenterVertically,
                 horizontalArrangement = Arrangement.spacedBy(AppDimens.spaceMd)
             ) {
-                Box(modifier = Modifier.clickable { onAuthorClick() }) {
-                    DineAvatarImage(
-                        imageUrl = post.authorAvatar,
-                        name = post.authorName,
-                        size = AppDimens.space3Xl
-                    )
-                }
+                DineAvatarImage(
+                    imageUrl = post.authorAvatar,
+                    name = post.authorName,
+                    size = AppDimens.space3Xl
+                )
                 Column {
                     Text(
                         text = post.authorName,
                         style = MaterialTheme.typography.bodyLarge.copy(fontWeight = FontWeight.Bold),
-                        modifier = Modifier.clickable { onAuthorClick() }
                     )
                     if (!post.location.isNullOrBlank()) {
                         Row(

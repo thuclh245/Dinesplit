@@ -704,7 +704,7 @@ private fun MainBottomBar(
             .fillMaxWidth()
             .windowInsetsPadding(WindowInsets.navigationBars),
         color = colorScheme.surfaceContainerLowest,
-        tonalElevation = 8.dp,
+        tonalElevation = AppDimens.level3,
     ) {
         Column {
             HorizontalDivider(color = colorScheme.outlineVariant.copy(alpha = 0.35f), thickness = 0.5.dp)

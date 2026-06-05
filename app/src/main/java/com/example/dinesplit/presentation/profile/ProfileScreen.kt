@@ -27,6 +27,8 @@ import com.example.dinesplit.core.ui.DineAvatarImage
 import com.example.dinesplit.core.ui.DineGridImage
 import com.example.dinesplit.core.ui.PrimaryButton
 import com.example.dinesplit.core.ui.SecondaryButton
+import com.example.dinesplit.core.ui.SmallButton
+import com.example.dinesplit.core.ui.TertiaryButton
 import com.example.dinesplit.domain.model.LinkedBillSummary
 import com.example.dinesplit.domain.model.Post
 import com.example.dinesplit.ui.theme.DineSplitTheme
@@ -70,23 +72,21 @@ fun ProfileScreen(
             title = { Text("Đăng xuất?") },
             text = { Text("Bạn sẽ quay lại màn hình đăng nhập.") },
             confirmButton = {
-                TextButton(
+                TertiaryButton(
+                    text = "Đăng xuất",
                     enabled = !isLoggingOut,
                     onClick = {
                         showLogoutConfirmation = false
                         onLogout()
                     },
-                ) {
-                    Text("Đăng xuất")
-                }
+                )
             },
             dismissButton = {
-                TextButton(
+                TertiaryButton(
+                    text = "Hủy",
                     enabled = !isLoggingOut,
                     onClick = { showLogoutConfirmation = false },
-                ) {
-                    Text("Hủy")
-                }
+                )
             },
         )
     }
@@ -131,12 +131,14 @@ fun ProfileScreen(
                 }
             },
             confirmButton = {
-                Button(
+                SmallButton(
+                    text = "Đóng",
                     onClick = onCloseSettings,
-                    colors = ButtonDefaults.buttonColors(containerColor = MaterialTheme.colorScheme.primary),
-                ) {
-                    Text("Đóng", color = Color.White)
-                }
+                    colors = ButtonDefaults.buttonColors(
+                        containerColor = MaterialTheme.colorScheme.primary,
+                        contentColor = Color.White
+                    ),
+                )
             }
         )
     }

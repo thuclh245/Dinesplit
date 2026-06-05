@@ -27,7 +27,6 @@ import androidx.compose.material.icons.automirrored.filled.ReceiptLong
 import androidx.compose.material.icons.filled.CheckCircle
 import androidx.compose.material.icons.filled.GroupAdd
 import androidx.compose.material.icons.filled.Payments
-import androidx.compose.material3.Button
 import androidx.compose.material3.ButtonDefaults
 import androidx.compose.material3.FloatingActionButton
 import com.example.dinesplit.core.ui.AppCard
@@ -101,7 +100,11 @@ fun SplitScreen(
                         .size(60.dp)
                         .shadow(AppDimens.spaceXl, CircleShape, spotColor = MaterialTheme.colorScheme.primary.copy(alpha = 0.4f)),
             ) {
-                Icon(Icons.AutoMirrored.Filled.ReceiptLong, contentDescription = "Thêm hóa đơn", modifier = Modifier.size(30.dp))
+                Icon(
+                    Icons.AutoMirrored.Filled.ReceiptLong,
+                    contentDescription = if (uiState.groups.isEmpty()) "Tạo nhóm mới" else "Thêm hóa đơn",
+                    modifier = Modifier.size(30.dp),
+                )
             }
         },
     ) { padding ->

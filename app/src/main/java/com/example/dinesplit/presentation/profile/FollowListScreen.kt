@@ -32,6 +32,8 @@ import com.example.dinesplit.core.firebase.FirebaseProviders
 import com.example.dinesplit.core.ui.AppDimens
 import com.example.dinesplit.core.ui.AppScaffold
 import com.example.dinesplit.core.ui.AppTextField
+import com.example.dinesplit.core.ui.SearchTextField
+import com.example.dinesplit.core.ui.SmallButton
 import com.example.dinesplit.core.ui.DineAvatarImage
 import com.example.dinesplit.core.ui.ErrorStateBlock
 import com.example.dinesplit.core.ui.LoadingBlock
@@ -98,36 +100,13 @@ fun FollowListScreen(
 
                         // Search Bar
                         Box(modifier = Modifier.padding(horizontal = 16.dp, vertical = 12.dp)) {
-                            TextField(
+                            SearchTextField(
                                 value = uiState.searchQuery,
                                 onValueChange = vm::onSearchQueryChange,
-                                modifier = Modifier
-                                    .fillMaxWidth()
-                                    .heightIn(min = 56.dp),
-                                placeholder = {
-                                    Text("Tìm kiếm theo tên hoặc username...")
-                                },
-                                leadingIcon = {
-                                    Icon(
-                                        imageVector = Icons.Default.Search,
-                                        contentDescription = "Search",
-                                        tint = MaterialTheme.colorScheme.outline
-                                    )
-                                },
-                                singleLine = true,
-                                shape = RoundedCornerShape(28.dp),
-                                colors = TextFieldDefaults.colors(
-                                    focusedContainerColor = MaterialTheme.colorScheme.surfaceContainerHighest,
-                                    unfocusedContainerColor = MaterialTheme.colorScheme.surfaceContainerHighest,
-                                    focusedIndicatorColor = Color.Transparent,
-                                    unfocusedIndicatorColor = Color.Transparent,
-                                    disabledIndicatorColor = Color.Transparent,
-                                    cursorColor = MaterialTheme.colorScheme.primary,
-                                    focusedTextColor = MaterialTheme.colorScheme.onSurface,
-                                    unfocusedTextColor = MaterialTheme.colorScheme.onSurface,
-                                    focusedPlaceholderColor = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.7f),
-                                    unfocusedPlaceholderColor = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.7f),
-                                )
+                                label = "",
+                                placeholder = "Tìm kiếm theo tên hoặc username...",
+                                onClearClick = { vm.onSearchQueryChange("") },
+                                modifier = Modifier.fillMaxWidth()
                             )
                         }
 
@@ -296,9 +275,11 @@ private fun FollowUserRow(
 
                 val isOutline = isFollowing // "Bạn bè" or "Đang theo dõi" are outline/secondary buttons
 
-                Button(
+                SmallButton(
+                    text = buttonText,
                     onClick = onFollowActionClick,
                     enabled = !isActionBusy,
+                    isLoading = isActionBusy,
                     shape = RoundedCornerShape(10.dp),
                     colors = ButtonDefaults.buttonColors(
                         containerColor = if (isOutline) {
@@ -314,23 +295,8 @@ private fun FollowUserRow(
                     ),
                     modifier = Modifier
                         .height(34.dp)
-                        .widthIn(min = 100.dp),
-                    contentPadding = PaddingValues(horizontal = 12.dp)
-                ) {
-                    if (isActionBusy) {
-                        CircularProgressIndicator(
-                            modifier = Modifier.size(16.dp),
-                            strokeWidth = 2.dp,
-                            color = if (isOutline) MaterialTheme.colorScheme.onSurface else MaterialTheme.colorScheme.onPrimary
-                        )
-                    } else {
-                        Text(
-                            text = buttonText,
-                            style = MaterialTheme.typography.labelMedium.copy(fontWeight = FontWeight.Bold),
-                            maxLines = 1
-                        )
-                    }
-                }
+                        .widthIn(min = 100.dp)
+                )
             }
 
             // Three-dots action menu (visual completeness matching TikTok layout)

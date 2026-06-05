@@ -35,7 +35,9 @@ import com.example.dinesplit.core.common.AppContainer
 import com.example.dinesplit.core.ui.AppCard
 import com.example.dinesplit.core.ui.AppDimens
 import com.example.dinesplit.core.ui.AppScaffold
+import com.example.dinesplit.core.ui.AppShapes
 import com.example.dinesplit.core.ui.AppTextField
+import com.example.dinesplit.core.ui.SmallButton
 import com.example.dinesplit.core.ui.DineAvatarImage
 import com.example.dinesplit.core.ui.DinePostImage
 import com.example.dinesplit.core.ui.ErrorStateBlock
@@ -466,7 +468,7 @@ private fun CommentInputBar(
     Surface(
         modifier = modifier,
         color = MaterialTheme.colorScheme.surfaceContainerLowest,
-        tonalElevation = 4.dp
+        tonalElevation = AppDimens.level2
     ) {
         Column(modifier = Modifier.padding(horizontal = 16.dp, vertical = 8.dp)) {
             Row(
@@ -481,7 +483,8 @@ private fun CommentInputBar(
                     modifier = Modifier.weight(1f),
                     singleLine = true
                 )
-                Button(
+                SmallButton(
+                    text = "Gửi",
                     onClick = {
                         val current = text.trim()
                         if (current.isNotBlank()) {
@@ -490,19 +493,9 @@ private fun CommentInputBar(
                         }
                     },
                     enabled = text.isNotBlank() && !isSubmitting,
-                    colors = ButtonDefaults.buttonColors(
-                        containerColor = MaterialTheme.colorScheme.primary,
-                        contentColor = MaterialTheme.colorScheme.onPrimary
-                    ),
-                    shape = RoundedCornerShape(24.dp),
-                    contentPadding = PaddingValues(horizontal = 20.dp, vertical = 8.dp)
-                ) {
-                    if (isSubmitting) {
-                        CircularProgressIndicator(modifier = Modifier.size(18.dp), strokeWidth = 2.dp, color = MaterialTheme.colorScheme.onPrimary)
-                    } else {
-                        Text("Gửi", fontWeight = FontWeight.Bold)
-                    }
-                }
+                    isLoading = isSubmitting,
+                    shape = AppShapes.full,
+                )
             }
         }
     }

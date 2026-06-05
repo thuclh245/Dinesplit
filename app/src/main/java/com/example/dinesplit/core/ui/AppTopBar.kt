@@ -224,7 +224,7 @@ fun HomeTopBar(
                     IconButton(onClick = onOpenSettings) {
                         Icon(
                             imageVector = Icons.Default.Settings,
-                            contentDescription = "Settings",
+                            contentDescription = "Cài đặt",
                             tint = MaterialTheme.colorScheme.primary,
                         )
                     }

@@ -24,7 +24,6 @@ import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.LinearProgressIndicator
 import androidx.compose.material3.MaterialTheme
-import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
@@ -45,6 +44,7 @@ import androidx.compose.ui.text.font.FontWeight
 import com.example.dinesplit.core.ui.AppCard
 import com.example.dinesplit.core.ui.AppDimens
 import com.example.dinesplit.core.ui.AppScaffold
+import com.example.dinesplit.core.ui.AppTextField
 import com.example.dinesplit.core.ui.BackNavigationButton
 import com.example.dinesplit.core.ui.PrimaryButton
 import com.example.dinesplit.data.model.StoredCategory
@@ -249,11 +249,10 @@ fun AddEditTransactionScreen(
 
             // Amount - Số tiền
              AppCard {
-                 OutlinedTextField(
+                 AppTextField(
                      value = input.amount,
                      onValueChange = { input = input.copy(amount = it) },
-                     label = { Text("Số tiền (VND)") },
-                     singleLine = true,
+                     label = "Số tiền (VND)",
                      modifier = Modifier
                          .fillMaxWidth()
                          .padding(AppDimens.spaceMd)
@@ -413,14 +412,14 @@ fun AddEditTransactionScreen(
 
             // Note - Ghi chú
              AppCard {
-                 OutlinedTextField(
+                 AppTextField(
                      value = input.note,
                      onValueChange = { input = input.copy(note = it) },
-                     label = { Text("Ghi chú (tùy chọn)") },
+                     label = "Ghi chú (tùy chọn)",
+                     singleLine = false,
                      modifier = Modifier
                          .fillMaxWidth()
-                         .padding(AppDimens.spaceMd),
-                     minLines = 3
+                         .padding(AppDimens.spaceMd)
                  )
              }
 

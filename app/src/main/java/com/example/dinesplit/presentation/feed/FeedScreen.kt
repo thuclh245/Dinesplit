@@ -49,6 +49,7 @@ import com.example.dinesplit.core.common.AppContainer
 import com.example.dinesplit.core.ui.AppCard
 import com.example.dinesplit.core.ui.AppDimens
 import com.example.dinesplit.core.ui.AppShapes
+import com.example.dinesplit.core.ui.SmallButton
 import com.example.dinesplit.core.ui.DineAvatarImage
 import com.example.dinesplit.core.ui.DinePostImage
 import com.example.dinesplit.core.ui.EmptyStateBlock
@@ -809,19 +810,16 @@ private fun LinkedBillSummarySection(
                 }
 
                 if (summary.isParticipant && !summary.isSettled && !summary.isMyPaid && !summary.isIPayer && summary.myShare > 0.0) {
-                    Button(
+                    SmallButton(
+                        text = "Thanh toán",
                         onClick = onSettleUp,
                         modifier = Modifier.weight(1f),
                         shape = AppShapes.medium,
                         colors = ButtonDefaults.buttonColors(
                             containerColor = MaterialTheme.colorScheme.secondary,
+                            contentColor = MaterialTheme.colorScheme.onSecondary
                         )
-                    ) {
-                        Text(
-                            text = "Thanh toán",
-                            style = MaterialTheme.typography.labelMedium.copy(fontWeight = FontWeight.Bold)
-                        )
-                    }
+                    )
                 }
             }
         }

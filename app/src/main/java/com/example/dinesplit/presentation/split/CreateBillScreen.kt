@@ -698,8 +698,13 @@ private fun SplitMemberListCard(
                 ) {
                     Row(verticalAlignment = Alignment.CenterVertically) {
                         Box(
-                            modifier =
-                                Modifier
+                            modifier = Modifier
+                                .size(48.dp)
+                                .clickable { onSelectPayer(member.id) },
+                            contentAlignment = Alignment.Center,
+                        ) {
+                            Box(
+                                modifier = Modifier
                                     .size(40.dp)
                                     .clip(CircleShape)
                                     .background(
@@ -710,11 +715,11 @@ private fun SplitMemberListCard(
                                         } else {
                                             colorScheme.outlineVariant
                                         },
-                                    )
-                                    .clickable { onSelectPayer(member.id) },
-                            contentAlignment = Alignment.Center,
-                        ) {
-                            Text(member.initial, color = colorScheme.surfaceContainerLowest, fontWeight = FontWeight.Bold)
+                                    ),
+                                contentAlignment = Alignment.Center,
+                            ) {
+                                Text(member.initial, color = colorScheme.surfaceContainerLowest, fontWeight = FontWeight.Bold)
+                            }
                         }
                         Spacer(modifier = Modifier.width(12.dp))
                         Column {
@@ -728,20 +733,25 @@ private fun SplitMemberListCard(
                         }
                     }
                     Box(
-                        modifier =
-                            Modifier
-                                .size(24.dp)
-                                .clip(CircleShape)
-                                .background(if (included) colorScheme.primary else colorScheme.surfaceContainerHigh)
-                                .clickable { onToggle(member.id) },
+                        modifier = Modifier
+                            .size(48.dp)
+                            .clickable { onToggle(member.id) },
                         contentAlignment = Alignment.Center,
                     ) {
-                        Icon(
-                            Icons.Default.Check,
-                            contentDescription = null,
-                            tint = if (included) colorScheme.surfaceContainerLowest else colorScheme.onSurfaceVariant,
-                            modifier = Modifier.size(16.dp),
-                        )
+                        Box(
+                            modifier = Modifier
+                                .size(24.dp)
+                                .clip(CircleShape)
+                                .background(if (included) colorScheme.primary else colorScheme.surfaceContainerHigh),
+                            contentAlignment = Alignment.Center,
+                        ) {
+                            Icon(
+                                Icons.Default.Check,
+                                contentDescription = null,
+                                tint = if (included) colorScheme.surfaceContainerLowest else colorScheme.onSurfaceVariant,
+                                modifier = Modifier.size(16.dp),
+                            )
+                        }
                     }
                 }
                 HorizontalDivider(color = colorScheme.outlineVariant.copy(alpha = 0.2f))

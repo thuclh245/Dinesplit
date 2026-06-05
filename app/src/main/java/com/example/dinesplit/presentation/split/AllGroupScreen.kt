@@ -32,6 +32,7 @@ import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import com.example.dinesplit.core.ui.ClickableAppCard
 
 // --- MÔ HÌNH DỮ LIỆU TẠM ---
 private data class Ag_GroupInfo(
@@ -179,120 +180,110 @@ private fun Ag_FilterChips(
 @Composable
 private fun Ag_GroupCard(group: Ag_GroupInfo) {
     val colorScheme = MaterialTheme.colorScheme
-    Card(
-        modifier =
-            Modifier
-                .fillMaxWidth()
-                .alpha(if (group.isDimmed) 0.7f else 1f)
-                .clickable { /* Điều hướng tới chi tiết nhóm */ },
-        colors = CardDefaults.cardColors(containerColor = colorScheme.surfaceContainerLowest),
-        elevation = CardDefaults.cardElevation(defaultElevation = 1.dp),
-        shape = RoundedCornerShape(20.dp),
+    ClickableAppCard(
+        onClick = { /* Điều hướng tới chi tiết nhóm */ },
+        modifier = Modifier
+            .fillMaxWidth()
+            .alpha(if (group.isDimmed) 0.7f else 1f),
+        contentPadding = PaddingValues(20.dp),
     ) {
-        Column(
-            modifier =
-                Modifier
-                    .fillMaxWidth()
-                    .padding(20.dp),
+        Row(
+            verticalAlignment = Alignment.Top,
+            modifier = Modifier.fillMaxWidth(),
         ) {
-            Row(
-                verticalAlignment = Alignment.Top,
-                modifier = Modifier.fillMaxWidth(),
+            Box(
+                modifier =
+                    Modifier
+                        .size(48.dp)
+                        .clip(RoundedCornerShape(12.dp))
+                        .background(group.iconBg()),
+                contentAlignment = Alignment.Center,
             ) {
-                Box(
-                    modifier =
-                        Modifier
-                            .size(48.dp)
-                            .clip(RoundedCornerShape(12.dp))
-                            .background(group.iconBg()),
-                    contentAlignment = Alignment.Center,
-                ) {
-                    Icon(group.icon, contentDescription = null, tint = group.iconColor(), modifier = Modifier.size(24.dp))
-                }
-
-                Spacer(modifier = Modifier.width(16.dp))
-
-                Column {
-                    Text(
-                        text = group.title,
-                        fontSize = 16.sp,
-                        fontWeight = FontWeight.Bold,
-                        color = colorScheme.onSurface,
-                    )
-                    Spacer(modifier = Modifier.height(2.dp))
-                    Text(
-                        text = group.date,
-                        fontSize = 12.sp,
-                        fontWeight = FontWeight.Medium,
-                        color = colorScheme.onSurfaceVariant.copy(alpha = 0.7f),
-                    )
-                }
+                Icon(group.icon, contentDescription = null, tint = group.iconColor(), modifier = Modifier.size(24.dp))
             }
 
-            Spacer(modifier = Modifier.height(16.dp))
+            Spacer(modifier = Modifier.width(16.dp))
 
-            Row(
-                modifier = Modifier.fillMaxWidth(),
-                verticalAlignment = Alignment.Bottom,
-                horizontalArrangement = Arrangement.SpaceBetween,
-            ) {
-                Row(horizontalArrangement = Arrangement.spacedBy((-12).dp)) {
-                    val avatarColors = listOf(colorScheme.onSurfaceVariant, colorScheme.outline, colorScheme.outlineVariant)
-                    for (i in 0 until group.avatarCount) {
-                        Box(
-                            modifier =
-                                Modifier
-                                    .size(32.dp)
-                                    .clip(CircleShape)
-                                    .background(avatarColors[i % avatarColors.size])
-                                    .border(2.dp, colorScheme.surfaceContainerLowest, CircleShape),
-                        )
-                    }
-                    if (group.extraCount > 0) {
-                        Box(
-                            modifier =
-                                Modifier
-                                    .size(32.dp)
-                                    .clip(CircleShape)
-                                    .background(colorScheme.surfaceContainer)
-                                    .border(2.dp, colorScheme.surfaceContainerLowest, CircleShape),
-                            contentAlignment = Alignment.Center,
-                        ) {
-                            Text(
-                                "+${group.extraCount}",
-                                fontSize = 10.sp,
-                                fontWeight = FontWeight.Bold,
-                                color = colorScheme.onSurfaceVariant,
-                            )
-                        }
-                    }
-                }
+            Column {
+                Text(
+                    text = group.title,
+                    fontSize = 16.sp,
+                    fontWeight = FontWeight.Bold,
+                    color = colorScheme.onSurface,
+                )
+                Spacer(modifier = Modifier.height(2.dp))
+                Text(
+                    text = group.date,
+                    fontSize = 12.sp,
+                    fontWeight = FontWeight.Medium,
+                    color = colorScheme.onSurfaceVariant.copy(alpha = 0.7f),
+                )
+            }
+        }
 
-                if (group.isSettled) {
+        Spacer(modifier = Modifier.height(16.dp))
+
+        Row(
+            modifier = Modifier.fillMaxWidth(),
+            verticalAlignment = Alignment.Bottom,
+            horizontalArrangement = Arrangement.SpaceBetween,
+        ) {
+            Row(horizontalArrangement = Arrangement.spacedBy((-12).dp)) {
+                val avatarColors = listOf(colorScheme.onSurfaceVariant, colorScheme.outline, colorScheme.outlineVariant)
+                for (i in 0 until group.avatarCount) {
                     Box(
                         modifier =
                             Modifier
-                                .clip(RoundedCornerShape(50))
+                                .size(32.dp)
+                                .clip(CircleShape)
+                                .background(avatarColors[i % avatarColors.size])
+                                .border(2.dp, colorScheme.surfaceContainerLowest, CircleShape),
+                    )
+                }
+                if (group.extraCount > 0) {
+                    Box(
+                        modifier =
+                            Modifier
+                                .size(32.dp)
+                                .clip(CircleShape)
                                 .background(colorScheme.surfaceContainer)
-                                .padding(horizontal = 12.dp, vertical = 4.dp),
+                                .border(2.dp, colorScheme.surfaceContainerLowest, CircleShape),
+                        contentAlignment = Alignment.Center,
                     ) {
                         Text(
-                            text = group.statusText.uppercase(),
+                            "+${group.extraCount}",
                             fontSize = 10.sp,
                             fontWeight = FontWeight.Bold,
                             color = colorScheme.onSurfaceVariant,
-                            letterSpacing = 0.5.sp,
                         )
                     }
-                } else {
+                }
+            }
+
+            if (group.isSettled) {
+                Box(
+                    modifier =
+                        Modifier
+                            .clip(RoundedCornerShape(50))
+                            .background(colorScheme.surfaceContainer)
+                            .padding(horizontal = 12.dp, vertical = 4.dp),
+                ) {
                     Text(
-                        text = group.statusText,
-                        fontSize = 14.sp,
+                        text = group.statusText.uppercase(),
+                        fontSize = 10.sp,
                         fontWeight = FontWeight.Bold,
-                        color = group.statusColor(),
-                        letterSpacing = (-0.5).sp,
+                        color = colorScheme.onSurfaceVariant,
+                        letterSpacing = 0.5.sp,
                     )
                 }
+            } else {
+                Text(
+                    text = group.statusText,
+                    fontSize = 14.sp,
+                    fontWeight = FontWeight.Bold,
+                    color = group.statusColor(),
+                    letterSpacing = (-0.5).sp,
+                )
             }
         }
     }

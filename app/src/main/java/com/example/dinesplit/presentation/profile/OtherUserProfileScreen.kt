@@ -28,6 +28,7 @@ import com.example.dinesplit.core.ui.DineAvatarImage
 import com.example.dinesplit.core.ui.DineGridImage
 import com.example.dinesplit.core.ui.ErrorStateBlock
 import com.example.dinesplit.core.ui.LoadingBlock
+import com.example.dinesplit.core.ui.SmallButton
 import com.example.dinesplit.domain.model.LinkedBillSummary
 import com.example.dinesplit.domain.model.Post
 import com.example.dinesplit.domain.model.UserProfile
@@ -229,9 +230,16 @@ private fun OtherProfileHeader(
                 )
 
                 Row(horizontalArrangement = Arrangement.spacedBy(12.dp)) {
-                    Button(
+                    SmallButton(
+                        text = when {
+                            isFollowing && isFollowedByOther -> "Bạn bè"
+                            isFollowing -> "Đang theo dõi"
+                            isFollowedByOther -> "Theo dõi lại"
+                            else -> "Theo dõi"
+                        },
                         onClick = onToggleFollow,
                         enabled = !isFollowActionBusy,
+                        isLoading = isFollowActionBusy,
                         shape = RoundedCornerShape(12.dp),
                         modifier = Modifier.weight(1f).height(40.dp),
                         colors = ButtonDefaults.buttonColors(
@@ -246,26 +254,7 @@ private fun OtherProfileHeader(
                                 MaterialTheme.colorScheme.onPrimary
                             }
                         ),
-                        contentPadding = PaddingValues(0.dp),
-                    ) {
-                        if (isFollowActionBusy) {
-                            CircularProgressIndicator(
-                                modifier = Modifier.size(18.dp),
-                                strokeWidth = 2.dp,
-                                color = if (isFollowing) MaterialTheme.colorScheme.onSurface else MaterialTheme.colorScheme.onPrimary
-                            )
-                        } else {
-                            Text(
-                                text = when {
-                                    isFollowing && isFollowedByOther -> "Bạn bè"
-                                    isFollowing -> "Đang theo dõi"
-                                    isFollowedByOther -> "Theo dõi lại"
-                                    else -> "Theo dõi"
-                                },
-                                style = MaterialTheme.typography.labelLarge.copy(fontWeight = FontWeight.Bold)
-                            )
-                        }
-                    }
+                    )
                 }
             }
         }

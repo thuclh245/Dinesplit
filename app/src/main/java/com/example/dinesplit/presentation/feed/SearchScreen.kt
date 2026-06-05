@@ -26,6 +26,7 @@ import com.example.dinesplit.core.ui.AppDimens
 import com.example.dinesplit.core.ui.EmptyStateBlock
 import com.example.dinesplit.core.ui.ErrorStateBlock
 import com.example.dinesplit.core.ui.LoadingBlock
+import com.example.dinesplit.core.ui.SmallButton
 import com.example.dinesplit.presentation.feed.search.PlaceUiModel
 import com.example.dinesplit.presentation.feed.search.SearchFilter
 import com.example.dinesplit.presentation.feed.search.SearchViewModel
@@ -51,7 +52,8 @@ fun SearchScreen(
         AlertDialog(
             onDismissRequest = { selectedPlaceForDetail = null },
             confirmButton = {
-                Button(
+                SmallButton(
+                    text = "Xem trên Google Maps",
                     onClick = {
                         val mapUri = Uri.parse("geo:0,0?q=${Uri.encode(place.name)}")
                         val mapIntent = Intent(Intent.ACTION_VIEW, mapUri).apply {
@@ -66,9 +68,7 @@ fun SearchScreen(
                         }
                         selectedPlaceForDetail = null
                     }
-                ) {
-                    Text("Xem trên Google Maps")
-                }
+                )
             },
             dismissButton = {
                 TextButton(onClick = { selectedPlaceForDetail = null }) {

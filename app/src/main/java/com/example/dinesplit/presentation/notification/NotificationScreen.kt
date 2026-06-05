@@ -409,7 +409,10 @@ private fun NotificationItemCard(
             modifier =
                 Modifier
                     .fillMaxWidth()
-                    .clickable(onClick = onClick),
+                    .clickable(
+                        onClickLabel = "Xem chi tiết thông báo",
+                        onClick = onClick
+                    ),
         ) {
             if (isUnread) {
                 Box(

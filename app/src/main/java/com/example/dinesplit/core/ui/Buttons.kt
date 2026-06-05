@@ -29,6 +29,9 @@ import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.minimumInteractiveComponentSize
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
+import androidx.compose.ui.semantics.contentDescription
+import androidx.compose.ui.semantics.semantics
+import androidx.compose.ui.semantics.stateDescription
 
 @Composable
 fun PrimaryButton(
@@ -56,7 +59,13 @@ fun PrimaryButton(
                                 ),
                         ),
                     shape = AppShapes.full,
-                ),
+                )
+                .semantics {
+                    if (isLoading) {
+                        stateDescription = "Đang xử lý"
+                        contentDescription = "$text, đang xử lý"
+                    }
+                },
         shape = AppShapes.full,
         color = Color.Transparent,
         contentColor = MaterialTheme.colorScheme.onPrimary,
@@ -166,7 +175,13 @@ fun TertiaryButton(
         enabled = enabled && !isLoading,
         modifier =
             modifier
-                .heightIn(min = AppDimens.buttonHeight),
+                .heightIn(min = AppDimens.buttonHeight)
+                .semantics {
+                    if (isLoading) {
+                        stateDescription = "Đang xử lý"
+                        contentDescription = "$text, đang xử lý"
+                    }
+                },
         shape = AppShapes.full,
         colors = colors,
     ) {
@@ -222,7 +237,14 @@ fun SmallButton(
     Button(
         onClick = onClick,
         enabled = enabled && !isLoading,
-        modifier = modifier.heightIn(min = 36.dp),
+        modifier = modifier
+            .heightIn(min = 36.dp)
+            .semantics {
+                if (isLoading) {
+                    stateDescription = "Đang xử lý"
+                    contentDescription = "$text, đang xử lý"
+                }
+            },
         shape = shape,
         colors = colors,
         contentPadding = ButtonDefaults.ContentPadding,
@@ -266,6 +288,9 @@ fun AppIconButton(
         modifier = modifier
             .minimumInteractiveComponentSize()
             .sizeIn(minWidth = AppDimens.minTouchTarget, minHeight = AppDimens.minTouchTarget)
+            .semantics {
+                contentDescription?.let { this.contentDescription = it }
+            }
             .clickable(
                 enabled = enabled,
                 onClick = onClick,

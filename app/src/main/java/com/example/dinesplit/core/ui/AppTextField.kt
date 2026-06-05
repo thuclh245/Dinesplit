@@ -39,6 +39,7 @@ fun AppTextField(
     modifier: Modifier = Modifier,
     placeholder: String = "",
     enabled: Boolean = true,
+    readOnly: Boolean = false,
     singleLine: Boolean = true,
     maxLines: Int = if (singleLine) 1 else Int.MAX_VALUE,
     isError: Boolean = false,
@@ -59,6 +60,7 @@ fun AppTextField(
                 .fillMaxWidth()
                 .heightIn(min = minHeight),
         enabled = enabled,
+        readOnly = readOnly,
         singleLine = singleLine,
         maxLines = maxLines,
         isError = isError,
@@ -127,6 +129,7 @@ fun DineSplitTextField(
     modifier: Modifier = Modifier,
     placeholder: String = "",
     enabled: Boolean = true,
+    readOnly: Boolean = false,
     singleLine: Boolean = true,
     maxLines: Int = if (singleLine) 1 else Int.MAX_VALUE,
     isError: Boolean = false,
@@ -145,6 +148,7 @@ fun DineSplitTextField(
     modifier = modifier,
     placeholder = placeholder,
     enabled = enabled,
+    readOnly = readOnly,
     singleLine = singleLine,
     maxLines = maxLines,
     isError = isError,
@@ -194,7 +198,7 @@ fun PasswordTextField(
             ) {
                 Icon(
                     imageVector = if (passwordVisible) Icons.Default.Visibility else Icons.Default.VisibilityOff,
-                    contentDescription = if (passwordVisible) "Hide password" else "Show password"
+                    contentDescription = if (passwordVisible) "Ẩn mật khẩu" else "Hiển thị mật khẩu"
                 )
             }
         }
@@ -224,7 +228,7 @@ fun SearchTextField(
         leadingIcon = {
             Icon(
                 imageVector = Icons.Default.Search,
-                contentDescription = "Search icon"
+                contentDescription = null
             )
         },
         trailingIcon = {
@@ -234,7 +238,7 @@ fun SearchTextField(
                 ) {
                     Icon(
                         imageVector = Icons.Default.Close,
-                        contentDescription = "Clear search text"
+                        contentDescription = "Xóa nội dung tìm kiếm"
                     )
                 }
             }
