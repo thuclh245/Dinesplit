@@ -29,6 +29,7 @@ sealed interface LoginUiEffect {
 
 class LoginViewModel(application: Application) : AndroidViewModel(application) {
     private val loginUseCase = AppContainer.loginUseCase(application)
+    private val authRepository = AppContainer.authRepository(application)
     private val resolveStartDestinationUseCase = AppContainer.resolveStartDestinationUseCase(application)
 
     private val _uiState = MutableStateFlow(LoginUiState())
@@ -81,5 +82,39 @@ class LoginViewModel(application: Application) : AndroidViewModel(application) {
                         )
                 }
         }
+    }
+
+    fun loginWithGoogle(idToken: String) {
+        if (_uiState.value.isSubmitting) return
+
+        viewModelScope.launch {
+            _uiState.value = _uiState.value.copy(isSubmitting = true, submitError = null)
+            authRepository.loginWithGoogle(idToken)
+                .onSuccess {
+                    try {
+                        val destination = resolveStartDestinationUseCase()
+                        _uiState.value = _uiState.value.copy(isSubmitting = false)
+                        _effect.emit(LoginUiEffect.NavigateToResolved(destination))
+                    } catch (e: Exception) {
+                        android.util.Log.e("LoginViewModel", "Error resolving destination", e)
+                        _uiState.value =
+                            _uiState.value.copy(
+                                isSubmitting = false,
+                                submitError = "Successfully logged in, but couldn't load profile. Please check your internet connection.",
+                            )
+                    }
+                }
+                .onFailure { throwable ->
+                    _uiState.value =
+                        _uiState.value.copy(
+                            isSubmitting = false,
+                            submitError = FirebaseErrorMapper.toUserMessage(throwable),
+                        )
+                }
+        }
+    }
+
+    fun onGoogleSignInError(message: String) {
+        _uiState.value = _uiState.value.copy(isSubmitting = false, submitError = message)
     }
 }

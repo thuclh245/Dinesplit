@@ -8,6 +8,7 @@ import com.google.android.gms.tasks.Task
 import com.google.firebase.auth.AuthResult
 import com.google.firebase.auth.FirebaseAuth
 import com.google.firebase.auth.FirebaseUser
+import com.google.firebase.auth.GoogleAuthProvider
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
@@ -52,6 +53,18 @@ class FirebaseAuthRepository private constructor(
     ): Result<UserSession> {
         return runCatching {
             val result = auth.createUserWithEmailAndPassword(email.trim(), password).awaitFirebase()
+            val session =
+                result.toSession()
+                    ?: error("Unable to resolve Firebase session")
+            _sessionFlow.value = session
+            session
+        }
+    }
+
+    override suspend fun loginWithGoogle(idToken: String): Result<UserSession> {
+        return runCatching {
+            val credential = GoogleAuthProvider.getCredential(idToken, null)
+            val result = auth.signInWithCredential(credential).awaitFirebase()
             val session =
                 result.toSession()
                     ?: error("Unable to resolve Firebase session")
