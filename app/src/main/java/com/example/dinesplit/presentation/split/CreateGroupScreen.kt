@@ -31,8 +31,6 @@ import androidx.compose.material.icons.filled.Person
 import androidx.compose.material.icons.filled.Search
 import androidx.compose.material3.Button
 import androidx.compose.material3.ButtonDefaults
-import androidx.compose.material3.Card
-import androidx.compose.material3.CardDefaults
 import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.HorizontalDivider
 import androidx.compose.material3.Icon
@@ -42,6 +40,7 @@ import com.example.dinesplit.core.ui.PrimaryButton
 import com.example.dinesplit.core.ui.AppIconButton
 import com.example.dinesplit.core.ui.AppTextField
 import com.example.dinesplit.core.ui.SearchTextField
+import com.example.dinesplit.core.ui.AppCard
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.SnackbarHost
 import androidx.compose.material3.SnackbarHostState
@@ -202,11 +201,8 @@ private fun CreateGroupInfoCard(
 ) {
     val colorScheme = MaterialTheme.colorScheme
 
-    Card(
+    AppCard(
         modifier = Modifier.fillMaxWidth(),
-        colors = CardDefaults.cardColors(containerColor = colorScheme.surfaceContainerLowest),
-        elevation = CardDefaults.cardElevation(defaultElevation = 1.dp),
-        shape = RoundedCornerShape(16.dp),
     ) {
         Column(
             modifier =
@@ -339,11 +335,9 @@ private fun CreateGroupMembersSection(
             return
         }
 
-        Card(
+        AppCard(
             modifier = Modifier.fillMaxWidth(),
-            colors = CardDefaults.cardColors(containerColor = colorScheme.surfaceContainerLowest),
-            elevation = CardDefaults.cardElevation(defaultElevation = 1.dp),
-            shape = RoundedCornerShape(16.dp),
+            contentPadding = PaddingValues(0.dp),
         ) {
             Column {
                 profiles.forEachIndexed { index, profile ->
@@ -366,11 +360,9 @@ private fun CreateGroupMembersSection(
 @Composable
 private fun EmptyProfileSearchCard(searchQuery: String) {
     val colorScheme = MaterialTheme.colorScheme
-    Card(
+    AppCard(
         modifier = Modifier.fillMaxWidth(),
-        colors = CardDefaults.cardColors(containerColor = colorScheme.surfaceContainerLowest),
-        elevation = CardDefaults.cardElevation(defaultElevation = 1.dp),
-        shape = RoundedCornerShape(16.dp),
+        contentPadding = PaddingValues(18.dp),
     ) {
         Text(
             text =
@@ -379,7 +371,6 @@ private fun EmptyProfileSearchCard(searchQuery: String) {
                 } else {
                     "Không tìm thấy người dùng phù hợp."
                 },
-            modifier = Modifier.padding(18.dp),
             fontSize = 13.sp,
             color = colorScheme.onSurfaceVariant,
         )

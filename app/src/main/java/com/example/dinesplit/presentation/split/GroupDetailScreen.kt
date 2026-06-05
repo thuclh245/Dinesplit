@@ -29,8 +29,9 @@ import androidx.compose.material.icons.filled.Delete
 import androidx.compose.material.icons.filled.Info
 import androidx.compose.material.icons.filled.SwapHoriz
 import androidx.compose.material3.AlertDialog
-import androidx.compose.material3.Card
-import androidx.compose.material3.CardDefaults
+import com.example.dinesplit.core.ui.AppCard
+import com.example.dinesplit.core.ui.ClickableAppCard
+import com.example.dinesplit.core.ui.ElevatedAppCard
 import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
@@ -66,6 +67,9 @@ import com.example.dinesplit.domain.model.Bill
 import com.example.dinesplit.domain.model.BillStatus
 import com.example.dinesplit.domain.model.Member
 import com.example.dinesplit.domain.model.SplitMethod
+import com.example.dinesplit.core.ui.AppDimens
+import com.example.dinesplit.core.ui.AppShapes
+import com.example.dinesplit.ui.theme.AppColors
 import com.example.dinesplit.ui.theme.BrandPrimary
 import com.example.dinesplit.ui.theme.BrandPrimaryContainer
 import java.text.SimpleDateFormat
@@ -158,15 +162,15 @@ fun GroupDetailScreen(
                     Modifier
                         .size(64.dp)
                         .clip(CircleShape)
-                        .background(brush = Brush.linearGradient(listOf(BrandPrimaryContainer, BrandPrimary)))
+                        .background(brush = AppColors.primaryGradient)
                         .clickable { onNavigateToCreateBill() },
                 contentAlignment = Alignment.Center,
             ) {
                 Icon(
                     imageVector = Icons.Default.Add,
                     contentDescription = "Thêm hóa đơn",
-                    tint = Color.White,
-                    modifier = Modifier.size(32.dp),
+                    tint = MaterialTheme.colorScheme.onPrimary,
+                    modifier = Modifier.size(AppDimens.iconLg),
                 )
             }
         },
@@ -176,9 +180,9 @@ fun GroupDetailScreen(
                 Modifier
                     .fillMaxSize()
                     .padding(paddingValues)
-                    .padding(horizontal = 24.dp),
-            contentPadding = PaddingValues(top = 18.dp, bottom = 104.dp),
-            verticalArrangement = Arrangement.spacedBy(20.dp),
+                    .padding(horizontal = AppDimens.spaceXl),
+            contentPadding = PaddingValues(top = AppDimens.spaceLg, bottom = 104.dp),
+            verticalArrangement = Arrangement.spacedBy(AppDimens.spaceLg),
         ) {
             when {
                 uiState.isLoading ->
@@ -187,7 +191,7 @@ fun GroupDetailScreen(
                             modifier =
                                 Modifier
                                     .fillMaxWidth()
-                                    .padding(top = 48.dp),
+                                    .padding(top = AppDimens.space4Xl),
                             contentAlignment = Alignment.Center,
                         ) {
                             CircularProgressIndicator()
@@ -316,7 +320,7 @@ private fun DetailTopBar(
                 .fillMaxWidth()
                 .statusBarsPadding()
                 .background(colorScheme.surfaceContainerLowest.copy(alpha = 0.98f))
-                .padding(horizontal = 12.dp, vertical = 12.dp),
+                .padding(horizontal = AppDimens.spaceMd, vertical = AppDimens.spaceMd),
         verticalAlignment = Alignment.CenterVertically,
     ) {
         AppIconButton(
@@ -335,19 +339,18 @@ private fun DetailTopBar(
             modifier =
                 Modifier
                     .weight(1f)
-                    .padding(start = 4.dp, end = 8.dp),
+                    .padding(start = AppDimens.spaceXs, end = AppDimens.spaceSm),
         ) {
             Text(
                 text = groupName,
-                fontSize = 18.sp,
-                fontWeight = FontWeight.ExtraBold,
+                style = MaterialTheme.typography.titleSmall.copy(fontWeight = FontWeight.ExtraBold),
                 color = colorScheme.primary,
                 maxLines = 1,
                 overflow = TextOverflow.Ellipsis,
             )
             Text(
                 text = "$memberCount thành viên",
-                fontSize = 12.sp,
+                style = MaterialTheme.typography.bodySmall,
                 color = colorScheme.onSurfaceVariant,
                 maxLines = 1,
             )
@@ -362,12 +365,12 @@ private fun DetailTopBar(
                 fallbackCount = memberCount,
                 fallbackName = groupName
             )
-            Spacer(modifier = Modifier.width(8.dp))
+            Spacer(modifier = Modifier.width(AppDimens.spaceSm))
             Icon(
                 imageVector = Icons.AutoMirrored.Filled.ExitToApp,
                 contentDescription = "Rời nhóm",
                 tint = colorScheme.outline,
-                modifier = Modifier.size(24.dp),
+                modifier = Modifier.size(AppDimens.spaceXl),
             )
         }
 
@@ -424,14 +427,14 @@ private fun DetailMemberAvatar(
     DineAvatarImage(
         imageUrl = imageUrl,
         name = name,
-        size = 32.dp,
+        size = AppDimens.space2Xl,
         modifier = Modifier.border(
             width = 1.dp,
             color = colorScheme.surfaceContainerLowest,
             shape = CircleShape
         ),
         fallbackContainerColor = detailAvatarColor(seed),
-        fallbackContentColor = Color.White
+        fallbackContentColor = MaterialTheme.colorScheme.onPrimary
     )
 }
 
@@ -548,71 +551,62 @@ private fun DetailSummaryCard(
 ) {
     val colorScheme = MaterialTheme.colorScheme
 
-    Card(
+    ElevatedAppCard(
         modifier = Modifier.fillMaxWidth(),
-        colors = CardDefaults.cardColors(containerColor = colorScheme.surfaceContainerLowest),
-        elevation = CardDefaults.cardElevation(defaultElevation = 2.dp),
-        shape = RoundedCornerShape(28.dp),
+        contentPadding = PaddingValues(AppDimens.spaceXl),
     ) {
-        Column(modifier = Modifier.padding(28.dp)) {
-            Text(
-                text = "TỔNG CHI TIÊU NHÓM",
-                fontSize = 12.sp,
-                fontWeight = FontWeight.SemiBold,
-                color = colorScheme.onSurfaceVariant,
-                letterSpacing = 1.sp,
-            )
+        Text(
+            text = "TỔNG CHI TIÊU NHÓM",
+            style = MaterialTheme.typography.bodySmall.copy(fontWeight = FontWeight.SemiBold, letterSpacing = 1.sp),
+            color = colorScheme.onSurfaceVariant,
+        )
 
+        Row(
+            modifier = Modifier.padding(top = AppDimens.spaceSm, bottom = AppDimens.spaceLg),
+            verticalAlignment = Alignment.Bottom,
+        ) {
+            Text(
+                style = MaterialTheme.typography.headlineLarge.copy(fontWeight = FontWeight.ExtraBold),
+                color = colorScheme.onSurface,
+                maxLines = 1,
+                overflow = TextOverflow.Ellipsis,
+            )
+            Spacer(modifier = Modifier.width(AppDimens.spaceSm))
+            Text(
+                text = "đ",
+                style = MaterialTheme.typography.titleMedium.copy(fontWeight = FontWeight.Bold),
+                color = colorScheme.primary,
+            )
+        }
+
+        Surface(
+            color =
+                if (yourBalance < 0.0) {
+                    colorScheme.errorContainer.copy(alpha = 0.2f)
+                } else {
+                    colorScheme.secondaryContainer.copy(alpha = 0.3f)
+                },
+            shape = AppShapes.full,
+        ) {
             Row(
-                modifier = Modifier.padding(top = 8.dp, bottom = 16.dp),
-                verticalAlignment = Alignment.Bottom,
+                modifier = Modifier.padding(horizontal = AppDimens.spaceLg, vertical = AppDimens.spaceSm),
+                verticalAlignment = Alignment.CenterVertically,
             ) {
+                Icon(
+                    imageVector = Icons.Default.Info,
+                    contentDescription = null,
+                    tint = if (yourBalance < 0.0) colorScheme.error else colorScheme.secondary,
+                    modifier = Modifier.size(18.dp),
+                )
+                Spacer(modifier = Modifier.width(AppDimens.spaceSm))
                 Text(
-                    text = formatAmount(totalExpense),
-                    fontSize = 34.sp,
-                    fontWeight = FontWeight.ExtraBold,
-                    color = colorScheme.onSurface,
+                    text = formatBalanceLabel(yourBalance),
+                    color = if (yourBalance < 0.0) colorScheme.error else colorScheme.secondary,
+                    fontWeight = FontWeight.Bold,
+                    style = MaterialTheme.typography.bodyMedium,
                     maxLines = 1,
                     overflow = TextOverflow.Ellipsis,
                 )
-                Spacer(modifier = Modifier.width(8.dp))
-                Text(
-                    text = "đ",
-                    fontSize = 20.sp,
-                    fontWeight = FontWeight.Bold,
-                    color = colorScheme.primary,
-                )
-            }
-
-            Surface(
-                color =
-                    if (yourBalance < 0.0) {
-                        colorScheme.errorContainer.copy(alpha = 0.2f)
-                    } else {
-                        colorScheme.secondaryContainer.copy(alpha = 0.3f)
-                    },
-                shape = RoundedCornerShape(50),
-            ) {
-                Row(
-                    modifier = Modifier.padding(horizontal = 16.dp, vertical = 8.dp),
-                    verticalAlignment = Alignment.CenterVertically,
-                ) {
-                    Icon(
-                        imageVector = Icons.Default.Info,
-                        contentDescription = null,
-                        tint = if (yourBalance < 0.0) colorScheme.error else colorScheme.secondary,
-                        modifier = Modifier.size(18.dp),
-                    )
-                    Spacer(modifier = Modifier.width(8.dp))
-                    Text(
-                        text = formatBalanceLabel(yourBalance),
-                        color = if (yourBalance < 0.0) colorScheme.error else colorScheme.secondary,
-                        fontWeight = FontWeight.Bold,
-                        fontSize = 14.sp,
-                        maxLines = 1,
-                        overflow = TextOverflow.Ellipsis,
-                    )
-                }
             }
         }
     }
@@ -627,7 +621,7 @@ private fun DetailTabNavigation(
 
     Surface(
         color = colorScheme.surfaceContainerLow,
-        shape = RoundedCornerShape(50),
+        shape = AppShapes.full,
         modifier = Modifier.fillMaxWidth(),
     ) {
         Row(
@@ -662,26 +656,25 @@ private fun DetailTabButton(
     Box(
         modifier =
             modifier
-                .clip(RoundedCornerShape(50))
+                .clip(AppShapes.full)
                 .then(
                     if (selected) {
                         Modifier.background(
-                            brush = Brush.linearGradient(listOf(BrandPrimaryContainer, BrandPrimary)),
-                            shape = RoundedCornerShape(50),
+                            brush = AppColors.primaryGradient,
+                            shape = AppShapes.full,
                         )
                     } else {
                         Modifier.background(Color.Transparent)
                     },
                 )
                 .clickable { onClick() }
-                .padding(vertical = 12.dp),
+                .padding(vertical = AppDimens.spaceMd),
         contentAlignment = Alignment.Center,
     ) {
         Text(
             text = text,
-            color = if (selected) Color.White else colorScheme.onSurfaceVariant,
-            fontWeight = FontWeight.Bold,
-            fontSize = 14.sp,
+            color = if (selected) MaterialTheme.colorScheme.onPrimary else colorScheme.onSurfaceVariant,
+            style = MaterialTheme.typography.bodyMedium.copy(fontWeight = FontWeight.Bold),
         )
     }
 }
@@ -692,10 +685,9 @@ private fun DetailSectionTitle(title: String) {
 
     Text(
         text = title,
-        fontSize = 16.sp,
-        fontWeight = FontWeight.Bold,
+        style = MaterialTheme.typography.bodyLarge.copy(fontWeight = FontWeight.Bold),
         color = colorScheme.onSurface,
-        modifier = Modifier.padding(start = 4.dp),
+        modifier = Modifier.padding(start = AppDimens.spaceXs),
     )
 }
 
@@ -706,27 +698,23 @@ private fun DetailBillCard(
 ) {
     val colorScheme = MaterialTheme.colorScheme
 
-    Card(
-        modifier =
-            Modifier
-                .fillMaxWidth()
-                .clickable { onClick() },
-        colors = CardDefaults.cardColors(containerColor = colorScheme.surfaceContainerLowest),
-        elevation = CardDefaults.cardElevation(defaultElevation = 1.dp),
-        shape = RoundedCornerShape(20.dp),
+    ClickableAppCard(
+        onClick = onClick,
+        modifier = Modifier.fillMaxWidth(),
+        contentPadding = PaddingValues(0.dp),
     ) {
         Row(
             modifier =
                 Modifier
                     .fillMaxWidth()
-                    .padding(16.dp),
+                    .padding(AppDimens.spaceLg),
             verticalAlignment = Alignment.CenterVertically,
         ) {
             Box(
                 modifier =
                     Modifier
-                        .size(48.dp)
-                        .clip(RoundedCornerShape(16.dp))
+                        .size(AppDimens.space4Xl)
+                        .clip(AppShapes.large)
                         .background(colorScheme.primaryContainer.copy(alpha = 0.18f)),
                 contentAlignment = Alignment.Center,
             ) {
@@ -734,42 +722,40 @@ private fun DetailBillCard(
                     imageVector = Icons.AutoMirrored.Filled.ReceiptLong,
                     contentDescription = null,
                     tint = colorScheme.primary,
-                    modifier = Modifier.size(24.dp),
+                    modifier = Modifier.size(AppDimens.spaceXl),
                 )
             }
 
-            Spacer(modifier = Modifier.width(14.dp))
+            Spacer(modifier = Modifier.width(AppDimens.spaceMd))
 
             Column(modifier = Modifier.weight(1f)) {
                 Text(
                     text = bill.name,
-                    fontSize = 15.sp,
-                    fontWeight = FontWeight.Bold,
+                    style = MaterialTheme.typography.bodyLarge.copy(fontWeight = FontWeight.Bold),
                     color = colorScheme.onSurface,
                     maxLines = 1,
                     overflow = TextOverflow.Ellipsis,
                 )
-                Spacer(modifier = Modifier.height(4.dp))
+                Spacer(modifier = Modifier.height(AppDimens.spaceXs))
                 Text(
                     text = "${formatSplitMethod(bill.method)} • ${formatDate(bill.date)}",
-                    fontSize = 12.sp,
+                    style = MaterialTheme.typography.bodySmall,
                     color = colorScheme.onSurfaceVariant,
                     maxLines = 1,
                     overflow = TextOverflow.Ellipsis,
                 )
             }
 
-            Spacer(modifier = Modifier.width(12.dp))
+            Spacer(modifier = Modifier.width(AppDimens.spaceMd))
 
             Column(horizontalAlignment = Alignment.End) {
                 Text(
                     text = "${formatAmount(bill.totalAmount)} đ",
-                    fontSize = 14.sp,
-                    fontWeight = FontWeight.ExtraBold,
+                    style = MaterialTheme.typography.bodyMedium.copy(fontWeight = FontWeight.ExtraBold),
                     color = colorScheme.primary,
                     maxLines = 1,
                 )
-                Spacer(modifier = Modifier.height(4.dp))
+                Spacer(modifier = Modifier.height(AppDimens.spaceXs))
                 Surface(
                     color =
                         if (bill.isSettled()) {
@@ -777,12 +763,11 @@ private fun DetailBillCard(
                         } else {
                             colorScheme.primaryContainer.copy(alpha = 0.18f)
                         },
-                    shape = RoundedCornerShape(50),
+                    shape = AppShapes.full,
                 ) {
                     Text(
                         text = if (bill.isSettled()) "ĐÃ THANH TOÁN" else "OPEN",
-                        fontSize = 9.sp,
-                        fontWeight = FontWeight.Bold,
+                        style = MaterialTheme.typography.labelSmall.copy(fontWeight = FontWeight.Bold),
                         color = if (bill.isSettled()) colorScheme.secondary else colorScheme.primary,
                         modifier = Modifier.padding(horizontal = 6.dp, vertical = 2.dp),
                     )
@@ -804,17 +789,15 @@ private fun DetailBalanceCard(balance: GroupMemberBalance) {
             else -> colorScheme.onSurfaceVariant
         }
 
-    Card(
+    AppCard(
         modifier = Modifier.fillMaxWidth(),
-        colors = CardDefaults.cardColors(containerColor = colorScheme.surfaceContainerLowest),
-        elevation = CardDefaults.cardElevation(defaultElevation = 1.dp),
-        shape = RoundedCornerShape(20.dp),
+        contentPadding = PaddingValues(0.dp),
     ) {
         Row(
             modifier =
                 Modifier
                     .fillMaxWidth()
-                    .padding(16.dp),
+                    .padding(AppDimens.spaceLg),
             verticalAlignment = Alignment.CenterVertically,
         ) {
             Box(
@@ -828,18 +811,16 @@ private fun DetailBalanceCard(balance: GroupMemberBalance) {
                 Text(
                     text = balance.initial,
                     color = colorScheme.surfaceContainerLowest,
-                    fontSize = 16.sp,
-                    fontWeight = FontWeight.Bold,
+                    style = MaterialTheme.typography.bodyLarge.copy(fontWeight = FontWeight.Bold),
                 )
             }
 
-            Spacer(modifier = Modifier.width(14.dp))
+            Spacer(modifier = Modifier.width(AppDimens.spaceMd))
 
             Column(modifier = Modifier.weight(1f)) {
                 Text(
                     text = if (balance.isMe) "${balance.name} (Bạn)" else balance.name,
-                    fontSize = 15.sp,
-                    fontWeight = FontWeight.Bold,
+                    style = MaterialTheme.typography.bodyLarge.copy(fontWeight = FontWeight.Bold),
                     color = colorScheme.onSurface,
                     maxLines = 1,
                     overflow = TextOverflow.Ellipsis,
@@ -851,7 +832,7 @@ private fun DetailBalanceCard(balance: GroupMemberBalance) {
                             isNegative -> "Đang nợ"
                             else -> "Đã cân bằng"
                         },
-                    fontSize = 12.sp,
+                    style = MaterialTheme.typography.bodySmall,
                     color = colorScheme.onSurfaceVariant,
                 )
             }
@@ -863,8 +844,7 @@ private fun DetailBalanceCard(balance: GroupMemberBalance) {
                         isNegative -> "-${formatAmount(abs(balance.balance))} đ"
                         else -> "0 đ"
                     },
-                fontSize = 14.sp,
-                fontWeight = FontWeight.ExtraBold,
+                style = MaterialTheme.typography.bodyMedium.copy(fontWeight = FontWeight.ExtraBold),
                 color = amountColor,
                 maxLines = 1,
             )
@@ -880,22 +860,13 @@ private fun DetailSettlementCard(
 ) {
     val colorScheme = MaterialTheme.colorScheme
 
-    Card(
-        modifier =
-            Modifier
-                .fillMaxWidth()
-                .then(
-                    if (onOpenBill != null) {
-                        Modifier.clickable(onClick = onOpenBill)
-                    } else {
-                        Modifier
-                    },
-                ),
-        colors = CardDefaults.cardColors(containerColor = colorScheme.surfaceContainerLowest),
-        elevation = CardDefaults.cardElevation(defaultElevation = 1.dp),
-        shape = RoundedCornerShape(20.dp),
+    ClickableAppCard(
+        onClick = onOpenBill ?: {},
+        enabled = onOpenBill != null,
+        modifier = Modifier.fillMaxWidth(),
+        contentPadding = PaddingValues(0.dp),
     ) {
-        Column(modifier = Modifier.padding(16.dp)) {
+        Column(modifier = Modifier.padding(AppDimens.spaceLg)) {
             Row(verticalAlignment = Alignment.CenterVertically) {
                 Box(
                     modifier =
@@ -912,35 +883,33 @@ private fun DetailSettlementCard(
                         modifier = Modifier.size(22.dp),
                     )
                 }
-                Spacer(modifier = Modifier.width(12.dp))
+                Spacer(modifier = Modifier.width(AppDimens.spaceMd))
                 Column(modifier = Modifier.weight(1f)) {
                     Text(
                         text = "${settlement.fromName} trả ${settlement.toName}",
-                        fontSize = 14.sp,
-                        fontWeight = FontWeight.Bold,
+                        style = MaterialTheme.typography.bodyMedium.copy(fontWeight = FontWeight.Bold),
                         color = colorScheme.onSurface,
                         maxLines = 1,
                         overflow = TextOverflow.Ellipsis,
                     )
                     Text(
                         text = "Để cân bằng số dư nhóm",
-                        fontSize = 12.sp,
+                        style = MaterialTheme.typography.bodySmall,
                         color = colorScheme.onSurfaceVariant,
                     )
                 }
                 Text(
                     text = "${formatAmount(settlement.amount)} đ",
-                    fontSize = 14.sp,
-                    fontWeight = FontWeight.ExtraBold,
+                    style = MaterialTheme.typography.bodyMedium.copy(fontWeight = FontWeight.ExtraBold),
                     color = colorScheme.primary,
                 )
             }
 
             if (onOpenBill != null) {
-                Spacer(modifier = Modifier.height(12.dp))
+                Spacer(modifier = Modifier.height(AppDimens.spaceMd))
                 Surface(
                     color = colorScheme.primaryContainer.copy(alpha = 0.18f),
-                    shape = RoundedCornerShape(12.dp),
+                    shape = AppShapes.medium,
                 ) {
                     Text(
                         text =
@@ -952,9 +921,8 @@ private fun DetailSettlementCard(
                         modifier =
                             Modifier
                                 .fillMaxWidth()
-                                .padding(horizontal = 12.dp, vertical = 10.dp),
-                        fontSize = 12.sp,
-                        fontWeight = FontWeight.SemiBold,
+                                .padding(horizontal = AppDimens.spaceMd, vertical = AppDimens.spaceSm),
+                        style = MaterialTheme.typography.bodySmall.copy(fontWeight = FontWeight.SemiBold),
                         color = colorScheme.primary,
                     )
                 }
@@ -970,23 +938,20 @@ private fun DetailMessageCard(
 ) {
     val colorScheme = MaterialTheme.colorScheme
 
-    Card(
+    AppCard(
         modifier = Modifier.fillMaxWidth(),
-        colors = CardDefaults.cardColors(containerColor = colorScheme.surfaceContainerLowest),
-        elevation = CardDefaults.cardElevation(defaultElevation = 1.dp),
-        shape = RoundedCornerShape(24.dp),
+        contentPadding = PaddingValues(AppDimens.spaceLg),
     ) {
-        Column(modifier = Modifier.padding(20.dp)) {
+        Column {
             Text(
                 text = title,
-                fontSize = 16.sp,
-                fontWeight = FontWeight.Bold,
+                style = MaterialTheme.typography.bodyLarge.copy(fontWeight = FontWeight.Bold),
                 color = colorScheme.onSurface,
             )
-            Spacer(modifier = Modifier.height(6.dp))
+            Spacer(modifier = Modifier.height(AppDimens.spaceXs))
             Text(
                 text = message,
-                fontSize = 13.sp,
+                style = MaterialTheme.typography.bodyMedium,
                 color = colorScheme.onSurfaceVariant,
             )
         }

@@ -25,15 +25,15 @@ import androidx.compose.material.icons.filled.Add
 import androidx.compose.material.icons.filled.Notifications
 import androidx.compose.material.icons.filled.Search
 import androidx.compose.material.icons.filled.Star
-import androidx.compose.material3.Button
-import androidx.compose.material3.ButtonDefaults
 import androidx.compose.material3.Badge
 import androidx.compose.material3.BadgedBox
-import androidx.compose.material3.Card
-import androidx.compose.material3.CardDefaults
+import androidx.compose.material3.ButtonDefaults
 import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.FloatingActionButton
+import com.example.dinesplit.core.ui.AppCard
+import com.example.dinesplit.core.ui.ClickableAppCard
+import com.example.dinesplit.core.ui.AppDimens
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
@@ -121,9 +121,9 @@ fun GroupListScreen(
                 Modifier
                     .fillMaxSize()
                     .padding(paddingValues)
-                    .padding(horizontal = 20.dp),
-            contentPadding = PaddingValues(top = 16.dp, bottom = bottomPadding + 100.dp),
-            verticalArrangement = Arrangement.spacedBy(16.dp),
+                    .padding(horizontal = AppDimens.screenHorizontal),
+            contentPadding = PaddingValues(top = AppDimens.spaceLg, bottom = bottomPadding + 100.dp),
+            verticalArrangement = Arrangement.spacedBy(AppDimens.spaceLg),
         ) {
             item {
                 FinancialSummaryCard(
@@ -133,7 +133,7 @@ fun GroupListScreen(
             }
 
             item {
-                Spacer(modifier = Modifier.height(8.dp))
+                Spacer(modifier = Modifier.height(AppDimens.spaceSm))
                 Row(
                     modifier = Modifier.fillMaxWidth(),
                     horizontalArrangement = Arrangement.SpaceBetween,
@@ -141,14 +141,12 @@ fun GroupListScreen(
                 ) {
                     Text(
                         text = "Hoạt động gần đây",
-                        fontSize = 18.sp,
-                        fontWeight = FontWeight.Bold,
+                        style = MaterialTheme.typography.titleSmall.copy(fontWeight = FontWeight.Bold),
                         color = colorScheme.onSurface,
                     )
                     Text(
                         text = "Xem tất cả",
-                        fontSize = 14.sp,
-                        fontWeight = FontWeight.Bold,
+                        style = MaterialTheme.typography.labelLarge.copy(fontWeight = FontWeight.Bold),
                         color = colorScheme.primary,
                         modifier = Modifier.clickable { onNavigateToAllGroups() },
                     )
@@ -162,7 +160,7 @@ fun GroupListScreen(
                             modifier =
                                 Modifier
                                     .fillMaxWidth()
-                                    .padding(top = 32.dp),
+                                    .padding(top = AppDimens.space2Xl),
                             contentAlignment = Alignment.Center,
                         ) {
                             CircularProgressIndicator()
@@ -278,30 +276,25 @@ fun FinancialSummaryCard(
 
     Row(
         modifier = Modifier.fillMaxWidth(),
-        horizontalArrangement = Arrangement.spacedBy(16.dp),
+        horizontalArrangement = Arrangement.spacedBy(AppDimens.spaceLg),
     ) {
-        Card(
+        AppCard(
             modifier = Modifier.weight(1f),
-            colors = CardDefaults.cardColors(containerColor = colorScheme.surfaceContainerLowest),
-            shape = RoundedCornerShape(24.dp),
-            elevation = CardDefaults.cardElevation(defaultElevation = 2.dp),
+            contentPadding = PaddingValues(AppDimens.spaceLg),
         ) {
-            Column(modifier = Modifier.padding(16.dp)) {
+            Column {
                 Text(
                     text = "BẠN ĐANG NỢ",
-                    fontSize = 11.sp,
+                    style = MaterialTheme.typography.labelSmall.copy(fontWeight = FontWeight.Bold),
                     color = colorScheme.outline,
-                    fontWeight = FontWeight.Bold,
-                    letterSpacing = 0.5.sp,
                 )
-                Spacer(modifier = Modifier.height(8.dp))
+                Spacer(modifier = Modifier.height(AppDimens.spaceSm))
                 Text(
                     text = formatVnd(amountYouOwe),
-                    fontSize = 22.sp,
+                    style = MaterialTheme.typography.titleLarge.copy(fontWeight = FontWeight.ExtraBold),
                     color = colorScheme.primary,
-                    fontWeight = FontWeight.ExtraBold,
                 )
-                Spacer(modifier = Modifier.height(16.dp))
+                Spacer(modifier = Modifier.height(AppDimens.spaceLg))
                 SmallButton(
                     text = "Settle Up",
                     onClick = { },
@@ -314,28 +307,23 @@ fun FinancialSummaryCard(
             }
         }
 
-        Card(
+        AppCard(
             modifier = Modifier.weight(1f),
-            colors = CardDefaults.cardColors(containerColor = colorScheme.secondaryContainer),
-            shape = RoundedCornerShape(24.dp),
-            elevation = CardDefaults.cardElevation(defaultElevation = 0.dp),
+            contentPadding = PaddingValues(AppDimens.spaceLg),
         ) {
-            Column(modifier = Modifier.padding(16.dp)) {
+            Column {
                 Text(
                     text = "BẠN ĐƯỢC TRẢ",
-                    fontSize = 11.sp,
+                    style = MaterialTheme.typography.labelSmall.copy(fontWeight = FontWeight.Bold),
                     color = colorScheme.outline,
-                    fontWeight = FontWeight.Bold,
-                    letterSpacing = 0.5.sp,
                 )
-                Spacer(modifier = Modifier.height(8.dp))
+                Spacer(modifier = Modifier.height(AppDimens.spaceSm))
                 Text(
                     text = formatVnd(amountYouAreOwed),
-                    fontSize = 22.sp,
+                    style = MaterialTheme.typography.titleLarge.copy(fontWeight = FontWeight.ExtraBold),
                     color = colorScheme.onSecondaryContainer,
-                    fontWeight = FontWeight.ExtraBold,
                 )
-                Spacer(modifier = Modifier.height(16.dp))
+                Spacer(modifier = Modifier.height(AppDimens.spaceLg))
                 SmallButton(
                     text = "Remind",
                     onClick = { },
@@ -357,23 +345,20 @@ private fun GroupMessageCard(
 ) {
     val colorScheme = MaterialTheme.colorScheme
 
-    Card(
+    AppCard(
         modifier = Modifier.fillMaxWidth(),
-        colors = CardDefaults.cardColors(containerColor = colorScheme.surfaceContainerLowest),
-        elevation = CardDefaults.cardElevation(defaultElevation = 1.dp),
-        shape = RoundedCornerShape(20.dp),
+        contentPadding = PaddingValues(AppDimens.spaceLg),
     ) {
-        Column(modifier = Modifier.padding(20.dp)) {
+        Column {
             Text(
                 text = title,
-                fontSize = 16.sp,
-                fontWeight = FontWeight.Bold,
+                style = MaterialTheme.typography.bodyLarge.copy(fontWeight = FontWeight.Bold),
                 color = colorScheme.onSurface,
             )
-            Spacer(modifier = Modifier.height(6.dp))
+            Spacer(modifier = Modifier.height(AppDimens.spaceXs))
             Text(
                 text = message,
-                fontSize = 13.sp,
+                style = MaterialTheme.typography.bodyMedium,
                 color = colorScheme.onSurfaceVariant,
             )
         }
@@ -394,43 +379,38 @@ fun GroupCardItem(
             GroupStatusType.SETTLED -> colorScheme.onSurfaceVariant
         }
 
-    Card(
-        modifier =
-            Modifier
-                .fillMaxWidth()
-                .clickable { onClick() },
-        colors = CardDefaults.cardColors(containerColor = colorScheme.surfaceContainerLowest),
-        elevation = CardDefaults.cardElevation(defaultElevation = 1.dp),
-        shape = RoundedCornerShape(20.dp),
+    ClickableAppCard(
+        onClick = onClick,
+        modifier = Modifier.fillMaxWidth(),
+        contentPadding = PaddingValues(0.dp),
     ) {
         Row(
             modifier =
                 Modifier
                     .fillMaxWidth()
-                    .padding(16.dp),
+                    .padding(AppDimens.spaceLg),
             verticalAlignment = Alignment.CenterVertically,
         ) {
             Box(
                 modifier =
                     Modifier
-                        .size(56.dp)
-                        .clip(RoundedCornerShape(16.dp))
+                        .size(AppDimens.textFieldMinHeight)
+                        .clip(AppShapes.large)
                         .background(colorScheme.surfaceContainerHigh),
                 contentAlignment = Alignment.Center,
             ) {
                 Icon(Icons.Default.Star, contentDescription = null, tint = colorScheme.outline)
             }
 
-            Spacer(modifier = Modifier.width(16.dp))
+            Spacer(modifier = Modifier.width(AppDimens.spaceLg))
 
             Column(modifier = Modifier.weight(1f)) {
                 Text(
                     text = group.title,
-                    fontSize = 16.sp,
-                    fontWeight = FontWeight.Bold,
+                    style = MaterialTheme.typography.bodyLarge.copy(fontWeight = FontWeight.Bold),
                     color = colorScheme.onSurface,
                 )
-                Spacer(modifier = Modifier.height(4.dp))
+                Spacer(modifier = Modifier.height(AppDimens.spaceXs))
 
                 Row(verticalAlignment = Alignment.CenterVertically) {
                     GroupMemberAvatarStack(
@@ -438,8 +418,8 @@ fun GroupCardItem(
                         fallbackCount = group.avatarCount,
                         fallbackName = group.title
                     )
-                    Spacer(modifier = Modifier.width(8.dp))
-                    Text(text = group.time, fontSize = 12.sp, color = colorScheme.onSurfaceVariant)
+                    Spacer(modifier = Modifier.width(AppDimens.spaceSm))
+                    Text(text = group.time, style = MaterialTheme.typography.bodySmall, color = colorScheme.onSurfaceVariant)
                 }
             }
 
@@ -447,22 +427,20 @@ fun GroupCardItem(
                 Box(
                     modifier =
                         Modifier
-                            .clip(RoundedCornerShape(50))
+                            .clip(AppShapes.full)
                             .background(colorScheme.surfaceContainerHigh)
-                            .padding(horizontal = 10.dp, vertical = 4.dp),
+                            .padding(horizontal = AppDimens.spaceSm, vertical = AppDimens.spaceXs),
                 ) {
                     Text(
                         text = group.statusText.uppercase(),
-                        fontSize = 10.sp,
-                        fontWeight = FontWeight.Bold,
+                        style = MaterialTheme.typography.labelSmall.copy(fontWeight = FontWeight.Bold),
                         color = colorScheme.onSurfaceVariant,
                     )
                 }
             } else {
                 Text(
                     text = group.statusText,
-                    fontSize = 14.sp,
-                    fontWeight = FontWeight.Bold,
+                    style = MaterialTheme.typography.bodyMedium.copy(fontWeight = FontWeight.Bold),
                     color = statusColor,
                 )
             }
@@ -477,7 +455,7 @@ private fun GroupMemberAvatarStack(
     fallbackName: String
 ) {
     val visibleMembers = members.take(3)
-    Row(horizontalArrangement = Arrangement.spacedBy((-8).dp)) {
+    Row(horizontalArrangement = Arrangement.spacedBy(-AppDimens.spaceSm)) {
         if (visibleMembers.isEmpty()) {
             repeat(minOf(3, fallbackCount.coerceAtLeast(1))) { index ->
                 GroupMemberAvatar(
@@ -508,14 +486,14 @@ private fun GroupMemberAvatar(
     DineAvatarImage(
         imageUrl = imageUrl,
         name = name,
-        size = 24.dp,
+        size = AppDimens.spaceXl,
         modifier = Modifier.border(
             width = 1.dp,
             color = colorScheme.surfaceContainerLowest,
             shape = CircleShape
         ),
         fallbackContainerColor = avatarColor(seed),
-        fallbackContentColor = Color.White
+        fallbackContentColor = MaterialTheme.colorScheme.onPrimary
     )
 }
 

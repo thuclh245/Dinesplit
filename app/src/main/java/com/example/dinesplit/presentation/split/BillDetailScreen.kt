@@ -20,7 +20,6 @@ import androidx.compose.foundation.layout.statusBarsPadding
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.shape.CircleShape
-import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
@@ -31,12 +30,12 @@ import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.Button
 import androidx.compose.material3.ButtonDefaults
 import androidx.compose.material3.OutlinedButton
-import androidx.compose.material3.Card
-import com.example.dinesplit.domain.model.QrPayment
+import com.example.dinesplit.core.ui.AppCard
+import com.example.dinesplit.core.ui.ElevatedAppCard
 import com.example.dinesplit.core.ui.PrimaryButton
 import com.example.dinesplit.core.ui.SecondaryButton
 import com.example.dinesplit.core.ui.TertiaryButton
-import androidx.compose.material3.CardDefaults
+import com.example.dinesplit.domain.model.QrPayment
 import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.DropdownMenu
 import androidx.compose.material3.DropdownMenuItem
@@ -351,11 +350,9 @@ private fun BdReceiptHeaderCard(
 ) {
     val colorScheme = MaterialTheme.colorScheme
 
-    Card(
+    ElevatedAppCard(
         modifier = Modifier.fillMaxWidth(),
-        colors = CardDefaults.cardColors(containerColor = colorScheme.surfaceContainerLowest),
-        elevation = CardDefaults.cardElevation(defaultElevation = 2.dp),
-        shape = RoundedCornerShape(20.dp),
+        contentPadding = PaddingValues(0.dp),
     ) {
         Column(
             modifier =
@@ -480,11 +477,9 @@ private fun BdSplitBreakdown(
             modifier = Modifier.padding(start = 8.dp, bottom = 12.dp),
         )
 
-        Card(
+        AppCard(
             modifier = Modifier.fillMaxWidth(),
-            colors = CardDefaults.cardColors(containerColor = colorScheme.surfaceContainerLowest),
-            shape = RoundedCornerShape(16.dp),
-            elevation = CardDefaults.cardElevation(defaultElevation = 1.dp),
+            contentPadding = PaddingValues(0.dp),
         ) {
             Column {
                 rows.forEachIndexed { index, row ->
@@ -668,11 +663,9 @@ private fun BdItemBreakdown(items: List<BillItem>) {
             modifier = Modifier.padding(start = 8.dp, bottom = 12.dp),
         )
 
-        Card(
+        AppCard(
             modifier = Modifier.fillMaxWidth(),
-            colors = CardDefaults.cardColors(containerColor = colorScheme.surfaceContainerLowest),
-            shape = RoundedCornerShape(16.dp),
-            elevation = CardDefaults.cardElevation(defaultElevation = 1.dp),
+            contentPadding = PaddingValues(0.dp),
         ) {
             Column {
                 items.forEachIndexed { index, item ->
@@ -720,11 +713,9 @@ private fun BdFooterInfo(bill: Bill) {
     val colorScheme = MaterialTheme.colorScheme
     val isSettled = bill.status == BillStatus.SETTLED
 
-    Card(
+    AppCard(
         modifier = Modifier.fillMaxWidth(),
-        colors = CardDefaults.cardColors(containerColor = colorScheme.surfaceContainerLow),
-        shape = RoundedCornerShape(12.dp),
-        elevation = CardDefaults.cardElevation(defaultElevation = 0.dp),
+        contentPadding = PaddingValues(0.dp),
     ) {
         Column(modifier = Modifier.padding(16.dp), verticalArrangement = Arrangement.spacedBy(12.dp)) {
             Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.SpaceBetween) {
@@ -760,13 +751,11 @@ private fun BdMessageCard(
 ) {
     val colorScheme = MaterialTheme.colorScheme
 
-    Card(
+    AppCard(
         modifier = Modifier.fillMaxWidth(),
-        colors = CardDefaults.cardColors(containerColor = colorScheme.surfaceContainerLowest),
-        elevation = CardDefaults.cardElevation(defaultElevation = 1.dp),
-        shape = RoundedCornerShape(20.dp),
+        contentPadding = PaddingValues(20.dp),
     ) {
-        Column(modifier = Modifier.padding(20.dp)) {
+        Column {
             Text(title, fontSize = 16.sp, fontWeight = FontWeight.Bold, color = colorScheme.onSurface)
             Spacer(modifier = Modifier.height(6.dp))
             Text(message, fontSize = 13.sp, color = colorScheme.onSurfaceVariant)
@@ -898,13 +887,11 @@ private fun QrPaymentDialog(
                 }
                 Spacer(modifier = Modifier.height(16.dp))
 
-                Card(
+                AppCard(
                     modifier = Modifier.fillMaxWidth(),
-                    colors = CardDefaults.cardColors(containerColor = colorScheme.surfaceContainerLow),
-                    shape = RoundedCornerShape(8.dp)
+                    contentPadding = PaddingValues(12.dp),
                 ) {
                     Column(
-                        modifier = Modifier.padding(12.dp),
                         verticalArrangement = Arrangement.spacedBy(6.dp)
                     ) {
                         Row(

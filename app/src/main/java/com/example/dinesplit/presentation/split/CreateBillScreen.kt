@@ -1,6 +1,5 @@
 package com.example.dinesplit.presentation.split
 
-import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
@@ -32,11 +31,11 @@ import androidx.compose.material.icons.filled.DateRange
 import androidx.compose.material.icons.filled.Edit
 import androidx.compose.material.icons.filled.Info
 import androidx.compose.material.icons.filled.KeyboardArrowDown
-import androidx.compose.material3.Card
-import androidx.compose.material3.CardDefaults
 import androidx.compose.material3.DropdownMenu
 import androidx.compose.material3.DropdownMenuItem
 import androidx.compose.material3.HorizontalDivider
+import com.example.dinesplit.core.ui.AppCard
+import com.example.dinesplit.core.ui.OutlinedAppCard
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
@@ -250,14 +249,12 @@ private fun CreateBillTopBar(
 @Composable
 private fun FallbackMembersNotice() {
     val colorScheme = MaterialTheme.colorScheme
-    Card(
+    AppCard(
         modifier = Modifier.fillMaxWidth(),
-        colors = CardDefaults.cardColors(containerColor = colorScheme.surfaceContainerLow),
-        shape = RoundedCornerShape(16.dp),
-        elevation = CardDefaults.cardElevation(defaultElevation = 0.dp),
+        contentPadding = PaddingValues(14.dp),
     ) {
         Row(
-            modifier = Modifier.padding(14.dp),
+            modifier = Modifier.fillMaxWidth(),
             verticalAlignment = Alignment.CenterVertically,
         ) {
             Icon(Icons.Default.Info, contentDescription = null, tint = colorScheme.primary, modifier = Modifier.size(18.dp))
@@ -280,11 +277,9 @@ private fun CreateBillMainInfoCard(
     isTotalAmountEditable: Boolean,
 ) {
     val colorScheme = MaterialTheme.colorScheme
-    Card(
+    AppCard(
         modifier = Modifier.fillMaxWidth(),
-        colors = CardDefaults.cardColors(containerColor = colorScheme.surfaceContainerLowest),
-        elevation = CardDefaults.cardElevation(defaultElevation = 2.dp),
-        shape = RoundedCornerShape(16.dp),
+        contentPadding = PaddingValues(0.dp),
     ) {
         Column(modifier = Modifier.padding(20.dp)) {
             AppTextField(
@@ -383,11 +378,9 @@ private fun CreateBillPayerSection(
             modifier = Modifier.padding(start = 4.dp, bottom = 8.dp),
         )
 
-        Card(
+        OutlinedAppCard(
             modifier = Modifier.fillMaxWidth(),
-            colors = CardDefaults.cardColors(containerColor = colorScheme.surfaceContainerLowest),
-            shape = RoundedCornerShape(16.dp),
-            border = BorderStroke(1.dp, colorScheme.outlineVariant.copy(alpha = 0.3f)),
+            contentPadding = PaddingValues(0.dp),
         ) {
             Row(
                 modifier =
@@ -513,11 +506,9 @@ private fun CustomSplitDetailsList(
     onAmountChange: (String, String) -> Unit,
 ) {
     val colorScheme = MaterialTheme.colorScheme
-    Card(
+    AppCard(
         modifier = Modifier.fillMaxWidth(),
-        colors = CardDefaults.cardColors(containerColor = colorScheme.surfaceContainerLowest),
-        elevation = CardDefaults.cardElevation(defaultElevation = 2.dp),
-        shape = RoundedCornerShape(16.dp),
+        contentPadding = PaddingValues(0.dp),
     ) {
         Column {
             members.forEach { member ->
@@ -576,11 +567,9 @@ private fun ItemizedSplitDetailsList(
     onUpdateItem: (BillItem) -> Unit,
 ) {
     val colorScheme = MaterialTheme.colorScheme
-    Card(
+    AppCard(
         modifier = Modifier.fillMaxWidth(),
-        colors = CardDefaults.cardColors(containerColor = colorScheme.surfaceContainerLowest),
-        elevation = CardDefaults.cardElevation(defaultElevation = 2.dp),
-        shape = RoundedCornerShape(16.dp),
+        contentPadding = PaddingValues(0.dp),
     ) {
         Column(modifier = Modifier.padding(16.dp), verticalArrangement = Arrangement.spacedBy(14.dp)) {
             billItems.forEachIndexed { index, item ->
@@ -689,11 +678,9 @@ private fun SplitMemberListCard(
     onSelectPayer: (String) -> Unit,
 ) {
     val colorScheme = MaterialTheme.colorScheme
-    Card(
+    AppCard(
         modifier = Modifier.fillMaxWidth(),
-        colors = CardDefaults.cardColors(containerColor = colorScheme.surfaceContainerLowest),
-        elevation = CardDefaults.cardElevation(defaultElevation = 2.dp),
-        shape = RoundedCornerShape(16.dp),
+        contentPadding = PaddingValues(0.dp),
     ) {
         Column {
             members.forEach { member ->

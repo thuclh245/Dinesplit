@@ -29,9 +29,9 @@ import androidx.compose.material.icons.filled.GroupAdd
 import androidx.compose.material.icons.filled.Payments
 import androidx.compose.material3.Button
 import androidx.compose.material3.ButtonDefaults
-import androidx.compose.material3.Card
-import androidx.compose.material3.CardDefaults
 import androidx.compose.material3.FloatingActionButton
+import com.example.dinesplit.core.ui.AppCard
+import com.example.dinesplit.core.ui.ClickableAppCard
 import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Scaffold
@@ -92,13 +92,13 @@ fun SplitScreen(
             FloatingActionButton(
                 onClick = if (uiState.groups.isEmpty()) onNewGroup else onNewExpense,
                 containerColor = MaterialTheme.colorScheme.primary,
-                contentColor = Color.White,
+                contentColor = MaterialTheme.colorScheme.onPrimary,
                 shape = CircleShape,
                 modifier =
                     Modifier
                         .padding(bottom = bottomPadding)
                         .size(60.dp)
-                        .shadow(24.dp, CircleShape, spotColor = MaterialTheme.colorScheme.primary.copy(alpha = 0.4f)),
+                        .shadow(AppDimens.spaceXl, CircleShape, spotColor = MaterialTheme.colorScheme.primary.copy(alpha = 0.4f)),
             ) {
                 Icon(Icons.AutoMirrored.Filled.ReceiptLong, contentDescription = "Thêm hóa đơn", modifier = Modifier.size(30.dp))
             }
@@ -111,7 +111,7 @@ fun SplitScreen(
                     .background(MaterialTheme.colorScheme.background)
                     .padding(padding),
             contentPadding = PaddingValues(top = 72.dp, bottom = 120.dp),
-            verticalArrangement = Arrangement.spacedBy(32.dp),
+            verticalArrangement = Arrangement.spacedBy(AppDimens.space2Xl),
         ) {
             item {
                 BalanceSummaryRow(
@@ -169,7 +169,7 @@ private fun BalanceSummaryRow(
             Modifier
                 .fillMaxWidth()
                 .padding(horizontal = AppDimens.screenHorizontal),
-        horizontalArrangement = Arrangement.spacedBy(16.dp),
+        horizontalArrangement = Arrangement.spacedBy(AppDimens.spaceLg),
     ) {
         BalanceCard(
             title = "BẠN ĐANG NỢ",
@@ -219,12 +219,12 @@ private fun GroupsSection(
                 modifier = Modifier.clickable { onViewAllGroups() },
             )
         }
-        Spacer(modifier = Modifier.height(16.dp))
+        Spacer(modifier = Modifier.height(AppDimens.spaceLg))
 
         LazyRow(
             modifier = Modifier.fillMaxWidth(),
             contentPadding = PaddingValues(horizontal = AppDimens.screenHorizontal),
-            horizontalArrangement = Arrangement.spacedBy(16.dp),
+            horizontalArrangement = Arrangement.spacedBy(AppDimens.spaceLg),
         ) {
             if (groups.isEmpty()) {
                 item {
@@ -255,7 +255,7 @@ private fun RecentBillsSection(
 ) {
     Column(
         modifier = Modifier.padding(horizontal = AppDimens.screenHorizontal),
-        verticalArrangement = Arrangement.spacedBy(16.dp),
+        verticalArrangement = Arrangement.spacedBy(AppDimens.spaceLg),
     ) {
         Text(
             "Hóa đơn gần đây",
@@ -268,7 +268,7 @@ private fun RecentBillsSection(
                 message = "Tạo hóa đơn đầu tiên trong một nhóm để danh sách này tự cập nhật.",
             )
         } else {
-            Column(verticalArrangement = Arrangement.spacedBy(12.dp)) {
+            Column(verticalArrangement = Arrangement.spacedBy(AppDimens.spaceMd)) {
                 recentBills.forEach { recentBill ->
                     BillItem(
                         recentBill = recentBill,
@@ -293,11 +293,9 @@ private fun BalanceCard(
     contentColor: Color,
     showLeftBorder: Boolean = false,
 ) {
-    Card(
+    AppCard(
         modifier = modifier.height(160.dp),
-        shape = AppShapes.xLarge,
-        colors = CardDefaults.cardColors(containerColor = containerColor),
-        elevation = CardDefaults.cardElevation(defaultElevation = 2.dp),
+        contentPadding = PaddingValues(0.dp),
     ) {
         Box(modifier = Modifier.fillMaxSize()) {
             if (showLeftBorder) {
@@ -305,7 +303,7 @@ private fun BalanceCard(
                     modifier =
                         Modifier
                             .fillMaxHeight()
-                            .width(4.dp)
+                            .width(AppDimens.spaceXs)
                             .background(contentColor)
                             .align(Alignment.CenterStart),
                 )
@@ -313,14 +311,14 @@ private fun BalanceCard(
             Column(
                 modifier =
                     Modifier
-                        .padding(20.dp)
+                        .padding(AppDimens.spaceLg)
                         .fillMaxSize(),
                 verticalArrangement = Arrangement.SpaceBetween,
             ) {
                 Column {
                     Text(
                         title,
-                        style = MaterialTheme.typography.labelSmall.copy(fontWeight = FontWeight.Bold, letterSpacing = 1.sp),
+                        style = MaterialTheme.typography.labelSmall.copy(fontWeight = FontWeight.Bold),
                         color = MaterialTheme.colorScheme.outlineVariant,
                     )
                     Row(verticalAlignment = Alignment.Bottom) {
@@ -334,7 +332,7 @@ private fun BalanceCard(
                             "đ",
                             style = MaterialTheme.typography.labelLarge.copy(fontWeight = FontWeight.SemiBold),
                             color = contentColor,
-                            modifier = Modifier.padding(bottom = 4.dp, start = 2.dp),
+                            modifier = Modifier.padding(bottom = AppDimens.spaceXs, start = 2.dp),
                         )
                     }
                 }
@@ -345,7 +343,7 @@ private fun BalanceCard(
                     colors =
                         ButtonDefaults.buttonColors(
                             containerColor = if (showLeftBorder) MaterialTheme.colorScheme.secondaryContainer else Color.Transparent,
-                            contentColor = if (showLeftBorder) MaterialTheme.colorScheme.onSecondaryContainer else Color.White,
+                            contentColor = if (showLeftBorder) MaterialTheme.colorScheme.onSecondaryContainer else MaterialTheme.colorScheme.onPrimary,
                         ),
                     modifier =
                         Modifier.then(
@@ -381,33 +379,24 @@ private fun GroupCard(
             else -> "$openCount hóa đơn mở"
         }
 
-    Card(
+    ClickableAppCard(
+        onClick = onClick,
         modifier =
             Modifier
                 .width(240.dp)
-                .height(192.dp)
-                .clickable { onClick() },
-        shape = RoundedCornerShape(24.dp),
-        colors =
-            CardDefaults.cardColors(
-                containerColor =
-                    if (isSettled) {
-                        MaterialTheme.colorScheme.secondaryContainer.copy(alpha = 0.3f)
-                    } else {
-                        MaterialTheme.colorScheme.surfaceContainer
-                    },
-            ),
+                .height(192.dp),
+        contentPadding = PaddingValues(0.dp),
     ) {
         Box(
             modifier =
                 Modifier
                     .fillMaxSize()
-                    .padding(20.dp),
+                    .padding(AppDimens.spaceLg),
         ) {
             Column(modifier = Modifier.fillMaxSize(), verticalArrangement = Arrangement.SpaceBetween) {
                 Column {
                     GroupInitialStack(group = group)
-                    Spacer(modifier = Modifier.height(12.dp))
+                    Spacer(modifier = Modifier.height(AppDimens.spaceMd))
                     Text(
                         group.name,
                         style = MaterialTheme.typography.titleMedium.copy(fontWeight = FontWeight.Bold),
@@ -428,12 +417,12 @@ private fun GroupCard(
                 ) {
                     Surface(
                         color = if (isSettled) MaterialTheme.colorScheme.secondaryContainer else MaterialTheme.colorScheme.surfaceContainerHighest,
-                        shape = RoundedCornerShape(8.dp),
+                        shape = AppShapes.small,
                     ) {
                         Text(
                             status,
-                            modifier = Modifier.padding(horizontal = 8.dp, vertical = 4.dp),
-                            style = MaterialTheme.typography.labelSmall.copy(fontSize = 9.sp, fontWeight = FontWeight.Bold),
+                            modifier = Modifier.padding(horizontal = AppDimens.spaceSm, vertical = AppDimens.spaceXs),
+                            style = MaterialTheme.typography.labelSmall.copy(fontWeight = FontWeight.Bold),
                             color = if (isSettled) MaterialTheme.colorScheme.onSecondaryContainer else MaterialTheme.colorScheme.onSurface,
                         )
                     }
@@ -452,7 +441,7 @@ private fun GroupCard(
 @Composable
 private fun GroupInitialStack(group: Group) {
     val surfaceColor = MaterialTheme.colorScheme.background
-    Row(horizontalArrangement = Arrangement.spacedBy((-8).dp)) {
+    Row(horizontalArrangement = Arrangement.spacedBy(-AppDimens.spaceSm)) {
         val visibleCount = minOf(group.memberCount.coerceAtLeast(1), 3)
         repeat(visibleCount) { index ->
             Box(
@@ -487,7 +476,7 @@ private fun GroupInitialStack(group: Group) {
                         .background(MaterialTheme.colorScheme.surfaceVariant, CircleShape),
                 contentAlignment = Alignment.Center,
             ) {
-                Text("+$extraMembers", style = MaterialTheme.typography.labelSmall.copy(fontSize = 9.sp, fontWeight = FontWeight.Bold))
+                Text("+$extraMembers", style = MaterialTheme.typography.labelSmall.copy(fontWeight = FontWeight.Bold))
             }
         }
     }
@@ -500,8 +489,8 @@ private fun CreateGroupDashboardCard(onClick: () -> Unit) {
             Modifier
                 .width(240.dp)
                 .height(192.dp)
-                .border(2.dp, MaterialTheme.colorScheme.outlineVariant.copy(alpha = 0.3f), RoundedCornerShape(20.dp))
-                .clip(RoundedCornerShape(20.dp))
+                .border(2.dp, MaterialTheme.colorScheme.outlineVariant.copy(alpha = 0.3f), AppShapes.xLarge)
+                .clip(AppShapes.xLarge)
                 .clickable { onClick() },
         contentAlignment = Alignment.Center,
     ) {
@@ -538,20 +527,20 @@ private fun BillItem(
         color = MaterialTheme.colorScheme.surfaceContainerLowest,
     ) {
         Row(
-            modifier = Modifier.padding(16.dp),
+            modifier = Modifier.padding(AppDimens.spaceLg),
             verticalAlignment = Alignment.CenterVertically,
             horizontalArrangement = Arrangement.SpaceBetween,
         ) {
             Row(
                 modifier = Modifier.weight(1f),
                 verticalAlignment = Alignment.CenterVertically,
-                horizontalArrangement = Arrangement.spacedBy(16.dp),
+                horizontalArrangement = Arrangement.spacedBy(AppDimens.spaceLg),
             ) {
                 Box(
                     modifier =
                         Modifier
                             .size(48.dp)
-                            .background(MaterialTheme.colorScheme.primary.copy(alpha = 0.1f), RoundedCornerShape(16.dp)),
+                            .background(MaterialTheme.colorScheme.primary.copy(alpha = 0.1f), AppShapes.large),
                     contentAlignment = Alignment.Center,
                 ) {
                     Icon(
@@ -585,16 +574,14 @@ private fun BillItem(
                 )
                 Surface(
                     color = amountInfo.color.copy(alpha = 0.1f),
-                    shape = RoundedCornerShape(4.dp),
+                    shape = RoundedCornerShape(AppDimens.radiusSm),
                 ) {
                     Text(
                         if (bill.isSettled()) "SETTLED" else "OPEN",
                         modifier = Modifier.padding(horizontal = 6.dp, vertical = 2.dp),
                         style =
                             MaterialTheme.typography.labelSmall.copy(
-                                fontSize = 8.sp,
                                 fontWeight = FontWeight.Black,
-                                letterSpacing = 0.5.sp,
                             ),
                         color = amountInfo.color,
                     )
@@ -609,15 +596,13 @@ private fun DashboardMessageCard(
     title: String,
     message: String,
 ) {
-    Card(
+    AppCard(
         modifier = Modifier.fillMaxWidth(),
-        colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surfaceContainerLowest),
-        shape = AppShapes.large,
-        elevation = CardDefaults.cardElevation(defaultElevation = 1.dp),
+        contentPadding = PaddingValues(AppDimens.spaceLg),
     ) {
-        Column(modifier = Modifier.padding(18.dp)) {
+        Column {
             Text(title, fontWeight = FontWeight.Bold, color = MaterialTheme.colorScheme.onSurface)
-            Spacer(modifier = Modifier.height(4.dp))
+            Spacer(modifier = Modifier.height(AppDimens.spaceXs))
             Text(
                 text = message,
                 style = MaterialTheme.typography.bodyMedium,
