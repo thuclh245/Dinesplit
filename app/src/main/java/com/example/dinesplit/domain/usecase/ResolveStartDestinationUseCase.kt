@@ -14,8 +14,9 @@ class ResolveStartDestinationUseCase(
             val profile = getCurrentUserProfileUseCase(session.uid)
             if (profile == null) {
                 // Profile document genuinely does not exist in Firestore.
-                // Let the user self-heal by routing them to Complete Profile to create one.
-                AppStartDestination.COMPLETE_PROFILE
+                // Sign out of orphan auth session to force user back to Login/Register screen.
+                authRepository.logout()
+                AppStartDestination.AUTH
             } else if (profile.isComplete()) {
                 AppStartDestination.MAIN
             } else {

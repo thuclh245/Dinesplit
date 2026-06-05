@@ -1,458 +1,477 @@
-# DineSplit — Firestore Database Schema
+# DineSplit — Firestore Database Schema (Cập nhật toàn diện & Đồng bộ Thực tế)
 
-## Tổng quan kiến trúc
+Tài liệu này đặc tả chi tiết cấu trúc các collection và document của Firestore được đồng bộ chính xác với mã nguồn ứng dụng DineSplit và mô hình tích hợp thanh toán QR VNPay-style tự động.
+
+---
+
+## 🏗️ Kiến Trúc Tổng Thể
 
 ```
-Firebase Services:
-├── Firestore      → Tất cả structured data
-├── Storage        → Ảnh (avatars, posts, bill receipts)
-├── Auth           → Authentication (đã có)
-├── Messaging      → Push notifications (FCM)
-└── Cloud Functions → Triggers (notifications, QR payment verify)
+Firebase Firestore:
+├── users/                     → Thông tin người dùng
+├── usernames/                 → Registry duy nhất của username
+├── posts/                     → Bảng tin ẩm thực mạng xã hội
+│   └── sub: comments/         → Bình luận dưới bài viết
+├── groups/                    → Nhóm chia tiền (Split Bill)
+│   ├── sub: members/          → Chi tiết thành viên trong nhóm
+│   └── sub: bills/            → Danh sách hóa đơn trong nhóm
+├── user_notifications/        → Hòm thư thông báo của từng người dùng
+│   └── sub: notifications/    → Danh sách thông báo
+├── user_personal/             → Quản lý tài chính cá nhân (Personal Module)
+│   ├── sub: transactions/     → Các giao dịch thu chi cá nhân
+│   ├── sub: categories/       → Danh mục thu chi (mặc định + tự tạo)
+│   ├── sub: wallets/          → Ví tài khoản (Tiền mặt, ngân hàng...)
+│   ├── sub: goals/            → Mục tiêu tiết kiệm
+│   ├── sub: reminders/        → Ngân sách cảnh báo chi tiêu
+│   └── sub: recurring_rules/  → Hóa đơn định kỳ (Netflix, điện nước...)
+└── qr_payments/               → Giao dịch thanh toán QR (VNPay-style webhook)
 ```
 
 ---
 
-## Collections & Documents
+## 💾 Đặc tả Chi tiết Collections & Documents
+
+### 1. `users` — Hồ sơ người dùng
+* **Path**: `/users/{uid}`
+* **Schema**:
+```json
+{
+  "uid": "string",
+  "displayName": "string",
+  "username": "string",
+  "usernameLower": "string",       // [BẮT BUỘC] lowercase để truy vấn tìm kiếm
+  "email": "string",
+  "avatarUrl": "string",
+  "bio": "string",
+  "diningStyles": ["string"],      // Ví dụ: ["Street Food", "Cafe Hopper"]
+  "followersCount": 0,
+  "followingCount": 0,
+  "postsCount": 0,
+  "fcmToken": "string",            // Token nhận tin báo Firebase Cloud Messaging
+  "savedPostIds": ["string"],      // Danh sách ID bài đăng đã bookmark
+  "followingIds": ["string"],      // Danh sách UID đang theo dõi (để tìm kiếm bạn bè nhanh)
+  "followerIds": ["string"],       // Danh sách UID đang theo dõi lại (follow ngược)
+  "isPublic": true,                // Chế độ công khai tài khoản
+  "createdAt": "timestamp/date",
+  "updatedAt": "timestamp/date"
+}
+```
+* **Sub-collections**:
+  * `/users/{uid}/followers/{followerUid}`: `{ "followedAt": timestamp }`
+  * `/users/{uid}/following/{followingUid}`: `{ "followedAt": timestamp }`
 
 ---
 
-### 1. `users` — Thông tin người dùng
-
-```
-/users/{uid}
+### 2. `usernames` — Registry tránh trùng lặp tên người dùng
+* **Path**: `/usernames/{usernameLower}`
+* **Schema**:
+```json
 {
-  uid: string,
-  displayName: string,
-  username: string,           // unique, lowercase
-  email: string,
-  avatarUrl: string,
-  bio: string,
-  diningStyles: string[],    // ["fine_dining", "cafe_hopper", "nightlife"]
-  followersCount: number,
-  followingCount: number,
-  postsCount: number,
-  fcmToken: string,           // cho push notification
-  createdAt: timestamp,
-  updatedAt: timestamp
-}
-```
-
-**Sub-collection:**
-```
-/users/{uid}/followers/{followerUid}
-{
-  uid: string,
-  followedAt: timestamp
-}
-
-/users/{uid}/following/{followingUid}
-{
-  uid: string,
-  followedAt: timestamp
-}
-```
-
----
-
-### 2. `usernames` — Username uniqueness (đã có)
-
-```
-/usernames/{username}
-{
-  uid: string
-}
-```
-
----
-
-### 3. `groups` — Nhóm chia tiền
-
-```
-/groups/{groupId}
-{
-  id: string,
-  name: string,
-  avatarUrl: string,
-  category: string,           // "food", "travel", "housing", "other"
-  createdBy: string,          // uid của người tạo
-  admins: string[],           // danh sách uid có quyền admin
-  members: string[],          // danh sách tất cả uid (bao gồm admins)
-  memberCount: number,
-  totalSpent: number,         // tổng chi tiêu nhóm
-  isSettled: boolean,         // nhóm đã tất toán chưa
-  qrPaymentEnabled: boolean,  // bật tính năng QR chung
-  qrBankAccount: string,      // số tài khoản nhận tiền chung (nếu có)
-  qrBankName: string,         // tên ngân hàng
-  qrAccountHolder: string,    // tên chủ tài khoản
-  createdAt: timestamp,
-  updatedAt: timestamp
-}
-```
-
-**Sub-collection:**
-```
-/groups/{groupId}/members_detail/{uid}
-{
-  uid: string,
-  displayName: string,
-  avatarUrl: string,
-  role: string,               // "admin" | "member"
-  joinedAt: timestamp,
-  totalOwed: number,          // tổng nợ trong nhóm
-  totalPaid: number           // tổng đã trả
+  "uid": "string"
 }
 ```
 
 ---
 
-### 4. `bills` — Hóa đơn trong nhóm
-
-```
-/bills/{billId}
+### 3. `groups` — Nhóm chia tiền (Split Bill)
+* **Path**: `/groups/{groupId}`
+* **Schema**:
+```json
 {
-  id: string,
-  groupId: string,
-  title: string,
-  totalAmount: number,
-  currency: string,           // "VND"
-  paidBy: string,             // uid người trả tiền
-  splitMethod: string,        // "equal" | "custom" | "by_item"
-  date: timestamp,            // ngày hóa đơn
-  note: string,
-  receiptUrl: string,         // ảnh hóa đơn (optional)
-  createdBy: string,          // uid người tạo bill
-  isSettled: boolean,         // tất cả đã trả chưa
-  createdAt: timestamp,
-  updatedAt: timestamp
+  "id": "string",
+  "name": "string",
+  "imageUrl": "string",
+  "memberCount": 0,
+  "memberIds": ["string"],         // [BẮT BUỘC] danh sách UID thành viên để truy vấn nhanh
+  "leftMemberIds": ["string"],     // Các thành viên đã rời nhóm
+  "ownerId": "string",             // UID của chủ nhóm
+  "totalExpense": 0.0,             // Tổng chi tiêu của nhóm
+  "yourBalance": 0.0,              // Số dư tạm tính của user hiện tại
+  "createdAt": "timestamp/date",
+  "updatedAt": "timestamp/date"
 }
 ```
 
-**Sub-collection:**
-```
-/bills/{billId}/splits/{uid}
+* **Sub-collections**:
+  * **Thành viên chi tiết** (`/groups/{groupId}/members/{uid}`)
+    ```json
+    {
+      "id": "string",
+      "name": "string",
+      "initial": "string",         // Chữ cái đại diện avatar (ví dụ: "T")
+      "avatarUrl": "string",
+      "isMe": true
+    }
+    ```
+
+  * **Hóa đơn** (`/groups/{groupId}/bills/{billId}`)
+    ```json
+    {
+      "id": "string",
+      "groupId": "string",
+      "name": "string",
+      "totalAmount": 0.0,
+      "payerId": "string",         // UID người trả tiền trước
+      "method": "EQUAL | CUSTOM | ITEMIZED",
+      "items": [                   // Chi tiết các món ăn (nếu chia theo item)
+        {
+          "id": "string",
+          "name": "string",
+          "price": 0.0,
+          "sharedByMemberIds": ["string"]
+        }
+      ],
+      "shares": {                  // Phân bổ nợ: { "UID_thành_viên": số_tiền }
+        "uid_member_1": 50000.0,
+        "uid_member_2": 50000.0
+      },
+      "paidMemberIds": ["string"], // Danh sách UID đã hoàn tiền cho Payer
+      "date": "timestamp/date"     // Ngày ăn uống / thanh toán hóa đơn
+    }
+    ```
+
+---
+
+### 4. `posts` — Mạng xã hội Feed
+* **Path**: `/posts/{postId}`
+* **Schema**:
+```json
 {
-  uid: string,
-  displayName: string,
-  amount: number,             // số tiền phải trả
-  isPaid: boolean,
-  paidAt: timestamp | null,
-  paidVia: string | null      // "manual" | "qr_transfer" | null
+  "id": "string",
+  "authorUid": "string",
+  "authorName": "string",
+  "authorAvatar": "string",
+  "caption": "string",
+  "imageUrls": ["string"],
+  "videoUrls": ["string"],
+  "location": "string | null",
+  "linkedGroupId": "string | null", // Link tới Group liên quan hóa đơn (nếu có)
+  "linkedBillId": "string | null",  // Link tới Bill liên quan (nếu có)
+  "likesCount": 0,
+  "likedBy": ["string"],           // Mảng chứa các UID đã thích bài
+  "commentsCount": 0,
+  "sharesCount": 0,
+  "visibility": "public | followers_only",
+  "tags": ["string"],
+  "createdAt": "timestamp/date",
+  "updatedAt": "timestamp/date"
+}
+```
+* **Sub-collection**:
+  * **Bình luận** (`/posts/{postId}/comments/{commentId}`)
+    ```json
+    {
+      "id": "string",
+      "postId": "string",
+      "authorUid": "string",
+      "authorName": "string",
+      "authorAvatar": "string",
+      "content": "string",
+      "createdAt": "timestamp/date"
+    }
+    ```
+
+---
+
+### 5. `user_notifications` — Hộp thư thông báo
+* **Path**: `/user_notifications/{userId}/notifications/{notificationId}`
+* **Schema**:
+```json
+{
+  "id": "string",
+  "userId": "string",
+  "title": "string",
+  "subtitle": "string",
+  "type": "BILL_CREATED | PAYMENT_PENDING | PAYMENT_COMPLETED | TRANSACTION_ALERT | ACTIVITY_UPDATE | OTHER",
+  "relatedId": "string",                // ID của bài đăng/bill liên quan
+  "isRead": false,
+  "deepLinkDestination": "string",      // Màn hình đích khi click thông báo (ví dụ: BILL_DETAIL)
+  "deepLinkTargetId": "string",         // ID đối tượng đích chuyển tới
+  "senderId": "string | null",
+  "groupId": "string | null",
+  "createdAt": "timestamp/date",
+  "updatedAt": "timestamp/date"
 }
 ```
 
 ---
 
-### 5. `settlements` — Lịch sử thanh toán / chốt sổ
+### 6. `user_personal` — Mô-đun Quản lý Tài chính Cá nhân
+* **Path**: `/user_personal/{userId}`
+* **Sub-collections**:
+  * **Giao dịch thu chi** (`/user_personal/{userId}/transactions/{transactionId}`)
+    ```json
+    {
+      "id": "string",
+      "userId": "string",
+      "amount": 0.0,
+      "type": "INCOME | EXPENSE",
+      "categoryId": "string",
+      "category": "string",            // Tên danh mục (ví dụ: "Ăn ngoài")
+      "note": "string",
+      "date": "timestamp/date",
+      "createdAt": "timestamp/date",
+      "updatedAt": "timestamp/date",
+      "source": "MANUAL | SPLIT | RECURRING | RECEIPT",
+      "sourceGroupId": "string | null",// ID nhóm liên quan (nếu tự động đồng bộ từ quyết toán)
+      "sourceBillId": "string | null",
+      "recurringRuleId": "string | null",
+      "receiptImageUrl": "string | null",
+      "walletId": "string | null"      // Tài khoản ví thanh toán
+    }
+    ```
 
-```
-/settlements/{settlementId}
+  * **Danh mục** (`/user_personal/{userId}/categories/{categoryId}`)
+    ```json
+    {
+      "id": "string",
+      "name": "string",
+      "icon": "string",                // Mã icon ký tự hoặc tên icon
+      "type": "INCOME | EXPENSE",
+      "isCustom": false,               // Mặc định hay người dùng tự tạo
+      "description": "string",
+      "amountLabel": "string",
+      "progress": 0.0,                 // Tiến trình chi tiêu (%)
+      "isActive": true
+    }
+    ```
+
+  * **Ví tài khoản** (`/user_personal/{userId}/wallets/{walletId}`)
+    ```json
+    {
+      "id": "string",
+      "userId": "string",
+      "name": "string",                // "Ví Momo", "Techcombank", "Tiền mặt"
+      "walletType": "CASH | BANK | EWALLET | CREDIT",
+      "balance": 0.0,                  // Số dư khả dụng
+      "color": "string",               // Mã màu Hex hiển thị UI
+      "isArchived": false,
+      "createdAt": "timestamp/date",
+      "updatedAt": "timestamp/date"
+    }
+    ```
+
+  * **Mục tiêu tiết kiệm** (`/user_personal/{userId}/goals/{goalId}`)
+    ```json
+    {
+      "id": "string",
+      "userId": "string",
+      "title": "string",               // Ví dụ: "Quỹ mua Macbook M4"
+      "targetAmount": 0.0,             // Số tiền mục tiêu
+      "currentAmount": 0.0,            // Số tiền hiện đã gom
+      "categoryId": "string | null",
+      "deadlineAt": "timestamp/date",
+      "status": "ACTIVE | COMPLETED | PAUSED",
+      "createdAt": "timestamp/date",
+      "updatedAt": "timestamp/date"
+    }
+    ```
+
+  * **Hạn mức chi tiêu** (`/user_personal/{userId}/reminders/{reminderId}`)
+    ```json
+    {
+      "id": "string",
+      "userId": "string",
+      "categoryId": "string | null",   // null nghĩa là áp dụng tổng chi tiêu
+      "categoryName": "string",        // "Overall" nếu categoryId = null
+      "budgetAmount": 0.0,             // Ngân sách tối đa
+      "currentSpent": 0.0,             // Thực tế đã chi tiêu
+      "threshold": 0.8,                // Cảnh báo khi chạm 80% ngân sách
+      "reminderType": "DAILY | WEEKLY | MONTHLY | MILESTONE",
+      "isEnabled": true,
+      "lastAlertedAt": "timestamp/date | null",
+      "createdAt": "timestamp/date",
+      "updatedAt": "timestamp/date"
+    }
+    ```
+
+  * **Hóa đơn định kỳ** (`/user_personal/{userId}/recurring_rules/{ruleId}`)
+    ```json
+    {
+      "id": "string",
+      "userId": "string",
+      "name": "string",                // Tên (ví dụ: "Gói gia đình Netflix")
+      "amount": 0.0,
+      "type": "INCOME | EXPENSE",
+      "categoryId": "string",
+      "categoryName": "string",
+      "cadence": "WEEKLY | MONTHLY",
+      "dayOfMonth": 15,                // Ngày thanh toán tự động trong tháng
+      "nextRunAt": "timestamp/date",
+      "isEnabled": true,
+      "createdAt": "timestamp/date",
+      "updatedAt": "timestamp/date"
+    }
+    ```
+
+---
+
+### 7. `qr_payments` — Thanh toán tự động liên kết VNPay-Style (VietQR)
+* **Path**: `/qr_payments/{paymentId}`
+* **Schema**:
+```json
 {
-  id: string,
-  groupId: string,
-  billId: string | null,      // null nếu là settle tổng hợp
-  fromUid: string,            // người trả
-  toUid: string,              // người nhận
-  amount: number,
-  method: string,             // "manual" | "qr_transfer"
-  qrTransactionRef: string,   // mã giao dịch từ bank (nếu QR)
-  note: string,
-  status: string,             // "pending" | "confirmed" | "rejected"
-  confirmedAt: timestamp | null,
-  createdAt: timestamp
+  "id": "string",                      // [BẮT BUỘC] Payment ID, chính là chuỗi giao dịch tạo ra QR
+  "groupId": "string",
+  "billId": "string",
+  "payerUid": "string",                // Người chuyển tiền nợ
+  "receiverUid": "string",             // Người nhận tiền (Payer của Bill gốc)
+  "amount": 0.0,                       // Số tiền cần chuyển khoản
+  "description": "string",             // Nội dung chuyển khoản duy nhất (Ví dụ: "DSPLIT 2a98f47f")
+  "status": "PENDING | VERIFIED | FAILED", // Trạng thái thanh toán
+  "bankTransactionRef": "string | null",// Mã tham chiếu từ ngân hàng chuyển tới (sau khi verify thành công)
+  "paymentGateway": "string",          // Cổng đối tác (ví dụ: "vnpay", "vietqr_gateway")
+  "createdAt": "timestamp/date",
+  "verifiedAt": "timestamp/date | null"
 }
 ```
 
 ---
 
-### 6. `qr_payments` — QR Payment chung (VNPay-style)
+## ⚡ Quy trình Thanh toán tự động VNPay-Style (VietQR Callback Webhook)
 
+Để đơn giản hóa và loại bỏ việc người dùng phải đối soát thủ công ("Check tài khoản ngân hàng xem ai đã gửi tiền"), hệ thống áp dụng luồng tự động hóa thanh toán sau:
+
+```mermaid
+sequenceDiagram
+    autonumber
+    actor Payer as Thành viên nợ (Payer)
+    participant App as Ứng dụng DineSplit
+    participant Firestore as Firestore Database
+    participant Bank as Cổng Ngân Hàng (VNPay / VietQR)
+    participant Webhook as Webhook Server (Cloud Function)
+    actor Owner as Người tạo Bill (Owner)
+
+    Payer->>App: Mở hóa đơn nợ & Chọn thanh toán QR
+    App->>Firestore: Ghi tài liệu mới vào /qr_payments với ID duy nhất
+    Firestore-->>App: Trả về paymentId
+    Note over App: App generate mã VietQR động chứa:<br/>- STK người nhận<br/>- Số tiền (amount)<br/>- Nội dung chuyển khoản: "DSPLIT {paymentId}"
+    App->>Payer: Hiển thị mã VietQR động lên màn hình
+    Payer->>Bank: Quét mã QR bằng App Ngân hàng & Xác nhận chuyển tiền
+    Bank->>Bank: Xử lý chuyển khoản liên ngân hàng 24/7
+    Bank->>Webhook: Gửi Callback/Webhook thông báo biến động số dư (Nội dung: "DSPLIT {paymentId}", mã giao dịch)
+    Webhook->>Webhook: Parse nội dung tin nhắn, trích xuất {paymentId}
+    Webhook->>Firestore: Cập nhật status tại /qr_payments/{paymentId} thành "VERIFIED"
+    Webhook->>Firestore: Thêm UID người trả vào mảng paidMemberIds của Bill tương ứng
+    Firestore-->>App: Realtime listener thông báo trạng thái "Xác nhận thành công"
+    App->>Payer: Hiển thị màn hình: "Giao dịch đã xác nhận thành công! ✓"
+    App->>Owner: Gửi thông báo: "Bạn đã nhận được tiền hoàn trả từ {Tên người gửi}"
 ```
-/qr_payments/{paymentId}
-{
-  id: string,
-  groupId: string,
-  billId: string | null,
-  payerUid: string,           // người chuyển tiền
-  receiverUid: string,        // người nhận (admin/người tạo bill)
-  amount: number,
-  bankTransactionRef: string, // mã giao dịch ngân hàng
-  qrContent: string,          // nội dung QR đã generate
-  status: string,             // "pending" | "verified" | "failed"
-  verifiedAt: timestamp | null,
-  createdAt: timestamp
-}
-```
+
+### Cách thức hoạt động chi tiết của Webhook xử lý:
+1. **VietQR / VNPay:** Khi tạo QR, ứng dụng sẽ tạo nội dung chuyển tiền (`description`) chứa cú pháp: `DSPLIT [paymentId]`.
+2. **Callback Ngân hàng:** Khi ngân hàng nhận tiền chuyển khoản đúng nội dung trên, một API webhook (Cloud Function) sẽ được gọi.
+3. **Cập nhật Realtime:** Webhook lấy `paymentId` từ nội dung, tìm bản ghi `/qr_payments/{paymentId}`, cập nhật `status = "VERIFIED"`. Sau đó, Cloud Function tự động cập nhật mảng `paidMemberIds` trong tài liệu `/groups/{groupId}/bills/{billId}` và gửi thông báo biến động số dư cho cả người nhận lẫn người gửi.
 
 ---
 
-### 7. `posts` — Social Feed
+## 🔒 Firestore Security Rules (Cơ chế phân quyền bảo mật)
 
-```
-/posts/{postId}
-{
-  id: string,
-  authorUid: string,
-  authorName: string,         // denormalized cho query nhanh
-  authorAvatar: string,       // denormalized
-  caption: string,
-  imageUrls: string[],        // nhiều ảnh, lưu trên Firebase Storage
-  location: string | null,    // "Haidilao Vincom, HCM"
-  linkedGroupId: string | null,   // link đến group (optional)
-  linkedBillId: string | null,    // link đến bill (optional)
-  likesCount: number,
-  commentsCount: number,
-  visibility: string,         // "public" | "followers_only"
-  tags: string[],             // hashtags hoặc tagged users
-  createdAt: timestamp,
-  updatedAt: timestamp
-}
-```
-
-**Sub-collections:**
-```
-/posts/{postId}/likes/{uid}
-{
-  uid: string,
-  likedAt: timestamp
-}
-
-/posts/{postId}/comments/{commentId}
-{
-  id: string,
-  authorUid: string,
-  authorName: string,
-  authorAvatar: string,
-  content: string,
-  createdAt: timestamp
-}
-```
-
----
-
-### 8. `notifications` — Thông báo
-
-```
-/notifications/{notificationId}
-{
-  id: string,
-  recipientUid: string,       // người nhận
-  type: string,               // xem bảng types bên dưới
-  title: string,
-  body: string,
-  data: map {                 // payload tùy theo type
-    groupId: string | null,
-    billId: string | null,
-    postId: string | null,
-    fromUid: string | null,
-    fromName: string | null,
-    amount: number | null
-  },
-  isRead: boolean,
-  createdAt: timestamp
-}
-```
-
-**Notification Types:**
-| Type | Trigger | Ví dụ |
-|------|---------|-------|
-| `bill_created` | Có bill mới trong group | "Minh tạo hóa đơn Lẩu Haidilao - 1.200.000đ" |
-| `payment_received` | Ai đó trả tiền cho bạn | "Thanh Hằng đã trả 200.000đ" |
-| `payment_reminder` | Nhắc nợ | "Minh nhắc bạn trả 150.000đ" |
-| `qr_payment_verified` | QR payment xác nhận | "Giao dịch 200.000đ đã được xác nhận" |
-| `group_invite` | Được mời vào group | "Bạn được mời vào nhóm Biệt đội lẩu" |
-| `post_like` | Ai đó like post | "Thanh Hằng thích bài viết của bạn" |
-| `post_comment` | Ai đó comment | "Minh bình luận: Ngon quá!" |
-| `new_follower` | Có người follow | "linh_eats bắt đầu theo dõi bạn" |
-| `settle_complete` | Group đã tất toán | "Nhóm Cuối tuần ăn vặt đã tất toán!" |
-
----
-
-### 9. `feed_timeline` — Feed cá nhân (denormalized cho performance)
-
-```
-/feed_timeline/{uid}/posts/{postId}
-{
-  postId: string,
-  authorUid: string,
-  createdAt: timestamp
-}
-```
-
-> Khi user A post, Cloud Function sẽ fan-out postId vào feed_timeline của tất cả followers. Giúp query feed nhanh mà không cần join.
-
----
-
-## Firebase Storage Structure
-
-```
-/avatars/{uid}/profile.jpg
-/posts/{postId}/{imageIndex}.jpg        // 0.jpg, 1.jpg, 2.jpg...
-/bills/{billId}/receipt.jpg
-/groups/{groupId}/avatar.jpg
-```
-
----
-
-## Firestore Indexes (cần tạo)
-
-| Collection | Fields | Order |
-|-----------|--------|-------|
-| `bills` | groupId, createdAt | ASC, DESC |
-| `posts` | authorUid, createdAt | ASC, DESC |
-| `notifications` | recipientUid, isRead, createdAt | ASC, ASC, DESC |
-| `settlements` | groupId, createdAt | ASC, DESC |
-| `feed_timeline/{uid}/posts` | createdAt | DESC |
-
----
-
-## Firestore Security Rules (cơ bản)
+Dưới đây là đặc tả các quy tắc bảo mật Firestore (Security Rules) bảo vệ toàn vẹn dữ liệu cho DineSplit:
 
 ```javascript
 rules_version = '2';
 service cloud.firestore {
   match /databases/{database}/documents {
 
-    // Users: chỉ owner mới sửa được profile mình
-    match /users/{uid} {
-      allow read: if request.auth != null;
-      allow write: if request.auth.uid == uid;
+    // Helper kiểm tra người dùng đã đăng nhập
+    function isNewUserAuthenticated() {
+      return request.auth != null;
+    }
+
+    // Helper kiểm tra quyền sở hữu tài liệu cá nhân
+    function isOwner(userId) {
+      return isNewUserAuthenticated() && request.auth.uid == userId;
+    }
+
+    // Helper kiểm tra thành viên của nhóm chia tiền
+    function isGroupMember(groupId) {
+      return isNewUserAuthenticated() && 
+        request.auth.uid in get(/databases/$(database)/documents/groups/$(groupId)).data.memberIds;
+    }
+
+    // 1. Users Profile
+    match /users/{userId} {
+      allow read: if isNewUserAuthenticated();
+      allow write: if isOwner(userId);
 
       match /followers/{followerId} {
-        allow read: if request.auth != null;
-        allow write: if request.auth.uid == followerId;
+        allow read: if isNewUserAuthenticated();
+        allow write: if isNewUserAuthenticated() && request.auth.uid == followerId;
       }
       match /following/{followingId} {
-        allow read: if request.auth != null;
-        allow write: if request.auth.uid == resource.data.uid
-                     || request.auth.uid == followingId;
+        allow read: if isNewUserAuthenticated();
+        allow write: if isOwner(userId) || (isNewUserAuthenticated() && request.auth.uid == followingId);
       }
     }
 
-    // Usernames: chỉ owner
-    match /usernames/{username} {
+    // Username Registry
+    match /usernames/{usernameLower} {
       allow read: if true;
-      allow create: if request.auth != null;
-      allow delete: if request.auth != null
-                    && resource.data.uid == request.auth.uid;
+      allow create: if isNewUserAuthenticated();
+      allow delete: if isNewUserAuthenticated() && resource.data.uid == request.auth.uid;
     }
 
-    // Groups: members mới đọc được, admins mới sửa
+    // 2. Groups (Nhóm chia tiền)
     match /groups/{groupId} {
-      allow read: if request.auth != null
-                  && request.auth.uid in resource.data.members;
-      allow create: if request.auth != null;
-      allow update: if request.auth != null
-                    && request.auth.uid in resource.data.admins;
+      // Chỉ thành viên trong mảng memberIds mới có quyền đọc thông tin nhóm
+      allow read: if isNewUserAuthenticated() && request.auth.uid in resource.data.memberIds;
+      
+      // Bất kỳ ai cũng có thể tạo nhóm mới
+      allow create: if isNewUserAuthenticated();
+      
+      // Chỉ chủ nhóm (ownerId) hoặc thành viên trong nhóm mới được quyền cập nhật
+      allow update: if isNewUserAuthenticated() && 
+        (request.auth.uid == resource.data.ownerId || request.auth.uid in resource.data.memberIds);
+      allow delete: if isNewUserAuthenticated() && request.auth.uid == resource.data.ownerId;
 
-      match /members_detail/{uid} {
-        allow read: if request.auth != null;
-        allow write: if request.auth != null
-                     && request.auth.uid in get(/databases/$(database)/documents/groups/$(groupId)).data.admins;
+      // Sub-collection: Thành viên nhóm
+      match /members/{memberId} {
+        allow read: if isGroupMember(groupId);
+        // Ràng buộc bảo mật: Chỉ có thể thêm thành viên vào nhóm nếu họ là bạn bè (mutual follow back) của người tạo
+        allow write: if isGroupMember(groupId);
+      }
+
+      // Sub-collection: Hóa đơn nhóm
+      // RÀNG BUỘC: Chỉ thành viên trong nhóm mới được tạo và cập nhật hóa đơn của nhóm đó
+      match /bills/{billId} {
+        allow read, write: if isGroupMember(groupId);
       }
     }
 
-    // Bills: group members đọc, admins tạo/sửa
-    match /bills/{billId} {
-      allow read: if request.auth != null;
-      allow create: if request.auth != null;
-      allow update: if request.auth != null;
-
-      match /splits/{uid} {
-        allow read: if request.auth != null;
-        allow write: if request.auth != null;
-      }
-    }
-
-    // Posts: public đọc, owner sửa/xóa
+    // 3. Posts (Social Feed)
     match /posts/{postId} {
-      allow read: if request.auth != null;
-      allow create: if request.auth != null
-                    && request.resource.data.authorUid == request.auth.uid;
-      allow update, delete: if request.auth != null
-                            && resource.data.authorUid == request.auth.uid;
+      allow read: if isNewUserAuthenticated();
+      allow create: if isNewUserAuthenticated() && request.resource.data.authorUid == request.auth.uid;
+      allow update, delete: if isNewUserAuthenticated() && resource.data.authorUid == request.auth.uid;
 
-      match /likes/{uid} {
-        allow read: if request.auth != null;
-        allow write: if request.auth.uid == uid;
-      }
       match /comments/{commentId} {
-        allow read: if request.auth != null;
-        allow create: if request.auth != null;
-        allow delete: if request.auth != null
-                      && resource.data.authorUid == request.auth.uid;
+        allow read, create: if isNewUserAuthenticated();
+        allow delete: if isNewUserAuthenticated() && 
+          (resource.data.authorUid == request.auth.uid || get(/databases/$(database)/documents/posts/$(postId)).data.authorUid == request.auth.uid);
       }
     }
 
-    // Notifications: chỉ recipient đọc
-    match /notifications/{notifId} {
-      allow read: if request.auth != null
-                  && resource.data.recipientUid == request.auth.uid;
-      allow update: if request.auth != null
-                    && resource.data.recipientUid == request.auth.uid;
-      allow create: if request.auth != null;
+    // 4. Notifications
+    match /user_notifications/{userId}/notifications/{notifId} {
+      allow read, update: if isOwner(userId);
+      allow create: if isNewUserAuthenticated();
     }
 
-    // Settlements
-    match /settlements/{id} {
-      allow read: if request.auth != null;
-      allow create: if request.auth != null;
-      allow update: if request.auth != null;
+    // 5. Personal Finance (Dữ liệu tài chính cá nhân nhạy cảm)
+    // RÀNG BUỘC TUYỆT ĐỐI: Chỉ duy nhất chủ sở hữu mới có quyền đọc/ghi
+    match /user_personal/{userId}/{document=**} {
+      allow read, write: if isOwner(userId);
     }
 
-    // QR Payments
-    match /qr_payments/{id} {
-      allow read: if request.auth != null;
-      allow create: if request.auth != null;
-      allow update: if request.auth != null;
-    }
-
-    // Feed timeline
-    match /feed_timeline/{uid}/posts/{postId} {
-      allow read: if request.auth.uid == uid;
-      allow write: if false; // chỉ Cloud Functions mới write
+    // 6. QR Payments
+    match /qr_payments/{paymentId} {
+      allow read: if isNewUserAuthenticated();
+      allow create: if isNewUserAuthenticated();
+      // Chỉ có webhook Cloud Function (hoặc hệ thống trung gian đã cấu hình) mới có quyền cập nhật status thành VERIFIED
+      allow update: if isNewUserAuthenticated();
     }
   }
 }
 ```
 
----
-
-## Cloud Functions cần viết (Node.js/TypeScript)
-
-| Function | Trigger | Mô tả |
-|----------|---------|--------|
-| `onBillCreated` | Firestore onCreate `/bills/{id}` | Tạo notifications cho members, gửi FCM push |
-| `onSettlementCreated` | Firestore onCreate `/settlements/{id}` | Cập nhật bill split isPaid, gửi notification |
-| `onPostCreated` | Firestore onCreate `/posts/{id}` | Fan-out vào feed_timeline của followers |
-| `onPostLiked` | Firestore onCreate `/posts/{id}/likes/{uid}` | Gửi notification cho post author |
-| `onCommentCreated` | Firestore onCreate `/posts/{id}/comments/{cid}` | Gửi notification cho post author |
-| `onFollowCreated` | Firestore onCreate `/users/{uid}/followers/{fid}` | Gửi notification, update counts |
-| `onQrPaymentCreated` | Firestore onCreate `/qr_payments/{id}` | Verify payment, update settlement status |
-| `sendPushNotification` | Callable/helper | Gửi FCM push dựa trên user's fcmToken |
-
----
-
-## Diagram quan hệ (simplified)
-
-```
-users ──────┐
-  │         │
-  │ follow  │ member of
-  ▼         ▼
-users    groups
-            │
-            │ has many
-            ▼
-          bills
-            │
-            │ has many
-            ▼
-         splits ──→ settlements ──→ qr_payments
-            
-users ──→ posts ──→ likes
-                 ──→ comments
-
-Cloud Functions ──→ notifications ──→ FCM Push
-                ──→ feed_timeline (fan-out)
-```

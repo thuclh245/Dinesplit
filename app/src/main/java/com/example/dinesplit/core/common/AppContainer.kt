@@ -96,4 +96,8 @@ object AppContainer {
     fun splitRepository(context: Context): SplitRepository {
         return FirebaseSplitRepository.getInstance(context)
     }
+
+    fun qrPaymentRepository(context: Context): QrPaymentRepository {
+        return FirebaseQrPaymentRepository.getInstance(context)
+    }
 }

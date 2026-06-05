@@ -8,7 +8,7 @@ admin.initializeApp({
 const db = admin.firestore();
 const auth = admin.auth();
 
-const SEED_VERSION = 4;
+const SEED_VERSION = 5;
 const now = Date.now();
 
 // 1. DATASET: 20 USERS (CORE, NORMAL, EDGE CASES, AND GROUP USERS)
@@ -18,7 +18,7 @@ const users = [
     displayName: "Minh Tú",
     username: "minhtu_foodie",
     email: "minhtu.demo@example.com",
-    avatarUrl: "https://images.unsplash.com/photo-1539571696357-5a69c17a67c6?w=150&auto=format&fit=crop&q=60",
+    avatarUrl: "https://images.unsplash.com/photo-1519085360753-af0119f7cbe7?w=150&auto=format&fit=crop&q=60",
     bio: "Đam mê khám phá quán ăn vỉa hè & cà phê không gian làm việc đẹp.",
     diningStyles: ["Street Food", "Cafe Hopper", "Italian"],
     followersCount: 8,
@@ -82,7 +82,7 @@ const users = [
     displayName: "Sơn Chen",
     username: "schen_eats",
     email: "schen.demo@example.com",
-    avatarUrl: "https://images.unsplash.com/photo-1472099645785-5658abf4ff4e?w=150&auto=format&fit=crop&q=60",
+    avatarUrl: "https://images.unsplash.com/photo-1560250097-0b93528c311a?w=150&auto=format&fit=crop&q=60",
     bio: "Tập luyện đều đặn & Ăn uống Eat Clean khoa học lành mạnh.",
     diningStyles: ["Healthy", "Cafe Hopper"],
     followersCount: 3,
@@ -114,7 +114,7 @@ const users = [
     displayName: "Empty Profile User",
     username: "empty_user",
     email: "empty.demo@example.com",
-    avatarUrl: "",
+    avatarUrl: "https://images.unsplash.com/photo-1517841905240-472988babdf9?w=150&auto=format&fit=crop&q=60",
     bio: "", // Trống để test empty state profile
     diningStyles: [],
     followersCount: 0,
@@ -130,7 +130,7 @@ const users = [
     displayName: "Bánh Mì Hà Nội",
     username: "banh_mi_trai_nghiem",
     email: "banhmi.demo@example.com",
-    avatarUrl: "https://images.unsplash.com/photo-1509722747041-616f39b57569?w=150&auto=format&fit=crop&q=60",
+    avatarUrl: "https://images.unsplash.com/photo-1600454309261-3dc9b7597637?w=150&auto=format&fit=crop&q=60",
     bio: "Chuyên review các loại bánh mì pate giòn rụm phố cổ.",
     diningStyles: ["Street Food", "Vietnamese"],
     followersCount: 4,
@@ -179,6 +179,23 @@ for (let i = 6; i <= 20; i++) {
   });
 }
 
+// Avatar overrides: cập nhật riêng các profile cần thay ảnh theo yêu cầu.
+// Đặt sau vòng tạo user tự động để demo_user_11 và demo_user_13 cũng được ghi đè đúng.
+const avatarOverrides = {
+  demo_user_01: "https://images.unsplash.com/photo-1519085360753-af0119f7cbe7?w=150&auto=format&fit=crop&q=60", // Minh Tú
+  demo_user_05: "https://images.unsplash.com/photo-1560250097-0b93528c311a?w=150&auto=format&fit=crop&q=60", // Sơn Chen
+  demo_user_11: "https://images.unsplash.com/photo-1522556189639-b150ed9c4330?w=150&auto=format&fit=crop&q=60", // Demo Foodie 11
+  demo_user_13: "https://images.unsplash.com/photo-1492562080023-ab3db95bfbce?w=150&auto=format&fit=crop&q=60", // Demo Foodie 13
+  demo_user_15: "https://images.unsplash.com/photo-1517841905240-472988babdf9?w=150&auto=format&fit=crop&q=60", // Empty Profile User
+  demo_user_16: "https://images.unsplash.com/photo-1600454309261-3dc9b7597637?w=150&auto=format&fit=crop&q=60"  // Bánh Mì Hà Nội
+};
+
+users.forEach(user => {
+  if (avatarOverrides[user.uid]) {
+    user.avatarUrl = avatarOverrides[user.uid];
+  }
+});
+
 // 2. DATASET: 40 POSTS (MỘT SỐ BÀI VIẾT BIÊN LỖI/MOCK KỊCH BẢN)
 const posts = [
   {
@@ -187,7 +204,7 @@ const posts = [
     authorName: "Minh Tú",
     authorAvatar: "https://images.unsplash.com/photo-1539571696357-5a69c17a67c6?w=150&auto=format&fit=crop&q=60",
     caption: "Bún bò tối nay quá đỉnh, nước dùng ngọt lịm từ xương, đầy ắp giò heo và bò viên. Cực kỳ tiến cử nhé anh em!",
-    imageUrls: ["https://images.unsplash.com/photo-1582878826629-29b7ad8cd305?w=500&auto=format&fit=crop&q=60"],
+    imageUrls: ["https://images.unsplash.com/photo-1597345637412-9fd611e758f3?w=500&auto=format&fit=crop&q=60"],
     videoUrls: [],
     location: "Bún Bò Huế O Xuân",
     linkedGroupId: "demo_group_01",
@@ -419,6 +436,22 @@ for (let i = 6; i <= 80; i++) {
   });
 }
 
+// Đồng bộ avatar tác giả trong feed/comment sau khi đã override avatar người dùng.
+// Nhờ vậy profile, post card và comment item không bị lệch ảnh khi test UI realtime.
+const avatarByUid = Object.fromEntries(users.map(user => [user.uid, user.avatarUrl]));
+
+posts.forEach(post => {
+  if (avatarByUid[post.authorUid] !== undefined) {
+    post.authorAvatar = avatarByUid[post.authorUid];
+  }
+});
+
+comments.forEach(comment => {
+  if (avatarByUid[comment.authorUid] !== undefined) {
+    comment.authorAvatar = avatarByUid[comment.authorUid];
+  }
+});
+
 // 4. DATASET: 8 GROUPS & 12 BILLS WITH SPECIFIC MEMBERSHIPS
 const groups = [];
 const groupMembersData = {}; // groupId -> List of members objects
@@ -435,6 +468,8 @@ for (let i = 1; i <= 8; i++) {
     name: i === 1 ? "Hội Ăn Trưa Đồng Nghiệp" : `Hội Cà Phê Cuối Tuần ${i}`,
     imageUrl: i === 1 ? "https://images.unsplash.com/photo-1517248135467-4c7edcad34c4?w=150&auto=format&fit=crop&q=60" : "",
     memberCount: memberUids.length,
+    memberIds: memberUids,
+    leftMemberIds: [],
     totalExpense: 0.0, // Sẽ được cập nhật động dựa trên các hóa đơn
     yourBalance: i === 1 ? 75000.0 : -25000.0, // Số dư demo
     createdAt: now - 1000 * 60 * 60 * 24 * i,
@@ -558,6 +593,208 @@ for (let i = 1; i <= 30; i++) {
   });
 }
 
+// Personal Finance Mock Data for Minh Tú (demo_user_01)
+const personalCategories = [
+  { id: "c_food", name: "Dining Out", icon: "FD", type: "EXPENSE", isCustom: false, description: "Restaurants, cafes, and delivery.", amountLabel: "0 VND", progress: 0, isActive: true },
+  { id: "c_grocery", name: "Groceries", icon: "GR", type: "EXPENSE", isCustom: false, description: "Supermarkets and local markets.", amountLabel: "0 VND", progress: 0, isActive: false },
+  { id: "c_transit", name: "Transit", icon: "TR", type: "EXPENSE", isCustom: false, description: "Rideshares and public transport.", amountLabel: "0 VND", progress: 0, isActive: false },
+  { id: "c_fun", name: "Entertainment", icon: "EN", type: "EXPENSE", isCustom: true, description: "Movies, events, and subscriptions.", amountLabel: "0 VND", progress: 0, isActive: false },
+  { id: "c_salary", name: "Salary", icon: "SL", type: "INCOME", isCustom: false, description: "Monthly fixed salary income.", amountLabel: "0 VND", progress: 0, isActive: true },
+  { id: "c_bonus", name: "Bonus", icon: "BN", type: "INCOME", isCustom: false, description: "Project and performance rewards.", amountLabel: "0 VND", progress: 0, isActive: false },
+  { id: "c_gift", name: "Gift", icon: "GF", type: "INCOME", isCustom: true, description: "Personal gifts and contributions.", amountLabel: "0 VND", progress: 0, isActive: false },
+  { id: "c_other_income", name: "Other", icon: "OT", type: "INCOME", isCustom: true, description: "Other incoming cash flows.", amountLabel: "0 VND", progress: 0, isActive: false }
+];
+
+const personalWallets = [
+  { id: "wallet_cash", userId: "demo_user_01", name: "Tiền mặt", walletType: "CASH", balance: 2500000.0, color: "#4CAF50", isArchived: false, createdAt: now, updatedAt: now },
+  { id: "wallet_techcom", userId: "demo_user_01", name: "Techcombank", walletType: "BANK", balance: 15450000.0, color: "#E53935", isArchived: false, createdAt: now, updatedAt: now },
+  { id: "wallet_momo", userId: "demo_user_01", name: "Ví Momo", walletType: "EWALLET", balance: 850000.0, color: "#D81B60", isArchived: false, createdAt: now, updatedAt: now }
+];
+
+const personalTransactions = [
+  {
+    id: "txn_001",
+    userId: "demo_user_01",
+    amount: 18000000.0,
+    type: "INCOME",
+    categoryId: "c_salary",
+    category: "Salary",
+    note: "Lương tháng 5",
+    date: now - 1000 * 60 * 60 * 24 * 5,
+    createdAt: now - 1000 * 60 * 60 * 24 * 5,
+    updatedAt: now - 1000 * 60 * 60 * 24 * 5,
+    source: "MANUAL",
+    sourceGroupId: "",
+    sourceBillId: "",
+    recurringRuleId: "",
+    receiptImageUrl: "",
+    walletId: "wallet_techcom"
+  },
+  {
+    id: "txn_002",
+    userId: "demo_user_01",
+    amount: 120000.0,
+    type: "EXPENSE",
+    categoryId: "c_food",
+    category: "Dining Out",
+    note: "Ăn tối bún chả Hương Liên",
+    date: now - 1000 * 60 * 60 * 24 * 2,
+    createdAt: now - 1000 * 60 * 60 * 24 * 2,
+    updatedAt: now - 1000 * 60 * 60 * 24 * 2,
+    source: "MANUAL",
+    sourceGroupId: "",
+    sourceBillId: "",
+    recurringRuleId: "",
+    receiptImageUrl: "",
+    walletId: "wallet_cash"
+  },
+  {
+    id: "txn_003",
+    userId: "demo_user_01",
+    amount: 450000.0,
+    type: "EXPENSE",
+    categoryId: "c_grocery",
+    category: "Groceries",
+    note: "Mua sắm thực phẩm Coopmart",
+    date: now - 1000 * 60 * 60 * 24 * 1,
+    createdAt: now - 1000 * 60 * 60 * 24 * 1,
+    updatedAt: now - 1000 * 60 * 60 * 24 * 1,
+    source: "MANUAL",
+    sourceGroupId: "",
+    sourceBillId: "",
+    recurringRuleId: "",
+    receiptImageUrl: "",
+    walletId: "wallet_momo"
+  },
+  {
+    id: "txn_004",
+    userId: "demo_user_01",
+    amount: 45000.0,
+    type: "EXPENSE",
+    categoryId: "c_transit",
+    category: "Transit",
+    note: "GrabBike đi làm sáng",
+    date: now - 1000 * 60 * 60 * 6,
+    createdAt: now - 1000 * 60 * 60 * 6,
+    updatedAt: now - 1000 * 60 * 60 * 6,
+    source: "MANUAL",
+    sourceGroupId: "",
+    sourceBillId: "",
+    recurringRuleId: "",
+    receiptImageUrl: "",
+    walletId: "wallet_momo"
+  },
+  {
+    id: "txn_005",
+    userId: "demo_user_01",
+    amount: 180000.0,
+    type: "EXPENSE",
+    categoryId: "c_fun",
+    category: "Entertainment",
+    note: "Vé xem phim CGV",
+    date: now - 1000 * 60 * 60 * 12,
+    createdAt: now - 1000 * 60 * 60 * 12,
+    updatedAt: now - 1000 * 60 * 60 * 12,
+    source: "MANUAL",
+    sourceGroupId: "",
+    sourceBillId: "",
+    recurringRuleId: "",
+    receiptImageUrl: "",
+    walletId: "wallet_cash"
+  }
+];
+
+const personalGoals = [
+  {
+    id: "goal_001",
+    userId: "demo_user_01",
+    title: "Quỹ mua Macbook M4",
+    targetAmount: 35000000.0,
+    currentAmount: 12000000.0,
+    categoryId: "c_fun",
+    deadlineAt: now + 1000 * 60 * 60 * 24 * 90,
+    status: "ACTIVE",
+    createdAt: now,
+    updatedAt: now
+  },
+  {
+    id: "goal_002",
+    userId: "demo_user_01",
+    title: "Đi du lịch Phú Quốc",
+    targetAmount: 8000000.0,
+    currentAmount: 3000000.0,
+    categoryId: "c_transit",
+    deadlineAt: now + 1000 * 60 * 60 * 24 * 45,
+    status: "ACTIVE",
+    createdAt: now,
+    updatedAt: now
+  }
+];
+
+const personalReminders = [
+  {
+    id: "reminder_001",
+    userId: "demo_user_01",
+    categoryId: "", // Overall
+    categoryName: "Overall",
+    budgetAmount: 10000000.0,
+    currentSpent: 795000.0,
+    threshold: 0.8,
+    reminderType: "MONTHLY",
+    isEnabled: true,
+    lastAlertedAt: 0,
+    createdAt: now,
+    updatedAt: now
+  },
+  {
+    id: "reminder_002",
+    userId: "demo_user_01",
+    categoryId: "c_food",
+    categoryName: "Dining Out",
+    budgetAmount: 3000000.0,
+    currentSpent: 120000.0,
+    threshold: 0.8,
+    reminderType: "MONTHLY",
+    isEnabled: true,
+    lastAlertedAt: 0,
+    createdAt: now,
+    updatedAt: now
+  }
+];
+
+const personalRecurringRules = [
+  {
+    id: "rule_001",
+    userId: "demo_user_01",
+    name: "Gói Netflix Family",
+    amount: 260000.0,
+    type: "EXPENSE",
+    categoryId: "c_fun",
+    categoryName: "Entertainment",
+    cadence: "MONTHLY",
+    dayOfMonth: 15,
+    nextRunAt: now + 1000 * 60 * 60 * 24 * 10,
+    isEnabled: true,
+    createdAt: now,
+    updatedAt: now
+  },
+  {
+    id: "rule_002",
+    userId: "demo_user_01",
+    name: "Spotify Premium",
+    amount: 59000.0,
+    type: "EXPENSE",
+    categoryId: "c_fun",
+    categoryName: "Entertainment",
+    cadence: "MONTHLY",
+    dayOfMonth: 5,
+    nextRunAt: now + 1000 * 60 * 60 * 24 * 1,
+    isEnabled: true,
+    createdAt: now,
+    updatedAt: now
+  }
+];
+
 // 7. HELPER: TRÌNH TỰ ĐĂNG KÝ AUTHENTICATION TỰ ĐỘNG
 async function createAuthUsers() {
   const authUsers = [
@@ -611,9 +848,12 @@ async function deleteCollectionRecursively(collectionName) {
 
 async function resetDatabase() {
   await deleteCollectionRecursively("users");
+  await deleteCollectionRecursively("usernames");
   await deleteCollectionRecursively("posts");
   await deleteCollectionRecursively("groups");
   await deleteCollectionRecursively("user_notifications");
+  await deleteCollectionRecursively("user_personal");
+  await deleteCollectionRecursively("qr_payments");
   await deleteCollectionRecursively("app_metadata");
   console.log("Đã dọn sạch cơ sở dữ liệu Firestore thành công!");
 }
@@ -668,9 +908,22 @@ async function seedDatabase() {
 
   // Seed Users
   users.forEach(u => {
+    u.usernameLower = u.username.toLowerCase();
     operations.push({
       ref: db.collection("users").doc(u.uid),
       data: convertDateFields(u)
+    });
+
+    // Seed usernames registry
+    operations.push({
+      ref: db.collection("usernames").doc(u.username.toLowerCase()),
+      data: {
+        uid: u.uid,
+        usernameLower: u.username.toLowerCase(),
+        username: u.username,
+        claimedAt: now,
+        updatedAt: now
+      }
     });
   });
 
@@ -719,6 +972,53 @@ async function seedDatabase() {
     operations.push({
       ref: db.collection("user_notifications").doc(n.userId).collection("notifications").doc(n.id),
       data: convertDateFields(n)
+    });
+  });
+
+  // Seed Personal Finance subcollections
+  // 1. Categories for all users
+  users.forEach(u => {
+    personalCategories.forEach(cat => {
+      operations.push({
+        ref: db.collection("user_personal").doc(u.uid).collection("categories").doc(cat.id),
+        data: convertDateFields(cat)
+      });
+    });
+  });
+
+  // 2. Wallets, Transactions, Goals, Reminders, Recurring rules for demo_user_01
+  personalWallets.forEach(w => {
+    operations.push({
+      ref: db.collection("user_personal").doc("demo_user_01").collection("wallets").doc(w.id),
+      data: convertDateFields(w)
+    });
+  });
+
+  personalTransactions.forEach(t => {
+    operations.push({
+      ref: db.collection("user_personal").doc("demo_user_01").collection("transactions").doc(t.id),
+      data: convertDateFields(t)
+    });
+  });
+
+  personalGoals.forEach(g => {
+    operations.push({
+      ref: db.collection("user_personal").doc("demo_user_01").collection("goals").doc(g.id),
+      data: convertDateFields(g)
+    });
+  });
+
+  personalReminders.forEach(r => {
+    operations.push({
+      ref: db.collection("user_personal").doc("demo_user_01").collection("reminders").doc(r.id),
+      data: convertDateFields(r)
+    });
+  });
+
+  personalRecurringRules.forEach(rr => {
+    operations.push({
+      ref: db.collection("user_personal").doc("demo_user_01").collection("recurring_rules").doc(rr.id),
+      data: convertDateFields(rr)
     });
   });
 

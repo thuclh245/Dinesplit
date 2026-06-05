@@ -9,4 +9,7 @@ data class Group(
     val yourBalance: Double, // Positive means you are owed, negative means you owe
     val createdAt: Long,
     val ownerId: String? = null,
+    val memberIds: List<String> = emptyList(),
+    val leftMemberIds: List<String> = emptyList(),
+    val updatedAt: Long = createdAt,
 )

@@ -332,6 +332,8 @@ class FirebaseProfileRepository private constructor(
             FIELD_CREATED_AT to (createdAt?.time ?: 0L),
             FIELD_UPDATED_AT to (updatedAt?.time ?: System.currentTimeMillis()),
             FIELD_IS_PUBLIC to isPublic,
+            "followingIds" to followingIds,
+            "followerIds" to followerIds,
         )
     }
 
@@ -379,6 +381,11 @@ class FirebaseProfileRepository private constructor(
         val createdAt = getDateSafe(FIELD_CREATED_AT)
         val updatedAt = getDateSafe(FIELD_UPDATED_AT) ?: createdAt
         val isPublic = getBoolean(FIELD_IS_PUBLIC) ?: true
+        val usernameLower = getString(FIELD_USERNAME_LOWER).orEmpty()
+        @Suppress("UNCHECKED_CAST")
+        val followingIds = get("followingIds") as? List<String> ?: emptyList()
+        @Suppress("UNCHECKED_CAST")
+        val followerIds = get("followerIds") as? List<String> ?: emptyList()
 
         return UserProfile(
             uid = uid,
@@ -396,6 +403,9 @@ class FirebaseProfileRepository private constructor(
             createdAt = createdAt,
             updatedAt = updatedAt,
             isPublic = isPublic,
+            usernameLower = usernameLower,
+            followingIds = followingIds,
+            followerIds = followerIds,
         )
     }
 

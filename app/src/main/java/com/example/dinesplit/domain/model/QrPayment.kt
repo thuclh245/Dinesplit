@@ -11,7 +11,9 @@ data class QrPayment(
     val amount: Double = 0.0,
     val bankTransactionRef: String = "",
     val qrContent: String = "",
-    val status: String = "pending", // "pending" | "verified" | "failed"
+    val status: String = "PENDING", // "PENDING" | "VERIFIED" | "FAILED"
+    val description: String = "",
+    val paymentGateway: String = "",
     val verifiedAt: Date? = null,
     val createdAt: Date? = null,
 )

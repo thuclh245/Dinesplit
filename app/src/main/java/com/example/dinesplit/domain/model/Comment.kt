@@ -4,6 +4,7 @@ import java.util.Date
 
 data class Comment(
     val id: String = "",
+    val postId: String = "",
     val authorUid: String = "",
     val authorName: String = "",
     val authorAvatar: String = "",

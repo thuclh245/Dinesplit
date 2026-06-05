@@ -18,6 +18,9 @@ data class UserProfile(
     val createdAt: Date? = null,
     val updatedAt: Date? = null,
     val isPublic: Boolean = true,
+    val usernameLower: String = "",
+    val followingIds: List<String> = emptyList(),
+    val followerIds: List<String> = emptyList(),
 ) {
     fun isComplete(): Boolean {
         return displayName.isNotBlank() && username.isNotBlank()

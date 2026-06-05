@@ -363,6 +363,7 @@ class FirebaseSplitRepository(
 
     private fun DocumentSnapshot.toGroup(): Group? {
         val name = getString("name") ?: return null
+        val createdAtVal = getLongDateSafe("createdAt") ?: 0L
         return Group(
             id = getString("id") ?: id,
             name = name,
@@ -370,8 +371,11 @@ class FirebaseSplitRepository(
             memberCount = getLong("memberCount")?.toInt() ?: 0,
             totalExpense = getDouble("totalExpense") ?: 0.0,
             yourBalance = getDouble("yourBalance") ?: 0.0,
-            createdAt = getLongDateSafe("createdAt") ?: 0L,
+            createdAt = createdAtVal,
             ownerId = getString("ownerId") ?: getStringListField("memberIds").firstOrNull(),
+            memberIds = getStringListField("memberIds"),
+            leftMemberIds = getStringListField("leftMemberIds"),
+            updatedAt = getLongDateSafe("updatedAt") ?: createdAtVal,
         )
     }
 
@@ -534,12 +538,12 @@ class FirebaseSplitRepository(
             "imageUrl" to imageUrl,
             "memberCount" to memberIds.size,
             "memberIds" to memberIds,
-            "leftMemberIds" to emptyList<String>(),
+            "leftMemberIds" to leftMemberIds,
             "ownerId" to ownerId,
             "totalExpense" to totalExpense,
             "yourBalance" to yourBalance,
             "createdAt" to createdAt,
-            "updatedAt" to createdAt,
+            "updatedAt" to System.currentTimeMillis(),
         )
     }
 

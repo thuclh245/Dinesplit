@@ -315,7 +315,7 @@ class FirebaseFeedRepository(
     ) {
         val postRef = firestore.collection("posts").document(postId)
         val commentRef = postRef.collection("comments").document()
-        val finalComment = comment.copy(id = commentRef.id, createdAt = java.util.Date())
+        val finalComment = comment.copy(id = commentRef.id, postId = postId, createdAt = java.util.Date())
 
         firestore.runTransaction { transaction ->
             val snapshot = transaction.get(postRef)
@@ -438,7 +438,6 @@ class FirebaseFeedRepository(
     }
 
     private fun isRealPost(post: Post): Boolean {
-        val id = post.id
-        return !id.startsWith("demo_post_")
+        return true
     }
 }

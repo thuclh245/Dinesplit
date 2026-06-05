@@ -20,6 +20,7 @@ import androidx.compose.foundation.layout.statusBarsPadding
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.shape.CircleShape
+import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
@@ -29,7 +30,9 @@ import androidx.compose.material.icons.filled.MoreVert
 import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.Button
 import androidx.compose.material3.ButtonDefaults
+import androidx.compose.material3.OutlinedButton
 import androidx.compose.material3.Card
+import com.example.dinesplit.domain.model.QrPayment
 import androidx.compose.material3.CardDefaults
 import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.DropdownMenu
@@ -102,6 +105,7 @@ fun BillDetailScreen(
             BillDetailViewModel(
                 repository = AppContainer.splitRepository(context),
                 notificationRepository = AppContainer.notificationRepository(context),
+                qrPaymentRepository = AppContainer.qrPaymentRepository(context),
                 groupId = groupId,
                 billId = billId,
                 currentUserId = FirebaseProviders.auth.currentUser?.uid,
@@ -136,6 +140,16 @@ fun BillDetailScreen(
         }
     }
 
+    val activeQrPayment = uiState.activeQrPayment
+    if (activeQrPayment != null) {
+        val payerName = resolveMemberName(uiState.bill?.payerId.orEmpty(), uiState.members)
+        QrPaymentDialog(
+            payment = activeQrPayment,
+            payerName = payerName,
+            onCancel = viewModel::cancelQrPayment,
+            onSimulateSuccess = { viewModel.simulateBankCallback(activeQrPayment.id) }
+        )
+    }
     Scaffold(
         containerColor = colorScheme.surface,
         topBar = {
@@ -150,6 +164,7 @@ fun BillDetailScreen(
         snackbarHost = { SnackbarHost(snackbarHostState) },
         bottomBar = {
             uiState.bill?.let { bill ->
+                val myShare = bill.shares[uiState.currentMemberId] ?: 0.0
                 BdBottomAction(
                     payerName = resolveMemberName(bill.payerId, uiState.members),
                     currentMemberId = uiState.currentMemberId,
@@ -157,6 +172,9 @@ fun BillDetailScreen(
                     isCurrentMemberPaid = bill.paidMemberIds.contains(uiState.currentMemberId),
                     isUpdating = uiState.isUpdatingPayment,
                     onMarkPaid = viewModel::markCurrentMemberPaid,
+                    onPayWithQr = {
+                        viewModel.initiateQrPayment(myShare, bill.payerId)
+                    }
                 )
             }
         },
@@ -761,65 +779,228 @@ private fun BdBottomAction(
     isCurrentMemberPaid: Boolean,
     isUpdating: Boolean,
     onMarkPaid: () -> Unit,
+    onPayWithQr: () -> Unit,
 ) {
     val colorScheme = MaterialTheme.colorScheme
-    val enabled = currentMemberId.isNotBlank() && !isCurrentMemberPayer && !isCurrentMemberPaid && !isUpdating
-    val label =
-        when {
-            isUpdating -> "Đang cập nhật thanh toán..."
-            isCurrentMemberPayer -> "Bạn là người thanh toán"
-            isCurrentMemberPaid -> "Bạn đã trả cho $payerName"
-            else -> "Đánh dấu đã trả cho $payerName"
-        }
+    val canPay = currentMemberId.isNotBlank() && !isCurrentMemberPayer && !isCurrentMemberPaid && !isUpdating
 
     Box(
         modifier =
             Modifier
                 .fillMaxWidth()
                 .background(colorScheme.surfaceContainerLowest.copy(alpha = 0.96f))
-                .padding(horizontal = 24.dp, vertical = 14.dp)
+                .padding(horizontal = 16.dp, vertical = 14.dp)
                 .navigationBarsPadding(),
     ) {
-        Button(
-            onClick = onMarkPaid,
-            enabled = enabled,
-            modifier =
-                Modifier
+        if (canPay) {
+            Row(
+                modifier = Modifier.fillMaxWidth(),
+                horizontalArrangement = Arrangement.spacedBy(12.dp)
+            ) {
+                // Manual mark as paid button
+                OutlinedButton(
+                    onClick = onMarkPaid,
+                    modifier = Modifier
+                        .weight(1f)
+                        .height(56.dp),
+                    shape = RoundedCornerShape(50),
+                    border = BorderStroke(1.dp, colorScheme.primary),
+                    colors = ButtonDefaults.outlinedButtonColors(
+                        contentColor = colorScheme.primary
+                    )
+                ) {
+                    Icon(
+                        imageVector = Icons.Default.Check,
+                        contentDescription = null,
+                        modifier = Modifier.size(18.dp)
+                    )
+                    Spacer(modifier = Modifier.width(6.dp))
+                    Text(
+                        text = "Báo đã trả",
+                        fontSize = 14.sp,
+                        fontWeight = FontWeight.Bold,
+                        maxLines = 1,
+                        overflow = TextOverflow.Ellipsis
+                    )
+                }
+
+                // QR payment button
+                Button(
+                    onClick = onPayWithQr,
+                    modifier = Modifier
+                        .weight(1.2f)
+                        .height(56.dp),
+                    colors = ButtonDefaults.buttonColors(
+                        containerColor = colorScheme.primary
+                    ),
+                    shape = RoundedCornerShape(50),
+                    elevation = ButtonDefaults.buttonElevation(defaultElevation = 4.dp),
+                ) {
+                    Icon(
+                        imageVector = Icons.AutoMirrored.Filled.ReceiptLong,
+                        contentDescription = null,
+                        tint = colorScheme.onPrimary,
+                        modifier = Modifier.size(18.dp)
+                    )
+                    Spacer(modifier = Modifier.width(6.dp))
+                    Text(
+                        text = "Thanh toán QR",
+                        fontSize = 14.sp,
+                        fontWeight = FontWeight.Bold,
+                        color = colorScheme.onPrimary,
+                        maxLines = 1,
+                        overflow = TextOverflow.Ellipsis
+                    )
+                }
+            }
+        } else {
+            val label =
+                when {
+                    isUpdating -> "Đang cập nhật thanh toán..."
+                    isCurrentMemberPayer -> "Bạn là người thanh toán"
+                    isCurrentMemberPaid -> "Bạn đã trả cho $payerName"
+                    else -> "Không thể thanh toán"
+                }
+
+            Button(
+                onClick = {},
+                enabled = false,
+                modifier = Modifier
                     .fillMaxWidth()
                     .height(56.dp),
-            colors =
-                ButtonDefaults.buttonColors(
-                    containerColor = colorScheme.primaryContainer,
+                colors = ButtonDefaults.buttonColors(
                     disabledContainerColor = colorScheme.surfaceContainerHigh,
                 ),
-            shape = RoundedCornerShape(50),
-            elevation = ButtonDefaults.buttonElevation(defaultElevation = 4.dp),
-        ) {
-            if (isUpdating) {
-                CircularProgressIndicator(
-                    modifier = Modifier.size(18.dp),
-                    color = colorScheme.surfaceContainerLowest,
-                    strokeWidth = 2.dp,
-                )
-            } else {
-                Icon(
-                    imageVector = Icons.Default.Check,
-                    contentDescription = null,
-                    tint = if (enabled) colorScheme.surfaceContainerLowest else colorScheme.onSurfaceVariant,
-                    modifier = Modifier.size(18.dp),
+                shape = RoundedCornerShape(50),
+            ) {
+                if (isUpdating) {
+                    CircularProgressIndicator(
+                        modifier = Modifier.size(18.dp),
+                        color = colorScheme.onSurfaceVariant,
+                        strokeWidth = 2.dp,
+                    )
+                    Spacer(modifier = Modifier.width(8.dp))
+                }
+                Text(
+                    text = label,
+                    fontSize = 15.sp,
+                    fontWeight = FontWeight.Bold,
+                    color = colorScheme.onSurfaceVariant,
+                    maxLines = 1,
+                    overflow = TextOverflow.Ellipsis,
                 )
             }
-            Spacer(modifier = Modifier.width(8.dp))
-            Text(
-                text = label,
-                fontSize = 15.sp,
-                fontWeight = FontWeight.Bold,
-                color = if (enabled) colorScheme.surfaceContainerLowest else colorScheme.onSurfaceVariant,
-                maxLines = 1,
-                overflow = TextOverflow.Ellipsis,
-            )
         }
     }
+}
+
+@Composable
+private fun QrPaymentDialog(
+    payment: QrPayment,
+    payerName: String,
+    onCancel: () -> Unit,
+    onSimulateSuccess: () -> Unit,
+) {
+    val colorScheme = MaterialTheme.colorScheme
+    val qrUrl = "https://img.vietqr.io/image/MB-1903678999999-compact2.png?amount=${payment.amount.toInt()}&addInfo=${payment.description}&accountName=${payerName}"
+
+    AlertDialog(
+        onDismissRequest = onCancel,
+        title = {
+            Column(
+                horizontalAlignment = Alignment.CenterHorizontally,
+                modifier = Modifier.fillMaxWidth()
+            ) {
+                Text(
+                    text = "Quét mã VietQR",
+                    fontSize = 20.sp,
+                    fontWeight = FontWeight.Bold,
+                    color = colorScheme.onSurface
+                )
+                Spacer(modifier = Modifier.height(4.dp))
+                Text(
+                    text = "Thanh toán hóa đơn cho $payerName",
+                    fontSize = 14.sp,
+                    color = colorScheme.onSurfaceVariant
+                )
+            }
+        },
+        text = {
+            Column(
+                horizontalAlignment = Alignment.CenterHorizontally,
+                modifier = Modifier.fillMaxWidth()
+            ) {
+                Box(
+                    modifier = Modifier
+                        .size(220.dp)
+                        .background(Color.White, RoundedCornerShape(12.dp))
+                        .padding(8.dp),
+                    contentAlignment = Alignment.Center
+                ) {
+                    coil.compose.AsyncImage(
+                        model = qrUrl,
+                        contentDescription = "Mã VietQR",
+                        modifier = Modifier.fillMaxSize()
+                    )
+                }
+                Spacer(modifier = Modifier.height(16.dp))
+
+                Card(
+                    modifier = Modifier.fillMaxWidth(),
+                    colors = CardDefaults.cardColors(containerColor = colorScheme.surfaceContainerLow),
+                    shape = RoundedCornerShape(8.dp)
+                ) {
+                    Column(
+                        modifier = Modifier.padding(12.dp),
+                        verticalArrangement = Arrangement.spacedBy(6.dp)
+                    ) {
+                        Row(
+                            modifier = Modifier.fillMaxWidth(),
+                            horizontalArrangement = Arrangement.SpaceBetween
+                        ) {
+                            Text("Số tiền:", fontSize = 12.sp, color = colorScheme.onSurfaceVariant)
+                            Text("${formatAmount(payment.amount)} đ", fontSize = 12.sp, fontWeight = FontWeight.Bold, color = colorScheme.onSurface)
+                        }
+                        Row(
+                            modifier = Modifier.fillMaxWidth(),
+                            horizontalArrangement = Arrangement.SpaceBetween
+                        ) {
+                            Text("Nội dung:", fontSize = 12.sp, color = colorScheme.onSurfaceVariant)
+                            Text(payment.description, fontSize = 12.sp, fontWeight = FontWeight.Bold, color = colorScheme.primary)
+                        }
+                        Row(
+                            modifier = Modifier.fillMaxWidth(),
+                            horizontalArrangement = Arrangement.SpaceBetween
+                        ) {
+                            Text("Trạng thái:", fontSize = 12.sp, color = colorScheme.onSurfaceVariant)
+                            Text(payment.status, fontSize = 12.sp, fontWeight = FontWeight.Bold, color = if (payment.status == "VERIFIED") colorScheme.secondary else colorScheme.primary)
+                        }
+                    }
+                }
+
+                Spacer(modifier = Modifier.height(8.dp))
+                Text(
+                    text = "Đang chờ hệ thống xác nhận thanh toán...",
+                    fontSize = 11.sp,
+                    color = colorScheme.onSurfaceVariant
+                )
+            }
+        },
+        confirmButton = {
+            Button(
+                onClick = onSimulateSuccess,
+                colors = ButtonDefaults.buttonColors(containerColor = colorScheme.secondaryContainer),
+                modifier = Modifier.fillMaxWidth()
+            ) {
+                Text("Giả lập Chuyển khoản thành công", color = colorScheme.onSecondaryContainer, fontWeight = FontWeight.Bold)
+            }
+        },
+        dismissButton = {
+            TextButton(onClick = onCancel, modifier = Modifier.fillMaxWidth()) {
+                Text("Hủy giao dịch")
+            }
+        }
+    )
 }
 
 private fun buildSplitRows(
