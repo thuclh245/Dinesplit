@@ -34,6 +34,7 @@ import androidx.compose.ui.text.input.VisualTransformation
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import androidx.compose.ui.semantics.Role
 import androidx.lifecycle.viewmodel.compose.viewModel
 import coil.compose.AsyncImage
 import com.example.dinesplit.core.ui.AppDimens
@@ -234,7 +235,7 @@ private fun LoginContent(
                         .align(Alignment.End)
                         .padding(end = AppDimens.spaceXs)
                         .clip(RoundedCornerShape(AppDimens.radiusSm))
-                        .clickable { /* Handle forgot password */ }
+                        .clickable(role = Role.Button) { /* Handle forgot password */ }
                         .padding(horizontal = AppDimens.spaceSm, vertical = AppDimens.spaceSm),
                     contentAlignment = Alignment.Center
                 ) {
@@ -275,7 +276,7 @@ private fun LoginContent(
                     icon = {
                         AsyncImage(
                             model = "https://lh3.googleusercontent.com/aida-public/AB6AXuD3-5nU9KPj_Hs_UC9WFY9-eI6ZoanHilU8-FP0y2Z0yUjs__2H_sCJtrhbFEjh8z935q1mRmNyWkOKmTF31Qnr7UMVgXDUFaaY1i_Ll7DIKYx66AVwk18lQtplYDytARQ4c9gU4lxTrOhSIM5U48S4u_tcqAj821pr1082nimz0kbaFPFdlsPcphSKqv8EXbeYZdO1J8vArnX_cJH7xINCj9b9W0BjV3JXowL_BBf4NQDyzZ483yfi3nG6z8L2cq6BuUGiOEyYR1U",
-                            contentDescription = "Google logo",
+                            contentDescription = "Logo Google",
                             modifier = Modifier.size(20.dp),
                         )
                     },

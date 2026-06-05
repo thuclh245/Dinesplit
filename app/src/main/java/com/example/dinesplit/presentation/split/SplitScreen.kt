@@ -38,6 +38,7 @@ import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.collectAsState
+import androidx.compose.ui.semantics.Role
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.remember
 import androidx.compose.ui.Alignment
@@ -114,7 +115,7 @@ fun SplitScreen(
                     .fillMaxSize()
                     .background(MaterialTheme.colorScheme.background)
                     .padding(padding),
-            contentPadding = PaddingValues(top = 72.dp, bottom = 120.dp),
+            contentPadding = PaddingValues(top = 72.dp, bottom = bottomPadding + 100.dp),
             verticalArrangement = Arrangement.spacedBy(AppDimens.space2Xl),
         ) {
             item {
@@ -191,7 +192,7 @@ private fun BalanceSummaryRow(
         BalanceCard(
             title = "BẠN ĐANG NỢ",
             amount = formatAmount(amountYouOwe),
-            buttonText = "Settle Up",
+            buttonText = "Chốt sổ",
             onClick = onSettleUpClick,
             modifier = Modifier.weight(1f),
             containerColor = MaterialTheme.colorScheme.surfaceContainerLowest,
@@ -200,12 +201,12 @@ private fun BalanceSummaryRow(
         BalanceCard(
             title = "BẠN ĐƯỢC TRẢ",
             amount = formatAmount(amountYouAreOwed),
-            buttonText = "Remind",
+            buttonText = "Nhắc nợ",
             onClick = onRemindClick,
             modifier = Modifier.weight(1f),
             containerColor = MaterialTheme.colorScheme.surfaceContainerLowest,
             contentColor = MaterialTheme.colorScheme.secondary,
-            showLeftBorder = true,
+            isSecondary = true,
         )
     }
 }
@@ -235,7 +236,7 @@ private fun GroupsSection(
                 "Xem tất cả",
                 style = MaterialTheme.typography.labelSmall.copy(fontWeight = FontWeight.Bold),
                 color = MaterialTheme.colorScheme.primary,
-                modifier = Modifier.clickable { onViewAllGroups() },
+                modifier = Modifier.clickable(role = Role.Button) { onViewAllGroups() },
             )
         }
         Spacer(modifier = Modifier.height(AppDimens.spaceLg))
@@ -311,23 +312,13 @@ private fun BalanceCard(
     modifier: Modifier = Modifier,
     containerColor: Color,
     contentColor: Color,
-    showLeftBorder: Boolean = false,
+    isSecondary: Boolean = false,
 ) {
     AppCard(
         modifier = modifier.height(160.dp),
         contentPadding = PaddingValues(0.dp),
     ) {
         Box(modifier = Modifier.fillMaxSize()) {
-            if (showLeftBorder) {
-                Box(
-                    modifier =
-                        Modifier
-                            .fillMaxHeight()
-                            .width(AppDimens.spaceXs)
-                            .background(contentColor)
-                            .align(Alignment.CenterStart),
-                )
-            }
             Column(
                 modifier =
                     Modifier
@@ -362,12 +353,12 @@ private fun BalanceCard(
                     shape = CircleShape,
                     colors =
                         ButtonDefaults.buttonColors(
-                            containerColor = if (showLeftBorder) MaterialTheme.colorScheme.secondaryContainer else Color.Transparent,
-                            contentColor = if (showLeftBorder) MaterialTheme.colorScheme.onSecondaryContainer else MaterialTheme.colorScheme.onPrimary,
+                            containerColor = if (isSecondary) MaterialTheme.colorScheme.secondaryContainer else Color.Transparent,
+                            contentColor = if (isSecondary) MaterialTheme.colorScheme.onSecondaryContainer else MaterialTheme.colorScheme.onPrimary,
                         ),
                     modifier =
                         Modifier.then(
-                            if (!showLeftBorder) {
+                            if (!isSecondary) {
                                 Modifier.background(
                                     Brush.linearGradient(
                                         listOf(MaterialTheme.colorScheme.primary, MaterialTheme.colorScheme.primaryContainer),
@@ -509,22 +500,34 @@ private fun CreateGroupDashboardCard(onClick: () -> Unit) {
             Modifier
                 .width(240.dp)
                 .height(192.dp)
-                .border(2.dp, MaterialTheme.colorScheme.outlineVariant.copy(alpha = 0.3f), AppShapes.xLarge)
+                .border(2.dp, MaterialTheme.colorScheme.primary.copy(alpha = 0.3f), AppShapes.xLarge)
                 .clip(AppShapes.xLarge)
                 .clickable { onClick() },
         contentAlignment = Alignment.Center,
     ) {
-        Column(horizontalAlignment = Alignment.CenterHorizontally) {
+        Column(
+            horizontalAlignment = Alignment.CenterHorizontally,
+            verticalArrangement = Arrangement.Center,
+            modifier = Modifier.padding(16.dp)
+        ) {
             Icon(
                 Icons.Default.GroupAdd,
                 contentDescription = null,
-                modifier = Modifier.size(40.dp),
-                tint = MaterialTheme.colorScheme.outlineVariant,
+                modifier = Modifier.size(44.dp),
+                tint = MaterialTheme.colorScheme.primary,
             )
+            Spacer(modifier = Modifier.height(8.dp))
             Text(
                 "Tạo nhóm mới",
-                style = MaterialTheme.typography.labelMedium.copy(fontWeight = FontWeight.Bold),
-                color = MaterialTheme.colorScheme.outlineVariant,
+                style = MaterialTheme.typography.titleSmall.copy(fontWeight = FontWeight.Bold),
+                color = MaterialTheme.colorScheme.onSurface,
+            )
+            Spacer(modifier = Modifier.height(4.dp))
+            Text(
+                "Chia hóa đơn ăn uống cùng bạn bè",
+                style = MaterialTheme.typography.bodySmall,
+                color = MaterialTheme.colorScheme.onSurfaceVariant,
+                textAlign = androidx.compose.ui.text.style.TextAlign.Center,
             )
         }
     }

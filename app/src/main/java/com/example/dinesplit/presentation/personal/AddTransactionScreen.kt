@@ -37,6 +37,9 @@ import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import androidx.compose.ui.semantics.liveRegion
+import androidx.compose.ui.semantics.LiveRegionMode
+import androidx.compose.ui.semantics.semantics
 import com.example.dinesplit.core.ui.AppDimens
 import com.example.dinesplit.core.ui.AppScaffold
 import com.example.dinesplit.core.ui.AppTextField
@@ -150,9 +153,10 @@ fun AddTransactionScreen(
 
                  if (isSubmitAttempted && !isTypeValid) {
                      Text(
-                         text = validation.typeError,
+                         text = validation.typeError ?: "",
                          style = MaterialTheme.typography.bodySmall,
-                         color = MaterialTheme.colorScheme.error
+                         color = MaterialTheme.colorScheme.error,
+                         modifier = Modifier.semantics { liveRegion = LiveRegionMode.Polite }
                      )
                  }
              }
@@ -196,9 +200,10 @@ fun AddTransactionScreen(
 
                 if (isSubmitAttempted && !isCategoryValid) {
                     Text(
-                        text = validation.categoryError,
+                        text = validation.categoryError ?: "",
                         style = MaterialTheme.typography.bodySmall,
                         color = MaterialTheme.colorScheme.error,
+                        modifier = Modifier.semantics { liveRegion = LiveRegionMode.Polite }
                     )
                 }
             }
@@ -323,6 +328,7 @@ private fun AmountInputBlock(
                 text = supportingText,
                 style = MaterialTheme.typography.bodySmall,
                 color = MaterialTheme.colorScheme.error,
+                modifier = Modifier.semantics { liveRegion = LiveRegionMode.Polite }
             )
         }
     }

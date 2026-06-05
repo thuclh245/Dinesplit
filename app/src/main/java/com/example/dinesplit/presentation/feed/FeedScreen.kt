@@ -278,7 +278,7 @@ fun FeedScreen(
                     LazyColumn(
                         state = listState,
                         modifier = Modifier.fillMaxSize().background(MaterialTheme.colorScheme.background),
-                        contentPadding = PaddingValues(top = 64.dp + statusBarHeight, bottom = bottomPadding + 40.dp),
+                        contentPadding = PaddingValues(top = 64.dp + statusBarHeight, bottom = bottomPadding + 96.dp),
                     ) {
                         // KHOẢNH KHẮC BẠN BÈ (STORY COMPONENT) INTEGRATION
                         item {
@@ -393,7 +393,7 @@ private fun RecentGroupVibes(
             text = "KHOẢNH KHẮC BẠN BÈ",
             style = MaterialTheme.typography.labelSmall.copy(
                 fontWeight = FontWeight.Bold,
-                letterSpacing = 2.sp,
+                letterSpacing = 0.8.sp,
             ),
             color = MaterialTheme.colorScheme.outline,
             modifier = Modifier.padding(

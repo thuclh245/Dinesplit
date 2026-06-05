@@ -172,7 +172,7 @@ fun PersonalScreen(
                     start = AppDimens.screenHorizontal,
                     end = AppDimens.screenHorizontal,
                     top = 72.dp,
-                    bottom = 120.dp,
+                    bottom = bottomPadding + 96.dp,
                 ),
             verticalArrangement = Arrangement.spacedBy(AppDimens.spaceLg),
         ) {
@@ -561,7 +561,7 @@ private fun PersonalSignalGrid(
             SignalTile(
                 modifier = Modifier.weight(1f),
                 icon = Icons.Default.NotificationsActive,
-                label = "Công cụ C",
+                label = "Cảnh báo",
                 value = "${reminderCount + automationCount}",
                 subtitle = "cảnh báo và kế hoạch",
                 color = MaterialTheme.colorScheme.secondary

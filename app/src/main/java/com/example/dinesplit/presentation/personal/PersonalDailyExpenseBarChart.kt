@@ -15,6 +15,8 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.unit.dp
 import com.example.dinesplit.core.ui.AppDimens
+import androidx.compose.ui.semantics.contentDescription
+import androidx.compose.ui.semantics.semantics
 import kotlin.math.max
 
 @Composable
@@ -43,8 +45,13 @@ fun PersonalDailyExpenseBarChart(
         return
     }
 
+    val totalAmount = validBars.sumOf { it.amount }
+    val barSummary = "Biểu đồ cột chi tiêu hàng ngày. Tổng chi tiêu trong tháng: ${totalAmount.toInt()} đồng."
+
     Column(
-        modifier = modifier,
+        modifier = modifier.semantics {
+            contentDescription = barSummary
+        },
         verticalArrangement = Arrangement.spacedBy(AppDimens.spaceSm),
     ) {
         Row(
@@ -58,7 +65,11 @@ fun PersonalDailyExpenseBarChart(
             validBars.forEach { item ->
                 val fraction = (item.amount / maxAmount).toFloat().coerceIn(0.05f, 1f)
                 Column(
-                    modifier = Modifier.weight(1f),
+                    modifier = Modifier
+                        .weight(1f)
+                        .semantics(mergeDescendants = true) {
+                            contentDescription = "Ngày ${item.dayOfMonth}: ${item.amount.toInt()} đồng"
+                        },
                     horizontalAlignment = Alignment.CenterHorizontally,
                     verticalArrangement = Arrangement.spacedBy(AppDimens.spaceXs),
                 ) {

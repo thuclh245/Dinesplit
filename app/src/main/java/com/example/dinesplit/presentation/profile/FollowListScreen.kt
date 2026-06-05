@@ -303,7 +303,7 @@ private fun FollowUserRow(
             IconButton(onClick = { /* Option menu can be shown if needed */ }) {
                 Icon(
                     imageVector = Icons.Default.MoreVert,
-                    contentDescription = "Options",
+                    contentDescription = "Tùy chọn",
                     tint = MaterialTheme.colorScheme.outlineVariant
                 )
             }

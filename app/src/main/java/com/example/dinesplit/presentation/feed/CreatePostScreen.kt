@@ -139,7 +139,7 @@ fun CreatePostScreen(
                                     verticalArrangement = Arrangement.spacedBy(8.dp)
                                 ) {
                                     Icon(Icons.Default.AddPhotoAlternate, contentDescription = null, tint = MaterialTheme.colorScheme.primary, modifier = Modifier.size(32.dp))
-                                    Text("Nhấp chọn ảnh món ăn từ máy của bạn 📸", style = MaterialTheme.typography.labelMedium, textAlign = TextAlign.Center)
+                                    Text("Nhấp chọn ảnh món ăn từ máy của bạn", style = MaterialTheme.typography.labelMedium, textAlign = TextAlign.Center)
                                 }
                             }
                         }
@@ -150,14 +150,14 @@ fun CreatePostScreen(
                         value = restaurantName,
                         onValueChange = { viewModel.updateRestaurantName(it) },
                         label = "Tên quán ăn / Nhà hàng",
-                        placeholder = "Ví dụ: Phở Thìn Lò Đúc, Pizza 4P's..."
+                        placeholder = "Ví dụ: Bún bò Huế O Xuân"
                     )
 
                     AppTextField(
                         value = caption,
                         onValueChange = { viewModel.updateCaption(it) },
-                        label = "Cảm nghĩ của bạn về bữa ăn",
-                        placeholder = "Hôm nay bạn ăn gì? Trải nghiệm ra sao?",
+                        label = "Cảm nghĩ",
+                        placeholder = "Bạn thấy món ăn thế nào?",
                         singleLine = false
                     )
 
@@ -198,14 +198,13 @@ fun CreatePostScreen(
                                     Icon(Icons.Default.People, contentDescription = null, tint = if (isFollowers) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.onSurfaceVariant)
                                     Column {
                                         Text("Bạn bè", style = MaterialTheme.typography.labelLarge.copy(fontWeight = FontWeight.Bold))
-                                        Text("Người theo dõi", style = MaterialTheme.typography.labelSmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
+                                        Text("Chỉ bạn bè xem", style = MaterialTheme.typography.labelSmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
                                     }
                                 }
                             }
                         }
                     }
 
-                    Spacer(modifier = Modifier.height(16.dp))
 
                     // Chống click spam khi đang tải lên đám mây
                     if (uiState is CreatePostUiState.Loading) {

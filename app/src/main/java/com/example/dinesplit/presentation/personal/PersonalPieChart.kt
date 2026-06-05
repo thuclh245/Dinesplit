@@ -19,6 +19,8 @@ import androidx.compose.ui.graphics.StrokeCap
 import androidx.compose.ui.graphics.drawscope.Stroke
 import androidx.compose.ui.unit.dp
 import com.example.dinesplit.core.ui.AppDimens
+import androidx.compose.ui.semantics.contentDescription
+import androidx.compose.ui.semantics.clearAndSetSemantics
 
 @Composable
 fun PersonalPieChart(
@@ -65,11 +67,15 @@ fun PersonalPieChart(
         modifier = modifier,
         verticalArrangement = Arrangement.spacedBy(AppDimens.spaceMd),
     ) {
+        val chartSummary = "Biểu đồ tròn phân phối chi tiêu: " + validSlices.joinToString(", ") { "${it.category} ${it.percentage.toInt()}%" }
         Box(
             modifier =
                 Modifier
                     .fillMaxWidth()
-                    .height(180.dp),
+                    .height(180.dp)
+                    .clearAndSetSemantics {
+                        contentDescription = chartSummary
+                    },
             contentAlignment = Alignment.Center,
         ) {
             Canvas(modifier = Modifier.size(160.dp)) {

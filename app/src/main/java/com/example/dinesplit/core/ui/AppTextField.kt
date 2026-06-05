@@ -73,10 +73,10 @@ fun AppTextField(
         shape = AppShapes.medium,
         colors =
             TextFieldDefaults.colors(
-                focusedContainerColor = MaterialTheme.colorScheme.surfaceContainerHighest,
-                unfocusedContainerColor = MaterialTheme.colorScheme.surfaceContainerHighest,
-                disabledContainerColor = MaterialTheme.colorScheme.surfaceContainerHighest.copy(alpha = 0.7f),
-                errorContainerColor = MaterialTheme.colorScheme.surfaceContainerHighest,
+                focusedContainerColor = MaterialTheme.colorScheme.surfaceContainer,
+                unfocusedContainerColor = MaterialTheme.colorScheme.surfaceContainer,
+                disabledContainerColor = MaterialTheme.colorScheme.surfaceContainer.copy(alpha = 0.7f),
+                errorContainerColor = MaterialTheme.colorScheme.surfaceContainer,
                 focusedIndicatorColor = Color.Transparent,
                 unfocusedIndicatorColor = Color.Transparent,
                 disabledIndicatorColor = Color.Transparent,
@@ -98,7 +98,7 @@ fun AppTextField(
                 errorPlaceholderColor = MaterialTheme.colorScheme.error.copy(alpha = 0.7f),
             ),
         label = if (label.isNotEmpty()) {
-            { Text(text = label) }
+            { Text(text = label, style = MaterialTheme.typography.bodyMedium) }
         } else {
             null
         },

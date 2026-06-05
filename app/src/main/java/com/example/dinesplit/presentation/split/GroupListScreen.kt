@@ -25,6 +25,8 @@ import androidx.compose.material.icons.filled.Add
 import androidx.compose.material.icons.filled.Notifications
 import androidx.compose.material.icons.filled.Search
 import androidx.compose.material.icons.filled.Star
+import androidx.compose.material.icons.filled.Group
+import com.example.dinesplit.core.ui.IconEmptyStateBlock
 import androidx.compose.material3.Badge
 import androidx.compose.material3.BadgedBox
 import androidx.compose.material3.ButtonDefaults
@@ -192,9 +194,22 @@ fun GroupListScreen(
 
                 uiState.groups.isEmpty() -> {
                     item {
-                        GroupMessageCard(
+                        IconEmptyStateBlock(
                             title = "Chưa có nhóm nào",
-                            message = "Bấm nút + để tạo nhóm đầu tiên.",
+                            subtitle = "Tạo nhóm đầu tiên để chia tiền ăn uống với bạn bè.",
+                            icon = {
+                                Icon(
+                                    imageVector = Icons.Default.Group,
+                                    contentDescription = null,
+                                    tint = MaterialTheme.colorScheme.primary.copy(alpha = 0.6f),
+                                    modifier = Modifier.size(64.dp)
+                                )
+                            },
+                            actionText = "Tạo nhóm ngay",
+                            onActionClick = onNavigateToCreateGroup,
+                            modifier = Modifier
+                                .fillMaxWidth()
+                                .padding(vertical = AppDimens.spaceLg)
                         )
                     }
                 }
@@ -311,7 +326,7 @@ fun FinancialSummaryCard(
                 )
                 Spacer(modifier = Modifier.height(AppDimens.spaceLg))
                 SmallButton(
-                    text = "Settle Up",
+                    text = "Chốt sổ",
                     onClick = onSettleUpClick,
                     colors = ButtonDefaults.buttonColors(
                         containerColor = colorScheme.primary,
@@ -340,7 +355,7 @@ fun FinancialSummaryCard(
                 )
                 Spacer(modifier = Modifier.height(AppDimens.spaceLg))
                 SmallButton(
-                    text = "Remind",
+                    text = "Nhắc nợ",
                     onClick = onRemindClick,
                     colors = ButtonDefaults.buttonColors(
                         containerColor = colorScheme.secondary,

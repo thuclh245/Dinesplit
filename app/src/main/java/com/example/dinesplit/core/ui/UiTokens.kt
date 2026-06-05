@@ -16,7 +16,7 @@ object AppDimens {
     val space3Xl = 40.dp
     val space4Xl = 48.dp
 
-    val screenHorizontal = 16.dp
+    val screenHorizontal = 24.dp
     val screenVertical = 16.dp
 
     val radiusSm = 4.dp

@@ -3,6 +3,9 @@ package com.example.dinesplit.presentation.main
 import android.app.Application
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
+import androidx.compose.foundation.selection.selectable
+import androidx.compose.ui.semantics.Role
+import androidx.compose.ui.semantics.semantics
 import androidx.compose.foundation.layout.*
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
@@ -158,8 +161,11 @@ fun MainContainerScreen(
         bottomBarOffsetHeightPx = 0f
     }
 
+    val bottomBarHeightDp = with(density) { bottomBarHeightPx.toDp() }
     val bottomBarOffsetHeightDp = with(density) { bottomBarOffsetHeightPx.toDp() }
-    val dynamicBottomPadding = remember(bottomBarOffsetHeightDp) { maxOf(0.dp, 80.dp - bottomBarOffsetHeightDp) }
+    val dynamicBottomPadding = remember(bottomBarOffsetHeightDp, bottomBarHeightDp) {
+        maxOf(0.dp, (bottomBarHeightDp + 16.dp) - bottomBarOffsetHeightDp)
+    }
 
     Scaffold(
         contentWindowInsets = WindowInsets(0, 0, 0, 0),
@@ -611,9 +617,9 @@ fun MainContainerScreen(
             if (showHomeTopBar) {
                 val title = when {
                     currentRoute?.contains(AppRoute.Feed.route) == true -> "DineSplit"
-                    currentRoute?.contains(AppRoute.Split.route) == true -> "Split Bill"
+                    currentRoute?.contains(AppRoute.Split.route) == true -> "Chia tiền"
                     currentRoute?.contains(AppRoute.Personal.route) == true -> "Ví cá nhân"
-                    currentRoute?.contains(AppRoute.Profile.route) == true -> profileUiState.profile?.displayName ?: "Profile"
+                    currentRoute?.contains(AppRoute.Profile.route) == true -> profileUiState.profile?.displayName ?: "Hồ sơ"
                     else -> "DineSplit"
                 }
 
@@ -722,13 +728,18 @@ private fun MainBottomBar(
                         modifier = Modifier
                             .weight(1f)
                             .fillMaxHeight()
-                            .clickable { onTabSelected(tab) },
+                            .selectable(
+                                selected = selected,
+                                role = Role.Tab,
+                                onClick = { onTabSelected(tab) }
+                            )
+                            .semantics(mergeDescendants = true) {},
                         horizontalAlignment = Alignment.CenterHorizontally,
                         verticalArrangement = Arrangement.Center,
                     ) {
                         Icon(
                             imageVector = tab.icon,
-                            contentDescription = tab.label,
+                            contentDescription = null,
                             tint = if (selected) colorScheme.primary else colorScheme.outlineVariant,
                             modifier = Modifier.size(26.dp),
                         )

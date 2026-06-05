@@ -144,6 +144,15 @@ fun HomeTopBar(
                             )
                         }
                     }
+                    Text(
+                        text = "DineSplit",
+                        style =
+                            MaterialTheme.typography.titleLarge.copy(
+                                fontWeight = FontWeight.Bold,
+                                letterSpacing = (-0.5).sp,
+                            ),
+                        color = MaterialTheme.colorScheme.primary,
+                    )
                 }
             } else {
                 // Other Sections - Clean H1 standard layout

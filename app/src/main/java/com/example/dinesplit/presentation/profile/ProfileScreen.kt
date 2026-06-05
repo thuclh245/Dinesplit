@@ -20,6 +20,9 @@ import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import androidx.compose.foundation.selection.toggleable
+import androidx.compose.ui.semantics.Role
+import androidx.compose.ui.semantics.semantics
 import com.example.dinesplit.core.ui.AppCard
 import com.example.dinesplit.core.ui.AppDimens
 import com.example.dinesplit.core.ui.AppShapes
@@ -115,7 +118,13 @@ fun ProfileScreen(
                     )
                     Spacer(modifier = Modifier.height(AppDimens.spaceSm))
                     Row(
-                        modifier = Modifier.fillMaxWidth(),
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .toggleable(
+                                value = isPublic,
+                                role = Role.Switch,
+                                onValueChange = onPrivacyChange
+                            ),
                         verticalAlignment = Alignment.CenterVertically,
                         horizontalArrangement = Arrangement.SpaceBetween
                     ) {
@@ -125,7 +134,7 @@ fun ProfileScreen(
                         )
                         Switch(
                             checked = isPublic,
-                            onCheckedChange = onPrivacyChange
+                            onCheckedChange = null
                         )
                     }
                 }
@@ -161,6 +170,7 @@ fun ProfileScreen(
                 posts = posts.size.toString(),
                 followers = followersCount.toString(),
                 following = followingCount.toString(),
+                taggedBillsCount = taggedBills.size,
                 avatarUrl = userAvatarUrl.orEmpty(),
                 onEditProfile = onEditProfile,
                 isLoggingOut = isLoggingOut,
@@ -178,7 +188,7 @@ fun ProfileScreen(
                         Box(
                             modifier = Modifier
                                 .fillMaxWidth()
-                                .padding(vertical = AppDimens.space4Xl),
+                                .padding(top = 32.dp, bottom = 48.dp),
                             contentAlignment = Alignment.Center
                         ) {
                             Column(
@@ -208,7 +218,7 @@ fun ProfileScreen(
                         Box(
                             modifier = Modifier
                                 .fillMaxWidth()
-                                .padding(vertical = AppDimens.space4Xl),
+                                .padding(top = 32.dp, bottom = 48.dp),
                             contentAlignment = Alignment.Center
                         ) {
                             Column(
@@ -251,6 +261,7 @@ private fun ProfileHeader(
     posts: String,
     followers: String,
     following: String,
+    taggedBillsCount: Int,
     avatarUrl: String,
     onEditProfile: () -> Unit,
     isLoggingOut: Boolean,
@@ -262,7 +273,7 @@ private fun ProfileHeader(
         Row(
             modifier = Modifier.fillMaxWidth(),
             verticalAlignment = Alignment.CenterVertically,
-            horizontalArrangement = Arrangement.spacedBy(AppDimens.spaceXl),
+            horizontalArrangement = Arrangement.spacedBy(AppDimens.spaceLg),
         ) {
             // Avatar with Gradient Ring
             Box(
@@ -292,15 +303,25 @@ private fun ProfileHeader(
                 )
             }
 
-            Column(modifier = Modifier.weight(1f), verticalArrangement = Arrangement.spacedBy(AppDimens.spaceLg)) {
+            Column(modifier = Modifier.weight(1f), verticalArrangement = Arrangement.spacedBy(AppDimens.spaceSm)) {
                 Text(userName, style = MaterialTheme.typography.headlineSmall.copy(fontWeight = FontWeight.ExtraBold))
 
                 Row(horizontalArrangement = Arrangement.spacedBy(AppDimens.spaceMd)) {
-                    PrimaryButton(
-                        text = "Edit Profile",
+                    OutlinedButton(
                         onClick = onEditProfile,
-                        modifier = Modifier.fillMaxWidth(),
-                    )
+                        modifier = Modifier.height(32.dp),
+                        shape = AppShapes.medium,
+                        border = BorderStroke(1.dp, MaterialTheme.colorScheme.outline.copy(alpha = 0.5f)),
+                        colors = ButtonDefaults.outlinedButtonColors(
+                            contentColor = MaterialTheme.colorScheme.onSurface,
+                        ),
+                        contentPadding = PaddingValues(horizontal = 16.dp, vertical = 0.dp)
+                    ) {
+                        Text(
+                            text = "Chỉnh sửa hồ sơ",
+                            style = MaterialTheme.typography.labelLarge.copy(fontWeight = FontWeight.Bold)
+                        )
+                    }
                 }
             }
         }
@@ -312,14 +333,14 @@ private fun ProfileHeader(
             modifier = Modifier.fillMaxWidth(),
             horizontalArrangement = Arrangement.spacedBy(AppDimens.space2Xl),
         ) {
-            StatItem(label = "Posts", value = posts)
+            StatItem(label = "Bài viết", value = posts)
             StatItem(
-                label = "Followers",
+                label = "Người theo dõi",
                 value = followers,
                 modifier = Modifier.clickable { onFollowersClick() }
             )
             StatItem(
-                label = "Following",
+                label = "Đang theo dõi",
                 value = following,
                 modifier = Modifier.clickable { onFollowingClick() }
             )
@@ -341,6 +362,59 @@ private fun ProfileHeader(
                 style = MaterialTheme.typography.labelLarge.copy(fontWeight = FontWeight.Bold),
                 color = MaterialTheme.colorScheme.primary,
             )
+        }
+
+        Spacer(modifier = Modifier.height(AppDimens.spaceLg))
+
+        // DineSplit Stats Card
+        AppCard(
+            modifier = Modifier.fillMaxWidth(),
+            contentPadding = PaddingValues(AppDimens.spaceMd),
+        ) {
+            Column(verticalArrangement = Arrangement.spacedBy(AppDimens.spaceSm)) {
+                Text(
+                    text = "THỐNG KÊ DINESPLIT",
+                    style = MaterialTheme.typography.labelSmall.copy(
+                        fontWeight = FontWeight.Bold,
+                        letterSpacing = 0.2.sp
+                    ),
+                    color = MaterialTheme.colorScheme.primary
+                )
+                
+                Row(
+                    modifier = Modifier.fillMaxWidth().padding(top = 4.dp),
+                    horizontalArrangement = Arrangement.SpaceBetween,
+                    verticalAlignment = Alignment.CenterVertically
+                ) {
+                    DineSplitStatColumn(
+                        modifier = Modifier.weight(1f),
+                        icon = Icons.Default.Restaurant,
+                        value = posts,
+                        label = "Bài đăng",
+                        color = MaterialTheme.colorScheme.primary
+                    )
+                    
+                    Box(modifier = Modifier.width(1.dp).height(24.dp).background(MaterialTheme.colorScheme.outlineVariant.copy(alpha = 0.5f)))
+                    
+                    DineSplitStatColumn(
+                        modifier = Modifier.weight(1f),
+                        icon = Icons.Default.ReceiptLong,
+                        value = taggedBillsCount.toString(),
+                        label = "Hóa đơn chia",
+                        color = MaterialTheme.colorScheme.secondary
+                    )
+                    
+                    Box(modifier = Modifier.width(1.dp).height(24.dp).background(MaterialTheme.colorScheme.outlineVariant.copy(alpha = 0.5f)))
+                    
+                    DineSplitStatColumn(
+                        modifier = Modifier.weight(1f),
+                        icon = Icons.Default.People,
+                        value = ((followers.toIntOrNull() ?: 0) + (following.toIntOrNull() ?: 0)).toString(),
+                        label = "Kết nối",
+                        color = MaterialTheme.colorScheme.tertiary
+                    )
+                }
+            }
         }
 
         Spacer(modifier = Modifier.height(20.dp))
@@ -365,6 +439,42 @@ private fun ProfileHeader(
                     )
                 }
             }
+        )
+    }
+}
+
+@Composable
+private fun DineSplitStatColumn(
+    modifier: Modifier = Modifier,
+    icon: ImageVector,
+    value: String,
+    label: String,
+    color: Color
+) {
+    Column(
+        modifier = modifier,
+        horizontalAlignment = Alignment.CenterHorizontally,
+        verticalArrangement = Arrangement.spacedBy(4.dp)
+    ) {
+        Row(
+            verticalAlignment = Alignment.CenterVertically,
+            horizontalArrangement = Arrangement.spacedBy(6.dp)
+        ) {
+            Icon(
+                imageVector = icon,
+                contentDescription = null,
+                tint = color,
+                modifier = Modifier.size(16.dp)
+            )
+            Text(
+                text = value,
+                style = MaterialTheme.typography.titleMedium.copy(fontWeight = FontWeight.Black)
+            )
+        }
+        Text(
+            text = label,
+            style = MaterialTheme.typography.labelSmall,
+            color = MaterialTheme.colorScheme.onSurfaceVariant
         )
     }
 }
@@ -411,9 +521,9 @@ private fun ProfileTabs(
 ) {
     val tabs =
         listOf(
-            TabInfo("Grid", Icons.Default.GridView),
-            TabInfo("Saved", Icons.Default.BookmarkBorder),
-            TabInfo("Tagged", Icons.Default.AccountBox),
+            TabInfo("Bài đăng", Icons.Default.GridView),
+            TabInfo("Đã lưu", Icons.Default.BookmarkBorder),
+            TabInfo("Được gắn thẻ", Icons.Default.AccountBox),
         )
     val primaryColor = MaterialTheme.colorScheme.primary
 
@@ -431,9 +541,9 @@ private fun ProfileTabs(
                                 if (isSelected) {
                                     drawLine(
                                         color = primaryColor,
-                                        start = androidx.compose.ui.geometry.Offset(0f, 0f),
-                                        end = androidx.compose.ui.geometry.Offset(size.width, 0f),
-                                        strokeWidth = 2.dp.toPx(),
+                                        start = androidx.compose.ui.geometry.Offset(0f, size.height),
+                                        end = androidx.compose.ui.geometry.Offset(size.width, size.height),
+                                        strokeWidth = 3.dp.toPx(),
                                     )
                                 }
                             },
@@ -493,7 +603,7 @@ private fun TaggedBillsList(
         Box(
             modifier = Modifier
                 .fillMaxWidth()
-                .padding(vertical = AppDimens.space4Xl),
+                .padding(top = 32.dp, bottom = 48.dp),
             contentAlignment = Alignment.Center
         ) {
             Column(

@@ -33,7 +33,8 @@ import com.example.dinesplit.core.ui.AppScaffold
 import com.example.dinesplit.core.ui.AppTextField
 import com.example.dinesplit.core.ui.PrimaryButton
 import com.example.dinesplit.core.ui.ProfileAvatarSection
-import com.example.dinesplit.core.ui.SecondaryButton
+import com.example.dinesplit.core.ui.TertiaryButton
+import com.example.dinesplit.core.ui.BackNavigationButton
 
 @Composable
 fun EditProfileScreen(
@@ -54,22 +55,25 @@ fun EditProfileScreen(
             uri?.let(onAvatarChange)
         }
 
-    AppScaffold(title = "Edit Profile") {
+    AppScaffold(
+        title = "Chỉnh sửa hồ sơ",
+        navigationIcon = { BackNavigationButton(onClick = onBack) }
+    ) {
         Column(
             modifier = Modifier.fillMaxSize(),
             verticalArrangement = Arrangement.spacedBy(AppDimens.spaceLg),
         ) {
             ProfileAvatarSection(
                 avatarModel = uiState.avatarUrl,
-                title = "Profile avatar",
+                title = "Ảnh đại diện",
                 subtitle =
                     if (uiState.avatarError.isNullOrBlank()) {
-                        "Choose a new avatar or clear the current one"
+                        "Chọn ảnh đại diện mới hoặc xóa ảnh hiện tại"
                     } else {
                         uiState.avatarError
                     },
-                actionText = "Change avatar",
-                clearText = if (uiState.avatarUrl.isNotBlank()) "Clear avatar" else null,
+                actionText = "Đổi ảnh đại diện",
+                clearText = if (uiState.avatarUrl.isNotBlank()) "Xóa ảnh đại diện" else null,
                 onActionClick = {
                     avatarPickerLauncher.launch(
                         PickVisualMediaRequest(ActivityResultContracts.PickVisualMedia.ImageOnly),
@@ -82,7 +86,7 @@ fun EditProfileScreen(
             AppTextField(
                 value = uiState.displayName,
                 onValueChange = onDisplayNameChange,
-                label = "Display name",
+                label = "Tên hiển thị",
                 isError = uiState.displayNameError != null,
                 supportingText = uiState.displayNameError,
             )
@@ -90,8 +94,8 @@ fun EditProfileScreen(
             AppTextField(
                 value = uiState.username,
                 onValueChange = onUsernameChange,
-                label = "Username",
-                placeholder = "your_handle",
+                label = "Tên người dùng",
+                placeholder = "tên_người_dùng",
                 isError = uiState.usernameError != null,
                 supportingText = uiState.usernameError,
             )
@@ -99,8 +103,8 @@ fun EditProfileScreen(
             AppTextField(
                 value = uiState.bio,
                 onValueChange = onBioChange,
-                label = "Bio (optional)",
-                placeholder = "A short bio",
+                label = "Giới thiệu (tùy chọn)",
+                placeholder = "Một vài mô tả ngắn về bạn",
                 singleLine = false,
                 supportingText = uiState.submitError,
             )
@@ -108,14 +112,14 @@ fun EditProfileScreen(
             // Dining Style Section
             Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
                 Text(
-                    text = "DINING STYLE",
-                    style = MaterialTheme.typography.labelSmall.copy(fontWeight = FontWeight.Bold, letterSpacing = 1.sp),
+                    text = "PHONG CÁCH ĂN UỐNG",
+                    style = MaterialTheme.typography.labelSmall.copy(fontWeight = FontWeight.Bold, letterSpacing = 0.2.sp),
                     color = MaterialTheme.colorScheme.onSurfaceVariant,
                     modifier = Modifier.padding(start = 4.dp),
                 )
                 Row(horizontalArrangement = Arrangement.spacedBy(8.dp), modifier = Modifier.fillMaxWidth()) {
                     StyleChip(
-                        label = "Fine Dining",
+                        label = "Nhà hàng sang",
                         icon = Icons.Default.Restaurant,
                         selected =
                             uiState.selectedStyles.contains(
@@ -126,7 +130,7 @@ fun EditProfileScreen(
                         },
                     )
                     StyleChip(
-                        label = "Cafe Hopper",
+                        label = "Cà phê",
                         icon = Icons.Default.Coffee,
                         selected =
                             uiState.selectedStyles.contains(
@@ -137,7 +141,7 @@ fun EditProfileScreen(
                         },
                     )
                     StyleChip(
-                        label = "Nightlife",
+                        label = "Ăn đêm",
                         icon = Icons.Default.LocalBar,
                         selected =
                             uiState.selectedStyles.contains(
@@ -153,18 +157,19 @@ fun EditProfileScreen(
             PrimaryButton(
                 text =
                     when {
-                        uiState.isAvatarUploading -> "Uploading avatar..."
-                        uiState.isSubmitting -> "Saving..."
-                        else -> "Save"
+                        uiState.isAvatarUploading -> "Đang tải ảnh đại diện lên..."
+                        uiState.isSubmitting -> "Đang lưu..."
+                        else -> "Lưu thay đổi"
                     },
                 enabled = !uiState.isSubmitting && !uiState.isAvatarUploading,
                 onClick = onSave,
             )
 
-            SecondaryButton(
-                text = "Back",
+            TertiaryButton(
+                text = "Quay lại",
                 enabled = !uiState.isSubmitting && !uiState.isAvatarUploading,
                 onClick = onBack,
+                modifier = Modifier.fillMaxWidth()
             )
         }
     }
