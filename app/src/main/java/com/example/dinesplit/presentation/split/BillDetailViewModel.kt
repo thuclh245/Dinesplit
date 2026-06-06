@@ -7,6 +7,7 @@ import com.example.dinesplit.domain.model.Member
 import com.example.dinesplit.domain.model.Notification
 import com.example.dinesplit.domain.model.NotificationType
 import com.example.dinesplit.domain.model.QrPayment
+import com.example.dinesplit.domain.model.QrPaymentStatus
 import com.example.dinesplit.domain.repository.NotificationRepository
 import com.example.dinesplit.domain.repository.SplitRepository
 import com.example.dinesplit.domain.repository.QrPaymentRepository
@@ -17,6 +18,7 @@ import kotlinx.coroutines.flow.collectLatest
 import kotlinx.coroutines.flow.combine
 import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
+import java.net.URLEncoder
 import java.util.Locale
 import java.util.UUID
 import java.util.Date
@@ -35,6 +37,7 @@ data class BillDetailUiState(
     val activeQrPayment: QrPayment? = null,
     val isUnauthorized: Boolean = false,
     val isNotFound: Boolean = false,
+    val qrPayments: List<QrPayment> = emptyList(),
 )
 
 class BillDetailViewModel(
@@ -53,7 +56,10 @@ class BillDetailViewModel(
     }
 
     fun markCurrentMemberPaid() {
-        markMemberPaid(_uiState.value.currentMemberId)
+        val state = _uiState.value
+        val bill = state.bill ?: return
+        val amount = bill.shares[state.currentMemberId] ?: 0.0
+        initiateQrPayment(amount, bill.payerId)
     }
 
     fun markMemberPaid(memberId: String) {
@@ -190,13 +196,17 @@ class BillDetailViewModel(
                     repository.getBill(groupId, billId),
                     repository.getGroup(groupId),
                     repository.getGroupMembers(groupId),
-                ) { bill, group, members -> Triple(bill, group, members) }
-                    .collect { (bill, group, members) ->
+                    qrPaymentRepository.observeBillPayments(groupId, billId),
+                ) { bill, group, members, payments -> (bill to group) to (members to payments) }
+                    .collect { (billAndGroup, membersAndPayments) ->
+                        val (bill, group) = billAndGroup
+                        val (members, payments) = membersAndPayments
                         if (bill == null) {
                             _uiState.update {
                                 it.copy(
                                     bill = null,
                                     members = emptyList(),
+                                    qrPayments = emptyList(),
                                     isLoading = false,
                                     isUnauthorized = false,
                                     isNotFound = true,
@@ -221,6 +231,7 @@ class BillDetailViewModel(
                                 it.copy(
                                     bill = null,
                                     members = emptyList(),
+                                    qrPayments = emptyList(),
                                     isLoading = false,
                                     isUnauthorized = true,
                                     isNotFound = false,
@@ -235,6 +246,7 @@ class BillDetailViewModel(
                             it.copy(
                                 bill = bill,
                                 members = effectiveMembers,
+                                qrPayments = payments,
                                 currentMemberId = resolveCurrentMemberId(effectiveMembers),
                                 isLoading = false,
                                 isUpdatingPayment = false,
@@ -312,10 +324,20 @@ class BillDetailViewModel(
         val state = _uiState.value
         val bill = state.bill ?: return
         val currentUid = currentUserId ?: return
+        if (currentUid == receiverUid || amount <= 0.0 || currentUid in bill.paidMemberIds) return
+        if (!bill.hasPaymentQr) {
+            _uiState.update {
+                it.copy(paymentMessage = "Hóa đơn này chưa có QR nhận tiền. Người tạo bill cần cập nhật thông tin QR.")
+            }
+            return
+        }
 
         viewModelScope.launch {
             _uiState.update { it.copy(isUpdatingPayment = true) }
-            val paymentId = UUID.randomUUID().toString().take(8)
+            val paymentId = paymentIdFor(groupId, billId, currentUid)
+            val now = Date()
+            val description = "DINESPLIT ${bill.id.takeLast(6).uppercase()}"
+            val qrContent = buildPaymentQrUrl(bill, amount, description)
             val payment = QrPayment(
                 id = paymentId,
                 groupId = groupId,
@@ -323,10 +345,12 @@ class BillDetailViewModel(
                 payerUid = currentUid,
                 receiverUid = receiverUid,
                 amount = amount,
-                status = "PENDING",
-                description = "DSPLIT $paymentId",
-                paymentGateway = "vietqr_gateway",
-                createdAt = Date()
+                status = QrPaymentStatus.PENDING,
+                qrContent = qrContent,
+                description = description,
+                paymentGateway = "vietqr_manual",
+                createdAt = now,
+                updatedAt = now,
             )
 
             val result = qrPaymentRepository.createQrPayment(payment)
@@ -349,15 +373,33 @@ class BillDetailViewModel(
         }
     }
 
+    private fun buildPaymentQrUrl(
+        bill: Bill,
+        amount: Double,
+        description: String,
+    ): String {
+        val bankCode = bill.paymentQrBankCode.trim().uppercase()
+        val accountNumber = bill.paymentQrAccountNumber.trim()
+        val accountName = bill.paymentQrAccountName.trim()
+        if (bankCode.isBlank() || accountNumber.isBlank() || accountName.isBlank()) return ""
+
+        return "https://img.vietqr.io/image/$bankCode-$accountNumber-compact2.png" +
+            "?amount=${amount.toLong()}" +
+            "&addInfo=${encodeQrParam(description)}" +
+            "&accountName=${encodeQrParam(accountName)}"
+    }
+
+    private fun encodeQrParam(value: String): String {
+        return URLEncoder.encode(value, Charsets.UTF_8.name())
+    }
+
     private fun observeActiveQrPayment(paymentId: String) {
         qrJob?.cancel()
         qrJob = viewModelScope.launch {
             qrPaymentRepository.observeQrPayment(paymentId).collectLatest { payment ->
                 if (payment != null) {
                     _uiState.update { it.copy(activeQrPayment = payment) }
-                    if (payment.status == "VERIFIED") {
-                        // Success! Trigger mark member as paid locally & in DB
-                        markMemberPaid(payment.payerUid)
+                    if (payment.status == QrPaymentStatus.MARKED_PAID || payment.status == QrPaymentStatus.CONFIRMED) {
                         _uiState.update { it.copy(activeQrPayment = null) }
                         qrJob?.cancel()
                     }
@@ -371,16 +413,165 @@ class BillDetailViewModel(
         _uiState.update { it.copy(activeQrPayment = null) }
     }
 
-    fun simulateBankCallback(paymentId: String) {
+    fun markActivePaymentTransferred() {
         val payment = _uiState.value.activeQrPayment ?: return
-        if (payment.id != paymentId) return
 
         viewModelScope.launch {
-            qrPaymentRepository.updateQrPaymentStatus(
-                paymentId = paymentId,
-                status = "VERIFIED",
-                bankTransactionRef = "BANK_REF_" + UUID.randomUUID().toString().take(6).uppercase()
-            )
+            val result =
+                qrPaymentRepository.updateQrPaymentStatus(
+                    paymentId = payment.id,
+                    status = QrPaymentStatus.MARKED_PAID,
+                    bankTransactionRef = "USER_MARKED_" + UUID.randomUUID().toString().take(6).uppercase()
+                )
+            if (result.isSuccess) {
+                notifyPaymentMarked(payment)
+                _uiState.update {
+                    it.copy(
+                        activeQrPayment = null,
+                        paymentMessage = "ÄÃ£ gá»­i yÃªu cáº§u xÃ¡c nháº­n thanh toÃ¡n"
+                    )
+                }
+            } else {
+                _uiState.update {
+                    it.copy(paymentMessage = result.exceptionOrNull()?.message ?: "KhÃ´ng thá»ƒ bÃ¡o Ä‘Ã£ thanh toÃ¡n")
+                }
+            }
         }
+    }
+
+    fun confirmQrPayment(paymentId: String) {
+        val payment = _uiState.value.qrPayments.firstOrNull { it.id == paymentId } ?: return
+        val bill = _uiState.value.bill ?: return
+        if (currentUserId != payment.receiverUid || payment.payerUid in bill.paidMemberIds) return
+
+        viewModelScope.launch {
+            _uiState.update { it.copy(isUpdatingPayment = true, paymentMessage = null) }
+            val statusResult =
+                qrPaymentRepository.updateQrPaymentStatus(
+                    paymentId = payment.id,
+                    status = QrPaymentStatus.CONFIRMED,
+                    bankTransactionRef = payment.bankTransactionRef.ifBlank { "CONFIRMED_BY_RECEIVER" }
+                )
+            val paidResult =
+                if (statusResult.isSuccess) {
+                    repository.markBillMemberPaid(groupId, billId, payment.payerUid)
+                } else {
+                    Result.failure(statusResult.exceptionOrNull() ?: IllegalStateException("KhÃ´ng thá»ƒ xÃ¡c nháº­n thanh toÃ¡n"))
+                }
+
+            if (paidResult.isSuccess) {
+                notifyPaymentConfirmed(payment)
+                _uiState.update {
+                    it.copy(isUpdatingPayment = false, paymentMessage = "ÄÃ£ xÃ¡c nháº­n Ä‘Ã£ nháº­n tiá»n")
+                }
+            } else {
+                _uiState.update {
+                    it.copy(
+                        isUpdatingPayment = false,
+                        paymentMessage = paidResult.exceptionOrNull()?.message ?: "KhÃ´ng thá»ƒ xÃ¡c nháº­n thanh toÃ¡n"
+                    )
+                }
+            }
+        }
+    }
+
+    fun rejectQrPayment(paymentId: String) {
+        val payment = _uiState.value.qrPayments.firstOrNull { it.id == paymentId } ?: return
+        if (currentUserId != payment.receiverUid) return
+
+        viewModelScope.launch {
+            val result =
+                qrPaymentRepository.updateQrPaymentStatus(
+                    paymentId = payment.id,
+                    status = QrPaymentStatus.REJECTED,
+                    bankTransactionRef = payment.bankTransactionRef.ifBlank { "REJECTED_BY_RECEIVER" }
+                )
+            if (result.isSuccess) {
+                notifyPaymentRejected(payment)
+                _uiState.update { it.copy(paymentMessage = "ÄÃ£ tá»« chá»‘i xÃ¡c nháº­n thanh toÃ¡n") }
+            } else {
+                _uiState.update {
+                    it.copy(paymentMessage = result.exceptionOrNull()?.message ?: "KhÃ´ng thá»ƒ tá»« chá»‘i thanh toÃ¡n")
+                }
+            }
+        }
+    }
+
+    private suspend fun notifyPaymentMarked(payment: QrPayment) {
+        val bill = _uiState.value.bill ?: return
+        val payerName = _uiState.value.members.firstOrNull { it.id == payment.payerUid }?.name
+            ?: fallbackMemberName(payment.payerUid)
+        val now = System.currentTimeMillis()
+        notificationRepository.insertNotification(
+            Notification(
+                id = "${now}_${bill.id}_${payment.payerUid}_marked_paid",
+                userId = payment.receiverUid,
+                title = "$payerName Ä‘Ã£ bÃ¡o Ä‘Ã£ thanh toÃ¡n",
+                subtitle = "${bill.name} - ${formatReminderAmount(payment.amount)} Ä‘",
+                type = NotificationType.PAYMENT_PENDING,
+                relatedId = bill.id,
+                isRead = false,
+                createdAt = now,
+                updatedAt = now,
+                deepLinkDestination = "SPLIT_DETAIL",
+                deepLinkTargetId = bill.id,
+                senderId = payment.payerUid,
+                groupId = groupId,
+            )
+        )
+    }
+
+    private suspend fun notifyPaymentConfirmed(payment: QrPayment) {
+        val bill = _uiState.value.bill ?: return
+        val receiverName = _uiState.value.members.firstOrNull { it.id == payment.receiverUid }?.name
+            ?: fallbackMemberName(payment.receiverUid)
+        val now = System.currentTimeMillis()
+        notificationRepository.insertNotification(
+            Notification(
+                id = "${now}_${bill.id}_${payment.payerUid}_confirmed",
+                userId = payment.payerUid,
+                title = "$receiverName Ä‘Ã£ xÃ¡c nháº­n thanh toÃ¡n",
+                subtitle = "${bill.name} - ${formatReminderAmount(payment.amount)} Ä‘",
+                type = NotificationType.PAYMENT_COMPLETED,
+                relatedId = bill.id,
+                isRead = false,
+                createdAt = now,
+                updatedAt = now,
+                deepLinkDestination = "SPLIT_DETAIL",
+                deepLinkTargetId = bill.id,
+                senderId = payment.receiverUid,
+                groupId = groupId,
+            )
+        )
+    }
+
+    private suspend fun notifyPaymentRejected(payment: QrPayment) {
+        val bill = _uiState.value.bill ?: return
+        val receiverName = _uiState.value.members.firstOrNull { it.id == payment.receiverUid }?.name
+            ?: fallbackMemberName(payment.receiverUid)
+        val now = System.currentTimeMillis()
+        notificationRepository.insertNotification(
+            Notification(
+                id = "${now}_${bill.id}_${payment.payerUid}_rejected",
+                userId = payment.payerUid,
+                title = "$receiverName cáº§n kiá»ƒm tra láº¡i thanh toÃ¡n",
+                subtitle = "${bill.name} - ${formatReminderAmount(payment.amount)} Ä‘",
+                type = NotificationType.PAYMENT_PENDING,
+                relatedId = bill.id,
+                isRead = false,
+                createdAt = now,
+                updatedAt = now,
+                deepLinkDestination = "SPLIT_DETAIL",
+                deepLinkTargetId = bill.id,
+                senderId = payment.receiverUid,
+                groupId = groupId,
+            )
+        )
+    }
+
+    private fun paymentIdFor(groupId: String, billId: String, payerUid: String): String {
+        return "pay_${groupId}_${billId}_$payerUid"
+            .replace("/", "_")
+            .replace("\\", "_")
     }
 }

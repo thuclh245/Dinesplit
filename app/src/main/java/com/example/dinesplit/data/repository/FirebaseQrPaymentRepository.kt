@@ -41,6 +41,25 @@ class FirebaseQrPaymentRepository private constructor(
         awaitClose { registration.remove() }
     }
 
+    override fun observeBillPayments(groupId: String, billId: String): Flow<List<QrPayment>> = callbackFlow {
+        val registration = firestore.collection(FirestoreCollections.QR_PAYMENTS)
+            .whereEqualTo("groupId", groupId)
+            .whereEqualTo("billId", billId)
+            .addSnapshotListener { snapshot, error ->
+                if (error != null) {
+                    close(error)
+                    return@addSnapshotListener
+                }
+                val payments =
+                    snapshot?.documents
+                        ?.mapNotNull { document -> document.toQrPayment() }
+                        ?.sortedByDescending { payment -> payment.updatedAt?.time ?: payment.createdAt?.time ?: 0L }
+                        .orEmpty()
+                trySend(payments)
+            }
+        awaitClose { registration.remove() }
+    }
+
     override suspend fun updateQrPaymentStatus(
         paymentId: String,
         status: String,
@@ -53,7 +72,7 @@ class FirebaseQrPaymentRepository private constructor(
         if (bankTransactionRef != null) {
             updates["bankTransactionRef"] = bankTransactionRef
         }
-        if (status == "VERIFIED") {
+        if (status == "CONFIRMED") {
             updates["verifiedAt"] = System.currentTimeMillis()
         }
         firestore.collection(FirestoreCollections.QR_PAYMENTS)
@@ -77,7 +96,8 @@ class FirebaseQrPaymentRepository private constructor(
             description = getString("description").orEmpty(),
             paymentGateway = getString("paymentGateway").orEmpty(),
             verifiedAt = getLongDateSafe("verifiedAt"),
-            createdAt = getLongDateSafe("createdAt")
+            createdAt = getLongDateSafe("createdAt"),
+            updatedAt = getLongDateSafe("updatedAt")
         )
     }
 
@@ -95,7 +115,8 @@ class FirebaseQrPaymentRepository private constructor(
             "description" to description,
             "paymentGateway" to paymentGateway,
             "verifiedAt" to (verifiedAt?.time ?: 0L),
-            "createdAt" to (createdAt?.time ?: System.currentTimeMillis())
+            "createdAt" to (createdAt?.time ?: System.currentTimeMillis()),
+            "updatedAt" to (updatedAt?.time ?: System.currentTimeMillis())
         )
     }
 

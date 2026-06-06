@@ -45,9 +45,17 @@ data class Bill(
     val shares: Map<String, Double> = emptyMap(), // MemberId -> Amount
     val paidMemberIds: List<String> = emptyList(),
     val createdBy: String = "",
+    val paymentQrBankCode: String = "",
+    val paymentQrAccountNumber: String = "",
+    val paymentQrAccountName: String = "",
     val date: Long = System.currentTimeMillis(),
     val updatedAt: Long = date,
 ) {
+    val hasPaymentQr: Boolean
+        get() = paymentQrBankCode.isNotBlank() &&
+            paymentQrAccountNumber.isNotBlank() &&
+            paymentQrAccountName.isNotBlank()
+
     fun paymentStatusFor(memberId: String): PaymentStatus {
         return when {
             memberId == payerId -> PaymentStatus.PAYER
