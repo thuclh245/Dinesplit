@@ -10,4 +10,5 @@ data class LinkedBillSummary(
     val isMyPaid: Boolean,
     val isIPayer: Boolean,
     val isParticipant: Boolean = true,
+    val isAuthorized: Boolean = true,
 )

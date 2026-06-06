@@ -357,18 +357,21 @@ private fun BalanceCard(
                             contentColor = if (isSecondary) MaterialTheme.colorScheme.onSecondaryContainer else MaterialTheme.colorScheme.onPrimary,
                         ),
                     modifier =
-                        Modifier.then(
-                            if (!isSecondary) {
-                                Modifier.background(
-                                    Brush.linearGradient(
-                                        listOf(MaterialTheme.colorScheme.primary, MaterialTheme.colorScheme.primaryContainer),
-                                    ),
-                                    CircleShape,
-                                )
-                            } else {
-                                Modifier
-                            },
-                        )
+                        Modifier
+                            .fillMaxWidth()
+                            .height(40.dp)
+                            .then(
+                                if (!isSecondary) {
+                                    Modifier.background(
+                                        Brush.linearGradient(
+                                            listOf(MaterialTheme.colorScheme.primary, MaterialTheme.colorScheme.primaryContainer),
+                                        ),
+                                        CircleShape,
+                                    )
+                                } else {
+                                    Modifier
+                                },
+                            )
                 )
             }
         }

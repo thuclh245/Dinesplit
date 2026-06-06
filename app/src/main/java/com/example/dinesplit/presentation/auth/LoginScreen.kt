@@ -10,6 +10,7 @@ import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.foundation.text.KeyboardActions
 import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
@@ -70,21 +71,26 @@ fun LoginScreen(
         }
     val googleSignInLauncher =
         rememberLauncherForActivityResult(ActivityResultContracts.StartActivityForResult()) { result ->
-            if (result.resultCode != Activity.RESULT_OK) {
-                return@rememberLauncherForActivityResult
-            }
-
             val task = GoogleSignIn.getSignedInAccountFromIntent(result.data)
             try {
                 val account = task.getResult(ApiException::class.java)
                 val idToken = account.idToken
                 if (idToken.isNullOrBlank()) {
-                    viewModel.onGoogleSignInError("Google did not return an ID token. Please try again.")
+                    viewModel.onGoogleSignInError("Google không trả về mã đăng nhập. Vui lòng thử lại.")
                 } else {
                     viewModel.loginWithGoogle(idToken)
                 }
             } catch (e: ApiException) {
-                viewModel.onGoogleSignInError("Google sign-in failed. Please try again.")
+                if (e.statusCode == 12501) {
+                    viewModel.onGoogleSignInError("Đã hủy đăng nhập Google.")
+                } else {
+                    val errorMsg = when (e.statusCode) {
+                        10 -> "Lỗi cấu hình Google Sign-In (10): Vui lòng đăng ký vân tay SHA-1 trong Firebase Console."
+                        7 -> "Lỗi kết nối mạng (7). Vui lòng kiểm tra internet."
+                        else -> "Đăng nhập Google thất bại (Mã lỗi: ${e.statusCode}). Vui lòng thử lại."
+                    }
+                    viewModel.onGoogleSignInError(errorMsg)
+                }
             }
         }
 
@@ -98,7 +104,7 @@ fun LoginScreen(
 
     LoginContent(
         uiState = uiState,
-        onEmailChange = viewModel::onEmailChange,
+        onEmailOrUsernameChange = viewModel::onEmailOrUsernameChange,
         onPasswordChange = viewModel::onPasswordChange,
         onSubmit = viewModel::submit,
         onGoogleSignIn = {
@@ -113,7 +119,7 @@ fun LoginScreen(
 @Composable
 private fun LoginContent(
     uiState: LoginUiState,
-    onEmailChange: (String) -> Unit,
+    onEmailOrUsernameChange: (String) -> Unit,
     onPasswordChange: (String) -> Unit,
     onSubmit: () -> Unit,
     onGoogleSignIn: () -> Unit,
@@ -152,6 +158,7 @@ private fun LoginContent(
                     .fillMaxSize()
                     .statusBarsPadding()
                     .navigationBarsPadding()
+                    .imePadding()
                     .padding(horizontal = AppDimens.spaceXl)
                     .verticalScroll(rememberScrollState()),
             horizontalAlignment = Alignment.CenterHorizontally,
@@ -214,23 +221,24 @@ private fun LoginContent(
                 verticalArrangement = Arrangement.spacedBy(AppDimens.spaceLg),
             ) {
                 AppTextField(
-                    value = uiState.email,
-                    onValueChange = onEmailChange,
-                    label = "EMAIL ADDRESS",
-                    placeholder = "jane.doe@example.com",
-                    isError = uiState.emailError != null,
-                    supportingText = uiState.emailError,
-                    keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Email, imeAction = ImeAction.Next),
+                    value = uiState.emailOrUsername,
+                    onValueChange = onEmailOrUsernameChange,
+                    label = "Email hoặc Tên người dùng",
+                    placeholder = "email@example.com hoặc username",
+                    isError = uiState.emailOrUsernameError != null || (uiState.submitError != null && !uiState.submitError.contains("Google")),
+                    supportingText = uiState.emailOrUsernameError,
+                    keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Text, imeAction = ImeAction.Next),
                 )
 
                 PasswordTextField(
                     value = uiState.password,
                     onValueChange = onPasswordChange,
-                    label = "PASSWORD",
+                    label = "Mật khẩu",
                     placeholder = "••••••••",
-                    isError = uiState.passwordError != null || uiState.submitError != null,
-                    supportingText = uiState.passwordError ?: uiState.submitError,
+                    isError = uiState.passwordError != null || (uiState.submitError != null && !uiState.submitError.contains("Google")),
+                    supportingText = uiState.passwordError ?: (if (uiState.submitError != null && !uiState.submitError.contains("Google")) uiState.submitError else null),
                     keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Password, imeAction = ImeAction.Done),
+                    keyboardActions = KeyboardActions(onDone = { onSubmit() }),
                 )
 
                 Box(
@@ -243,16 +251,26 @@ private fun LoginContent(
                     contentAlignment = Alignment.Center
                 ) {
                     Text(
-                        text = "Forgot Password?",
+                        text = "Quên mật khẩu?",
                         style = MaterialTheme.typography.labelMedium.copy(fontWeight = FontWeight.SemiBold),
                         color = MaterialTheme.colorScheme.primary,
+                    )
+                }
+
+                if (uiState.submitError != null && uiState.submitError.contains("Google")) {
+                    Text(
+                        text = uiState.submitError,
+                        style = MaterialTheme.typography.bodySmall,
+                        color = MaterialTheme.colorScheme.error,
+                        textAlign = androidx.compose.ui.text.style.TextAlign.Center,
+                        modifier = Modifier.fillMaxWidth().padding(bottom = AppDimens.spaceSm),
                     )
                 }
 
                 Spacer(modifier = Modifier.height(AppDimens.spaceLg))
 
                 PrimaryButton(
-                    text = "Sign In",
+                    text = "Đăng nhập",
                     onClick = onSubmit,
                     isLoading = uiState.isSubmitting,
                     icon = { Icon(Icons.AutoMirrored.Filled.ArrowForward, null, modifier = Modifier.size(18.dp)) },
@@ -265,7 +283,7 @@ private fun LoginContent(
                 ) {
                     Box(modifier = Modifier.weight(1f).height(1.dp).background(MaterialTheme.colorScheme.surfaceContainerHighest))
                     Text(
-                        text = "OR CONTINUE WITH",
+                        text = "Hoặc tiếp tục với",
                         style = MaterialTheme.typography.labelSmall.copy(fontWeight = FontWeight.Bold, letterSpacing = 1.sp),
                         color = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.6f),
                         modifier = Modifier.padding(horizontal = AppDimens.spaceLg),
@@ -292,16 +310,16 @@ private fun LoginContent(
                 modifier =
                     Modifier
                         .padding(bottom = AppDimens.space2Xl, top = AppDimens.spaceLg)
-                        .clickable { onGoToRegister() },
+                        .clickable(role = Role.Button) { onGoToRegister() },
                 horizontalArrangement = Arrangement.Center,
             ) {
                 Text(
-                    text = "New to the table? ",
+                    text = "Chưa có tài khoản? ",
                     style = MaterialTheme.typography.bodyMedium,
                     color = MaterialTheme.colorScheme.onSurfaceVariant,
                 )
                 Text(
-                    text = "Create Account",
+                    text = "Tạo tài khoản",
                     style = MaterialTheme.typography.bodyMedium.copy(fontWeight = FontWeight.Bold),
                     color = MaterialTheme.colorScheme.secondary,
                 )
@@ -317,9 +335,9 @@ fun LoginScreenPreview() {
         LoginContent(
             uiState =
                 LoginUiState(
-                    email = "jane.doe@example.com",
+                    emailOrUsername = "jane.doe@example.com",
                 ),
-            onEmailChange = {},
+            onEmailOrUsernameChange = {},
             onPasswordChange = {},
             onSubmit = {},
             onGoogleSignIn = {},

@@ -31,10 +31,13 @@ data class RegisterUiState(
 
 sealed interface RegisterUiEffect {
     data class NavigateToCompleteProfile(val displayName: String) : RegisterUiEffect
+    data class NavigateToResolved(val destination: com.example.dinesplit.domain.model.AppStartDestination) : RegisterUiEffect
 }
 
 class RegisterViewModel(application: Application) : AndroidViewModel(application) {
     private val registerUseCase = AppContainer.registerUseCase(application)
+    private val authRepository = AppContainer.authRepository(application)
+    private val resolveStartDestinationUseCase = AppContainer.resolveStartDestinationUseCase(application)
 
     private val _uiState = MutableStateFlow(RegisterUiState())
     val uiState: StateFlow<RegisterUiState> = _uiState.asStateFlow()
@@ -91,7 +94,7 @@ class RegisterViewModel(application: Application) : AndroidViewModel(application
         if (!current.isTermsAccepted) {
             _uiState.value =
                 current.copy(
-                    submitError = "You must accept the Terms of Service and Privacy Policy to continue.",
+                    submitError = "Bạn phải đồng ý với Điều khoản dịch vụ và Chính sách quyền riêng tư để tiếp tục.",
                 )
             return
         }
@@ -112,4 +115,39 @@ class RegisterViewModel(application: Application) : AndroidViewModel(application
                 }
         }
     }
+
+    fun loginWithGoogle(idToken: String) {
+        if (_uiState.value.isSubmitting) return
+
+        viewModelScope.launch {
+            _uiState.value = _uiState.value.copy(isSubmitting = true, submitError = null)
+            authRepository.loginWithGoogle(idToken)
+                .onSuccess {
+                    try {
+                        val destination = resolveStartDestinationUseCase()
+                        _uiState.value = _uiState.value.copy(isSubmitting = false)
+                        _effect.emit(RegisterUiEffect.NavigateToResolved(destination))
+                    } catch (e: Exception) {
+                        android.util.Log.e("RegisterViewModel", "Error resolving destination", e)
+                        _uiState.value =
+                            _uiState.value.copy(
+                                isSubmitting = false,
+                                submitError = "Đăng nhập thành công nhưng không thể tải thông tin cá nhân. Vui lòng kiểm tra kết nối internet.",
+                            )
+                    }
+                }
+                .onFailure { throwable ->
+                    _uiState.value =
+                        _uiState.value.copy(
+                            isSubmitting = false,
+                            submitError = FirebaseErrorMapper.toUserMessage(throwable),
+                        )
+                }
+        }
+    }
+
+    fun onGoogleSignInError(message: String) {
+        _uiState.value = _uiState.value.copy(isSubmitting = false, submitError = message)
+    }
 }
+

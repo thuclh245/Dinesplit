@@ -310,12 +310,87 @@ service cloud.firestore {
 
     function validCrossUserSplitReminder(data, uid) {
       return signedIn()
-        && data.type == 'PAYMENT_PENDING'
+        && data.type in ['PAYMENT_PENDING', 'PAYMENT_COMPLETED']
         && data.senderId == request.auth.uid
         && data.groupId is string
         && request.auth.uid in groupData(data.groupId).memberIds
         && uid in groupData(data.groupId).memberIds
         && exists(/databases/$(database)/documents/groups/$(data.groupId)/bills/$(data.relatedId));
+    }
+
+    function validQrPayment(data, paymentId) {
+      return data.keys().hasOnly([
+          'id',
+          'groupId',
+          'billId',
+          'payerUid',
+          'receiverUid',
+          'amount',
+          'bankTransactionRef',
+          'qrContent',
+          'status',
+          'description',
+          'paymentGateway',
+          'verifiedAt',
+          'createdAt',
+          'updatedAt'
+        ])
+        && data.id == paymentId
+        && data.groupId is string
+        && data.billId is string
+        && data.payerUid is string
+        && data.receiverUid is string
+        && data.amount is number
+        && data.amount > 0
+        && data.bankTransactionRef is string
+        && data.qrContent is string
+        && data.status in ['PENDING', 'MARKED_PAID', 'CONFIRMED', 'REJECTED']
+        && data.description is string
+        && data.paymentGateway is string
+        && data.verifiedAt is number
+        && data.createdAt is number
+        && data.updatedAt is number
+        && exists(/databases/$(database)/documents/groups/$(data.groupId)/bills/$(data.billId))
+        && data.payerUid in groupData(data.groupId).memberIds
+        && data.receiverUid in groupData(data.groupId).memberIds
+        && data.payerUid != data.receiverUid;
+    }
+
+    function canReadQrPayment(data) {
+      return signedIn()
+        && request.auth.uid in groupData(data.groupId).memberIds;
+    }
+
+    function canCreateQrPayment(data, paymentId) {
+      return validQrPayment(data, paymentId)
+        && data.payerUid == request.auth.uid
+        && data.status == 'PENDING';
+    }
+
+    function canUpdateQrPayment(previous, data, paymentId) {
+      return validQrPayment(data, paymentId)
+        && data.groupId == previous.groupId
+        && data.billId == previous.billId
+        && data.payerUid == previous.payerUid
+        && data.receiverUid == previous.receiverUid
+        && data.amount == previous.amount
+        && (
+          (
+            previous.status in ['PENDING', 'REJECTED']
+            && data.status == 'MARKED_PAID'
+            && request.auth.uid == previous.payerUid
+          )
+          || (
+            previous.status == 'REJECTED'
+            && data.status == 'PENDING'
+            && request.auth.uid == previous.payerUid
+          )
+          || (
+            previous.status == 'MARKED_PAID'
+            && data.status in ['CONFIRMED', 'REJECTED']
+            && request.auth.uid == previous.receiverUid
+          )
+        );
     }
 
     function validNewGroup(data, groupId) {
@@ -372,6 +447,9 @@ service cloud.firestore {
           'shares',
           'paidMemberIds',
           'createdBy',
+          'paymentQrBankCode',
+          'paymentQrAccountNumber',
+          'paymentQrAccountName',
           'date',
           'updatedAt'
         ])
@@ -390,6 +468,9 @@ service cloud.firestore {
         && data.paidMemberIds.hasOnly([data.payerId])
         && data.paidMemberIds.hasAll([data.payerId])
         && data.createdBy == request.auth.uid
+        && data.paymentQrBankCode is string
+        && data.paymentQrAccountNumber is string
+        && data.paymentQrAccountName is string
         && data.date is int
         && data.updatedAt is int;
     }
@@ -406,6 +487,9 @@ service cloud.firestore {
           'shares',
           'paidMemberIds',
           'createdBy',
+          'paymentQrBankCode',
+          'paymentQrAccountNumber',
+          'paymentQrAccountName',
           'date',
           'updatedAt'
         ])
@@ -425,6 +509,9 @@ service cloud.firestore {
         && data.paidMemberIds.hasAll([data.payerId])
         && previous.createdBy == request.auth.uid
         && data.createdBy == previous.createdBy
+        && data.paymentQrBankCode is string
+        && data.paymentQrAccountNumber is string
+        && data.paymentQrAccountName is string
         && data.date is int
         && data.updatedAt is int;
     }
@@ -510,6 +597,15 @@ service cloud.firestore {
           && validNotification(request.resource.data, uid, notificationId);
         allow delete: if isOwner(uid);
       }
+    }
+
+    match /qr_payments/{paymentId} {
+      allow read: if canReadQrPayment(resource.data);
+      allow create: if signedIn()
+        && canCreateQrPayment(request.resource.data, paymentId);
+      allow update: if signedIn()
+        && canUpdateQrPayment(resource.data, request.resource.data, paymentId);
+      allow delete: if false;
     }
 
     match /posts/{postId} {

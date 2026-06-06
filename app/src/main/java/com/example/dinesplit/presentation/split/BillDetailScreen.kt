@@ -71,6 +71,7 @@ import com.example.dinesplit.domain.model.BillItem
 import com.example.dinesplit.domain.model.BillStatus
 import com.example.dinesplit.domain.model.Member
 import com.example.dinesplit.domain.model.PaymentStatus
+import com.example.dinesplit.domain.model.QrPaymentStatus
 import com.example.dinesplit.domain.model.SplitMethod
 import java.text.SimpleDateFormat
 import java.util.Date
@@ -83,6 +84,10 @@ private data class BillSplitRow(
     val amount: Double,
     val paymentStatus: PaymentStatus,
     val isMe: Boolean,
+    val pendingPaymentId: String? = null,
+    val paymentRequestStatus: String? = null,
+    val canConfirmPayment: Boolean = false,
+    val canSendReminder: Boolean = false,
 ) {
     val isPayer: Boolean
         get() = paymentStatus == PaymentStatus.PAYER
@@ -122,7 +127,7 @@ fun BillDetailScreen(
     }
 
     LaunchedEffect(uiState.isLoading, uiState.bill, groupId, billId) {
-        if (!uiState.isLoading && uiState.bill == null) {
+        if (!uiState.isLoading && uiState.bill == null && !uiState.isUnauthorized) {
             onBillRemovedForPersonal(groupId, billId)
         }
     }
@@ -143,12 +148,16 @@ fun BillDetailScreen(
 
     val activeQrPayment = uiState.activeQrPayment
     if (activeQrPayment != null) {
+        val bill = uiState.bill
         val payerName = resolveMemberName(uiState.bill?.payerId.orEmpty(), uiState.members)
         QrPaymentDialog(
             payment = activeQrPayment,
             payerName = payerName,
+            bankCode = bill?.paymentQrBankCode.orEmpty(),
+            accountNumber = bill?.paymentQrAccountNumber.orEmpty(),
+            accountName = bill?.paymentQrAccountName.orEmpty(),
             onCancel = viewModel::cancelQrPayment,
-            onSimulateSuccess = { viewModel.simulateBankCallback(activeQrPayment.id) }
+            onMarkTransferred = viewModel::markActivePaymentTransferred
         )
     }
     Scaffold(
@@ -166,13 +175,19 @@ fun BillDetailScreen(
         bottomBar = {
             uiState.bill?.let { bill ->
                 val myShare = bill.shares[uiState.currentMemberId] ?: 0.0
+                val myPaymentStatus =
+                    uiState.qrPayments
+                        .filter { payment -> payment.payerUid == uiState.currentMemberId && payment.billId == bill.id }
+                        .maxByOrNull { payment -> payment.updatedAt?.time ?: payment.createdAt?.time ?: 0L }
+                        ?.status
                 BdBottomAction(
                     payerName = resolveMemberName(bill.payerId, uiState.members),
                     currentMemberId = uiState.currentMemberId,
                     isCurrentMemberPayer = uiState.currentMemberId == bill.payerId,
                     isCurrentMemberPaid = bill.paidMemberIds.contains(uiState.currentMemberId),
+                    paymentRequestStatus = myPaymentStatus,
+                    hasPaymentQr = bill.hasPaymentQr,
                     isUpdating = uiState.isUpdatingPayment,
-                    onMarkPaid = viewModel::markCurrentMemberPaid,
                     onPayWithQr = {
                         viewModel.initiateQrPayment(myShare, bill.payerId)
                     }
@@ -206,14 +221,19 @@ fun BillDetailScreen(
                 uiState.error != null ->
                     item {
                         BdMessageCard(
-                            title = "Không thể tải hóa đơn",
+                            title = if (uiState.isUnauthorized) "Không có quyền truy cập" else "Không thể tải hóa đơn",
                             message = uiState.error.orEmpty(),
                         )
                     }
 
                 uiState.bill != null -> {
                     val bill = uiState.bill!!
-                    val splitRows = buildSplitRows(bill, uiState.members)
+                    val splitRows = buildSplitRows(
+                        bill = bill,
+                        members = uiState.members,
+                        payments = uiState.qrPayments,
+                        currentUserId = uiState.currentMemberId,
+                    )
 
                     item {
                         BdReceiptHeaderCard(
@@ -225,8 +245,8 @@ fun BillDetailScreen(
                     item {
                         BdSplitBreakdown(
                             rows = splitRows,
-                            onMarkPaid = viewModel::markMemberPaid,
-                            onConfirmPayment = viewModel::markMemberPaid,
+                            onConfirmPayment = viewModel::confirmQrPayment,
+                            onRejectPayment = viewModel::rejectQrPayment,
                             onSendReminder = viewModel::sendPaymentReminder
                         )
                     }
@@ -453,8 +473,8 @@ private fun BdReceiptHeaderCard(
 @Composable
 private fun BdSplitBreakdown(
     rows: List<BillSplitRow>,
-    onMarkPaid: (String) -> Unit,
     onConfirmPayment: (String) -> Unit,
+    onRejectPayment: (String) -> Unit,
     onSendReminder: (String) -> Unit
 ) {
     val colorScheme = MaterialTheme.colorScheme
@@ -475,8 +495,8 @@ private fun BdSplitBreakdown(
                 rows.forEachIndexed { index, row ->
                     BdSplitRow(
                         row = row,
-                        onMarkPaid = onMarkPaid,
                         onConfirmPayment = onConfirmPayment,
+                        onRejectPayment = onRejectPayment,
                         onSendReminder = onSendReminder
                     )
                     if (index < rows.size - 1) {
@@ -491,13 +511,13 @@ private fun BdSplitBreakdown(
 @Composable
 private fun BdSplitRow(
     row: BillSplitRow,
-    onMarkPaid: (String) -> Unit,
     onConfirmPayment: (String) -> Unit,
+    onRejectPayment: (String) -> Unit,
     onSendReminder: (String) -> Unit
 ) {
     val colorScheme = MaterialTheme.colorScheme
-    var menuExpanded by remember(row.memberId, row.paymentStatus) { mutableStateOf(false) }
-    val canOpenPaymentActions = !row.isPayer && !row.isPaid
+    var menuExpanded by remember(row.memberId, row.paymentStatus, row.paymentRequestStatus) { mutableStateOf(false) }
+    val canOpenPaymentActions = row.canConfirmPayment || row.canSendReminder
 
     Row(
         modifier = Modifier
@@ -590,6 +610,34 @@ private fun BdSplitRow(
                             color = colorScheme.secondary,
                         )
                     }
+                } else if (row.paymentRequestStatus == QrPaymentStatus.MARKED_PAID) {
+                    Row(
+                        modifier =
+                            Modifier
+                                .background(colorScheme.primaryContainer, AppShapes.full)
+                                .padding(horizontal = 6.dp, vertical = 2.dp),
+                        verticalAlignment = Alignment.CenterVertically,
+                    ) {
+                        Text(
+                            text = "CHỜ XÁC NHẬN",
+                            style = MaterialTheme.typography.labelSmall.copy(fontWeight = FontWeight.Bold),
+                            color = colorScheme.primary,
+                        )
+                    }
+                } else if (row.paymentRequestStatus == QrPaymentStatus.REJECTED) {
+                    Row(
+                        modifier =
+                            Modifier
+                                .background(colorScheme.errorContainer, AppShapes.full)
+                                .padding(horizontal = 6.dp, vertical = 2.dp),
+                        verticalAlignment = Alignment.CenterVertically,
+                    ) {
+                        Text(
+                            text = "CẦN KIỂM TRA",
+                            style = MaterialTheme.typography.labelSmall.copy(fontWeight = FontWeight.Bold),
+                            color = colorScheme.error,
+                        )
+                    }
                 } else {
                     Row(
                         modifier =
@@ -610,27 +658,31 @@ private fun BdSplitRow(
                 expanded = menuExpanded,
                 onDismissRequest = { menuExpanded = false }
             ) {
-                DropdownMenuItem(
-                    text = { Text("Đánh dấu đã trả") },
-                    onClick = {
-                        menuExpanded = false
-                        onMarkPaid(row.memberId)
-                    }
-                )
-                DropdownMenuItem(
-                    text = { Text("Xác nhận thanh toán") },
-                    onClick = {
-                        menuExpanded = false
-                        onConfirmPayment(row.memberId)
-                    }
-                )
-                DropdownMenuItem(
-                    text = { Text("Nhắc thanh toán") },
-                    onClick = {
-                        menuExpanded = false
-                        onSendReminder(row.memberId)
-                    }
-                )
+                if (row.canConfirmPayment && row.pendingPaymentId != null) {
+                    DropdownMenuItem(
+                        text = { Text("Xac nhan da nhan tien") },
+                        onClick = {
+                            menuExpanded = false
+                            onConfirmPayment(row.pendingPaymentId)
+                        }
+                    )
+                    DropdownMenuItem(
+                        text = { Text("Tu choi xac nhan", color = colorScheme.error) },
+                        onClick = {
+                            menuExpanded = false
+                            onRejectPayment(row.pendingPaymentId)
+                        }
+                    )
+                }
+                if (row.canSendReminder) {
+                    DropdownMenuItem(
+                        text = { Text("Nhắc thanh toán") },
+                        onClick = {
+                            menuExpanded = false
+                            onSendReminder(row.memberId)
+                        }
+                    )
+                }
             }
         }
     }
@@ -750,12 +802,14 @@ private fun BdBottomAction(
     currentMemberId: String,
     isCurrentMemberPayer: Boolean,
     isCurrentMemberPaid: Boolean,
+    paymentRequestStatus: String?,
+    hasPaymentQr: Boolean,
     isUpdating: Boolean,
-    onMarkPaid: () -> Unit,
     onPayWithQr: () -> Unit,
 ) {
     val colorScheme = MaterialTheme.colorScheme
-    val canPay = currentMemberId.isNotBlank() && !isCurrentMemberPayer && !isCurrentMemberPaid && !isUpdating
+    val hasPendingConfirmation = paymentRequestStatus == QrPaymentStatus.MARKED_PAID
+    val canPay = currentMemberId.isNotBlank() && !isCurrentMemberPayer && !isCurrentMemberPaid && !isUpdating && !hasPendingConfirmation && hasPaymentQr
 
     Box(
         modifier =
@@ -766,43 +820,26 @@ private fun BdBottomAction(
                 .navigationBarsPadding(),
     ) {
         if (canPay) {
-            Row(
+            PrimaryButton(
+                text = "Thanh toán QR",
+                onClick = onPayWithQr,
                 modifier = Modifier.fillMaxWidth(),
-                horizontalArrangement = Arrangement.spacedBy(AppDimens.spaceMd)
-            ) {
-                // Manual mark as paid button
-                SecondaryButton(
-                    text = "Báo đã trả",
-                    onClick = onMarkPaid,
-                    modifier = Modifier.weight(1f),
-                    icon = {
-                        Icon(
-                            imageVector = Icons.Default.Check,
-                            contentDescription = null,
-                            modifier = Modifier.size(18.dp)
-                        )
-                    }
-                )
-
-                PrimaryButton(
-                    text = "Thanh toán QR",
-                    onClick = onPayWithQr,
-                    modifier = Modifier.weight(1.2f),
-                    icon = {
-                        Icon(
-                            imageVector = Icons.AutoMirrored.Filled.ReceiptLong,
-                            contentDescription = null,
-                            modifier = Modifier.size(18.dp)
-                        )
-                    }
-                )
-            }
+                icon = {
+                    Icon(
+                        imageVector = Icons.AutoMirrored.Filled.ReceiptLong,
+                        contentDescription = null,
+                        modifier = Modifier.size(18.dp)
+                    )
+                }
+            )
         } else {
             val label =
                 when {
                     isUpdating -> "Đang cập nhật thanh toán..."
+                    hasPendingConfirmation -> "Chờ người nhận xác nhận"
                     isCurrentMemberPayer -> "Bạn là người thanh toán"
                     isCurrentMemberPaid -> "Bạn đã trả cho $payerName"
+                    !hasPaymentQr -> "Bill chưa có QR nhận tiền"
                     else -> "Không thể thanh toán"
                 }
 
@@ -821,11 +858,14 @@ private fun BdBottomAction(
 private fun QrPaymentDialog(
     payment: QrPayment,
     payerName: String,
+    bankCode: String,
+    accountNumber: String,
+    accountName: String,
     onCancel: () -> Unit,
-    onSimulateSuccess: () -> Unit,
+    onMarkTransferred: () -> Unit,
 ) {
     val colorScheme = MaterialTheme.colorScheme
-    val qrUrl = "https://img.vietqr.io/image/MB-1903678999999-compact2.png?amount=${payment.amount.toInt()}&addInfo=${payment.description}&accountName=${payerName}"
+    val qrUrl = payment.qrContent
 
     AlertDialog(
         onDismissRequest = onCancel,
@@ -859,11 +899,19 @@ private fun QrPaymentDialog(
                         .padding(AppDimens.spaceSm),
                     contentAlignment = Alignment.Center
                 ) {
-                    coil.compose.AsyncImage(
-                        model = qrUrl,
-                        contentDescription = "Mã VietQR",
-                        modifier = Modifier.fillMaxSize()
-                    )
+                    if (qrUrl.isNotBlank()) {
+                        coil.compose.AsyncImage(
+                            model = qrUrl,
+                            contentDescription = "Mã VietQR",
+                            modifier = Modifier.fillMaxSize()
+                        )
+                    } else {
+                        Text(
+                            text = "Chưa có QR nhận tiền",
+                            style = MaterialTheme.typography.bodyMedium.copy(fontWeight = FontWeight.Bold),
+                            color = colorScheme.error,
+                        )
+                    }
                 }
                 Spacer(modifier = Modifier.height(AppDimens.spaceLg))
 
@@ -874,6 +922,27 @@ private fun QrPaymentDialog(
                     Column(
                         verticalArrangement = Arrangement.spacedBy(6.dp)
                     ) {
+                        Row(
+                            modifier = Modifier.fillMaxWidth(),
+                            horizontalArrangement = Arrangement.SpaceBetween
+                        ) {
+                            Text("Ngân hàng:", style = MaterialTheme.typography.bodySmall, color = colorScheme.onSurfaceVariant)
+                            Text(bankCode.ifBlank { "-" }, style = MaterialTheme.typography.bodySmall.copy(fontWeight = FontWeight.Bold), color = colorScheme.onSurface)
+                        }
+                        Row(
+                            modifier = Modifier.fillMaxWidth(),
+                            horizontalArrangement = Arrangement.SpaceBetween
+                        ) {
+                            Text("Số tài khoản:", style = MaterialTheme.typography.bodySmall, color = colorScheme.onSurfaceVariant)
+                            Text(accountNumber.ifBlank { "-" }, style = MaterialTheme.typography.bodySmall.copy(fontWeight = FontWeight.Bold), color = colorScheme.onSurface)
+                        }
+                        Row(
+                            modifier = Modifier.fillMaxWidth(),
+                            horizontalArrangement = Arrangement.SpaceBetween
+                        ) {
+                            Text("Tên tài khoản:", style = MaterialTheme.typography.bodySmall, color = colorScheme.onSurfaceVariant)
+                            Text(accountName.ifBlank { payerName }, style = MaterialTheme.typography.bodySmall.copy(fontWeight = FontWeight.Bold), color = colorScheme.onSurface)
+                        }
                         Row(
                             modifier = Modifier.fillMaxWidth(),
                             horizontalArrangement = Arrangement.SpaceBetween
@@ -893,7 +962,7 @@ private fun QrPaymentDialog(
                             horizontalArrangement = Arrangement.SpaceBetween
                         ) {
                             Text("Trạng thái:", style = MaterialTheme.typography.bodySmall, color = colorScheme.onSurfaceVariant)
-                            Text(payment.status, style = MaterialTheme.typography.bodySmall.copy(fontWeight = FontWeight.Bold), color = if (payment.status == "VERIFIED") colorScheme.secondary else colorScheme.primary)
+                            Text(payment.status, style = MaterialTheme.typography.bodySmall.copy(fontWeight = FontWeight.Bold), color = if (payment.status == QrPaymentStatus.CONFIRMED) colorScheme.secondary else colorScheme.primary)
                         }
                     }
                 }
@@ -908,8 +977,8 @@ private fun QrPaymentDialog(
         },
         confirmButton = {
             SecondaryButton(
-                text = "Giả lập Chuyển khoản thành công",
-                onClick = onSimulateSuccess,
+                text = "Tôi đã chuyển khoản",
+                onClick = onMarkTransferred,
                 modifier = Modifier.fillMaxWidth()
             )
         },
@@ -926,14 +995,24 @@ private fun QrPaymentDialog(
 private fun buildSplitRows(
     bill: Bill,
     members: List<Member>,
+    payments: List<QrPayment>,
+    currentUserId: String,
 ): List<BillSplitRow> {
     val memberById = members.associateBy { it.id }
+    val latestPaymentByPayer =
+        payments
+            .filter { payment -> payment.billId == bill.id }
+            .sortedByDescending { payment -> payment.updatedAt?.time ?: payment.createdAt?.time ?: 0L }
+            .associateBy { payment -> payment.payerUid }
     val shareMemberIds = bill.shares.keys
     val ids = (shareMemberIds + bill.payerId).filter { it.isNotBlank() }.distinct()
 
     return ids.map { memberId ->
         val member = memberById[memberId]
         val name = member?.name ?: fallbackMemberName(memberId)
+        val latestPayment = latestPaymentByPayer[memberId]
+        val isPayer = memberId == bill.payerId
+        val isPaid = memberId in bill.paidMemberIds
         BillSplitRow(
             memberId = memberId,
             name = name,
@@ -941,6 +1020,16 @@ private fun buildSplitRows(
             amount = bill.shares[memberId] ?: 0.0,
             paymentStatus = bill.paymentStatusFor(memberId),
             isMe = member?.isMe ?: (memberId == "me"),
+            pendingPaymentId = latestPayment?.id,
+            paymentRequestStatus = latestPayment?.status,
+            canConfirmPayment = currentUserId == bill.payerId &&
+                !isPayer &&
+                !isPaid &&
+                latestPayment?.status == QrPaymentStatus.MARKED_PAID,
+            canSendReminder = currentUserId == bill.payerId &&
+                !isPayer &&
+                !isPaid &&
+                latestPayment?.status != QrPaymentStatus.MARKED_PAID,
         )
     }.sortedWith(compareByDescending<BillSplitRow> { it.isPayer }.thenByDescending { it.isMe })
 }

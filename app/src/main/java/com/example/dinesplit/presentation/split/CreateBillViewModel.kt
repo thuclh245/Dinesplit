@@ -28,6 +28,9 @@ data class CreateBillUiState(
     val savedBill: Bill? = null,
     val isEditMode: Boolean = false,
     val originalBill: Bill? = null,
+    val paymentQrBankCode: String = "",
+    val paymentQrAccountNumber: String = "",
+    val paymentQrAccountName: String = "",
     val error: String? = null,
     val isUsingFallbackMembers: Boolean = false,
 )
@@ -140,6 +143,9 @@ class CreateBillViewModel(
                 selectedMethod = bill.method,
                 selectedMemberIds = bill.shares.keys,
                 payerId = bill.payerId,
+                paymentQrBankCode = bill.paymentQrBankCode,
+                paymentQrAccountNumber = bill.paymentQrAccountNumber,
+                paymentQrAccountName = bill.paymentQrAccountName,
                 isEditMode = true,
                 isLoading = false,
                 originalBill = bill,
@@ -205,6 +211,33 @@ class CreateBillViewModel(
             seedFirstItemFromEnteredTotal()
         }
         _uiState.update { it.copy(selectedMethod = method, error = null) }
+    }
+
+    fun onPaymentQrBankCodeChange(value: String) {
+        _uiState.update {
+            it.copy(
+                paymentQrBankCode = value.filter { char -> char.isLetterOrDigit() }.uppercase(),
+                error = null,
+            )
+        }
+    }
+
+    fun onPaymentQrAccountNumberChange(value: String) {
+        _uiState.update {
+            it.copy(
+                paymentQrAccountNumber = value.filter { char -> char.isLetterOrDigit() },
+                error = null,
+            )
+        }
+    }
+
+    fun onPaymentQrAccountNameChange(value: String) {
+        _uiState.update {
+            it.copy(
+                paymentQrAccountName = value.uppercase(),
+                error = null,
+            )
+        }
     }
 
     fun addItem() {
@@ -292,6 +325,9 @@ class CreateBillViewModel(
                 shares = shares,
                 paidMemberIds = paidMemberIds,
                 createdBy = originalBill?.createdBy?.ifBlank { normalizedCurrentUserId } ?: normalizedCurrentUserId,
+                paymentQrBankCode = currentState.paymentQrBankCode.trim().uppercase(),
+                paymentQrAccountNumber = currentState.paymentQrAccountNumber.trim(),
+                paymentQrAccountName = currentState.paymentQrAccountName.trim(),
                 date = originalBill?.date ?: System.currentTimeMillis(),
             )
 
@@ -310,6 +346,9 @@ class CreateBillViewModel(
     private fun validateBillInput(state: CreateBillUiState): String? {
         val totalAmount = calculateTotalAmount(state)
         val selectedMembers = state.selectedMemberIds.toList()
+        val hasAnyQrInput = state.paymentQrBankCode.isNotBlank() ||
+            state.paymentQrAccountNumber.isNotBlank() ||
+            state.paymentQrAccountName.isNotBlank()
 
         return when {
             groupId.isBlank() -> "Thiếu nhóm để lưu hóa đơn"
@@ -317,6 +356,9 @@ class CreateBillViewModel(
             state.selectedMemberIds.isEmpty() -> "Cần chọn ít nhất một người tham gia"
             state.payerId.isBlank() -> "Cần chọn người thanh toán"
             state.payerId !in state.members.map { it.id } -> "Người thanh toán không hợp lệ"
+            hasAnyQrInput && state.paymentQrBankCode.isBlank() -> "Nhập mã ngân hàng để tạo QR nhận tiền"
+            hasAnyQrInput && state.paymentQrAccountNumber.isBlank() -> "Nhập số tài khoản để tạo QR nhận tiền"
+            hasAnyQrInput && state.paymentQrAccountName.isBlank() -> "Nhập tên tài khoản để tạo QR nhận tiền"
             state.selectedMethod == SplitMethod.CUSTOM &&
                 customAmounts.keys.any { it !in state.selectedMemberIds } -> "Số tiền tự nhập chỉ áp dụng cho người được chọn"
             state.selectedMethod == SplitMethod.CUSTOM &&

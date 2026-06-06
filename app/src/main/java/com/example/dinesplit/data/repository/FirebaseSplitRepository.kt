@@ -483,6 +483,9 @@ class FirebaseSplitRepository(
             shares = getShares(),
             paidMemberIds = getPaidMemberIds(),
             createdBy = getString("createdBy").orEmpty(),
+            paymentQrBankCode = getString("paymentQrBankCode").orEmpty(),
+            paymentQrAccountNumber = getString("paymentQrAccountNumber").orEmpty(),
+            paymentQrAccountName = getString("paymentQrAccountName").orEmpty(),
             date = getLongDateSafe("date") ?: 0L,
             updatedAt = getLongDateSafe("updatedAt") ?: getLongDateSafe("date") ?: 0L,
         )
@@ -559,6 +562,9 @@ class FirebaseSplitRepository(
             "shares" to shares,
             "paidMemberIds" to paidMemberIds,
             "createdBy" to createdBy,
+            "paymentQrBankCode" to paymentQrBankCode,
+            "paymentQrAccountNumber" to paymentQrAccountNumber,
+            "paymentQrAccountName" to paymentQrAccountName,
             "date" to date,
             "updatedAt" to updatedAt,
         )

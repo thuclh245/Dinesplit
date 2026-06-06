@@ -20,19 +20,27 @@ import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.layout.ContentScale
+import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.SpanStyle
 import androidx.compose.ui.text.buildAnnotatedString
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
+import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.text.withStyle
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import androidx.compose.ui.semantics.Role
+import androidx.compose.ui.semantics.semantics
+import androidx.compose.ui.semantics.contentDescription
+import androidx.compose.ui.semantics.stateDescription
 import androidx.lifecycle.viewmodel.compose.viewModel
 import coil.compose.AsyncImage
 import com.example.dinesplit.ui.theme.DineSplitTheme
 import com.example.dinesplit.core.ui.PrimaryButton
 import com.example.dinesplit.core.ui.AppTextField
+import com.example.dinesplit.core.ui.AppDimens
+import com.example.dinesplit.core.ui.AppShapes
 
 @Composable
 fun CompleteProfileScreen(
@@ -88,23 +96,29 @@ private fun CompleteProfileContent(
         }
 
     Box(modifier = Modifier.fillMaxSize().background(MaterialTheme.colorScheme.surface)) {
-        Column(modifier = Modifier.fillMaxSize()) {
+        Column(
+            modifier = Modifier
+                .fillMaxSize()
+                .statusBarsPadding()
+        ) {
             // --- Top App Bar ---
             Row(
                 modifier =
                     Modifier
                         .fillMaxWidth()
-                        .statusBarsPadding()
                         .height(64.dp)
                         .padding(horizontal = 16.dp),
                 verticalAlignment = Alignment.CenterVertically,
                 horizontalArrangement = Arrangement.SpaceBetween,
             ) {
                 Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(16.dp)) {
-                    IconButton(onClick = onBack) {
+                    IconButton(
+                        onClick = onBack,
+                        modifier = Modifier.semantics { contentDescription = "Quay lại" }
+                    ) {
                         Icon(
                             imageVector = Icons.AutoMirrored.Filled.ArrowBack,
-                            contentDescription = "Back",
+                            contentDescription = "Quay lại",
                             tint = MaterialTheme.colorScheme.primary,
                         )
                     }
@@ -118,9 +132,12 @@ private fun CompleteProfileContent(
                         color = MaterialTheme.colorScheme.onSurface,
                     )
                 }
-                TextButton(onClick = { /* Help */ }) {
+                TextButton(
+                    onClick = { /* Help */ },
+                    modifier = Modifier.semantics { contentDescription = "Trợ giúp" }
+                ) {
                     Text(
-                        "Help",
+                        "Trợ giúp",
                         style = MaterialTheme.typography.labelMedium.copy(fontWeight = FontWeight.Bold),
                         color = MaterialTheme.colorScheme.primary,
                     )
@@ -131,16 +148,19 @@ private fun CompleteProfileContent(
             Column(
                 modifier =
                     Modifier
-                        .fillMaxSize()
+                        .fillMaxWidth()
+                        .weight(1f)
                         .padding(horizontal = 24.dp)
+                        .navigationBarsPadding()
+                        .imePadding()
                         .verticalScroll(rememberScrollState()),
                 horizontalAlignment = Alignment.CenterHorizontally,
             ) {
-                Spacer(modifier = Modifier.height(24.dp))
+                Spacer(modifier = Modifier.height(32.dp))
 
                 // Header Section
                 Text(
-                    text = "Create Profile",
+                    text = "Hoàn thiện hồ sơ",
                     style =
                         MaterialTheme.typography.headlineMedium.copy(
                             fontWeight = FontWeight.ExtraBold,
@@ -149,10 +169,11 @@ private fun CompleteProfileContent(
                     color = MaterialTheme.colorScheme.onSurface,
                 )
                 Text(
-                    text = "Set the table for your next social meal.",
+                    text = "Thiết lập hồ sơ để bắt đầu chia sẻ bữa ăn cùng bạn bè.",
                     style = MaterialTheme.typography.bodyLarge.copy(fontWeight = FontWeight.Medium),
                     color = MaterialTheme.colorScheme.onSurfaceVariant,
                     modifier = Modifier.padding(top = 8.dp),
+                    textAlign = TextAlign.Center,
                 )
 
                 Spacer(modifier = Modifier.height(40.dp))
@@ -162,7 +183,10 @@ private fun CompleteProfileContent(
                     modifier =
                         Modifier
                             .size(128.dp)
-                            .clickable { launcher.launch("image/*") },
+                            .clickable(
+                                role = Role.Button,
+                                onClickLabel = "Chọn ảnh đại diện"
+                            ) { launcher.launch("image/*") },
                 ) {
                     Surface(
                         modifier = Modifier.fillMaxSize(),
@@ -170,26 +194,28 @@ private fun CompleteProfileContent(
                         color = MaterialTheme.colorScheme.surfaceContainerHigh,
                         shadowElevation = 12.dp,
                     ) {
-                        AsyncImage(
-                            model =
-                                uiState.avatarLocalUri ?: uiState.avatarUrl.takeIf {
-                                    it.isNotBlank()
-                                } ?: "https://lh3.googleusercontent.com/aida-public/AB6AXuDkuNXrcHfy46qqNVzH5WCEMMztgKNUW2-ZOvk2egw6QipHOKcqkdsMrYhwVldG3RyNp2J_ynP-LohRwu6ULWERiYrbC2g7RmLkGuWLso2o_e-Ih5dkbAdQkYMU1NCL0f3GyqwqtWC4UKRnw1-eIBLnXiHjNNKv69qf9izVTIhsz1aIAcNZavl4boZLKJ8IYMeulPgr8YSnqrrnXm0sss_MaGHOfbqT1WwmwPOWvwDP_byDQUeg20yimOvxiMksj47rY7JckyClSnY",
-                            contentDescription = "Avatar",
-                            modifier =
-                                Modifier
+                        if (uiState.avatarLocalUri != null || uiState.avatarUrl.isNotBlank()) {
+                            AsyncImage(
+                                model = uiState.avatarLocalUri ?: uiState.avatarUrl,
+                                contentDescription = "Ảnh đại diện",
+                                modifier =
+                                    Modifier
+                                        .fillMaxSize()
+                                        .clip(CircleShape),
+                                contentScale = ContentScale.Crop,
+                            )
+                        } else {
+                            Box(
+                                modifier = Modifier
                                     .fillMaxSize()
-                                    .clip(CircleShape),
-                            contentScale = ContentScale.Crop,
-                            alpha = if (uiState.avatarLocalUri == null && uiState.avatarUrl.isBlank()) 0.6f else 1.0f,
-                        )
-                        if (uiState.avatarLocalUri == null && uiState.avatarUrl.isBlank()) {
-                            Box(modifier = Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
+                                    .background(MaterialTheme.colorScheme.surfaceContainerHigh),
+                                contentAlignment = Alignment.Center
+                            ) {
                                 Icon(
-                                    imageVector = Icons.Default.AddAPhoto,
-                                    contentDescription = null,
-                                    tint = MaterialTheme.colorScheme.onSurfaceVariant,
-                                    modifier = Modifier.size(36.dp),
+                                    imageVector = Icons.Default.Person,
+                                    contentDescription = "Thêm ảnh đại diện",
+                                    tint = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.6f),
+                                    modifier = Modifier.size(48.dp),
                                 )
                             }
                         }
@@ -201,12 +227,13 @@ private fun CompleteProfileContent(
                                 .size(36.dp)
                                 .shadow(8.dp, CircleShape)
                                 .background(MaterialTheme.colorScheme.primaryContainer, CircleShape)
-                                .border(4.dp, MaterialTheme.colorScheme.surface, CircleShape),
+                                .border(4.dp, MaterialTheme.colorScheme.surface, CircleShape)
+                                .semantics { contentDescription = "Đổi ảnh đại diện" },
                         contentAlignment = Alignment.Center,
                     ) {
                         Icon(
                             imageVector = Icons.Default.Edit,
-                            contentDescription = null,
+                            contentDescription = "Đổi ảnh đại diện",
                             tint = MaterialTheme.colorScheme.onPrimaryContainer,
                             modifier = Modifier.size(16.dp),
                         )
@@ -230,8 +257,8 @@ private fun CompleteProfileContent(
                     AppTextField(
                         value = uiState.displayName,
                         onValueChange = onDisplayNameChange,
-                        label = "DISPLAY NAME",
-                        placeholder = "e.g. Linh Trần",
+                        label = "Tên hiển thị",
+                        placeholder = "Ví dụ: Linh Trần",
                         isError = uiState.displayNameError != null,
                         supportingText = uiState.displayNameError,
                     )
@@ -239,9 +266,9 @@ private fun CompleteProfileContent(
                     AppTextField(
                         value = uiState.username,
                         onValueChange = onUsernameChange,
-                        label = "USERNAME",
+                        label = "Tên người dùng",
                         placeholder = "ten_dang_nhap",
-                        leadingIcon = {
+                        prefix = {
                             Text(
                                 "@",
                                 style = MaterialTheme.typography.bodyLarge.copy(fontWeight = FontWeight.Bold),
@@ -249,14 +276,14 @@ private fun CompleteProfileContent(
                             )
                         },
                         isError = uiState.usernameError != null,
-                        supportingText = uiState.usernameError ?: "Unique handle for splitting bills",
+                        supportingText = uiState.usernameError ?: "Tên định danh dùng khi chia hóa đơn",
                     )
 
                     AppTextField(
                         value = uiState.bio,
                         onValueChange = onBioChange,
-                        label = "SHORT BIO",
-                        placeholder = "Foodie, coffee lover, and weekend brunch enthusiast...",
+                        label = "Giới thiệu ngắn",
+                        placeholder = "Người thích ăn uống, yêu cà phê...",
                         singleLine = false,
                         maxLines = 3,
                     )
@@ -264,14 +291,17 @@ private fun CompleteProfileContent(
                     // Dining Style Section
                     Column(verticalArrangement = Arrangement.spacedBy(12.dp)) {
                         Text(
-                            text = "DINING STYLE",
+                            text = "Phong cách ăn uống",
                             style = MaterialTheme.typography.labelSmall.copy(fontWeight = FontWeight.Bold, letterSpacing = 1.sp),
                             color = MaterialTheme.colorScheme.onSurfaceVariant,
                             modifier = Modifier.padding(start = 4.dp),
                         )
-                        Row(horizontalArrangement = Arrangement.spacedBy(8.dp), modifier = Modifier.fillMaxWidth()) {
+                        Row(
+                            horizontalArrangement = Arrangement.spacedBy(6.dp),
+                            modifier = Modifier.fillMaxWidth()
+                        ) {
                             StyleChip(
-                                label = "Fine Dining",
+                                label = "Nhà hàng",
                                 icon = Icons.Default.Restaurant,
                                 selected =
                                     uiState.selectedStyles.contains(
@@ -280,9 +310,10 @@ private fun CompleteProfileContent(
                                 onClick = {
                                     onToggleDiningStyle("Fine Dining")
                                 },
+                                modifier = Modifier.weight(1f)
                             )
                             StyleChip(
-                                label = "Cafe Hopper",
+                                label = "Cà phê",
                                 icon = Icons.Default.Coffee,
                                 selected =
                                     uiState.selectedStyles.contains(
@@ -291,9 +322,10 @@ private fun CompleteProfileContent(
                                 onClick = {
                                     onToggleDiningStyle("Cafe Hopper")
                                 },
+                                modifier = Modifier.weight(1f)
                             )
                             StyleChip(
-                                label = "Nightlife",
+                                label = "Ăn đêm",
                                 icon = Icons.Default.LocalBar,
                                 selected =
                                     uiState.selectedStyles.contains(
@@ -302,6 +334,7 @@ private fun CompleteProfileContent(
                                 onClick = {
                                     onToggleDiningStyle("Nightlife")
                                 },
+                                modifier = Modifier.weight(1f)
                             )
                         }
                     }
@@ -322,7 +355,7 @@ private fun CompleteProfileContent(
                     }
 
                     PrimaryButton(
-                        text = "Complete Profile",
+                        text = "Hoàn tất hồ sơ",
                         onClick = onSubmit,
                         modifier = Modifier.fillMaxWidth(),
                         enabled = !uiState.isSubmitting,
@@ -337,24 +370,34 @@ private fun CompleteProfileContent(
                     )
 
                     val primaryColor = MaterialTheme.colorScheme.primary
-                    Text(
-                        text =
-                            buildAnnotatedString {
-                                append("By continuing, you agree to our ")
-                                withStyle(
-                                    SpanStyle(
-                                        color = primaryColor,
-                                        fontWeight = FontWeight.Bold,
-                                        textDecoration = androidx.compose.ui.text.style.TextDecoration.Underline,
-                                    ),
-                                ) {
-                                    append("Terms of Service")
+                    val uriHandler = androidx.compose.ui.platform.LocalUriHandler.current
+                    val annotatedTermsText = buildAnnotatedString {
+                        append("Bằng cách tiếp tục, bạn đồng ý với ")
+                        pushStringAnnotation(tag = "TERMS", annotation = "https://dinesplit.com/terms")
+                        withStyle(
+                            SpanStyle(
+                                color = primaryColor,
+                                fontWeight = FontWeight.Bold,
+                                textDecoration = androidx.compose.ui.text.style.TextDecoration.Underline,
+                            ),
+                        ) {
+                            append("Điều khoản dịch vụ")
+                        }
+                        pop()
+                    }
+                    androidx.compose.foundation.text.ClickableText(
+                        text = annotatedTermsText,
+                        style = MaterialTheme.typography.bodySmall.copy(
+                            textAlign = TextAlign.Center,
+                            color = MaterialTheme.colorScheme.onSurfaceVariant
+                        ),
+                        onClick = { offset ->
+                            annotatedTermsText.getStringAnnotations(tag = "TERMS", start = offset, end = offset)
+                                .firstOrNull()?.let { annotation ->
+                                    uriHandler.openUri(annotation.item)
                                 }
-                            },
-                        style = MaterialTheme.typography.bodySmall,
-                        color = MaterialTheme.colorScheme.onSurfaceVariant,
-                        textAlign = TextAlign.Center,
-                        modifier = Modifier.padding(bottom = 32.dp),
+                        },
+                        modifier = Modifier.padding(bottom = 48.dp),
                     )
                 }
             }
@@ -368,16 +411,21 @@ private fun StyleChip(
     icon: ImageVector,
     selected: Boolean,
     onClick: () -> Unit,
+    modifier: Modifier = Modifier,
 ) {
     Surface(
         color = if (selected) MaterialTheme.colorScheme.secondaryContainer else MaterialTheme.colorScheme.surfaceContainerHighest,
         shape = CircleShape,
-        modifier = Modifier.clickable { onClick() },
+        modifier = modifier
+            .clickable(role = Role.Checkbox) { onClick() }
+            .semantics {
+                this.stateDescription = if (selected) "Đã chọn" else "Chưa chọn"
+            },
     ) {
         Row(
-            modifier = Modifier.padding(horizontal = 16.dp, vertical = 8.dp),
+            modifier = Modifier.padding(horizontal = 10.dp, vertical = 8.dp),
             verticalAlignment = Alignment.CenterVertically,
-            horizontalArrangement = Arrangement.spacedBy(8.dp),
+            horizontalArrangement = Arrangement.Center,
         ) {
             Icon(
                 imageVector = icon,
@@ -385,8 +433,11 @@ private fun StyleChip(
                 modifier = Modifier.size(14.dp),
                 tint = if (selected) MaterialTheme.colorScheme.onSecondaryContainer else MaterialTheme.colorScheme.onSurfaceVariant,
             )
+            Spacer(modifier = Modifier.width(6.dp))
             Text(
                 text = label,
+                maxLines = 1,
+                overflow = TextOverflow.Clip,
                 style = MaterialTheme.typography.labelSmall.copy(fontWeight = FontWeight.Bold),
                 color = if (selected) MaterialTheme.colorScheme.onSecondaryContainer else MaterialTheme.colorScheme.onSurfaceVariant,
             )

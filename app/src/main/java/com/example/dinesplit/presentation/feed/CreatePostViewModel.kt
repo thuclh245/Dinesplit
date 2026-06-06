@@ -8,6 +8,8 @@ import com.example.dinesplit.core.common.AppContainer
 import com.example.dinesplit.core.firebase.FirebaseErrorMapper
 import com.example.dinesplit.core.firebase.FirebaseProviders
 import com.example.dinesplit.domain.model.Post
+import com.example.dinesplit.domain.model.Group
+import com.example.dinesplit.domain.model.Bill
 import com.google.android.gms.tasks.Task
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.flow.MutableStateFlow
@@ -28,6 +30,7 @@ class CreatePostViewModel(application: Application) : AndroidViewModel(applicati
     private val observeSessionUseCase = AppContainer.observeSessionUseCase(application)
     private val getCurrentUserProfileUseCase = AppContainer.getCurrentUserProfileUseCase(application)
     private val firestore = FirebaseProviders.firestore
+    private val splitRepository = AppContainer.splitRepository(application)
 
     private val _uiState = MutableStateFlow<CreatePostUiState>(CreatePostUiState.Idle)
     val uiState: StateFlow<CreatePostUiState> = _uiState.asStateFlow()
@@ -47,6 +50,22 @@ class CreatePostViewModel(application: Application) : AndroidViewModel(applicati
     private val _isLoadingExistingPost = MutableStateFlow(false)
     val isLoadingExistingPost: StateFlow<Boolean> = _isLoadingExistingPost.asStateFlow()
 
+    private val _userGroups = MutableStateFlow<List<Group>>(emptyList())
+    val userGroups: StateFlow<List<Group>> = _userGroups.asStateFlow()
+
+    private val _selectedGroupId = MutableStateFlow<String?>(null)
+    val selectedGroupId: StateFlow<String?> = _selectedGroupId.asStateFlow()
+
+    private val _selectedBillId = MutableStateFlow<String?>(null)
+    val selectedBillId: StateFlow<String?> = _selectedBillId.asStateFlow()
+
+    private val _selectedBillName = MutableStateFlow<String?>(null)
+    val selectedBillName: StateFlow<String?> = _selectedBillName.asStateFlow()
+
+    private val _availableBills = MutableStateFlow<List<Bill>>(emptyList())
+    val availableBills: StateFlow<List<Bill>> = _availableBills.asStateFlow()
+
+    private var observeBillsJob: kotlinx.coroutines.Job? = null
     private var currentPostId: String? = null
 
     val isFormValid: StateFlow<Boolean> = combine(
@@ -58,6 +77,45 @@ class CreatePostViewModel(application: Application) : AndroidViewModel(applicati
     }.stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), false)
 
     private var lastSubmit: SubmitDraft? = null
+
+    init {
+        loadGroups()
+    }
+
+    fun loadGroups() {
+        viewModelScope.launch {
+            splitRepository.getGroups().collect { groups ->
+                _userGroups.value = groups
+            }
+        }
+    }
+
+    fun selectGroup(groupId: String?) {
+        _selectedGroupId.value = groupId
+        _selectedBillId.value = null
+        _selectedBillName.value = null
+        _availableBills.value = emptyList()
+        observeBillsJob?.cancel()
+        if (groupId != null) {
+            observeBillsJob = viewModelScope.launch {
+                splitRepository.getBills(groupId).collect { bills ->
+                    _availableBills.value = bills
+                    val currentBillId = _selectedBillId.value
+                    if (currentBillId != null) {
+                        val matchingBill = bills.firstOrNull { it.id == currentBillId }
+                        if (matchingBill != null) {
+                            _selectedBillName.value = matchingBill.name
+                        }
+                    }
+                }
+            }
+        }
+    }
+
+    fun selectBill(billId: String?, billName: String?) {
+        _selectedBillId.value = billId
+        _selectedBillName.value = billName
+    }
 
     fun updateImageUri(value: Uri?) {
         _imageUri.value = value
@@ -83,11 +141,17 @@ class CreatePostViewModel(application: Application) : AndroidViewModel(applicati
         _visibility.value = "public"
         _isLoadingExistingPost.value = false
         currentPostId = null
+        _selectedGroupId.value = null
+        _selectedBillId.value = null
+        _selectedBillName.value = null
+        _availableBills.value = emptyList()
+        observeBillsJob?.cancel()
     }
 
     fun initializePostMode(postId: String?) {
         if (postId.isNullOrBlank()) {
             resetUiState()
+            loadGroups()
             return
         }
         currentPostId = postId
@@ -101,6 +165,11 @@ class CreatePostViewModel(application: Application) : AndroidViewModel(applicati
                     _caption.value = post.caption
                     _imageUri.value = post.imageUrls.firstOrNull()?.let { Uri.parse(it) }
                     _visibility.value = post.visibility
+                    
+                    viewModelScope.launch(Dispatchers.Main) {
+                        selectGroup(post.linkedGroupId)
+                        selectBill(post.linkedBillId, null)
+                    }
                 }
                 _isLoadingExistingPost.value = false
             } catch (e: Exception) {
@@ -183,6 +252,8 @@ class CreatePostViewModel(application: Application) : AndroidViewModel(applicati
                     sharesCount = originalPost?.sharesCount ?: 0,
                     caption = capt.trim(),
                     visibility = vis,
+                    linkedGroupId = _selectedGroupId.value,
+                    linkedBillId = _selectedBillId.value,
                     createdAt = originalPost?.createdAt ?: java.util.Date(),
                     updatedAt = java.util.Date()
                 )

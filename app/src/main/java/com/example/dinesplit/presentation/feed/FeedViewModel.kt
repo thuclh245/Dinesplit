@@ -82,8 +82,21 @@ class FeedViewModel(application: Application) : AndroidViewModel(application) {
 
             val finalizedPosts = pagination.posts
 
+            val attachedBillIds = finalizedPosts.mapNotNull { post ->
+                post.linkedBillId?.takeIf { it.isNotBlank() && it != post.id }
+            }.toSet()
+
+            val filteredPosts = finalizedPosts.filter { post ->
+                val hasLinkedBill = !post.linkedBillId.isNullOrBlank()
+                if (hasLinkedBill && post.imageUrls.isEmpty()) {
+                    false
+                } else {
+                    post.id !in attachedBillIds
+                }
+            }
+
             // Sort posts: Liked posts are moved to the end of the list, sorted by creation date descending within groups
-            val sortedPosts = finalizedPosts.sortedWith(
+            val sortedPosts = filteredPosts.sortedWith(
                 compareBy<Post> { post ->
                     val isLiked = initialLikedIds.contains(post.id)
                     if (isLiked) 1 else 0

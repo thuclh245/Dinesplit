@@ -22,6 +22,14 @@
           }
         },
         {
+          "client_id": "59006843188-mp901efql9e1ufqn5fhc5oalb9khapck.apps.googleusercontent.com",
+          "client_type": 1,
+          "android_info": {
+            "package_name": "com.example.dinesplit",
+            "certificate_hash": "b10c10ed8fcc2ae4c900b5e42b6908cb295d72cb"
+          }
+        },
+        {
           "client_id": "59006843188-ok7s2fm5q4826eaqce5enf7aaf5oelhr.apps.googleusercontent.com",
           "client_type": 3
         }

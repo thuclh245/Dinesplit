@@ -27,6 +27,7 @@ import androidx.compose.ui.semantics.contentDescription
 import androidx.compose.ui.semantics.semantics
 import com.example.dinesplit.ui.theme.StatusWarningDark
 import com.example.dinesplit.core.ui.AppCard
+import com.example.dinesplit.core.ui.ClickableAppCard
 import com.example.dinesplit.core.ui.AppIconButton
 import com.example.dinesplit.core.ui.AppDimens
 import com.example.dinesplit.core.ui.AppShapes
@@ -47,14 +48,15 @@ fun SearchTopBar(
 ) {
     Surface(
         color = MaterialTheme.colorScheme.background,
-        modifier = Modifier.fillMaxWidth(),
+        modifier = Modifier
+            .fillMaxWidth()
+            .statusBarsPadding(),
     ) {
         Row(
             modifier =
                 Modifier
-                    .statusBarsPadding()
                     .fillMaxWidth()
-                    .height(72.dp)
+                    .height(64.dp)
                     .padding(horizontal = AppDimens.spaceMd),
             verticalAlignment = Alignment.CenterVertically,
             horizontalArrangement = Arrangement.spacedBy(AppDimens.spaceSm),
@@ -74,6 +76,7 @@ fun SearchTopBar(
                 placeholder = "Tìm kiếm...",
                 onClearClick = { onQueryChange("") },
                 keyboardActions = KeyboardActions(onSearch = { onSearchAction() }),
+                minHeight = 44.dp,
                 modifier = Modifier.weight(1f)
             )
         }
@@ -132,10 +135,9 @@ fun SearchPersonCard(
     isFollower: Boolean = false,
     onClick: () -> Unit,
 ) {
-    AppCard(
-        modifier = Modifier
-            .fillMaxWidth()
-            .clickable { onClick() },
+    ClickableAppCard(
+        onClick = onClick,
+        modifier = Modifier.fillMaxWidth(),
         contentPadding = PaddingValues(AppDimens.spaceMd)
     ) {
         Row(
@@ -193,7 +195,7 @@ fun SearchPersonCard(
                             MaterialTheme.colorScheme.primary
                         },
                     ),
-                modifier = Modifier
+                modifier = Modifier.width(120.dp).height(40.dp)
             )
         }
     }
@@ -204,10 +206,9 @@ fun SearchPlaceCard(
     place: PlaceUiModel,
     onClick: () -> Unit,
 ) {
-    AppCard(
-        modifier = Modifier
-            .fillMaxWidth()
-            .clickable { onClick() },
+    ClickableAppCard(
+        onClick = onClick,
+        modifier = Modifier.fillMaxWidth(),
         contentPadding = PaddingValues(0.dp)
     ) {
         Column(modifier = Modifier.fillMaxWidth()) {
@@ -299,10 +300,10 @@ fun SearchPostCard(
     onClick: () -> Unit,
     onAuthorClick: () -> Unit,
 ) {
-    AppCard(
-        modifier = Modifier
-            .fillMaxWidth()
-            .clickable { onClick() }
+    ClickableAppCard(
+        onClick = onClick,
+        modifier = Modifier.fillMaxWidth(),
+        contentPadding = PaddingValues(AppDimens.spaceLg)
     ) {
         Column(verticalArrangement = Arrangement.spacedBy(AppDimens.spaceMd)) {
             // Author row

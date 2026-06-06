@@ -11,6 +11,17 @@ object AuthInputValidator {
         return null
     }
 
+    fun validateLoginIdentifier(identifier: String): String? {
+        val normalized = identifier.trim()
+        if (normalized.isBlank()) return "Vui lòng nhập Email hoặc Tên người dùng"
+        if (normalized.contains("@")) {
+            if (!EMAIL_REGEX.matches(normalized)) return "Định dạng Email không hợp lệ"
+        } else {
+            if (normalized.length < 3) return "Tên người dùng phải từ 3 ký tự trở lên"
+        }
+        return null
+    }
+
     fun validatePasswordForLogin(password: String): String? {
         if (password.isBlank()) return "Password is required"
         return null

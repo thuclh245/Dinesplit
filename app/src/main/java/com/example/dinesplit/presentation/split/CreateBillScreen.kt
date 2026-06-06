@@ -148,6 +148,16 @@ fun CreateBillScreen(
                     )
                 }
                 item {
+                    CreateBillPaymentQrSection(
+                        bankCode = uiState.paymentQrBankCode,
+                        accountNumber = uiState.paymentQrAccountNumber,
+                        accountName = uiState.paymentQrAccountName,
+                        onBankCodeChange = vm::onPaymentQrBankCodeChange,
+                        onAccountNumberChange = vm::onPaymentQrAccountNumberChange,
+                        onAccountNameChange = vm::onPaymentQrAccountNameChange,
+                    )
+                }
+                item {
                     CreateBillSplitMethodTabs(
                         selectedMethod = uiState.selectedMethod,
                         onMethodSelect = vm::onMethodSelect,
@@ -424,6 +434,70 @@ private fun CreateBillPayerSection(
                         },
                     )
                 }
+            }
+        }
+    }
+}
+
+@Composable
+private fun CreateBillPaymentQrSection(
+    bankCode: String,
+    accountNumber: String,
+    accountName: String,
+    onBankCodeChange: (String) -> Unit,
+    onAccountNumberChange: (String) -> Unit,
+    onAccountNameChange: (String) -> Unit,
+) {
+    val colorScheme = MaterialTheme.colorScheme
+
+    Column {
+        Text(
+            text = "QR NHẬN TIỀN",
+            style = MaterialTheme.typography.labelSmall,
+            fontWeight = FontWeight.Bold,
+            color = colorScheme.onSurfaceVariant.copy(alpha = 0.7f),
+            modifier = Modifier.padding(start = AppDimens.spaceXs, bottom = AppDimens.spaceSm),
+        )
+
+        AppCard(
+            modifier = Modifier.fillMaxWidth(),
+            contentPadding = PaddingValues(AppDimens.spaceLg),
+        ) {
+            Column(verticalArrangement = Arrangement.spacedBy(AppDimens.spaceMd)) {
+                Text(
+                    text = "Người đang nợ sẽ thấy QR này khi bấm Thanh toán QR trong chi tiết hóa đơn.",
+                    style = MaterialTheme.typography.bodySmall,
+                    color = colorScheme.onSurfaceVariant,
+                )
+                Row(horizontalArrangement = Arrangement.spacedBy(AppDimens.spaceMd)) {
+                    AppTextField(
+                        value = bankCode,
+                        onValueChange = onBankCodeChange,
+                        label = "",
+                        placeholder = "Mã NH",
+                        singleLine = true,
+                        modifier = Modifier.weight(0.8f),
+                        supportingText = "VD: MB, VCB",
+                    )
+                    AppTextField(
+                        value = accountNumber,
+                        onValueChange = onAccountNumberChange,
+                        label = "",
+                        placeholder = "Số tài khoản",
+                        singleLine = true,
+                        keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number),
+                        modifier = Modifier.weight(1.2f),
+                    )
+                }
+                AppTextField(
+                    value = accountName,
+                    onValueChange = onAccountNameChange,
+                    label = "",
+                    placeholder = "Tên chủ tài khoản",
+                    singleLine = true,
+                    modifier = Modifier.fillMaxWidth(),
+                    supportingText = "Tên này sẽ được gắn vào mã VietQR của hóa đơn.",
+                )
             }
         }
     }
