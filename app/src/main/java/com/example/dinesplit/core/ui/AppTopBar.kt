@@ -185,7 +185,7 @@ fun HomeTopBar(
                                 fontWeight = FontWeight.Bold,
                                 letterSpacing = (-0.5).sp,
                             ),
-                        color = MaterialTheme.colorScheme.primary,
+                        color = MaterialTheme.colorScheme.onSurface,
                     )
                 }
             }

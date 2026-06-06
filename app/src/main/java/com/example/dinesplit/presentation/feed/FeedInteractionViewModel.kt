@@ -6,6 +6,7 @@ import androidx.lifecycle.viewModelScope
 import com.example.dinesplit.core.common.AppContainer
 import com.example.dinesplit.core.firebase.FirebaseErrorMapper
 import com.example.dinesplit.core.firebase.FirebaseProviders
+import com.example.dinesplit.domain.model.NotificationDestination
 import com.example.dinesplit.domain.model.Post
 import com.google.android.gms.tasks.Task
 import com.google.firebase.firestore.FieldValue
@@ -167,7 +168,7 @@ class FeedInteractionViewModel(application: Application) : AndroidViewModel(appl
             "isRead" to false,
             "createdAt" to now,
             "updatedAt" to now,
-            "deepLinkDestination" to "ACTIVITY_DETAIL",
+            "deepLinkDestination" to NotificationDestination.ACTIVITY_DETAIL.name,
             "deepLinkTargetId" to relatedId
         )
         

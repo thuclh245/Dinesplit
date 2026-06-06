@@ -70,7 +70,10 @@ data class PersonalReminderTrigger(
 )
 
 object NotificationFactory {
-    fun fromFeedTrigger(trigger: FeedNotificationTrigger, recipientUserId: String): Notification {
+    fun fromFeedTrigger(
+        trigger: FeedNotificationTrigger,
+        recipientUserId: String,
+    ): Notification {
         val (title, subtitle) = when (trigger.triggerType) {
             FeedTriggerType.POST_LIKED ->
                 Pair("${trigger.triggeredByUserName} đã thích bài viết của bạn", trigger.postTitle)
@@ -92,27 +95,58 @@ object NotificationFactory {
             isRead = false,
             createdAt = System.currentTimeMillis(),
             updatedAt = System.currentTimeMillis(),
-            deepLinkDestination = "ACTIVITY_DETAIL",
+            deepLinkDestination = NotificationDestination.ACTIVITY_DETAIL.name,
             deepLinkTargetId = trigger.postId,
         )
     }
 
-    fun fromSplitTrigger(trigger: SplitNotificationTrigger, recipientUserId: String): Notification {
+    fun fromSplitTrigger(
+        trigger: SplitNotificationTrigger,
+        recipientUserId: String,
+    ): Notification {
         val (title, notificationType, destination) = when (trigger.triggerType) {
             SplitTriggerType.BILL_CREATED ->
-                Triple("${trigger.triggeredByUserName} đã tạo hóa đơn", NotificationType.BILL_CREATED, "SPLIT_DETAIL")
+                Triple(
+                    "${trigger.triggeredByUserName} đã tạo hóa đơn",
+                    NotificationType.BILL_CREATED,
+                    NotificationDestination.SPLIT_DETAIL,
+                )
             SplitTriggerType.PAYMENT_RECEIVED ->
-                Triple("${trigger.triggeredByUserName} đã thanh toán", NotificationType.PAYMENT_COMPLETED, "SPLIT_SETTLE")
+                Triple(
+                    "${trigger.triggeredByUserName} đã thanh toán",
+                    NotificationType.PAYMENT_COMPLETED,
+                    NotificationDestination.SPLIT_SETTLE,
+                )
             SplitTriggerType.PAYMENT_PENDING ->
-                Triple("Sắp đến hạn thanh toán", NotificationType.PAYMENT_PENDING, "SPLIT_DETAIL")
+                Triple(
+                    "Sắp đến hạn thanh toán",
+                    NotificationType.PAYMENT_PENDING,
+                    NotificationDestination.SPLIT_DETAIL,
+                )
             SplitTriggerType.BILL_CONFIRMED ->
-                Triple("${trigger.triggeredByUserName} đã xác nhận hóa đơn", NotificationType.SPLIT_COMPLETED, "SPLIT_DETAIL")
+                Triple(
+                    "${trigger.triggeredByUserName} đã xác nhận hóa đơn",
+                    NotificationType.SPLIT_COMPLETED,
+                    NotificationDestination.SPLIT_DETAIL,
+                )
             SplitTriggerType.BILL_SETTLED ->
-                Triple("${trigger.triggeredByUserName} đã tất toán", NotificationType.SPLIT_COMPLETED, "SPLIT_SETTLE")
+                Triple(
+                    "${trigger.triggeredByUserName} đã tất toán",
+                    NotificationType.SPLIT_COMPLETED,
+                    NotificationDestination.SPLIT_SETTLE,
+                )
             SplitTriggerType.YOU_OWE_MONEY ->
-                Triple("Bạn cần trả ${trigger.triggeredByUserName}", NotificationType.PAYMENT_PENDING, "SPLIT_DETAIL")
+                Triple(
+                    "Bạn cần trả ${trigger.triggeredByUserName}",
+                    NotificationType.PAYMENT_PENDING,
+                    NotificationDestination.SPLIT_DETAIL,
+                )
             SplitTriggerType.SOMEONE_OWES_YOU ->
-                Triple("${trigger.triggeredByUserName} cần trả bạn", NotificationType.PAYMENT_PENDING, "SPLIT_SETTLE")
+                Triple(
+                    "${trigger.triggeredByUserName} cần trả bạn",
+                    NotificationType.PAYMENT_PENDING,
+                    NotificationDestination.SPLIT_SETTLE,
+                )
         }
 
         return Notification(
@@ -125,7 +159,7 @@ object NotificationFactory {
             isRead = false,
             createdAt = System.currentTimeMillis(),
             updatedAt = System.currentTimeMillis(),
-            deepLinkDestination = destination,
+            deepLinkDestination = destination.name,
             deepLinkTargetId = trigger.billId,
             senderId = trigger.triggeredByUserId,
             groupId = trigger.groupId,
@@ -138,56 +172,66 @@ object NotificationFactory {
     ): Notification {
         val amountText = trigger.amount?.let { formatMoney(it) }
         val (title, subtitle, destination) = when (trigger.triggerType) {
-            PersonalTriggerType.TRANSACTION_ADDED -> Triple(
-                "Đã lưu giao dịch cá nhân",
-                listOfNotNull(trigger.categoryName, amountText).joinToString(" - "),
-                "TRANSACTION_DETAIL"
-            )
-            PersonalTriggerType.CATEGORY_CREATED -> Triple(
-                "Danh mục đã sẵn sàng",
-                "${trigger.label} hiện đã có trong Cá nhân",
-                "CATEGORY_MANAGEMENT"
-            )
-            PersonalTriggerType.REMINDER_CREATED -> Triple(
-                "Đã bật cảnh báo ngân sách",
-                "${trigger.label} ở mức ${amountText ?: "ngân sách bạn chọn"}",
-                "SPENDING_REMINDERS"
-            )
-            PersonalTriggerType.REMINDER_THRESHOLD_REACHED -> Triple(
-                "Cảnh báo chi tiêu: ${trigger.categoryName ?: trigger.label}",
-                amountText?.let { "Chi tiêu hiện tại là $it" } ?: trigger.label,
-                "SPENDING_REMINDERS"
-            )
-            PersonalTriggerType.RECURRING_RULE_CREATED -> Triple(
-                "Đã thêm khoản lặp lại",
-                "${trigger.label}${amountText?.let { " - $it" }.orEmpty()}",
-                "PERSONAL_PLANS"
-            )
-            PersonalTriggerType.GOAL_CREATED -> Triple(
-                "Đã thêm mục tiêu",
-                "${trigger.label}${amountText?.let { " - mục tiêu $it" }.orEmpty()}",
-                "PERSONAL_PLANS"
-            )
-            PersonalTriggerType.WALLET_CREATED -> Triple(
-                "Đã thêm ví",
-                "${trigger.label}${amountText?.let { " - số dư $it" }.orEmpty()}",
-                "PERSONAL_PLANS"
-            )
-            PersonalTriggerType.SAFE_TO_SPEND_CHANGED -> Triple(
-                "Đã cập nhật mức an toàn chi tiêu",
-                "${trigger.label}${amountText?.let { " - $it hôm nay" }.orEmpty()}",
-                "PERSONAL"
-            )
-            PersonalTriggerType.PERSONAL_SCORE_CHANGED -> Triple(
-                "Điểm cá nhân: ${trigger.band ?: "đã cập nhật"}",
-                "Điểm hiện tại ${trigger.score ?: 0}. ${trigger.label}",
-                "PERSONAL"
-            )
-            PersonalTriggerType.SPLIT_BRIDGED_TO_PERSONAL -> Triple(
-                "Đã lưu chia tách vào Cá nhân",
-                "${trigger.label}${amountText?.let { " - $it" }.orEmpty()}",
-                "TRANSACTION_DETAIL"
-            )
+            PersonalTriggerType.TRANSACTION_ADDED ->
+                Triple(
+                    "Đã lưu giao dịch cá nhân",
+                    listOfNotNull(trigger.categoryName, amountText).joinToString(" - "),
+                    NotificationDestination.TRANSACTION_DETAIL,
+                )
+            PersonalTriggerType.CATEGORY_CREATED ->
+                Triple(
+                    "Danh mục đã sẵn sàng",
+                    "${trigger.label} hiện đã có trong Cá nhân",
+                    NotificationDestination.CATEGORY_MANAGEMENT,
+                )
+            PersonalTriggerType.REMINDER_CREATED ->
+                Triple(
+                    "Đã bật cảnh báo ngân sách",
+                    "${trigger.label} ở mức ${amountText ?: "ngân sách bạn chọn"}",
+                    NotificationDestination.SPENDING_REMINDERS,
+                )
+            PersonalTriggerType.REMINDER_THRESHOLD_REACHED ->
+                Triple(
+                    "Cảnh báo chi tiêu: ${trigger.categoryName ?: trigger.label}",
+                    amountText?.let { "Chi tiêu hiện tại là $it" } ?: trigger.label,
+                    NotificationDestination.SPENDING_REMINDERS,
+                )
+            PersonalTriggerType.RECURRING_RULE_CREATED ->
+                Triple(
+                    "Đã thêm khoản lặp lại",
+                    "${trigger.label}${amountText?.let { " - $it" }.orEmpty()}",
+                    NotificationDestination.PERSONAL_PLANS,
+                )
+            PersonalTriggerType.GOAL_CREATED ->
+                Triple(
+                    "Đã thêm mục tiêu",
+                    "${trigger.label}${amountText?.let { " - mục tiêu $it" }.orEmpty()}",
+                    NotificationDestination.PERSONAL_PLANS,
+                )
+            PersonalTriggerType.WALLET_CREATED ->
+                Triple(
+                    "Đã thêm ví",
+                    "${trigger.label}${amountText?.let { " - số dư $it" }.orEmpty()}",
+                    NotificationDestination.PERSONAL_PLANS,
+                )
+            PersonalTriggerType.SAFE_TO_SPEND_CHANGED ->
+                Triple(
+                    "Đã cập nhật mức an toàn chi tiêu",
+                    "${trigger.label}${amountText?.let { " - $it hôm nay" }.orEmpty()}",
+                    NotificationDestination.PERSONAL,
+                )
+            PersonalTriggerType.PERSONAL_SCORE_CHANGED ->
+                Triple(
+                    "Điểm cá nhân: ${trigger.band ?: "đã cập nhật"}",
+                    "Điểm hiện tại ${trigger.score ?: 0}. ${trigger.label}",
+                    NotificationDestination.PERSONAL,
+                )
+            PersonalTriggerType.SPLIT_BRIDGED_TO_PERSONAL ->
+                Triple(
+                    "Đã lưu chia tiền vào Cá nhân",
+                    "${trigger.label}${amountText?.let { " - $it" }.orEmpty()}",
+                    NotificationDestination.TRANSACTION_DETAIL,
+                )
         }
 
         val now = System.currentTimeMillis()
@@ -201,7 +245,7 @@ object NotificationFactory {
             isRead = false,
             createdAt = now,
             updatedAt = now,
-            deepLinkDestination = destination,
+            deepLinkDestination = destination.name,
             deepLinkTargetId = trigger.relatedId,
         )
     }
@@ -218,9 +262,9 @@ object NotificationFactory {
                 label = "Bạn đã dùng $percentUsed% ngân sách ${formatMoney(trigger.budgetLimit)}",
                 amount = trigger.currentSpent,
                 categoryName = trigger.categoryName,
-                triggerType = PersonalTriggerType.REMINDER_THRESHOLD_REACHED
+                triggerType = PersonalTriggerType.REMINDER_THRESHOLD_REACHED,
             ),
-            userId = userId
+            userId = userId,
         )
     }
 
@@ -238,9 +282,9 @@ object NotificationFactory {
                 label = "Đã thêm $typeLabel",
                 amount = amount,
                 categoryName = categoryName,
-                triggerType = PersonalTriggerType.TRANSACTION_ADDED
+                triggerType = PersonalTriggerType.TRANSACTION_ADDED,
             ),
-            userId = userId
+            userId = userId,
         )
     }
 
@@ -271,9 +315,9 @@ object NotificationFactory {
             trigger = PersonalNotificationTrigger(
                 label = "Danh mục $typeLabel '$categoryName'",
                 categoryName = categoryName,
-                triggerType = PersonalTriggerType.CATEGORY_CREATED
+                triggerType = PersonalTriggerType.CATEGORY_CREATED,
             ),
-            userId = userId
+            userId = userId,
         )
     }
 

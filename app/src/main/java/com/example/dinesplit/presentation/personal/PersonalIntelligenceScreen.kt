@@ -315,7 +315,7 @@ private fun AnomalyRadarSection(
          Column(verticalArrangement = Arrangement.spacedBy(AppDimens.spaceMd)) {
              SectionHeader(title = "Radar bất thường")
              Text(
-                 text = "Theo dõi chi tiêu bất thường, tập trung, tháng nặng chia tách và tốc độ hàng ngày tăng.",
+                 text = "Theo dõi chi tiêu bất thường, tập trung, tháng nặng chia tiền và tốc độ hàng ngày tăng.",
                  style = MaterialTheme.typography.bodySmall,
                  color = MaterialTheme.colorScheme.onSurfaceVariant
              )
@@ -744,7 +744,7 @@ private fun buildIntelligenceAnomalySignals(
          return listOf(
              IntelligenceAnomalySignal(
                  title = "Chưa có bất thường",
-                 message = "Thêm chi tiêu để cho phép radar so sánh các ngoại lệ, tốc độ và tác động chia tách.",
+                 message = "Thêm chi tiêu để cho phép radar so sánh các ngoại lệ, tốc độ và tác động chia tiền.",
                  metric = "Chờ",
                  tone = SignalTone.INFO,
                  actionLabel = "Mở sổ cái",
@@ -792,8 +792,8 @@ private fun buildIntelligenceAnomalySignals(
             .sumOf { it.amount }
     if (summary.totalExpense > 0.0 && splitExpense / summary.totalExpense >= 0.35) {
          signals += IntelligenceAnomalySignal(
-             title = "Tháng chia tách nặng",
-             message = "Hóa đơn chia tách đang thúc đẩy ${(splitExpense / summary.totalExpense * 100).toInt()}% chi tiêu của bạn.",
+             title = "Tháng chia tiền nặng",
+             message = "Hóa đơn chia tiền đang thúc đẩy ${(splitExpense / summary.totalExpense * 100).toInt()}% chi tiêu của bạn.",
              metric = formatMoney(splitExpense),
              tone = SignalTone.INFO,
              actionLabel = "Xem sổ cái",

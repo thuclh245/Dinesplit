@@ -115,9 +115,8 @@ fun HistoryScreen(
         ) {
             Text(
                 text = "Sổ cái.",
-                style = MaterialTheme.typography.displayLarge,
+                style = MaterialTheme.typography.displaySmall,
                 fontWeight = FontWeight.ExtraBold,
-                color = MaterialTheme.colorScheme.primary,
             )
 
             // Summary card - Thẻ tóm tắt

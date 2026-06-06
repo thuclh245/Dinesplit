@@ -1,5 +1,8 @@
 package com.example.dinesplit.presentation.personal
 
+import android.content.Context
+import android.content.Intent
+import android.net.Uri
 import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.result.PickVisualMediaRequest
 import androidx.activity.result.contract.ActivityResultContracts
@@ -39,8 +42,10 @@ import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.font.FontWeight
+import androidx.core.content.FileProvider
 import com.example.dinesplit.core.ui.AppCard
 import com.example.dinesplit.core.ui.AppDimens
 import com.example.dinesplit.core.ui.AppScaffold
@@ -49,7 +54,12 @@ import com.example.dinesplit.core.ui.BackNavigationButton
 import com.example.dinesplit.core.ui.PrimaryButton
 import com.example.dinesplit.data.model.StoredCategory
 import com.example.dinesplit.data.ocr.MlKitReceiptTextRecognizer
+import com.example.dinesplit.domain.model.GoalStatus
+import com.example.dinesplit.domain.model.PersonalGoal
 import com.example.dinesplit.domain.model.PersonalWallet
+import com.example.dinesplit.domain.model.RecurringRule
+import com.example.dinesplit.domain.model.ReminderType
+import com.example.dinesplit.domain.model.SpendingReminder
 import com.example.dinesplit.domain.model.Transaction
 import com.example.dinesplit.domain.model.TransactionSource
 import com.example.dinesplit.domain.model.TransactionType
@@ -62,6 +72,7 @@ import java.text.SimpleDateFormat
 import java.util.Date
 import java.util.Locale
 import java.util.UUID
+import java.io.File
 import kotlin.math.abs
 import kotlin.math.roundToLong
 
@@ -118,6 +129,10 @@ fun AddEditTransactionScreen(
     initialTransaction: Transaction? = null,
     availableCategories: List<StoredCategory> = emptyList(),
     availableWallets: List<PersonalWallet> = emptyList(),
+    transactions: List<Transaction> = emptyList(),
+    goals: List<PersonalGoal> = emptyList(),
+    spendingReminders: List<SpendingReminder> = emptyList(),
+    recurringRules: List<RecurringRule> = emptyList(),
     onSave: (Transaction) -> Unit = {},
 ) {
     var input by rememberSaveable(stateSaver = AddEditTransactionInputSaver) {
@@ -152,6 +167,7 @@ fun AddEditTransactionScreen(
     var validationError by remember { mutableStateOf<String?>(null) }
     var isScanningReceipt by remember { mutableStateOf(false) }
     var receiptOcrStatus by rememberSaveable { mutableStateOf<String?>(null) }
+    var pendingCameraReceiptUri by remember { mutableStateOf<Uri?>(null) }
     val context = LocalContext.current
     val coroutineScope = rememberCoroutineScope()
     val receiptTextRecognizer =
@@ -165,44 +181,89 @@ fun AddEditTransactionScreen(
         }
     }
 
+    fun applyReceiptImage(selectedUri: Uri) {
+        input = input.copy(receiptImageUrl = selectedUri.toString())
+        receiptOcrStatus = null
+        coroutineScope.launch {
+            isScanningReceipt = true
+            receiptOcrStatus = "Đang đọc hóa đơn..."
+            runCatching {
+                val rawText = receiptTextRecognizer.recognize(selectedUri)
+                val result =
+                    ReceiptOcrParser.parse(
+                        rawText = rawText,
+                        categories = availableCategories.toReceiptCategoryOptions(),
+                    )
+                val amountApplied = result.amount != null && input.amount.isBlank()
+                val categoryApplied = result.category != null && input.categoryId.isBlank()
+                input =
+                    input.applyReceiptOcrResult(
+                        result = result,
+                        amountApplied = amountApplied,
+                        categoryApplied = categoryApplied,
+                    )
+                receiptOcrStatus =
+                    result.toReceiptOcrStatus(
+                        amountApplied = amountApplied,
+                        categoryApplied = categoryApplied,
+                    )
+            }.onFailure {
+                receiptOcrStatus = "Không thể đọc hóa đơn. Nhập số tiền/danh mục theo cách thủ công."
+            }
+            isScanningReceipt = false
+        }
+    }
+
     val receiptPickerLauncher = rememberLauncherForActivityResult(
         contract = ActivityResultContracts.PickVisualMedia()
     ) { uri ->
         uri?.let { selectedUri ->
-             input = input.copy(receiptImageUrl = selectedUri.toString())
-             receiptOcrStatus = null
-             coroutineScope.launch {
-                 isScanningReceipt = true
-                 receiptOcrStatus = "Đang đọc hóa đơn..."
-                 runCatching {
-                     val rawText = receiptTextRecognizer.recognize(selectedUri)
-                     val result = ReceiptOcrParser.parse(
-                         rawText = rawText,
-                         categories = availableCategories.toReceiptCategoryOptions()
-                     )
-                     val amountApplied = result.amount != null && input.amount.isBlank()
-                     val categoryApplied = result.category != null && input.categoryId.isBlank()
-                     input = input.applyReceiptOcrResult(
-                         result = result,
-                         amountApplied = amountApplied,
-                         categoryApplied = categoryApplied
-                     )
-                     receiptOcrStatus = result.toReceiptOcrStatus(
-                         amountApplied = amountApplied,
-                         categoryApplied = categoryApplied
-                     )
-                 }.onFailure {
-                     receiptOcrStatus = "Không thể đọc hóa đơn. Nhập số tiền/danh mục theo cách thủ công."
-                 }
-                 isScanningReceipt = false
-             }
+            applyReceiptImage(selectedUri)
          }
     }
+
+    val receiptDocumentPickerLauncher =
+        rememberLauncherForActivityResult(
+            contract = ActivityResultContracts.OpenDocument(),
+        ) { uri ->
+            uri?.let { selectedUri ->
+                runCatching {
+                    context.contentResolver.takePersistableUriPermission(
+                        selectedUri,
+                        Intent.FLAG_GRANT_READ_URI_PERMISSION,
+                    )
+                }
+                applyReceiptImage(selectedUri)
+            }
+        }
+
+    val receiptCameraLauncher =
+        rememberLauncherForActivityResult(
+            contract = ActivityResultContracts.TakePicture(),
+        ) { captured ->
+            val capturedUri = pendingCameraReceiptUri
+            if (captured && capturedUri != null) {
+                applyReceiptImage(capturedUri)
+            } else {
+                receiptOcrStatus = "Chưa chụp được ảnh hóa đơn."
+            }
+        }
 
     val categoriesForType =
         availableCategories
             .filter { it.type == input.type }
             .sortedBy { it.name }
+    val impactPreview =
+        remember(input, transactions, goals, spendingReminders, recurringRules, availableCategories) {
+            buildTransactionImpactPreview(
+                input = input,
+                transactions = transactions,
+                categories = availableCategories,
+                goals = goals,
+                reminders = spendingReminders,
+                recurringRules = recurringRules,
+            )
+        }
 
     AppScaffold(
         title = if (transactionId == null) "Thêm giao dịch" else "Chỉnh sửa giao dịch",
@@ -444,15 +505,35 @@ fun AddEditTransactionScreen(
                              )
                              Text("Hóa đơn", style = MaterialTheme.typography.titleMedium)
                          }
-                         TextButton(
-                             enabled = !isScanningReceipt,
-                             onClick = {
-                                 receiptPickerLauncher.launch(
-                                     PickVisualMediaRequest(ActivityResultContracts.PickVisualMedia.ImageOnly)
-                                 )
+                         Column(horizontalAlignment = Alignment.End) {
+                             TextButton(
+                                 enabled = !isScanningReceipt,
+                                 onClick = {
+                                     receiptPickerLauncher.launch(
+                                         PickVisualMediaRequest(ActivityResultContracts.PickVisualMedia.ImageOnly)
+                                     )
+                                 }
+                             ) {
+                                 Text(if (input.receiptImageUrl.isBlank()) "Chọn từ thư viện" else "Thay ảnh")
                              }
-                         ) {
-                             Text(if (input.receiptImageUrl.isBlank()) "Quét hóa đơn" else "Thay đổi")
+                             TextButton(
+                                 enabled = !isScanningReceipt,
+                                 onClick = {
+                                     val cameraUri = createReceiptCameraUri(context)
+                                     pendingCameraReceiptUri = cameraUri
+                                     receiptCameraLauncher.launch(cameraUri)
+                                 }
+                             ) {
+                                 Text("Chụp hóa đơn")
+                             }
+                             TextButton(
+                                 enabled = !isScanningReceipt,
+                                 onClick = {
+                                     receiptDocumentPickerLauncher.launch(arrayOf("image/*"))
+                                 }
+                             ) {
+                                 Text("Tệp / Drive")
+                             }
                          }
                      }
 
@@ -483,6 +564,10 @@ fun AddEditTransactionScreen(
                      }
                  }
              }
+
+            impactPreview?.let { preview ->
+                TransactionImpactPreviewCard(preview = preview)
+            }
 
             validationError?.let { error ->
                 Surface(
@@ -539,6 +624,440 @@ fun AddEditTransactionScreen(
             )
         }
     }
+}
+
+private enum class ImpactTone {
+    POSITIVE,
+    INFO,
+    WARNING,
+    DANGER,
+}
+
+private data class TransactionImpactPreview(
+    val headline: String,
+    val summary: String,
+    val tone: ImpactTone,
+    val categoryName: String,
+    val categoryLine: String,
+    val safeToSpendLine: String,
+    val goalLine: String?,
+    val goalProgress: Float?,
+    val reminderLine: String?,
+    val reminderProgress: Float?,
+)
+
+@Composable
+private fun TransactionImpactPreviewCard(preview: TransactionImpactPreview) {
+    val toneColor = impactToneColor(preview.tone)
+
+    AppCard {
+        Column(verticalArrangement = Arrangement.spacedBy(AppDimens.spaceMd)) {
+            Row(
+                modifier = Modifier.fillMaxWidth(),
+                horizontalArrangement = Arrangement.SpaceBetween,
+                verticalAlignment = Alignment.CenterVertically,
+            ) {
+                Column(modifier = Modifier.weight(1f)) {
+                    Text(
+                        text = preview.headline,
+                        style = MaterialTheme.typography.titleMedium,
+                        fontWeight = FontWeight.Bold,
+                        color = toneColor,
+                    )
+                    Text(
+                        text = preview.summary,
+                        style = MaterialTheme.typography.bodySmall,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant,
+                    )
+                }
+                Surface(
+                    shape = MaterialTheme.shapes.small,
+                    color = toneColor.copy(alpha = 0.12f),
+                    contentColor = toneColor,
+                ) {
+                    Text(
+                        text = preview.categoryName,
+                        modifier = Modifier.padding(horizontal = AppDimens.spaceSm, vertical = AppDimens.spaceXs),
+                        style = MaterialTheme.typography.labelSmall,
+                        maxLines = 1,
+                    )
+                }
+            }
+
+            ImpactLine(label = "Danh mục", value = preview.categoryLine)
+            ImpactLine(label = "Safe-to-spend", value = preview.safeToSpendLine)
+
+            preview.goalLine?.let { line ->
+                ImpactLine(label = "Mục tiêu", value = line)
+                preview.goalProgress?.let { progress ->
+                    LinearProgressIndicator(
+                        progress = { progress },
+                        modifier = Modifier.fillMaxWidth(),
+                        color = toneColor,
+                        trackColor = MaterialTheme.colorScheme.surfaceVariant,
+                    )
+                }
+            }
+
+            preview.reminderLine?.let { line ->
+                ImpactLine(label = "Nhắc nhở", value = line)
+                preview.reminderProgress?.let { progress ->
+                    LinearProgressIndicator(
+                        progress = { progress },
+                        modifier = Modifier.fillMaxWidth(),
+                        color = toneColor,
+                        trackColor = MaterialTheme.colorScheme.surfaceVariant,
+                    )
+                }
+            }
+        }
+    }
+}
+
+@Composable
+private fun ImpactLine(
+    label: String,
+    value: String,
+) {
+    Row(
+        modifier = Modifier.fillMaxWidth(),
+        horizontalArrangement = Arrangement.SpaceBetween,
+        verticalAlignment = Alignment.Top,
+    ) {
+        Text(
+            text = label,
+            style = MaterialTheme.typography.labelSmall,
+            color = MaterialTheme.colorScheme.onSurfaceVariant,
+            modifier = Modifier.weight(0.36f),
+        )
+        Text(
+            text = value,
+            style = MaterialTheme.typography.bodySmall,
+            fontWeight = FontWeight.SemiBold,
+            modifier = Modifier.weight(0.64f),
+        )
+    }
+}
+
+@Composable
+private fun impactToneColor(tone: ImpactTone): Color {
+    return when (tone) {
+        ImpactTone.POSITIVE -> MaterialTheme.colorScheme.secondary
+        ImpactTone.INFO -> MaterialTheme.colorScheme.primary
+        ImpactTone.WARNING -> MaterialTheme.colorScheme.tertiary
+        ImpactTone.DANGER -> MaterialTheme.colorScheme.error
+    }
+}
+
+private fun buildTransactionImpactPreview(
+    input: AddEditTransactionInput,
+    transactions: List<Transaction>,
+    categories: List<StoredCategory>,
+    goals: List<PersonalGoal>,
+    reminders: List<SpendingReminder>,
+    recurringRules: List<RecurringRule>,
+): TransactionImpactPreview? {
+    val amount = input.amount.toDoubleOrNull()?.takeIf { it > 0.0 } ?: return null
+    val categoryId = input.categoryId.takeIf { it.isNotBlank() } ?: return null
+    val category = categories.firstOrNull { it.id == categoryId }
+    val categoryName = input.categoryName.ifBlank { category?.name ?: "Danh mục" }
+    val baseTransactions = transactions.filterNot { it.id == input.id }
+    val simulatedTransaction =
+        Transaction(
+            id = input.id,
+            userId = "",
+            amount = amount,
+            type = input.type,
+            categoryId = categoryId,
+            category = categoryName,
+            note = input.note.takeIf { it.isNotBlank() },
+            receiptImageUrl = input.receiptImageUrl.takeIf { it.isNotBlank() },
+            source = if (input.receiptImageUrl.isBlank()) TransactionSource.MANUAL else TransactionSource.RECEIPT,
+            date = input.dateMillis,
+            createdAt = System.currentTimeMillis(),
+            walletId = input.walletId.takeIf { it.isNotBlank() },
+        )
+
+    val monthStart = startOfMonth(input.dateMillis)
+    val monthEnd = endOfMonth(input.dateMillis)
+    val categoryCurrent =
+        baseTransactions
+            .filter { transaction ->
+                transaction.categoryId == categoryId &&
+                    transaction.type == input.type &&
+                    transaction.date in monthStart..monthEnd
+            }
+            .sumOf { it.amount }
+    val categoryAfter = categoryCurrent + amount
+    val linkedGoal = goals.firstOrNull { it.categoryId == categoryId && it.status != GoalStatus.PAUSED }
+    val goalImpact = linkedGoal?.let { goal ->
+        buildGoalImpactLine(
+            goal = goal,
+            categoryType = category?.type ?: input.type,
+            amount = amount,
+            transactions = baseTransactions,
+            transactionDate = input.dateMillis,
+            categoryId = categoryId,
+        )
+    }
+    val reminderImpact =
+        if (input.type == TransactionType.EXPENSE) {
+            val reminder =
+                reminders
+                    .filter { it.isEnabled }
+                    .filter { it.categoryId == categoryId || it.categoryId == null }
+                    .sortedByDescending { it.categoryId == categoryId }
+                    .firstOrNull()
+            reminder?.let {
+                buildReminderImpactLine(
+                    reminder = it,
+                    transactions = baseTransactions,
+                    simulatedTransaction = simulatedTransaction,
+                )
+            }
+        } else {
+            null
+        }
+
+    val recurringReserve =
+        recurringRules
+            .filter { it.isEnabled && it.type == TransactionType.EXPENSE }
+            .sumOf { it.amount }
+    val categoryTypesById = categories.associate { it.id to it.type }
+    val goalReserveBefore = goals.toGoalReserve(categoryTypesById)
+    val goalsAfter =
+        if (linkedGoal != null && goalImpact != null) {
+            goals.map { goal ->
+                if (goal.id == linkedGoal.id) goal.copy(currentAmount = goalImpact.afterAmount) else goal
+            }
+        } else {
+            goals
+        }
+    val goalReserveAfter = goalsAfter.toGoalReserve(categoryTypesById)
+    val safeBefore =
+        baseTransactions.toSafeToSpendForecast(
+            referenceMillis = input.dateMillis,
+            upcomingRecurringExpense = recurringReserve,
+            savingsGoal = goalReserveBefore,
+        )
+    val safeAfter =
+        (baseTransactions + simulatedTransaction).toSafeToSpendForecast(
+            referenceMillis = input.dateMillis,
+            upcomingRecurringExpense = recurringReserve,
+            savingsGoal = goalReserveAfter,
+        )
+
+    val tone =
+        when {
+            reminderImpact?.isOverBudget == true -> ImpactTone.DANGER
+            goalImpact?.isOverLimit == true -> ImpactTone.DANGER
+            safeAfter.status == SafeToSpendStatus.OVER -> ImpactTone.DANGER
+            reminderImpact?.isOverThreshold == true -> ImpactTone.WARNING
+            goalImpact?.progress?.let { it >= 0.85f } == true -> ImpactTone.WARNING
+            safeAfter.status == SafeToSpendStatus.WATCH -> ImpactTone.WARNING
+            safeAfter.dailyAmount >= safeBefore.dailyAmount -> ImpactTone.POSITIVE
+            else -> ImpactTone.INFO
+        }
+    val headline =
+        when (tone) {
+            ImpactTone.POSITIVE -> "Tác động tích cực"
+            ImpactTone.INFO -> "Tác động nằm trong kế hoạch"
+            ImpactTone.WARNING -> "Sắp chạm ngưỡng"
+            ImpactTone.DANGER -> "Cần xem lại trước khi lưu"
+        }
+    val summary =
+        if (input.type == TransactionType.INCOME) {
+            "Khoản thu này sẽ tăng vùng an toàn còn lại của tháng."
+        } else {
+            "Khoản chi này được giả lập trước khi ghi vào sổ."
+        }
+
+    return TransactionImpactPreview(
+        headline = headline,
+        summary = summary,
+        tone = tone,
+        categoryName = categoryName,
+        categoryLine = "${formatImpactMoney(categoryCurrent)} -> ${formatImpactMoney(categoryAfter)} tháng này",
+        safeToSpendLine = "${formatImpactMoney(safeBefore.dailyAmount)}/ngày -> ${formatImpactMoney(safeAfter.dailyAmount)}/ngày",
+        goalLine = goalImpact?.line,
+        goalProgress = goalImpact?.progress,
+        reminderLine = reminderImpact?.line,
+        reminderProgress = reminderImpact?.progress,
+    )
+}
+
+private data class GoalImpact(
+    val line: String,
+    val progress: Float,
+    val afterAmount: Double,
+    val isOverLimit: Boolean,
+)
+
+private fun buildGoalImpactLine(
+    goal: PersonalGoal,
+    categoryType: TransactionType,
+    amount: Double,
+    transactions: List<Transaction>,
+    transactionDate: Long,
+    categoryId: String,
+): GoalImpact {
+    val referenceDate =
+        when {
+            goal.deadlineAt > 0L -> goal.deadlineAt
+            goal.createdAt > 0L -> goal.createdAt
+            else -> transactionDate
+        }
+    val goalMonthStart = startOfMonth(referenceDate)
+    val goalMonthEnd = endOfMonth(referenceDate)
+    val affectsGoalMonth = transactionDate in goalMonthStart..goalMonthEnd
+    val currentAmount =
+        transactions
+            .filter { transaction -> transaction.categoryId == categoryId && transaction.date in goalMonthStart..goalMonthEnd }
+            .sumOf { it.amount }
+            .takeIf { it > 0.0 || affectsGoalMonth }
+            ?: goal.currentAmount
+    val afterAmount = currentAmount + if (affectsGoalMonth) amount else 0.0
+    val progress = if (goal.targetAmount > 0.0) (afterAmount / goal.targetAmount).toFloat().coerceIn(0f, 1f) else 0f
+    val remaining = goal.targetAmount - afterAmount
+    val line =
+        if (categoryType == TransactionType.EXPENSE) {
+            if (remaining >= 0.0) {
+                "${goal.title}: còn ${formatImpactMoney(remaining)} trước giới hạn"
+            } else {
+                "${goal.title}: vượt ${formatImpactMoney(kotlin.math.abs(remaining))}"
+            }
+        } else {
+            if (remaining <= 0.0) {
+                "${goal.title}: đạt mục tiêu"
+            } else {
+                "${goal.title}: còn ${formatImpactMoney(remaining)} để đạt"
+            }
+        }
+
+    return GoalImpact(
+        line = line,
+        progress = progress,
+        afterAmount = afterAmount,
+        isOverLimit = categoryType == TransactionType.EXPENSE && afterAmount > goal.targetAmount,
+    )
+}
+
+private data class ReminderImpact(
+    val line: String,
+    val progress: Float,
+    val isOverThreshold: Boolean,
+    val isOverBudget: Boolean,
+)
+
+private fun buildReminderImpactLine(
+    reminder: SpendingReminder,
+    transactions: List<Transaction>,
+    simulatedTransaction: Transaction,
+): ReminderImpact {
+    val effectiveThreshold =
+        if (reminder.reminderType == ReminderType.MILESTONE) {
+            1f
+        } else {
+            reminder.threshold
+        }
+    val currentSpent =
+        transactions
+            .filter { transaction ->
+                transaction.type == TransactionType.EXPENSE &&
+                    transaction.isInsideReminderWindow(reminder, simulatedTransaction.date) &&
+                    (reminder.categoryId == null || transaction.categoryId == reminder.categoryId)
+            }
+            .sumOf { it.amount }
+    val affectsReminder =
+        simulatedTransaction.type == TransactionType.EXPENSE &&
+            simulatedTransaction.isInsideReminderWindow(reminder, simulatedTransaction.date) &&
+            (reminder.categoryId == null || simulatedTransaction.categoryId == reminder.categoryId)
+    val afterSpent = currentSpent + if (affectsReminder) simulatedTransaction.amount else 0.0
+    val thresholdAmount = reminder.budgetAmount * effectiveThreshold
+    val isOverThreshold = afterSpent >= thresholdAmount
+    val isOverBudget = afterSpent >= reminder.budgetAmount
+    val line =
+        when {
+            !affectsReminder -> "${reminder.categoryName}: không nằm trong kỳ nhắc nhở"
+            isOverBudget -> "${reminder.categoryName}: vượt ngân sách ${formatImpactMoney(reminder.budgetAmount)}"
+            isOverThreshold -> "${reminder.categoryName}: chạm ngưỡng ${formatImpactMoney(thresholdAmount)}"
+            else -> "${reminder.categoryName}: ${formatImpactMoney(afterSpent)} / ${formatImpactMoney(thresholdAmount)}"
+        }
+
+    return ReminderImpact(
+        line = line,
+        progress = if (reminder.budgetAmount > 0.0) (afterSpent / reminder.budgetAmount).toFloat().coerceIn(0f, 1f) else 0f,
+        isOverThreshold = isOverThreshold,
+        isOverBudget = isOverBudget,
+    )
+}
+
+private fun List<PersonalGoal>.toGoalReserve(categoryTypesById: Map<String, TransactionType>): Double {
+    return filter { it.status == GoalStatus.ACTIVE }
+        .filter { goal ->
+            goal.categoryId == null ||
+                categoryTypesById[goal.categoryId] == TransactionType.INCOME
+        }
+        .sumOf { goal -> (goal.targetAmount - goal.currentAmount).coerceAtLeast(0.0) }
+        .coerceAtMost(5_000_000.0)
+}
+
+private fun Transaction.isInsideReminderWindow(
+    reminder: SpendingReminder,
+    referenceMillis: Long,
+): Boolean {
+    val transactionCalendar = java.util.Calendar.getInstance().apply { timeInMillis = date }
+    val referenceCalendar = java.util.Calendar.getInstance().apply { timeInMillis = referenceMillis }
+
+    return when (reminder.reminderType) {
+        ReminderType.DAILY ->
+            transactionCalendar.get(java.util.Calendar.YEAR) == referenceCalendar.get(java.util.Calendar.YEAR) &&
+                transactionCalendar.get(java.util.Calendar.DAY_OF_YEAR) == referenceCalendar.get(java.util.Calendar.DAY_OF_YEAR)
+        ReminderType.WEEKLY ->
+            transactionCalendar.get(java.util.Calendar.YEAR) == referenceCalendar.get(java.util.Calendar.YEAR) &&
+                transactionCalendar.get(java.util.Calendar.WEEK_OF_YEAR) == referenceCalendar.get(java.util.Calendar.WEEK_OF_YEAR)
+        ReminderType.MONTHLY ->
+            transactionCalendar.get(java.util.Calendar.YEAR) == referenceCalendar.get(java.util.Calendar.YEAR) &&
+                transactionCalendar.get(java.util.Calendar.MONTH) == referenceCalendar.get(java.util.Calendar.MONTH)
+        ReminderType.MILESTONE -> date >= reminder.createdAt
+    }
+}
+
+private fun startOfMonth(referenceMillis: Long): Long {
+    return java.util.Calendar.getInstance().apply {
+        timeInMillis = referenceMillis
+        set(java.util.Calendar.DAY_OF_MONTH, 1)
+        set(java.util.Calendar.HOUR_OF_DAY, 0)
+        set(java.util.Calendar.MINUTE, 0)
+        set(java.util.Calendar.SECOND, 0)
+        set(java.util.Calendar.MILLISECOND, 0)
+    }.timeInMillis
+}
+
+private fun endOfMonth(referenceMillis: Long): Long {
+    return java.util.Calendar.getInstance().apply {
+        timeInMillis = referenceMillis
+        set(java.util.Calendar.DAY_OF_MONTH, getActualMaximum(java.util.Calendar.DAY_OF_MONTH))
+        set(java.util.Calendar.HOUR_OF_DAY, 23)
+        set(java.util.Calendar.MINUTE, 59)
+        set(java.util.Calendar.SECOND, 59)
+        set(java.util.Calendar.MILLISECOND, 999)
+    }.timeInMillis
+}
+
+private fun formatImpactMoney(amount: Double): String {
+    val formatter = NumberFormat.getNumberInstance(Locale("vi", "VN"))
+    return "${formatter.format(amount.toLong())} VND"
+}
+
+private fun createReceiptCameraUri(context: Context): Uri {
+    val receiptDirectory = File(context.cacheDir, "receipts").apply { mkdirs() }
+    val receiptFile = File(receiptDirectory, "receipt_${System.currentTimeMillis()}.jpg")
+    return FileProvider.getUriForFile(
+        context,
+        "${context.packageName}.fileprovider",
+        receiptFile,
+    )
 }
 
 private fun List<StoredCategory>.toReceiptCategoryOptions(): List<ReceiptCategoryOption> {

@@ -3,10 +3,12 @@ package com.example.dinesplit.data.repository
 import android.content.Context
 import com.example.dinesplit.core.firebase.FirebaseProviders
 import com.example.dinesplit.domain.model.Notification
+import com.example.dinesplit.domain.model.NotificationDestination
 import com.example.dinesplit.domain.model.NotificationType
 import com.example.dinesplit.domain.repository.NotificationRepository
 import com.google.android.gms.tasks.Task
 import com.google.firebase.firestore.FirebaseFirestore
+import com.google.firebase.firestore.Source
 import kotlinx.coroutines.channels.awaitClose
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.callbackFlow
@@ -59,7 +61,7 @@ class FirebaseNotificationRepository private constructor(
                 .document(uid)
                 .collection(COLLECTION_NOTIFICATIONS)
                 .orderBy(FIELD_CREATED_AT, com.google.firebase.firestore.Query.Direction.DESCENDING)
-                .get()
+                .get(Source.SERVER)
                 .awaitFirebase()
 
         return snapshot.documents.mapNotNull { document ->
@@ -179,18 +181,18 @@ class FirebaseNotificationRepository private constructor(
         return when {
             type == NotificationType.TRANSACTION_ALERT &&
                 relatedId == "c_food" &&
-                deepLinkDestination == "SPENDING_REMINDERS" &&
+                deepLinkDestination == NotificationDestination.SPENDING_REMINDERS.name &&
                 title == "Cảnh báo chi tiêu: Ăn ngoài" &&
                 subtitle == "Bạn đã dùng 75% ngân sách 300,000 VND" -> true
 
             type == NotificationType.PAYMENT_COMPLETED &&
                 relatedId == "bill_123" &&
-                deepLinkDestination == "SPLIT_SETTLE" &&
+                deepLinkDestination == NotificationDestination.SPLIT_SETTLE.name &&
                 title == "John đã thanh toán cho bạn" -> true
 
             type == NotificationType.BILL_CREATED &&
                 relatedId == "bill_456" &&
-                deepLinkDestination == "SPLIT_DETAIL" &&
+                deepLinkDestination == NotificationDestination.SPLIT_DETAIL.name &&
                 title == "Đã tạo hóa đơn mới" &&
                 subtitle == "Kế hoạch chuyến đi cuối tuần - 500,000 VND" -> true
 
@@ -205,7 +207,7 @@ class FirebaseNotificationRepository private constructor(
                     continuation.resume(task.result)
                 } else {
                     continuation.resumeWithException(
-                        task.exception ?: IllegalStateException("Tác vụ Firebase thất bại")
+                        task.exception ?: IllegalStateException("Tác vụ Firebase thất bại"),
                     )
                 }
             }

@@ -160,8 +160,8 @@ fun List<Transaction>.toMonthlyInsights(referenceMillis: Long = System.currentTi
     if (splitExpense > 0.0 && currentSummary.totalExpense > 0.0) {
         val percent = (splitExpense / currentSummary.totalExpense * 100.0).toInt()
          insights += PersonalInsight(
-             title = "Tác động chia tách",
-             message = "Hóa đơn chia tách chiếm $percent% chi tiêu hàng tháng của bạn.",
+             title = "Tác động chia tiền",
+             message = "Hóa đơn chia tiền chiếm $percent% chi tiêu hàng tháng của bạn.",
              tone = PersonalInsightTone.INFO
          )
     }

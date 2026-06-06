@@ -43,7 +43,6 @@ import androidx.compose.runtime.Composable
 import androidx.compose.runtime.remember
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.text.font.FontWeight
@@ -56,8 +55,10 @@ import com.example.dinesplit.core.ui.AppDimens
 import com.example.dinesplit.core.ui.AppShapes
 import com.example.dinesplit.core.ui.EmptyStateBlock
 import com.example.dinesplit.core.ui.ErrorStateBlock
-import com.example.dinesplit.core.ui.HomeTopBar
 import com.example.dinesplit.core.ui.LoadingBlock
+import com.example.dinesplit.data.model.StoredCategory
+import com.example.dinesplit.domain.model.GoalStatus
+import com.example.dinesplit.domain.model.PersonalGoal
 import com.example.dinesplit.domain.model.Transaction
 import com.example.dinesplit.domain.model.TransactionSource
 import com.example.dinesplit.domain.model.TransactionType
@@ -119,6 +120,13 @@ fun PersonalScreen(
     val topCategory = remember(expenseSlices) {
         expenseSlices.maxByOrNull { it.amount }
     }
+    val goalSpotlights =
+        remember(uiState.goals, uiState.categories) {
+            buildGoalSpotlights(
+                goals = uiState.goals,
+                categories = uiState.categories,
+            )
+        }
     val anomalySignals = remember(uiState.transactions, chartState.monthlySummary, monthMarker) {
         buildAnomalySignals(
             transactions = uiState.transactions,
@@ -213,10 +221,19 @@ fun PersonalScreen(
                 }
 
 
+                if (goalSpotlights.isNotEmpty()) {
+                    item {
+                        GoalSpotlightSection(
+                            spotlights = goalSpotlights,
+                            onOpenGoalPlans = onOpenGoalPlans,
+                        )
+                    }
+                }
+
                 item {
                     PersonalActionGrid(
                         transactionCount = uiState.transactions.size,
-                        categoryCount = uiState.categories.size,
+                        categoryCount = uiState.transactions.map { it.categoryId }.distinct().size,
                         reminderCount = reminderCount,
                         planCount = automationCount,
                         onOpenHistory = onOpenHistory,
@@ -272,8 +289,9 @@ private fun MonthlyCommandCard(
     score: PersonalScore,
     monthMarker: MonthMarker,
 ) {
-    val onAccent = MaterialTheme.colorScheme.onPrimary
+    val colorScheme = MaterialTheme.colorScheme
     val scoreColor = scoreBandColor(score.band)
+    val forecastColor = forecastStatusColor(forecast.status)
     val runwayProgress =
         animateFloatAsState(
             targetValue = monthMarker.progress,
@@ -281,27 +299,8 @@ private fun MonthlyCommandCard(
             label = "monthRunway",
         ).value
 
-    Surface(
-        modifier = Modifier.fillMaxWidth(),
-        shape = AppShapes.xLarge,
-        color = Color.Transparent,
-        shadowElevation = AppDimens.cardElevation,
-    ) {
+    AppCard(modifier = Modifier.fillMaxWidth()) {
         Column(
-            modifier =
-                Modifier
-                    .background(
-                        brush =
-                            Brush.linearGradient(
-                                colors =
-                                    listOf(
-                                        MaterialTheme.colorScheme.primary,
-                                        MaterialTheme.colorScheme.secondary,
-                                    ),
-                            ),
-                        shape = AppShapes.xLarge,
-                    )
-                    .padding(AppDimens.spaceLg),
             verticalArrangement = Arrangement.spacedBy(AppDimens.spaceLg),
         ) {
             Row(
@@ -316,20 +315,20 @@ private fun MonthlyCommandCard(
                     Text(
                         text = "Trung tâm lệnh hàng tháng",
                         style = MaterialTheme.typography.labelMedium,
-                        color = onAccent.copy(alpha = 0.76f),
+                        color = colorScheme.onSurfaceVariant,
                     )
                     Text(
                         text = formatMoney(balance),
                         style = MaterialTheme.typography.displaySmall,
                         fontWeight = FontWeight.ExtraBold,
-                        color = onAccent,
+                        color = colorScheme.onSurface,
                         maxLines = 1,
                         overflow = TextOverflow.Ellipsis,
                     )
                     Text(
                         text = "An toàn hôm nay ${formatMoney(forecast.dailyAmount)}",
                         style = MaterialTheme.typography.bodySmall,
-                        color = onAccent.copy(alpha = 0.82f),
+                        color = colorScheme.onSurfaceVariant,
                         maxLines = 1,
                         overflow = TextOverflow.Ellipsis,
                     )
@@ -337,19 +336,19 @@ private fun MonthlyCommandCard(
                         HeroSticker(
                             icon = Icons.Default.Flag,
                             label = score.label,
-                            contentColor = onAccent,
+                            contentColor = scoreColor,
                         )
                         HeroSticker(
                             icon = Icons.Default.Savings,
                             label = forecast.status.displayLabel(),
-                            contentColor = onAccent
+                            contentColor = forecastColor,
                         )
                     }
                 }
 
                 Surface(
                     shape = AppShapes.full,
-                    color = scoreColor.copy(alpha = 0.22f),
+                    color = scoreColor.copy(alpha = 0.12f),
                 ) {
                     Row(
                         modifier =
@@ -363,14 +362,14 @@ private fun MonthlyCommandCard(
                         Icon(
                             imageVector = Icons.Default.AutoGraph,
                             contentDescription = null,
-                            tint = onAccent,
+                            tint = scoreColor,
                             modifier = Modifier.size(AppDimens.spaceLg),
                         )
                         Text(
                             text = "${score.value}",
                             style = MaterialTheme.typography.titleSmall,
                             fontWeight = FontWeight.ExtraBold,
-                            color = onAccent,
+                            color = scoreColor,
                         )
                     }
                 }
@@ -382,21 +381,21 @@ private fun MonthlyCommandCard(
                     icon = Icons.Default.ArrowDownward,
                     title = "Thu nhập",
                     amount = income,
-                    contentColor = onAccent,
+                    contentColor = colorScheme.secondary,
                 )
                 CommandMetricPill(
                     modifier = Modifier.weight(1f),
                     icon = Icons.Default.ArrowUpward,
                     title = "Chi tiêu",
                     amount = expense,
-                    contentColor = onAccent,
+                    contentColor = colorScheme.error,
                 )
             }
 
             MonthRunwayBar(
                 progress = runwayProgress,
                 label = monthMarker.label,
-                contentColor = onAccent,
+                contentColor = colorScheme.primary,
             )
         }
     }
@@ -561,9 +560,9 @@ private fun PersonalSignalGrid(
             SignalTile(
                 modifier = Modifier.weight(1f),
                 icon = Icons.Default.NotificationsActive,
-                label = "Cảnh báo",
+                label = "Thiết lập",
                 value = "${reminderCount + automationCount}",
-                subtitle = "cảnh báo và kế hoạch",
+                subtitle = "nhắc nhở và kế hoạch",
                 color = MaterialTheme.colorScheme.secondary
             )
         }
@@ -624,6 +623,97 @@ private fun SignalTile(
                 color = MaterialTheme.colorScheme.onSurfaceVariant,
                 maxLines = 1,
                 overflow = TextOverflow.Ellipsis,
+            )
+        }
+    }
+}
+
+@Composable
+private fun GoalSpotlightSection(
+    spotlights: List<GoalSpotlight>,
+    onOpenGoalPlans: () -> Unit,
+) {
+    AppCard {
+        Column(verticalArrangement = Arrangement.spacedBy(AppDimens.spaceMd)) {
+            SectionHeader(
+                title = "Mục tiêu nổi bật",
+                actionLabel = "Quản lý",
+                onAction = onOpenGoalPlans,
+            )
+            spotlights.forEach { spotlight ->
+                GoalSpotlightRow(spotlight = spotlight)
+            }
+        }
+    }
+}
+
+@Composable
+private fun GoalSpotlightRow(spotlight: GoalSpotlight) {
+    val color = advancedToneColor(spotlight.tone)
+
+    Surface(
+        modifier = Modifier.fillMaxWidth(),
+        shape = AppShapes.large,
+        color = color.copy(alpha = 0.08f),
+    ) {
+        Column(
+            modifier = Modifier.padding(AppDimens.spaceMd),
+            verticalArrangement = Arrangement.spacedBy(AppDimens.spaceSm),
+        ) {
+            Row(
+                modifier = Modifier.fillMaxWidth(),
+                horizontalArrangement = Arrangement.SpaceBetween,
+                verticalAlignment = Alignment.CenterVertically,
+            ) {
+                Row(
+                    modifier = Modifier.weight(1f),
+                    horizontalArrangement = Arrangement.spacedBy(AppDimens.spaceSm),
+                    verticalAlignment = Alignment.CenterVertically,
+                ) {
+                    Surface(
+                        shape = CircleShape,
+                        color = color.copy(alpha = 0.14f),
+                    ) {
+                        Icon(
+                            imageVector = Icons.Default.Flag,
+                            contentDescription = null,
+                            tint = color,
+                            modifier =
+                                Modifier
+                                    .padding(AppDimens.spaceSm)
+                                    .size(18.dp),
+                        )
+                    }
+                    Column(modifier = Modifier.weight(1f)) {
+                        Text(
+                            text = spotlight.title,
+                            style = MaterialTheme.typography.titleSmall,
+                            fontWeight = FontWeight.Bold,
+                            maxLines = 1,
+                            overflow = TextOverflow.Ellipsis,
+                        )
+                        Text(
+                            text = spotlight.subtitle,
+                            style = MaterialTheme.typography.bodySmall,
+                            color = MaterialTheme.colorScheme.onSurfaceVariant,
+                            maxLines = 1,
+                            overflow = TextOverflow.Ellipsis,
+                        )
+                    }
+                }
+                Text(
+                    text = spotlight.badge,
+                    style = MaterialTheme.typography.labelSmall,
+                    color = color,
+                    fontWeight = FontWeight.Bold,
+                    maxLines = 1,
+                )
+            }
+            LinearProgressIndicator(
+                progress = { spotlight.progress },
+                modifier = Modifier.fillMaxWidth(),
+                color = color,
+                trackColor = MaterialTheme.colorScheme.surfaceVariant,
             )
         }
     }
@@ -836,7 +926,7 @@ private fun PersonalActionGrid(
                 modifier = Modifier.weight(1f),
                 icon = Icons.Default.Category,
                 label = "Danh mục",
-                value = "$categoryCount hoạt động",
+                value = "$categoryCount đã dùng",
                 color = MaterialTheme.colorScheme.primary,
                 onClick = onOpenCategories,
             )
@@ -1192,7 +1282,7 @@ private fun forecastStatusColor(status: SafeToSpendStatus): Color {
 private fun TransactionSource.displayLabel(): String {
     return when (this) {
         TransactionSource.MANUAL -> "Thủ công"
-        TransactionSource.SPLIT -> "Chia tách"
+        TransactionSource.SPLIT -> "Chia tiền"
         TransactionSource.RECURRING -> "Lặp lại"
         TransactionSource.RECEIPT -> "Hóa đơn"
     }
@@ -1205,6 +1295,15 @@ private data class AnomalySignal(
     val tone: AdvancedSignalTone,
     val actionLabel: String,
     val target: PersonalActionTarget,
+)
+
+private data class GoalSpotlight(
+    val title: String,
+    val subtitle: String,
+    val badge: String,
+    val progress: Float,
+    val tone: AdvancedSignalTone,
+    val priority: Int,
 )
 
 private data class AutopilotAction(
@@ -1231,6 +1330,72 @@ private enum class PersonalActionTarget {
     WALLETS,
 }
 
+private fun buildGoalSpotlights(
+    goals: List<PersonalGoal>,
+    categories: List<StoredCategory>,
+): List<GoalSpotlight> {
+    val categoryTypesById = categories.associate { it.id to it.type }
+    val categoryNamesById = categories.associate { it.id to it.name }
+
+    return goals
+        .filter { goal -> goal.status != GoalStatus.PAUSED }
+        .map { goal ->
+            val categoryType = goal.categoryId?.let { categoryTypesById[it] }
+            val categoryName = goal.categoryId?.let { categoryNamesById[it] }
+            val progress =
+                if (goal.targetAmount > 0.0) {
+                    (goal.currentAmount / goal.targetAmount).toFloat().coerceIn(0f, 1f)
+                } else {
+                    0f
+                }
+            val remaining = goal.targetAmount - goal.currentAmount
+            val isExpenseBudget = categoryType == TransactionType.EXPENSE
+            val tone =
+                when {
+                    isExpenseBudget && remaining < 0.0 -> AdvancedSignalTone.DANGER
+                    isExpenseBudget && progress >= 0.85f -> AdvancedSignalTone.WARNING
+                    !isExpenseBudget && goal.status == GoalStatus.COMPLETED -> AdvancedSignalTone.POSITIVE
+                    !isExpenseBudget && progress >= 0.8f -> AdvancedSignalTone.POSITIVE
+                    else -> AdvancedSignalTone.INFO
+                }
+            val subtitle =
+                when {
+                    isExpenseBudget && remaining >= 0.0 -> "Còn ${formatMoney(remaining)} trước giới hạn"
+                    isExpenseBudget -> "Vượt ${formatMoney(kotlin.math.abs(remaining))}"
+                    remaining <= 0.0 -> "Đã đạt mục tiêu"
+                    else -> "Còn ${formatMoney(remaining)} để đạt"
+                }
+            val badge =
+                categoryName
+                    ?: if (isExpenseBudget) {
+                        "Budget"
+                    } else {
+                        "Goal"
+                    }
+            val priority =
+                when (tone) {
+                    AdvancedSignalTone.DANGER -> 0
+                    AdvancedSignalTone.WARNING -> 1
+                    AdvancedSignalTone.POSITIVE -> 2
+                    AdvancedSignalTone.INFO -> 3
+                }
+
+            GoalSpotlight(
+                title = goal.title,
+                subtitle = subtitle,
+                badge = badge,
+                progress = progress,
+                tone = tone,
+                priority = priority,
+            )
+        }
+        .sortedWith(
+            compareBy<GoalSpotlight> { it.priority }
+                .thenByDescending { it.progress },
+        )
+        .take(3)
+}
+
 private fun buildAnomalySignals(
     transactions: List<Transaction>,
     summary: MonthlySummary,
@@ -1241,7 +1406,7 @@ private fun buildAnomalySignals(
         return listOf(
             AnomalySignal(
              title = "Chưa có bất thường",
-                 message = "Thêm chi tiêu để radar so sánh các ngoại lệ, tốc độ và tác động chia tách.",
+                 message = "Thêm chi tiêu để radar so sánh các ngoại lệ, tốc độ và tác động chia tiền.",
                 metric = "Chờ",
                  tone = AdvancedSignalTone.INFO,
                  actionLabel = "Mở sổ cái",
@@ -1289,8 +1454,8 @@ private fun buildAnomalySignals(
             .sumOf { it.amount }
     if (summary.totalExpense > 0.0 && splitExpense / summary.totalExpense >= 0.35) {
         signals += AnomalySignal(
-            title = "Tháng chia tách nặng",
-            message = "Hóa đơn chia tách đang thúc đẩy ${(splitExpense / summary.totalExpense * 100).toInt()}% chi tiêu của bạn.",
+            title = "Tháng chia tiền nặng",
+            message = "Hóa đơn chia tiền đang thúc đẩy ${(splitExpense / summary.totalExpense * 100).toInt()}% chi tiêu của bạn.",
             metric = formatMoney(splitExpense),
             tone = AdvancedSignalTone.INFO,
             actionLabel = "Xem sổ cái",
@@ -1326,7 +1491,7 @@ private fun buildAnomalySignals(
         listOf(
             AnomalySignal(
                 title = "Radar sạch",
-                message = "Không phát hiện tín hiệu ngoại lệ, tập trung hoặc dáy tăng tháng này.",
+                message = "Không phát hiện tín hiệu ngoại lệ, tập trung hoặc chuỗi tăng tháng này.",
                 metric = "Ổn",
                 tone = AdvancedSignalTone.POSITIVE,
                 actionLabel = "Mở sổ cái",
@@ -1385,8 +1550,8 @@ private fun buildAutopilotActions(
 
     if (totalExpense > 0.0 && splitExpense / totalExpense >= 0.3) {
         actions += AutopilotAction(
-            title = "Kiểm toán tác động chia tách",
-            message = "Hóa đơn chia tách là một phần lớn của tháng này. Kiểm tra xem tất cả các khoản hoàn tiền có được phản ánh.",
+            title = "Kiểm toán tác động chia tiền",
+            message = "Hóa đơn chia tiền là một phần lớn của tháng này. Kiểm tra xem tất cả các khoản hoàn tiền có được phản ánh.",
             priority = "Trung bình",
             tone = AdvancedSignalTone.INFO,
             actionLabel = "Xem sổ cái",

@@ -320,6 +320,10 @@ fun MainContainerScreen(
                             initialTransaction = null,
                             availableCategories = personalUiState.categories,
                             availableWallets = personalUiState.wallets,
+                            transactions = personalAllTransactions,
+                            goals = personalUiState.goals,
+                            spendingReminders = personalReminders,
+                            recurringRules = personalUiState.recurringRules,
                             onSave = { transaction ->
                                 personalViewModel.addTransaction(transaction)
                                 mainNavController.navigateUp()
@@ -432,6 +436,7 @@ fun MainContainerScreen(
                             onAddRecurring = personalViewModel::addRecurringRule,
                             onDeleteRecurring = personalViewModel::deleteRecurringRule,
                             onAddGoal = personalViewModel::addGoal,
+                            onUpdateGoal = personalViewModel::updateGoal,
                             onDeleteGoal = personalViewModel::deleteGoal,
                             onAddWallet = personalViewModel::addWallet,
                             onDeleteWallet = personalViewModel::deleteWallet,

@@ -5,6 +5,7 @@ import androidx.lifecycle.viewModelScope
 import com.example.dinesplit.domain.model.Bill
 import com.example.dinesplit.domain.model.Member
 import com.example.dinesplit.domain.model.Notification
+import com.example.dinesplit.domain.model.NotificationDestination
 import com.example.dinesplit.domain.model.NotificationType
 import com.example.dinesplit.domain.model.QrPayment
 import com.example.dinesplit.domain.repository.NotificationRepository
@@ -119,7 +120,7 @@ class BillDetailViewModel(
                 isRead = false,
                 createdAt = now,
                 updatedAt = now,
-                deepLinkDestination = "SPLIT_DETAIL",
+                deepLinkDestination = NotificationDestination.SPLIT_DETAIL.name,
                 deepLinkTargetId = bill.id,
                 senderId = currentUserId,
                 groupId = groupId,

@@ -2,15 +2,14 @@ package com.example.dinesplit.presentation.auth
 
 import android.app.Application
 import android.net.Uri
+import androidx.core.net.toUri
 import androidx.lifecycle.AndroidViewModel
 import androidx.lifecycle.viewModelScope
 import com.example.dinesplit.core.common.AppContainer
 import com.example.dinesplit.core.firebase.FirebaseErrorMapper
-import com.example.dinesplit.data.seeder.DemoDataSeeder
 import com.example.dinesplit.domain.exception.UsernameAlreadyExistsException
 import com.example.dinesplit.domain.model.UserProfile
 import com.example.dinesplit.domain.validation.ProfileInputValidator
-import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.flow.MutableSharedFlow
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.SharedFlow
@@ -139,17 +138,6 @@ class CompleteProfileViewModel(application: Application) : AndroidViewModel(appl
 
             updateProfileUseCase(profile)
                 .onSuccess {
-                    // Keep first-time accounts free of demo split groups.
-                    viewModelScope.launch(Dispatchers.IO) {
-                        try {
-                            val personalRepo = AppContainer.personalRepository(getApplication())
-
-                            DemoDataSeeder.seedDemoTransactions(personalRepo, profile.uid)
-                        } catch (e: Exception) {
-                            e.printStackTrace()
-                        }
-                    }
-
                     _uiState.value =
                         _uiState.value.copy(
                             isSubmitting = false,
@@ -188,7 +176,7 @@ class CompleteProfileViewModel(application: Application) : AndroidViewModel(appl
         }
 
         _uiState.value = _uiState.value.copy(isAvatarUploading = true)
-        return uploadAvatarUseCase(uid, Uri.parse(avatarLocalUri))
+        return uploadAvatarUseCase(uid, avatarLocalUri.toUri())
             .onSuccess { uploadedAvatarUrl ->
                 _uiState.value =
                     _uiState.value.copy(

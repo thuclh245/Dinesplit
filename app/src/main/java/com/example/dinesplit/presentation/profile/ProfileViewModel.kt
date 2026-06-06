@@ -2,11 +2,11 @@ package com.example.dinesplit.presentation.profile
 
 import android.app.Application
 import android.net.Uri
+import androidx.core.net.toUri
 import androidx.lifecycle.AndroidViewModel
 import androidx.lifecycle.viewModelScope
 import com.example.dinesplit.core.common.AppContainer
 import com.example.dinesplit.core.firebase.FirebaseErrorMapper
-import com.example.dinesplit.data.seeder.DemoDataSeeder
 import com.example.dinesplit.domain.exception.UsernameAlreadyExistsException
 import com.example.dinesplit.domain.model.LinkedBillSummary
 import com.example.dinesplit.domain.model.Post
@@ -303,7 +303,7 @@ class ProfileViewModel(application: Application) : AndroidViewModel(application)
         }
 
         _editUiState.value = _editUiState.value.copy(isAvatarUploading = true)
-        return uploadAvatarUseCase(uid, Uri.parse(avatarLocalUri))
+        return uploadAvatarUseCase(uid, avatarLocalUri.toUri())
             .onSuccess { uploadedAvatarUrl ->
                 _editUiState.value =
                     _editUiState.value.copy(

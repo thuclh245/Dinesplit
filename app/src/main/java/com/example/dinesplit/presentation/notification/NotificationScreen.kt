@@ -13,6 +13,7 @@ import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
+import androidx.compose.foundation.layout.widthIn
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.LazyListScope
 import androidx.compose.foundation.lazy.LazyRow
@@ -73,8 +74,11 @@ fun NotificationScreen(
         notifications
             .filter { it.matches(selectedFilter) }
             .sortedByDescending { it.createdAt }
-    val newNotifications = filteredNotifications
-    val earlierNotifications = emptyList<Notification>()
+    val recentCutoffMillis = System.currentTimeMillis() - RECENT_NOTIFICATION_WINDOW_MS
+    val (newNotifications, earlierNotifications) =
+        filteredNotifications.partition { notification ->
+            !notification.isRead || notification.createdAt >= recentCutoffMillis
+        }
 
     AppScaffold(
         title = "Thông báo",
@@ -105,19 +109,19 @@ fun NotificationScreen(
             verticalArrangement = Arrangement.spacedBy(AppDimens.spaceLg),
         ) {
             if (uiState.isLoading) {
-                 item {
-                     LoadingBlock(message = "Đang tải thông báo...")
-                 }
-             } else {
-                 uiState.errorMessage?.let { message ->
-                     item {
-                         ErrorStateBlock(
-                             title = "Không thể tải thông báo",
-                             subtitle = message,
-                             onRetryClick = { viewModel.refreshNotifications() }
-                         )
-                     }
-                 }
+                item {
+                    LoadingBlock(message = "Đang tải thông báo...")
+                }
+            } else {
+                uiState.errorMessage?.let { message ->
+                    item {
+                        ErrorStateBlock(
+                            title = "Không thể tải thông báo",
+                            subtitle = message,
+                            onRetryClick = { viewModel.refreshNotifications() },
+                        )
+                    }
+                }
 
                 item {
                     NotificationOverviewCard(
@@ -137,32 +141,32 @@ fun NotificationScreen(
                     )
                 }
 
-                 if (filteredNotifications.isEmpty()) {
-                     item {
-                         EmptyStateBlock(
-                             title = emptyTitleFor(selectedFilter),
-                             subtitle = "Cảnh báo cá nhân, sự kiện chia tách và cập nhật xã hội sẽ xuất hiện ở đây khi chúng được tạo."
-                         )
-                     }
-                 } else {
-                     if (newNotifications.isNotEmpty()) {
-                         notificationSection(
-                             title = "Mới",
-                             notifications = newNotifications,
-                             viewModel = viewModel,
-                             onNotificationClick = onNotificationClick
-                         )
-                     }
+                if (filteredNotifications.isEmpty()) {
+                    item {
+                        EmptyStateBlock(
+                            title = emptyTitleFor(selectedFilter),
+                            subtitle = "Cảnh báo cá nhân, cập nhật chia tiền và hoạt động bảng tin sẽ xuất hiện ở đây khi chúng được tạo.",
+                        )
+                    }
+                } else {
+                    if (newNotifications.isNotEmpty()) {
+                        notificationSection(
+                            title = "Mới",
+                            notifications = newNotifications,
+                            viewModel = viewModel,
+                            onNotificationClick = onNotificationClick,
+                        )
+                    }
 
-                     if (earlierNotifications.isNotEmpty()) {
-                         notificationSection(
-                             title = "Trước đó",
-                             notifications = earlierNotifications,
-                             viewModel = viewModel,
-                             onNotificationClick = onNotificationClick
-                         )
-                     }
-                 }
+                    if (earlierNotifications.isNotEmpty()) {
+                        notificationSection(
+                            title = "Trước đó",
+                            notifications = earlierNotifications,
+                            viewModel = viewModel,
+                            onNotificationClick = onNotificationClick,
+                        )
+                    }
+                }
             }
         }
     }
@@ -203,47 +207,47 @@ private fun NotificationOverviewCard(
                     verticalArrangement = Arrangement.spacedBy(AppDimens.spaceXs),
                 ) {
                     Text(
-                         text = "Trạng thái hộp thư",
-                         style = MaterialTheme.typography.titleLarge,
-                         fontWeight = FontWeight.ExtraBold
-                     )
-                     Text(
-                         text = "$unreadCount chưa đọc trong $totalCount thông báo",
-                         style = MaterialTheme.typography.bodyMedium,
-                         color = MaterialTheme.colorScheme.onSurfaceVariant
-                     )
+                        text = "Trạng thái hộp thư",
+                        style = MaterialTheme.typography.titleLarge,
+                        fontWeight = FontWeight.ExtraBold,
+                    )
+                    Text(
+                        text = "$unreadCount chưa đọc trong $totalCount thông báo",
+                        style = MaterialTheme.typography.bodyMedium,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant,
+                    )
                 }
             }
 
-             Row(horizontalArrangement = Arrangement.spacedBy(AppDimens.spaceMd)) {
-                 NotificationMetric(
-                     modifier = Modifier.weight(1f),
-                     label = "Cá nhân",
-                     value = personalCount.toString(),
-                     color = MaterialTheme.colorScheme.secondary
-                 )
-                 NotificationMetric(
-                     modifier = Modifier.weight(1f),
-                     label = "Chia tách",
-                     value = splitCount.toString(),
-                     color = MaterialTheme.colorScheme.tertiary
-                 )
-             }
+            Row(horizontalArrangement = Arrangement.spacedBy(AppDimens.spaceMd)) {
+                NotificationMetric(
+                    modifier = Modifier.weight(1f),
+                    label = "Cá nhân",
+                    value = personalCount.toString(),
+                    color = MaterialTheme.colorScheme.secondary,
+                )
+                NotificationMetric(
+                    modifier = Modifier.weight(1f),
+                    label = "Chia tiền",
+                    value = splitCount.toString(),
+                    color = MaterialTheme.colorScheme.tertiary,
+                )
+            }
 
-             Row(horizontalArrangement = Arrangement.spacedBy(AppDimens.spaceMd)) {
-                 NotificationMetric(
-                     modifier = Modifier.weight(1f),
-                     label = "Xã hội",
-                     value = activityCount.toString(),
-                     color = MaterialTheme.colorScheme.primary
-                 )
-                 NotificationMetric(
-                     modifier = Modifier.weight(1f),
-                     label = "Chưa đọc",
-                     value = unreadCount.toString(),
-                     color = MaterialTheme.colorScheme.error
-                 )
-             }
+            Row(horizontalArrangement = Arrangement.spacedBy(AppDimens.spaceMd)) {
+                NotificationMetric(
+                    modifier = Modifier.weight(1f),
+                    label = "Bảng tin",
+                    value = activityCount.toString(),
+                    color = MaterialTheme.colorScheme.primary,
+                )
+                NotificationMetric(
+                    modifier = Modifier.weight(1f),
+                    label = "Chưa đọc",
+                    value = unreadCount.toString(),
+                    color = MaterialTheme.colorScheme.error,
+                )
+            }
         }
     }
 }
@@ -276,6 +280,8 @@ private fun NotificationMetric(
                 style = MaterialTheme.typography.titleLarge,
                 fontWeight = FontWeight.ExtraBold,
                 color = color,
+                maxLines = 1,
+                overflow = TextOverflow.Ellipsis,
             )
         }
     }
@@ -288,11 +294,11 @@ private fun NotificationFilterBar(
     notifications: List<Notification>,
 ) {
     Column(verticalArrangement = Arrangement.spacedBy(AppDimens.spaceSm)) {
-         Text(
-             text = "Bộ lọc",
-             style = MaterialTheme.typography.labelMedium,
-             color = MaterialTheme.colorScheme.onSurfaceVariant
-         )
+        Text(
+            text = "Bộ lọc",
+            style = MaterialTheme.typography.labelMedium,
+            color = MaterialTheme.colorScheme.onSurfaceVariant,
+        )
         LazyRow(
             modifier = Modifier.fillMaxWidth(),
             horizontalArrangement = Arrangement.spacedBy(AppDimens.spaceSm),
@@ -317,9 +323,16 @@ private fun NotificationFilterChip(
     onClick: () -> Unit,
 ) {
     FilterChip(
+        modifier = Modifier.widthIn(min = 92.dp),
         selected = selected,
         onClick = onClick,
-        label = { Text("${filter.label} $count") },
+        label = {
+            Text(
+                text = "${filter.label} $count",
+                maxLines = 1,
+                overflow = TextOverflow.Ellipsis,
+            )
+        },
     )
 }
 
@@ -414,7 +427,7 @@ private fun NotificationItemCard(
                     .fillMaxWidth()
                     .clickable(
                         onClickLabel = "Xem chi tiết thông báo",
-                        onClick = onClick
+                        onClick = onClick,
                     ),
         ) {
             if (isUnread) {
@@ -477,9 +490,12 @@ private fun NotificationItemCard(
                             overflow = TextOverflow.Ellipsis,
                         )
                         Text(
+                            modifier = Modifier.widthIn(min = 36.dp),
                             text = formatTimeAgo(notification.createdAt),
                             style = MaterialTheme.typography.labelSmall,
                             color = MaterialTheme.colorScheme.onSurfaceVariant,
+                            maxLines = 1,
+                            overflow = TextOverflow.Ellipsis,
                         )
                     }
 
@@ -512,11 +528,11 @@ private fun NotificationItemCard(
                                     Icons.Default.MarkEmailRead
                                 },
                                 contentDescription = if (notification.isRead) {
-                                     "Đánh dấu thông báo là chưa đọc"
-                                 } else {
-                                     "Đánh dấu thông báo là đã đọc"
-                                 },
-                                tint = MaterialTheme.colorScheme.onSurfaceVariant
+                                    "Đánh dấu thông báo là chưa đọc"
+                                } else {
+                                    "Đánh dấu thông báo là đã đọc"
+                                },
+                                tint = MaterialTheme.colorScheme.onSurfaceVariant,
                             )
                         }
                     }
@@ -586,21 +602,21 @@ private fun notificationAccentColor(notification: Notification): Color {
 }
 
 private fun notificationTypeLabel(notification: Notification): String {
-     return when {
-         notification.isPersonalAlert() -> "Cá nhân"
-         notification.isSplitAlert() -> "Chia tách"
-         notification.type == NotificationType.ACTIVITY_UPDATE -> "Xã hội"
-         else -> "Hệ thống"
-     }
- }
+    return when {
+        notification.isPersonalAlert() -> "Cá nhân"
+        notification.isSplitAlert() -> "Chia tiền"
+        notification.type == NotificationType.ACTIVITY_UPDATE -> "Bảng tin"
+        else -> "Hệ thống"
+    }
+}
 
- private enum class NotificationFilter(val label: String) {
-     ALL("Tất cả"),
-     UNREAD("Chưa đọc"),
-     PERSONAL("Cá nhân"),
-     SPLIT("Chia tách"),
-     SOCIAL("Xã hội")
- }
+private enum class NotificationFilter(val label: String) {
+    ALL("Tất cả"),
+    UNREAD("Chưa đọc"),
+    PERSONAL("Cá nhân"),
+    SPLIT("Chia tiền"),
+    FEED("Bảng tin"),
+}
 
 private fun Notification.matches(filter: NotificationFilter): Boolean {
     return when (filter) {
@@ -608,7 +624,7 @@ private fun Notification.matches(filter: NotificationFilter): Boolean {
         NotificationFilter.UNREAD -> !isRead
         NotificationFilter.PERSONAL -> isPersonalAlert()
         NotificationFilter.SPLIT -> isSplitAlert()
-        NotificationFilter.SOCIAL -> type == NotificationType.ACTIVITY_UPDATE
+        NotificationFilter.FEED -> type == NotificationType.ACTIVITY_UPDATE
     }
 }
 
@@ -627,27 +643,29 @@ private fun Notification.isSplitAlert(): Boolean {
 }
 
 private fun emptyTitleFor(filter: NotificationFilter): String {
-     return when (filter) {
-         NotificationFilter.ALL -> "Chưa có thông báo nào"
-         NotificationFilter.UNREAD -> "Không có thông báo chưa đọc"
-         NotificationFilter.PERSONAL -> "Không có cảnh báo cá nhân"
-         NotificationFilter.SPLIT -> "Không có cập nhật chia tách"
-         NotificationFilter.SOCIAL -> "Không có cập nhật xã hội"
-     }
- }
+    return when (filter) {
+        NotificationFilter.ALL -> "Chưa có thông báo nào"
+        NotificationFilter.UNREAD -> "Không có thông báo chưa đọc"
+        NotificationFilter.PERSONAL -> "Không có cảnh báo cá nhân"
+        NotificationFilter.SPLIT -> "Không có cập nhật chia tiền"
+        NotificationFilter.FEED -> "Không có cập nhật bảng tin"
+    }
+}
 
 private fun formatTimeAgo(epochMillis: Long): String {
-     val now = System.currentTimeMillis()
-     val diffMillis = now - epochMillis
-     val diffMinutes = diffMillis / (1000 * 60)
-     val diffHours = diffMillis / (1000 * 60 * 60)
-     val diffDays = diffMillis / (1000 * 60 * 60 * 24)
+    val now = System.currentTimeMillis()
+    val diffMillis = now - epochMillis
+    val diffMinutes = diffMillis / (1000 * 60)
+    val diffHours = diffMillis / (1000 * 60 * 60)
+    val diffDays = diffMillis / (1000 * 60 * 60 * 24)
 
-     return when {
-         diffMinutes < 1 -> "vừa xong"
-         diffMinutes < 60 -> "${diffMinutes}p"
-         diffHours < 24 -> "${diffHours}g"
-         diffDays < 7 -> "${diffDays}n"
-         else -> "${diffDays / 7}t"
-     }
- }
+    return when {
+        diffMinutes < 1 -> "vừa xong"
+        diffMinutes < 60 -> "${diffMinutes}p"
+        diffHours < 24 -> "${diffHours}g"
+        diffDays < 7 -> "${diffDays}n"
+        else -> "${diffDays / 7}t"
+    }
+}
+
+private const val RECENT_NOTIFICATION_WINDOW_MS = 24L * 60L * 60L * 1000L

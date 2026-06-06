@@ -6,6 +6,7 @@ import android.net.Uri
 import com.example.dinesplit.core.firebase.FirebaseProviders
 import com.example.dinesplit.core.firebase.FirestoreCollections
 import com.example.dinesplit.domain.exception.UsernameAlreadyExistsException
+import com.example.dinesplit.domain.model.NotificationDestination
 import com.example.dinesplit.domain.model.UserProfile
 import com.example.dinesplit.domain.repository.ProfileRepository
 import com.google.android.gms.tasks.Task
@@ -263,7 +264,7 @@ class FirebaseProfileRepository private constructor(
                         "isRead" to false,
                         "createdAt" to System.currentTimeMillis(),
                         "updatedAt" to System.currentTimeMillis(),
-                        "deepLinkDestination" to "PROFILE",
+                        "deepLinkDestination" to NotificationDestination.PROFILE.name,
                         "deepLinkTargetId" to currentUid
                     )
                     transaction.set(notificationRef, notificationMap)

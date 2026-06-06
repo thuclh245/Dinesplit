@@ -10,6 +10,7 @@ import androidx.navigation.compose.navigation
 import androidx.navigation.navArgument
 import com.example.dinesplit.domain.model.AppStartDestination
 import com.example.dinesplit.domain.model.Notification
+import com.example.dinesplit.domain.model.NotificationDestination
 import com.example.dinesplit.domain.model.NotificationType
 import com.example.dinesplit.presentation.assistant.AssistantScreen
 import com.example.dinesplit.presentation.auth.CompleteProfileScreen
@@ -211,7 +212,9 @@ private fun Notification.toMainContainerRoute(returnToNotifications: Boolean = f
 
     return when {
         // Activity/Feed detail
-        (destination == "ACTIVITY_DETAIL" || destination == "POST_DETAIL") && !activityTargetId.isNullOrBlank() -> {
+        (destination == NotificationDestination.ACTIVITY_DETAIL.name ||
+            destination == NotificationDestination.POST_DETAIL.name) &&
+            !activityTargetId.isNullOrBlank() -> {
             AppRoute.MainContainer.createRoute(
                 tab = AppRoute.Feed.route,
                 target = AppRoute.PostDetail.createRoute(activityTargetId),
@@ -219,7 +222,7 @@ private fun Notification.toMainContainerRoute(returnToNotifications: Boolean = f
             )
         }
         // Personal transaction detail
-        destination == "TRANSACTION_DETAIL" && !targetId.isNullOrBlank() -> {
+        destination == NotificationDestination.TRANSACTION_DETAIL.name && !targetId.isNullOrBlank() -> {
             AppRoute.MainContainer.createRoute(
                 tab = AppRoute.Personal.route,
                 target = AppRoute.TransactionDetail.createRoute(targetId),
@@ -227,35 +230,37 @@ private fun Notification.toMainContainerRoute(returnToNotifications: Boolean = f
             )
         }
         // Spending reminders (budget alert)
-        destination == "SPENDING_REMINDERS" -> {
+        destination == NotificationDestination.SPENDING_REMINDERS.name -> {
             AppRoute.MainContainer.createRoute(
                 tab = AppRoute.Personal.route,
                 target = AppRoute.SpendingReminders.route,
                 returnToNotifications = returnToNotifications,
             )
         }
-        destination == "CATEGORY_MANAGEMENT" -> {
+        destination == NotificationDestination.CATEGORY_MANAGEMENT.name -> {
             AppRoute.MainContainer.createRoute(
                 tab = AppRoute.Personal.route,
                 target = AppRoute.CategoryManagement.route,
                 returnToNotifications = returnToNotifications,
             )
         }
-        destination == "PERSONAL_PLANS" -> {
+        destination == NotificationDestination.PERSONAL_PLANS.name -> {
             AppRoute.MainContainer.createRoute(
                 tab = AppRoute.Personal.route,
                 target = AppRoute.PersonalPlans.route,
                 returnToNotifications = returnToNotifications,
             )
         }
-        destination == "PERSONAL" -> {
+        destination == NotificationDestination.PERSONAL.name -> {
             AppRoute.MainContainer.createRoute(
                 tab = AppRoute.Personal.route,
                 returnToNotifications = returnToNotifications,
             )
         }
         // Split bill detail
-        destination == "SPLIT_DETAIL" && !billTargetId.isNullOrBlank() && !groupId.isNullOrBlank() -> {
+        destination == NotificationDestination.SPLIT_DETAIL.name &&
+            !billTargetId.isNullOrBlank() &&
+            !groupId.isNullOrBlank() -> {
             AppRoute.MainContainer.createRoute(
                 tab = AppRoute.Split.route,
                 target = AppRoute.BillDetail.createRoute(groupId, billTargetId),
@@ -263,7 +268,9 @@ private fun Notification.toMainContainerRoute(returnToNotifications: Boolean = f
             )
         }
         // Split settle/payment
-        destination == "SPLIT_SETTLE" && !billTargetId.isNullOrBlank() && !groupId.isNullOrBlank() -> {
+        destination == NotificationDestination.SPLIT_SETTLE.name &&
+            !billTargetId.isNullOrBlank() &&
+            !groupId.isNullOrBlank() -> {
             AppRoute.MainContainer.createRoute(
                 tab = AppRoute.Split.route,
                 target = AppRoute.BillDetail.createRoute(groupId, billTargetId),
@@ -271,7 +278,7 @@ private fun Notification.toMainContainerRoute(returnToNotifications: Boolean = f
             )
         }
         // Other user profile (from activity)
-        destination == "PROFILE" && !profileTargetId.isNullOrBlank() -> {
+        destination == NotificationDestination.PROFILE.name && !profileTargetId.isNullOrBlank() -> {
             AppRoute.MainContainer.createRoute(
                 tab = AppRoute.Feed.route,
                 target = AppRoute.OtherUserProfile.createRoute(profileTargetId),

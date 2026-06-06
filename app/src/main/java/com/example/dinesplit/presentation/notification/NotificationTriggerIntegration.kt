@@ -1,13 +1,15 @@
 package com.example.dinesplit.presentation.notification
 
+import android.content.Context
 import com.example.dinesplit.core.common.AppContainer
 import com.example.dinesplit.domain.model.FeedNotificationTrigger
+import com.example.dinesplit.domain.model.Notification
 import com.example.dinesplit.domain.model.NotificationFactory
 import com.example.dinesplit.domain.model.PersonalNotificationTrigger
 import com.example.dinesplit.domain.model.SplitNotificationTrigger
-import kotlinx.coroutines.DelicateCoroutinesApi
+import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
-import kotlinx.coroutines.GlobalScope
+import kotlinx.coroutines.SupervisorJob
 import kotlinx.coroutines.launch
 
 /**
@@ -21,58 +23,51 @@ import kotlinx.coroutines.launch
  *       userId = recipientUserId
  *   )
  */
-@Suppress("unused", "ObjectName")
+@Suppress("unused")
 object NotificationTriggerIntegration {
-    @OptIn(DelicateCoroutinesApi::class)
-    @Suppress("kotlin:S6808") // Suppress GlobalScope warning for notification dispatch
+    private val notificationScope = CoroutineScope(SupervisorJob() + Dispatchers.IO)
+
     fun triggerFeedNotification(
-        context: android.content.Context,
+        context: Context,
         trigger: FeedNotificationTrigger,
         userId: String,
     ) {
-        GlobalScope.launch(Dispatchers.IO) {
-            try {
-                val notificationRepo = AppContainer.notificationRepository(context)
-                val notification = NotificationFactory.fromFeedTrigger(trigger, userId)
-                notificationRepo.insertNotification(notification)
-            } catch (e: Exception) {
-                e.printStackTrace()
-            }
+        dispatchNotification(context) {
+            NotificationFactory.fromFeedTrigger(trigger, userId)
         }
     }
 
-    @OptIn(DelicateCoroutinesApi::class)
-    @Suppress("kotlin:S6808")
     fun triggerSplitNotification(
-        context: android.content.Context,
+        context: Context,
         trigger: SplitNotificationTrigger,
         userId: String,
     ) {
-        GlobalScope.launch(Dispatchers.IO) {
-            try {
-                val notificationRepo = AppContainer.notificationRepository(context)
-                val notification = NotificationFactory.fromSplitTrigger(trigger, userId)
-                notificationRepo.insertNotification(notification)
-            } catch (e: Exception) {
-                e.printStackTrace()
-            }
+        dispatchNotification(context) {
+            NotificationFactory.fromSplitTrigger(trigger, userId)
         }
     }
 
-    @OptIn(DelicateCoroutinesApi::class)
-    @Suppress("kotlin:S6808")
     fun triggerPersonalNotification(
-        context: android.content.Context,
+        context: Context,
         trigger: PersonalNotificationTrigger,
         userId: String,
     ) {
-        GlobalScope.launch(Dispatchers.IO) {
-            try {
-                val notificationRepo = AppContainer.notificationRepository(context)
-                val notification = NotificationFactory.fromPersonalTrigger(trigger, userId)
-                notificationRepo.insertNotification(notification)
-            } catch (e: Exception) {
-                e.printStackTrace()
+        dispatchNotification(context) {
+            NotificationFactory.fromPersonalTrigger(trigger, userId)
+        }
+    }
+
+    private fun dispatchNotification(
+        context: Context,
+        buildNotification: () -> Notification,
+    ) {
+        val appContext = context.applicationContext
+        notificationScope.launch {
+            runCatching {
+                val notificationRepo = AppContainer.notificationRepository(appContext)
+                notificationRepo.insertNotification(buildNotification())
+            }.onFailure { throwable ->
+                throwable.printStackTrace()
             }
         }
     }

@@ -3,6 +3,7 @@ package com.example.dinesplit.data.repository
 import android.net.Uri
 import com.example.dinesplit.core.firebase.FirebaseProviders
 import com.example.dinesplit.domain.model.Comment
+import com.example.dinesplit.domain.model.NotificationDestination
 import com.example.dinesplit.domain.model.Post
 import com.example.dinesplit.domain.repository.FeedRepository
 import com.google.android.gms.tasks.Task
@@ -195,7 +196,7 @@ class FirebaseFeedRepository(
                         "isRead" to false,
                         "createdAt" to System.currentTimeMillis(),
                         "updatedAt" to System.currentTimeMillis(),
-                        "deepLinkDestination" to "ACTIVITY_DETAIL",
+                        "deepLinkDestination" to NotificationDestination.ACTIVITY_DETAIL.name,
                         "deepLinkTargetId" to postId
                     )
                     transaction.set(notificationRef, notificationMap)
@@ -344,7 +345,7 @@ class FirebaseFeedRepository(
                     "isRead" to false,
                     "createdAt" to System.currentTimeMillis(),
                     "updatedAt" to System.currentTimeMillis(),
-                    "deepLinkDestination" to "ACTIVITY_DETAIL",
+                    "deepLinkDestination" to NotificationDestination.ACTIVITY_DETAIL.name,
                     "deepLinkTargetId" to postId
                 )
                 transaction.set(notificationRef, notificationMap)

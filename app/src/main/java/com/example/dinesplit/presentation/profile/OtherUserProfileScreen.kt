@@ -7,6 +7,7 @@ import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
+import androidx.compose.material.icons.automirrored.filled.ReceiptLong
 import androidx.compose.material.icons.filled.*
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
@@ -320,7 +321,7 @@ private fun OtherProfileTabs(
 ) {
     val tabs = listOf(
         TabInfo("Bài viết", Icons.Default.GridView),
-        TabInfo("Hóa đơn chung", Icons.Default.ReceiptLong),
+        TabInfo("Hóa đơn chung", Icons.AutoMirrored.Filled.ReceiptLong),
     )
     val primaryColor = MaterialTheme.colorScheme.primary
 
@@ -419,7 +420,7 @@ private fun OtherTaggedBillsList(
                 verticalArrangement = Arrangement.spacedBy(8.dp)
             ) {
                 Icon(
-                    imageVector = Icons.Default.ReceiptLong,
+                    imageVector = Icons.AutoMirrored.Filled.ReceiptLong,
                     contentDescription = null,
                     tint = MaterialTheme.colorScheme.outline.copy(0.6f),
                     modifier = Modifier.size(48.dp)
@@ -462,7 +463,7 @@ private fun OtherTaggedBillsList(
                                 modifier = Modifier.weight(1f)
                             ) {
                                 Icon(
-                                    imageVector = Icons.Default.ReceiptLong,
+                                    imageVector = Icons.AutoMirrored.Filled.ReceiptLong,
                                     contentDescription = null,
                                     tint = MaterialTheme.colorScheme.primary,
                                     modifier = Modifier.size(20.dp)

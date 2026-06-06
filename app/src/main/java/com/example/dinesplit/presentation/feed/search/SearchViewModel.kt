@@ -11,6 +11,7 @@ import com.example.dinesplit.domain.model.UserProfile
 import com.google.android.gms.tasks.Task
 import com.google.firebase.firestore.DocumentSnapshot
 import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.FlowPreview
 import kotlinx.coroutines.async
 import kotlinx.coroutines.coroutineScope
 import kotlinx.coroutines.flow.MutableStateFlow
@@ -27,6 +28,7 @@ import kotlin.coroutines.resume
 import kotlin.coroutines.resumeWithException
 
 
+@OptIn(FlowPreview::class)
 class SearchViewModel(application: Application) : AndroidViewModel(application) {
 
     private val profileRepository = AppContainer.profileRepository(application)

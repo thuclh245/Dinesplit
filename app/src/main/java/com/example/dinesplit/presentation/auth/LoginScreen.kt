@@ -1,3 +1,5 @@
+@file:Suppress("DEPRECATION")
+
 package com.example.dinesplit.presentation.auth
 
 import android.app.Activity
@@ -11,7 +13,7 @@ import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.filled.ArrowForward
+import androidx.compose.material.icons.automirrored.filled.ArrowForward
 import androidx.compose.material.icons.filled.RestaurantMenu
 import androidx.compose.material.icons.filled.Visibility
 import androidx.compose.material.icons.filled.VisibilityOff
@@ -48,6 +50,7 @@ import com.google.android.gms.auth.api.signin.GoogleSignInOptions
 import com.google.android.gms.common.api.ApiException
 import kotlinx.coroutines.flow.collectLatest
 
+@Suppress("DEPRECATION")
 @Composable
 fun LoginScreen(
     onGoToRegister: () -> Unit,
@@ -252,7 +255,7 @@ private fun LoginContent(
                     text = "Sign In",
                     onClick = onSubmit,
                     isLoading = uiState.isSubmitting,
-                    icon = { Icon(Icons.Default.ArrowForward, null, modifier = Modifier.size(18.dp)) },
+                    icon = { Icon(Icons.AutoMirrored.Filled.ArrowForward, null, modifier = Modifier.size(18.dp)) },
                 )
 
                 // Divider

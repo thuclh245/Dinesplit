@@ -18,6 +18,8 @@ import androidx.compose.material.icons.filled.AccountBalanceWallet
 import androidx.compose.material.icons.filled.Delete
 import androidx.compose.material.icons.filled.Flag
 import androidx.compose.material.icons.filled.Repeat
+import androidx.compose.material3.DropdownMenu
+import androidx.compose.material3.DropdownMenuItem
 import androidx.compose.material3.FilterChip
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
@@ -25,6 +27,7 @@ import androidx.compose.material3.LinearProgressIndicator
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
+import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.key
@@ -45,6 +48,7 @@ import com.example.dinesplit.core.ui.AppShapes
 import com.example.dinesplit.core.ui.AppTextField
 import com.example.dinesplit.core.ui.BackNavigationButton
 import com.example.dinesplit.core.ui.PrimaryButton
+import com.example.dinesplit.core.ui.SecondaryButton
 import com.example.dinesplit.data.model.StoredCategory
 import com.example.dinesplit.domain.model.PersonalGoal
 import com.example.dinesplit.domain.model.PersonalWallet
@@ -81,6 +85,7 @@ fun PersonalPlansScreen(
     onAddRecurring: (String, Double, TransactionType, String, String, RecurringCadence, Int) -> Unit,
     onDeleteRecurring: (String) -> Unit,
     onAddGoal: (String, Double, Double, String?) -> Unit,
+    onUpdateGoal: (String, String, Double, Double, String?) -> Unit,
     onDeleteGoal: (String) -> Unit,
     onAddWallet: (String, WalletType, Double) -> Unit,
     onDeleteWallet: (String) -> Unit,
@@ -152,6 +157,7 @@ fun PersonalPlansScreen(
                         onAddRecurring = onAddRecurring,
                         onDeleteRecurring = onDeleteRecurring,
                         onAddGoal = onAddGoal,
+                        onUpdateGoal = onUpdateGoal,
                         onDeleteGoal = onDeleteGoal,
                         onAddWallet = onAddWallet,
                         onDeleteWallet = onDeleteWallet,
@@ -199,6 +205,7 @@ private fun PlanFocusSection(
     onAddRecurring: (String, Double, TransactionType, String, String, RecurringCadence, Int) -> Unit,
     onDeleteRecurring: (String) -> Unit,
     onAddGoal: (String, Double, Double, String?) -> Unit,
+    onUpdateGoal: (String, String, Double, Double, String?) -> Unit,
     onDeleteGoal: (String) -> Unit,
     onAddWallet: (String, WalletType, Double) -> Unit,
     onDeleteWallet: (String) -> Unit,
@@ -214,8 +221,10 @@ private fun PlanFocusSection(
             )
         PersonalPlanFocus.GOALS ->
             GoalPlanSection(
+                categories = categories,
                 goals = goals,
                 onAdd = onAddGoal,
+                onUpdate = onUpdateGoal,
                 onDelete = onDeleteGoal,
             )
         PersonalPlanFocus.WALLETS ->
@@ -368,7 +377,17 @@ private fun RecurringPlanSection(
     var amount by rememberSaveable { mutableStateOf("") }
     var day by rememberSaveable { mutableStateOf("1") }
     var type by rememberSaveable { mutableStateOf(TransactionType.EXPENSE) }
-    val category = categories.firstOrNull { it.type == type }
+    var selectedCategoryId by rememberSaveable { mutableStateOf("") }
+    var showCategoryDropdown by remember { mutableStateOf(false) }
+    var validationMessage by rememberSaveable { mutableStateOf<String?>(null) }
+    val categoryOptions =
+        remember(categories, type) {
+            categories
+                .filter { it.type == type }
+                .sortedBy { it.name.lowercase() }
+        }
+    val selectedCategory =
+        categoryOptions.firstOrNull { it.id == selectedCategoryId }
 
     PlanSectionCard(
          icon = Icons.Default.Repeat,
@@ -376,6 +395,16 @@ private fun RecurringPlanSection(
          subtitle = "Theo dõi các hóa đơn cố định và thu nhập trước khi chúng được nhập."
      ) {
          TypeChips(selectedType = type, onTypeSelected = { type = it })
+         CategorySelector(
+             categories = categoryOptions,
+             selectedCategory = selectedCategory,
+             expanded = showCategoryDropdown,
+             onExpandedChange = { showCategoryDropdown = it },
+             onCategorySelected = { category ->
+                 selectedCategoryId = category.id
+                 validationMessage = null
+             },
+         )
          AppTextField(
              value = name,
              onValueChange = { name = it },
@@ -394,23 +423,38 @@ private fun RecurringPlanSection(
              label = "Ngày trong tháng",
              modifier = Modifier.fillMaxWidth()
          )
+         validationMessage?.let { message ->
+             Text(
+                 text = message,
+                 style = MaterialTheme.typography.bodySmall,
+                 color = MaterialTheme.colorScheme.error,
+             )
+         }
          PrimaryButton(
              text = "Thêm quy tắc lặp lại",
              onClick = {
                  val parsedAmount = amount.toDoubleOrNull() ?: 0.0
-                 if (name.isNotBlank() && parsedAmount > 0.0 && category != null) {
-                     onAdd(
-                         name,
-                         parsedAmount,
-                         type,
-                         category.id,
-                         category.name,
-                         RecurringCadence.MONTHLY,
-                         day.toIntOrNull() ?: 1
-                     )
-                     name = ""
-                     amount = ""
-                     day = "1"
+                 val category = selectedCategory
+                 when {
+                     name.isBlank() -> validationMessage = "Nhập tên khoản lặp lại."
+                     parsedAmount <= 0.0 -> validationMessage = "Số tiền phải lớn hơn 0."
+                     category == null -> validationMessage = "Chọn danh mục cho khoản lặp lại."
+                     else -> {
+                         validationMessage = null
+                         onAdd(
+                             name,
+                             parsedAmount,
+                             type,
+                             category.id,
+                             category.name,
+                             RecurringCadence.MONTHLY,
+                             day.toIntOrNull() ?: 1
+                         )
+                         name = ""
+                         amount = ""
+                         day = "1"
+                         selectedCategoryId = ""
+                     }
                  }
              }
          )
@@ -426,14 +470,159 @@ private fun RecurringPlanSection(
 }
 
 @Composable
+private fun CategorySelector(
+    categories: List<StoredCategory>,
+    selectedCategory: StoredCategory?,
+    expanded: Boolean,
+    onExpandedChange: (Boolean) -> Unit,
+    onCategorySelected: (StoredCategory) -> Unit,
+) {
+    Column(verticalArrangement = Arrangement.spacedBy(AppDimens.spaceSm)) {
+        Text("Danh mục", style = MaterialTheme.typography.labelSmall)
+        Surface(
+            modifier = Modifier.fillMaxWidth(),
+            color = MaterialTheme.colorScheme.surfaceVariant,
+            shape = AppShapes.medium,
+        ) {
+            Row(
+                modifier =
+                    Modifier
+                        .fillMaxWidth()
+                        .padding(AppDimens.spaceMd),
+                horizontalArrangement = Arrangement.SpaceBetween,
+                verticalAlignment = Alignment.CenterVertically,
+            ) {
+                Text(
+                    text =
+                        when {
+                            selectedCategory != null -> selectedCategory.name
+                            categories.isEmpty() -> "Chưa có danh mục cho loại này"
+                            else -> "Chọn danh mục"
+                        },
+                    style = MaterialTheme.typography.bodyMedium,
+                    maxLines = 1,
+                    overflow = TextOverflow.Ellipsis,
+                    modifier = Modifier.weight(1f),
+                )
+                TextButton(
+                    enabled = categories.isNotEmpty(),
+                    onClick = { onExpandedChange(!expanded) },
+                ) {
+                    Text("Chọn")
+                }
+            }
+        }
+        DropdownMenu(
+            expanded = expanded,
+            onDismissRequest = { onExpandedChange(false) },
+            modifier = Modifier.fillMaxWidth(),
+        ) {
+            categories.forEach { category ->
+                DropdownMenuItem(
+                    text = { Text(category.name) },
+                    onClick = {
+                        onCategorySelected(category)
+                        onExpandedChange(false)
+                    },
+                )
+            }
+        }
+    }
+}
+
+@Composable
+private fun OptionalCategorySelector(
+    categories: List<StoredCategory>,
+    selectedCategory: StoredCategory?,
+    expanded: Boolean,
+    onExpandedChange: (Boolean) -> Unit,
+    onCategorySelected: (StoredCategory?) -> Unit,
+) {
+    Column(verticalArrangement = Arrangement.spacedBy(AppDimens.spaceSm)) {
+        Text("Danh mục liên kết", style = MaterialTheme.typography.labelSmall)
+        Surface(
+            modifier = Modifier.fillMaxWidth(),
+            color = MaterialTheme.colorScheme.surfaceVariant,
+            shape = AppShapes.medium,
+        ) {
+            Row(
+                modifier =
+                    Modifier
+                        .fillMaxWidth()
+                        .padding(AppDimens.spaceMd),
+                horizontalArrangement = Arrangement.SpaceBetween,
+                verticalAlignment = Alignment.CenterVertically,
+            ) {
+                Text(
+                    text = selectedCategory?.name ?: "Không liên kết",
+                    style = MaterialTheme.typography.bodyMedium,
+                    maxLines = 1,
+                    overflow = TextOverflow.Ellipsis,
+                    modifier = Modifier.weight(1f),
+                )
+                TextButton(onClick = { onExpandedChange(!expanded) }) {
+                    Text("Chọn")
+                }
+            }
+        }
+        DropdownMenu(
+            expanded = expanded,
+            onDismissRequest = { onExpandedChange(false) },
+            modifier = Modifier.fillMaxWidth(),
+        ) {
+            DropdownMenuItem(
+                text = { Text("Không liên kết") },
+                onClick = {
+                    onCategorySelected(null)
+                    onExpandedChange(false)
+                },
+            )
+            categories.forEach { category ->
+                DropdownMenuItem(
+                    text = { Text("${category.name} - ${category.type.displayLabel()}") },
+                    onClick = {
+                        onCategorySelected(category)
+                        onExpandedChange(false)
+                    },
+                )
+            }
+        }
+    }
+}
+
+@Composable
 private fun GoalPlanSection(
+    categories: List<StoredCategory>,
     goals: List<PersonalGoal>,
     onAdd: (String, Double, Double, String?) -> Unit,
+    onUpdate: (String, String, Double, Double, String?) -> Unit,
     onDelete: (String) -> Unit,
 ) {
     var title by rememberSaveable { mutableStateOf("") }
     var target by rememberSaveable { mutableStateOf("") }
     var current by rememberSaveable { mutableStateOf("") }
+    var editingGoalId by rememberSaveable { mutableStateOf<String?>(null) }
+    var selectedCategoryId by rememberSaveable { mutableStateOf("") }
+    var showCategoryDropdown by remember { mutableStateOf(false) }
+    var validationMessage by rememberSaveable { mutableStateOf<String?>(null) }
+    val categoryOptions =
+        remember(categories) {
+            categories.sortedWith(
+                compareBy<StoredCategory> { it.type.name }
+                    .thenBy { it.name.lowercase() },
+            )
+        }
+    val selectedCategory = categoryOptions.firstOrNull { it.id == selectedCategoryId }
+    val isEditing = editingGoalId != null
+
+    fun resetGoalForm() {
+        editingGoalId = null
+        title = ""
+        target = ""
+        current = ""
+        selectedCategoryId = ""
+        validationMessage = null
+    }
 
     PlanSectionCard(
          icon = Icons.Default.Flag,
@@ -458,23 +647,80 @@ private fun GoalPlanSection(
              label = "Số tiền hiện tại",
              modifier = Modifier.fillMaxWidth()
          )
+         OptionalCategorySelector(
+             categories = categoryOptions,
+             selectedCategory = selectedCategory,
+             expanded = showCategoryDropdown,
+             onExpandedChange = { showCategoryDropdown = it },
+             onCategorySelected = { category ->
+                 selectedCategoryId = category?.id.orEmpty()
+                 validationMessage = null
+             },
+         )
+         validationMessage?.let { message ->
+             Text(
+                 text = message,
+                 style = MaterialTheme.typography.bodySmall,
+                 color = MaterialTheme.colorScheme.error,
+             )
+         }
          PrimaryButton(
-             text = "Thêm mục tiêu",
+             text = if (isEditing) "Cập nhật mục tiêu" else "Thêm mục tiêu",
              onClick = {
                  val parsedTarget = target.toDoubleOrNull() ?: 0.0
                  val parsedCurrent = current.toDoubleOrNull() ?: 0.0
-                 if (title.isNotBlank() && parsedTarget > 0.0) {
-                     onAdd(title, parsedTarget, parsedCurrent, null)
-                     title = ""
-                     target = ""
-                     current = ""
+                 when {
+                     title.isBlank() -> validationMessage = "Nhập tiêu đề mục tiêu."
+                     parsedTarget <= 0.0 -> validationMessage = "Số tiền mục tiêu phải lớn hơn 0."
+                     isEditing -> {
+                         val goalId = editingGoalId ?: return@PrimaryButton
+                         validationMessage = null
+                         onUpdate(
+                             goalId,
+                             title,
+                             parsedTarget,
+                             parsedCurrent,
+                             selectedCategoryId.takeIf { it.isNotBlank() },
+                         )
+                         resetGoalForm()
+                     }
+                     else -> {
+                         validationMessage = null
+                         onAdd(
+                             title,
+                             parsedTarget,
+                             parsedCurrent,
+                             selectedCategoryId.takeIf { it.isNotBlank() },
+                         )
+                         resetGoalForm()
+                     }
                  }
              }
          )
+         if (isEditing) {
+             SecondaryButton(
+                 text = "Hủy chỉnh sửa",
+                 onClick = { resetGoalForm() },
+             )
+         }
 
         GoalProgressList(
             goals = goals,
-            onDelete = onDelete,
+            categories = categoryOptions,
+            onEdit = { goal ->
+                editingGoalId = goal.id
+                title = goal.title
+                target = formatAmountInput(goal.targetAmount)
+                current = formatAmountInput(goal.currentAmount)
+                selectedCategoryId = goal.categoryId.orEmpty()
+                validationMessage = null
+            },
+            onDelete = { goalId ->
+                if (editingGoalId == goalId) {
+                    resetGoalForm()
+                }
+                onDelete(goalId)
+            },
         )
     }
 }
@@ -482,6 +728,8 @@ private fun GoalPlanSection(
 @Composable
 private fun GoalProgressList(
     goals: List<PersonalGoal>,
+    categories: List<StoredCategory>,
+    onEdit: (PersonalGoal) -> Unit,
     onDelete: (String) -> Unit,
 ) {
     if (goals.isEmpty()) {
@@ -493,6 +741,11 @@ private fun GoalProgressList(
          return
      }
 
+    val categoryNamesById =
+        remember(categories) {
+            categories.associate { it.id to it.name }
+        }
+
     Column(verticalArrangement = Arrangement.spacedBy(AppDimens.spaceSm)) {
         goals.forEach { goal ->
             val progress =
@@ -501,6 +754,7 @@ private fun GoalProgressList(
                 } else {
                     0f
                 }
+            val linkedCategoryName = goal.categoryId?.let { categoryNamesById[it] }
 
             AppCard(contentPadding = PaddingValues(AppDimens.spaceMd)) {
                 Column(
@@ -520,8 +774,13 @@ private fun GoalProgressList(
                             overflow = TextOverflow.Ellipsis,
                             modifier = Modifier.weight(1f)
                         )
-                        IconButton(onClick = { onDelete(goal.id) }) {
-                            Icon(Icons.Default.Delete, contentDescription = "Xóa")
+                        Row(verticalAlignment = Alignment.CenterVertically) {
+                            TextButton(onClick = { onEdit(goal) }) {
+                                Text("Sửa")
+                            }
+                            IconButton(onClick = { onDelete(goal.id) }) {
+                                Icon(Icons.Default.Delete, contentDescription = "Xóa")
+                            }
                         }
                     }
                     LinearProgressIndicator(
@@ -537,8 +796,19 @@ private fun GoalProgressList(
                         style = MaterialTheme.typography.bodySmall,
                         color = MaterialTheme.colorScheme.onSurfaceVariant,
                         maxLines = 1,
-                        overflow = TextOverflow.Ellipsis
+                        overflow = TextOverflow.Ellipsis,
+                        modifier = Modifier.fillMaxWidth()
                     )
+                    linkedCategoryName?.let { categoryName ->
+                        Text(
+                            text = "Danh mục: $categoryName",
+                            style = MaterialTheme.typography.labelSmall,
+                            color = MaterialTheme.colorScheme.onSurfaceVariant,
+                            maxLines = 1,
+                            overflow = TextOverflow.Ellipsis,
+                            modifier = Modifier.fillMaxWidth()
+                        )
+                    }
                     Text(
                         text = "Hạn: ${formatDate(goal.deadlineAt)}",
                         style = MaterialTheme.typography.labelSmall,
@@ -623,16 +893,31 @@ private fun PlanSectionCard(
     content: @Composable () -> Unit,
 ) {
     AppCard {
-        Column(verticalArrangement = Arrangement.spacedBy(AppDimens.spaceMd)) {
+        Column(
+            modifier = Modifier.fillMaxWidth(),
+            verticalArrangement = Arrangement.spacedBy(AppDimens.spaceMd)
+        ) {
             Row(
                 modifier = Modifier.fillMaxWidth(),
                 verticalAlignment = Alignment.CenterVertically,
                 horizontalArrangement = Arrangement.spacedBy(AppDimens.spaceMd),
             ) {
                 Icon(icon, contentDescription = null, tint = MaterialTheme.colorScheme.primary)
-                Column {
-                    Text(title, style = MaterialTheme.typography.titleMedium, fontWeight = FontWeight.Bold)
-                    Text(subtitle, style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
+                Column(modifier = Modifier.weight(1f)) {
+                    Text(
+                        title,
+                        style = MaterialTheme.typography.titleMedium,
+                        fontWeight = FontWeight.Bold,
+                        maxLines = 1,
+                        overflow = TextOverflow.Ellipsis
+                    )
+                    Text(
+                        subtitle,
+                        style = MaterialTheme.typography.bodySmall,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant,
+                        maxLines = 2,
+                        overflow = TextOverflow.Ellipsis
+                    )
                 }
             }
             content()
@@ -645,7 +930,12 @@ private fun TypeChips(
     selectedType: TransactionType,
     onTypeSelected: (TransactionType) -> Unit,
 ) {
-    Row(horizontalArrangement = Arrangement.spacedBy(AppDimens.spaceSm)) {
+    Row(
+        modifier = Modifier
+            .fillMaxWidth()
+            .horizontalScroll(rememberScrollState()),
+        horizontalArrangement = Arrangement.spacedBy(AppDimens.spaceSm)
+    ) {
         TransactionType.entries.forEach { type ->
             FilterChip(
                 selected = selectedType == type,
@@ -682,11 +972,19 @@ private fun <T> PlanList(
                     horizontalArrangement = Arrangement.SpaceBetween,
                 ) {
                     Column(modifier = Modifier.weight(1f)) {
-                        Text(itemTitle(item), style = MaterialTheme.typography.titleSmall, fontWeight = FontWeight.Bold)
+                        Text(
+                            itemTitle(item),
+                            style = MaterialTheme.typography.titleSmall,
+                            fontWeight = FontWeight.Bold,
+                            maxLines = 1,
+                            overflow = TextOverflow.Ellipsis
+                        )
                         Text(
                             itemSubtitle(item),
                             style = MaterialTheme.typography.bodySmall,
                             color = MaterialTheme.colorScheme.onSurfaceVariant,
+                            maxLines = 1,
+                            overflow = TextOverflow.Ellipsis
                         )
                     }
                     IconButton(onClick = { onDelete(item) }) {
@@ -701,6 +999,15 @@ private fun <T> PlanList(
 private fun formatMoney(amount: Double): String {
     val formatter = NumberFormat.getNumberInstance(Locale("vi", "VN"))
     return "${formatter.format(amount.toLong())} VND"
+}
+
+private fun formatAmountInput(amount: Double): String {
+    val longAmount = amount.toLong()
+    return if (amount == longAmount.toDouble()) {
+        longAmount.toString()
+    } else {
+        amount.toString()
+    }
 }
 
 private fun formatDate(epochMillis: Long): String {

@@ -11,7 +11,9 @@ import com.example.dinesplit.domain.model.Notification
 import com.example.dinesplit.domain.model.NotificationFactory
 import com.example.dinesplit.domain.model.PersonalNotificationTrigger
 import com.example.dinesplit.domain.model.SplitNotificationTrigger
+import com.google.firebase.auth.FirebaseAuth
 import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.Job
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
@@ -28,56 +30,133 @@ class NotificationViewModel(application: Application) : AndroidViewModel(applica
     private val _uiState = MutableStateFlow(NotificationUiState())
     val uiState: StateFlow<NotificationUiState> = _uiState.asStateFlow()
 
+    private var authStateListener: FirebaseAuth.AuthStateListener? = null
+    private var observeJob: Job? = null
+    private var lastObservedUserId: String? = null
+
     init {
-        observeNotifications()
+        setupAuthStateListener()
+        handleAuthUserChanged(currentUserId().takeIf { it.isNotBlank() })
     }
 
-    private fun observeNotifications() {
-        viewModelScope.launch(Dispatchers.IO) {
-            _uiState.value = _uiState.value.copy(isLoading = true, errorMessage = null)
-            repository.observeNotifications()
-                .catch { throwable ->
-                    _notifications.value = emptyList()
-                    _uiState.value =
-                        _uiState.value.copy(
-                            isLoading = false,
-                            currentUserId = currentUserId(),
-                            errorMessage = FirebaseErrorMapper.toUserMessage(throwable),
-                        )
-                }
-                .collectLatest { notifications ->
-                    val orderedNotifications = notifications.orderedNewestFirst()
-                    _notifications.value = orderedNotifications
-                    _uiState.value =
-                        _uiState.value.copy(
-                            isLoading = false,
-                            errorMessage = null,
-                            currentUserId = currentUserId(),
-                            unreadCount = orderedNotifications.count { !it.isRead },
-                        )
-                }
+    private fun setupAuthStateListener() {
+        authStateListener =
+            FirebaseAuth.AuthStateListener { auth ->
+                handleAuthUserChanged(auth.currentUser?.uid)
+            }
+        FirebaseProviders.auth.addAuthStateListener(authStateListener!!)
+    }
+
+    private fun handleAuthUserChanged(userId: String?) {
+        if (userId.isNullOrBlank()) {
+            observeJob?.cancel()
+            lastObservedUserId = null
+            clearNotificationState()
+            return
+        }
+
+        if (userId != lastObservedUserId || _uiState.value.currentUserId != userId) {
+            observeJob?.cancel()
+            lastObservedUserId = userId
+            clearNotificationState(currentUserId = userId, isLoading = true)
+            observeNotifications(expectedUserId = userId)
         }
     }
 
+    private fun clearNotificationState(
+        currentUserId: String = "",
+        isLoading: Boolean = false,
+    ) {
+        _notifications.value = emptyList()
+        _uiState.value =
+            NotificationUiState(
+                isLoading = isLoading,
+                currentUserId = currentUserId,
+            )
+    }
+
+    override fun onCleared() {
+        super.onCleared()
+        authStateListener?.let { listener ->
+            FirebaseProviders.auth.removeAuthStateListener(listener)
+        }
+        observeJob?.cancel()
+    }
+
+    private fun observeNotifications(expectedUserId: String) {
+        observeJob =
+            viewModelScope.launch(Dispatchers.IO) {
+                _uiState.value =
+                    _uiState.value.copy(
+                        isLoading = true,
+                        errorMessage = null,
+                        currentUserId = expectedUserId,
+                    )
+                repository.observeNotifications()
+                    .catch { throwable ->
+                        if (!isCurrentUser(expectedUserId)) return@catch
+                        _notifications.value = emptyList()
+                        _uiState.value =
+                            _uiState.value.copy(
+                                isLoading = false,
+                                currentUserId = expectedUserId,
+                                errorMessage = FirebaseErrorMapper.toUserMessage(throwable),
+                            )
+                    }
+                    .collectLatest { notifications ->
+                        if (!isCurrentUser(expectedUserId)) return@collectLatest
+                        val orderedNotifications =
+                            notifications
+                                .filter { notification -> notification.userId == expectedUserId }
+                                .orderedNewestFirst()
+                        _notifications.value = orderedNotifications
+                        _uiState.value =
+                            _uiState.value.copy(
+                                isLoading = false,
+                                errorMessage = null,
+                                currentUserId = expectedUserId,
+                                unreadCount = orderedNotifications.count { !it.isRead },
+                            )
+                    }
+            }
+    }
+
     fun refreshNotifications() {
+        val expectedUserId = currentUserId()
+        if (expectedUserId.isBlank()) {
+            clearNotificationState()
+            return
+        }
+
         viewModelScope.launch(Dispatchers.IO) {
-            _uiState.value = _uiState.value.copy(isLoading = true, errorMessage = null)
+            _uiState.value =
+                _uiState.value.copy(
+                    isLoading = true,
+                    errorMessage = null,
+                    currentUserId = expectedUserId,
+                )
 
             runCatching {
-                val notifications = repository.getNotifications().orderedNewestFirst()
+                val notifications =
+                    repository.getNotifications()
+                        .filter { notification -> notification.userId == expectedUserId }
+                        .orderedNewestFirst()
+                if (!isCurrentUser(expectedUserId)) return@runCatching
+
                 _notifications.value = notifications
                 _uiState.value =
                     _uiState.value.copy(
                         isLoading = false,
-                        currentUserId = currentUserId(),
+                        currentUserId = expectedUserId,
                         unreadCount = notifications.count { !it.isRead },
                     )
             }.onFailure { throwable ->
+                if (!isCurrentUser(expectedUserId)) return@onFailure
                 _notifications.value = emptyList()
                 _uiState.value =
                     _uiState.value.copy(
                         isLoading = false,
-                        currentUserId = currentUserId(),
+                        currentUserId = expectedUserId,
                         errorMessage = FirebaseErrorMapper.toUserMessage(throwable),
                     )
             }
@@ -93,15 +172,34 @@ class NotificationViewModel(application: Application) : AndroidViewModel(applica
     }
 
     fun markAllAsRead() {
+        val expectedUserId = currentUserId()
+        if (expectedUserId.isBlank()) return
+
         viewModelScope.launch(Dispatchers.IO) {
             runCatching {
-                val unreadNotifications = _notifications.value.filter { !it.isRead }
+                if (!isCurrentUser(expectedUserId)) return@runCatching
+
+                val unreadNotifications =
+                    _notifications.value.filter { notification ->
+                        !notification.isRead && notification.userId == expectedUserId
+                    }
                 unreadNotifications.forEach { notification ->
+                    if (!isCurrentUser(expectedUserId)) return@runCatching
                     repository.markAsRead(notification.id)
                 }
-                _notifications.value = _notifications.value.map { it.copy(isRead = true) }.orderedNewestFirst()
+                if (!isCurrentUser(expectedUserId)) return@runCatching
+
+                _notifications.value =
+                    _notifications.value.map { notification ->
+                        if (notification.userId == expectedUserId) {
+                            notification.copy(isRead = true)
+                        } else {
+                            notification
+                        }
+                    }.orderedNewestFirst()
                 _uiState.value = _uiState.value.copy(unreadCount = 0)
             }.onFailure { throwable ->
+                if (!isCurrentUser(expectedUserId)) return@onFailure
                 _uiState.value =
                     _uiState.value.copy(
                         errorMessage = FirebaseErrorMapper.toUserMessage(throwable),
@@ -111,20 +209,29 @@ class NotificationViewModel(application: Application) : AndroidViewModel(applica
     }
 
     fun onFeedTrigger(trigger: FeedNotificationTrigger) {
+        val userId = currentUserId()
+        if (userId.isBlank()) return
+
         insertGeneratedNotification(
-            notification = NotificationFactory.fromFeedTrigger(trigger, currentUserId()),
+            notification = NotificationFactory.fromFeedTrigger(trigger, userId),
         )
     }
 
     fun onSplitTrigger(trigger: SplitNotificationTrigger) {
+        val userId = currentUserId()
+        if (userId.isBlank()) return
+
         insertGeneratedNotification(
-            notification = NotificationFactory.fromSplitTrigger(trigger, currentUserId()),
+            notification = NotificationFactory.fromSplitTrigger(trigger, userId),
         )
     }
 
     fun onPersonalTrigger(trigger: PersonalNotificationTrigger) {
+        val userId = currentUserId()
+        if (userId.isBlank()) return
+
         insertGeneratedNotification(
-            notification = NotificationFactory.fromPersonalTrigger(trigger, currentUserId()),
+            notification = NotificationFactory.fromPersonalTrigger(trigger, userId),
         )
     }
 
@@ -132,16 +239,24 @@ class NotificationViewModel(application: Application) : AndroidViewModel(applica
         notificationId: String,
         isRead: Boolean,
     ) {
+        val expectedUserId = currentUserId()
+        if (expectedUserId.isBlank()) return
+        if (_notifications.value.none { it.id == notificationId && it.userId == expectedUserId }) return
+
         viewModelScope.launch(Dispatchers.IO) {
             runCatching {
+                if (!isCurrentUser(expectedUserId)) return@runCatching
+
                 if (isRead) {
                     repository.markAsRead(notificationId)
                 } else {
                     repository.markAsUnread(notificationId)
                 }
+                if (!isCurrentUser(expectedUserId)) return@runCatching
+
                 _notifications.value =
                     _notifications.value.map { notification ->
-                        if (notification.id == notificationId) {
+                        if (notification.id == notificationId && notification.userId == expectedUserId) {
                             notification.copy(isRead = isRead)
                         } else {
                             notification
@@ -152,6 +267,7 @@ class NotificationViewModel(application: Application) : AndroidViewModel(applica
                         unreadCount = _notifications.value.count { !it.isRead },
                     )
             }.onFailure { throwable ->
+                if (!isCurrentUser(expectedUserId)) return@onFailure
                 _uiState.value =
                     _uiState.value.copy(
                         errorMessage = FirebaseErrorMapper.toUserMessage(throwable),
@@ -161,15 +277,29 @@ class NotificationViewModel(application: Application) : AndroidViewModel(applica
     }
 
     private fun insertGeneratedNotification(notification: Notification) {
+        val expectedUserId = notification.userId.ifBlank { currentUserId() }
+        if (expectedUserId.isBlank() || !isCurrentUser(expectedUserId)) return
+        val normalizedNotification =
+            if (notification.userId.isBlank()) {
+                notification.copy(userId = expectedUserId)
+            } else {
+                notification
+            }
+
         viewModelScope.launch(Dispatchers.IO) {
             runCatching {
-                repository.insertNotification(notification)
-                _notifications.value = (listOf(notification) + _notifications.value).orderedNewestFirst()
+                if (!isCurrentUser(expectedUserId)) return@runCatching
+
+                repository.insertNotification(normalizedNotification)
+                if (!isCurrentUser(expectedUserId)) return@runCatching
+
+                _notifications.value = (listOf(normalizedNotification) + _notifications.value).orderedNewestFirst()
                 _uiState.value =
                     _uiState.value.copy(
                         unreadCount = _notifications.value.count { !it.isRead },
                     )
             }.onFailure { throwable ->
+                if (!isCurrentUser(expectedUserId)) return@onFailure
                 _uiState.value =
                     _uiState.value.copy(
                         errorMessage = FirebaseErrorMapper.toUserMessage(throwable),
@@ -180,6 +310,10 @@ class NotificationViewModel(application: Application) : AndroidViewModel(applica
 
     private fun currentUserId(): String {
         return FirebaseProviders.auth.currentUser?.uid.orEmpty()
+    }
+
+    private fun isCurrentUser(expectedUserId: String): Boolean {
+        return expectedUserId.isNotBlank() && currentUserId() == expectedUserId
     }
 
     private fun List<Notification>.orderedNewestFirst(): List<Notification> {

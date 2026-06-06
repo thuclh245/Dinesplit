@@ -5,6 +5,8 @@ import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.automirrored.filled.Logout
+import androidx.compose.material.icons.automirrored.filled.ReceiptLong
 import androidx.compose.material.icons.filled.*
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
@@ -398,7 +400,7 @@ private fun ProfileHeader(
                     
                     DineSplitStatColumn(
                         modifier = Modifier.weight(1f),
-                        icon = Icons.Default.ReceiptLong,
+                        icon = Icons.AutoMirrored.Filled.ReceiptLong,
                         value = taggedBillsCount.toString(),
                         label = "Hóa đơn chia",
                         color = MaterialTheme.colorScheme.secondary
@@ -433,7 +435,7 @@ private fun ProfileHeader(
                     )
                 } else {
                     Icon(
-                        imageVector = Icons.Default.Logout,
+                        imageVector = Icons.AutoMirrored.Filled.Logout,
                         contentDescription = null,
                         modifier = Modifier.size(18.dp)
                     )
@@ -611,7 +613,7 @@ private fun TaggedBillsList(
                 verticalArrangement = Arrangement.spacedBy(AppDimens.spaceSm)
             ) {
                 Icon(
-                    imageVector = Icons.Default.ReceiptLong,
+                    imageVector = Icons.AutoMirrored.Filled.ReceiptLong,
                     contentDescription = null,
                     tint = MaterialTheme.colorScheme.outline.copy(0.6f),
                     modifier = Modifier.size(AppDimens.space4Xl)
@@ -654,7 +656,7 @@ private fun TaggedBillsList(
                                 modifier = Modifier.weight(1f)
                             ) {
                                 Icon(
-                                    imageVector = Icons.Default.ReceiptLong,
+                                    imageVector = Icons.AutoMirrored.Filled.ReceiptLong,
                                     contentDescription = null,
                                     tint = MaterialTheme.colorScheme.primary,
                                     modifier = Modifier.size(20.dp)

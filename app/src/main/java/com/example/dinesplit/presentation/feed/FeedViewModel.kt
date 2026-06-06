@@ -7,6 +7,7 @@ import com.example.dinesplit.core.common.AppContainer
 import com.example.dinesplit.core.firebase.FirebaseErrorMapper
 import com.example.dinesplit.core.firebase.FirebaseProviders
 import com.example.dinesplit.domain.model.LinkedBillSummary
+import com.example.dinesplit.domain.model.NotificationDestination
 import com.example.dinesplit.domain.model.Post
 import com.example.dinesplit.domain.model.UserProfile
 import kotlinx.coroutines.Dispatchers
@@ -303,7 +304,7 @@ class FeedViewModel(application: Application) : AndroidViewModel(application) {
             "isRead" to false,
             "createdAt" to System.currentTimeMillis(),
             "updatedAt" to System.currentTimeMillis(),
-            "deepLinkDestination" to "ACTIVITY_DETAIL",
+            "deepLinkDestination" to NotificationDestination.ACTIVITY_DETAIL.name,
             "deepLinkTargetId" to relatedId
         )
         

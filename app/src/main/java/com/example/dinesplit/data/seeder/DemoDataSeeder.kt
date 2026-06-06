@@ -4,6 +4,7 @@ import com.example.dinesplit.domain.model.Bill
 import com.example.dinesplit.domain.model.Group
 import com.example.dinesplit.domain.model.Member
 import com.example.dinesplit.domain.model.Notification
+import com.example.dinesplit.domain.model.NotificationDestination
 import com.example.dinesplit.domain.model.NotificationType
 import com.example.dinesplit.domain.model.Post
 import com.example.dinesplit.domain.model.SplitMethod
@@ -121,7 +122,7 @@ object DemoDataSeeder {
                 isRead = false,
                 createdAt = now - 1000 * 60 * 30,
                 updatedAt = now - 1000 * 60 * 30,
-                deepLinkDestination = "SPENDING_REMINDERS",
+                deepLinkDestination = NotificationDestination.SPENDING_REMINDERS.name,
                 deepLinkTargetId = "c_food"
             ),
             Notification(
@@ -134,7 +135,7 @@ object DemoDataSeeder {
                 isRead = true,
                 createdAt = now - 1000 * 60 * 60 * 2,
                 updatedAt = now - 1000 * 60 * 60 * 2,
-                deepLinkDestination = "SPLIT_SETTLE",
+                deepLinkDestination = NotificationDestination.SPLIT_SETTLE.name,
                 deepLinkTargetId = "bill_123"
             ),
             Notification(
@@ -147,7 +148,7 @@ object DemoDataSeeder {
                 isRead = false,
                 createdAt = now - 1000 * 60 * 60 * 3,
                 updatedAt = now - 1000 * 60 * 60 * 3,
-                deepLinkDestination = "SPLIT_DETAIL",
+                deepLinkDestination = NotificationDestination.SPLIT_DETAIL.name,
                 deepLinkTargetId = "bill_456"
             )
         )

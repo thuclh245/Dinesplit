@@ -1,5 +1,6 @@
 package com.example.dinesplit.presentation.personal
 
+import androidx.compose.foundation.horizontalScroll
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
@@ -8,6 +9,7 @@ import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.widthIn
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
@@ -32,9 +34,11 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.semantics.liveRegion
 import androidx.compose.ui.semantics.LiveRegionMode
 import androidx.compose.ui.semantics.semantics
+import androidx.compose.ui.unit.dp
 import com.example.dinesplit.core.ui.AppCard
 import com.example.dinesplit.core.ui.AppDimens
 import com.example.dinesplit.core.ui.AppScaffold
@@ -254,14 +258,24 @@ private fun CreateReminderDialog(
 
                  Text("Loại Nhắc Nhở", style = MaterialTheme.typography.labelSmall)
                 Row(
-                    modifier = Modifier.fillMaxWidth(),
+                    modifier =
+                        Modifier
+                            .fillMaxWidth()
+                            .horizontalScroll(rememberScrollState()),
                     horizontalArrangement = Arrangement.spacedBy(AppDimens.spaceSm),
                 ) {
                     ReminderType.entries.forEach { type ->
                         FilterChip(
+                            modifier = Modifier.widthIn(min = 112.dp),
                             selected = selectedType == type,
                             onClick = { selectedType = type },
-                            label = { Text(type.displayLabel()) }
+                            label = {
+                                Text(
+                                    text = type.displayLabel(),
+                                    maxLines = 1,
+                                    overflow = TextOverflow.Ellipsis,
+                                )
+                            },
                         )
                     }
                 }
@@ -323,13 +337,25 @@ private fun CreateReminderDialog(
              FilterChip(
                  selected = selectedCategoryId == null,
                  onClick = { onSelect(null) },
-                 label = { Text("Chung") }
+                 label = {
+                     Text(
+                         text = "Chung",
+                         maxLines = 1,
+                         overflow = TextOverflow.Ellipsis,
+                     )
+                 },
             )
             categories.take(1).forEach { category ->
                 FilterChip(
                     selected = selectedCategoryId == category.id,
                     onClick = { onSelect(category.id) },
-                    label = { Text(category.name) },
+                    label = {
+                        Text(
+                            text = category.name,
+                            maxLines = 1,
+                            overflow = TextOverflow.Ellipsis,
+                        )
+                    },
                 )
             }
         }
@@ -342,7 +368,13 @@ private fun CreateReminderDialog(
                     FilterChip(
                         selected = selectedCategoryId == category.id,
                         onClick = { onSelect(category.id) },
-                        label = { Text(category.name) },
+                        label = {
+                            Text(
+                                text = category.name,
+                                maxLines = 1,
+                                overflow = TextOverflow.Ellipsis,
+                            )
+                        },
                     )
                 }
             }

@@ -19,9 +19,11 @@ import com.example.dinesplit.domain.repository.PersonalRepository
 import com.google.android.gms.tasks.Task
 import com.google.firebase.firestore.DocumentSnapshot
 import com.google.firebase.firestore.FirebaseFirestore
+import com.google.firebase.firestore.Source
 import kotlinx.coroutines.suspendCancellableCoroutine
 import kotlin.coroutines.resume
 import kotlin.coroutines.resumeWithException
+import kotlin.math.abs
 
 class FirebasePersonalRepository private constructor(
     @Suppress("UNUSED_PARAMETER") context: Context,
@@ -37,12 +39,12 @@ class FirebasePersonalRepository private constructor(
                 .document(uid)
                 .collection(COLLECTION_TRANSACTIONS)
                 .orderBy(FIELD_DATE, com.google.firebase.firestore.Query.Direction.DESCENDING)
-                .get()
+                .get(Source.SERVER)
                 .awaitFirebase()
 
-        return snapshot.documents.mapNotNull { document ->
-            document.toTransaction(uid)
-        }
+        return snapshot.documents
+            .mapNotNull { document -> document.toTransaction(uid) }
+            .filterNot { transaction -> transaction.isLegacyDemoSeedTransaction() }
     }
 
     override suspend fun getCategories(): List<StoredCategory> {
@@ -54,7 +56,7 @@ class FirebasePersonalRepository private constructor(
                 .collection(COLLECTION_USER_PERSONAL)
                 .document(uid)
                 .collection(COLLECTION_CATEGORIES)
-                .get()
+                .get(Source.SERVER)
                 .awaitFirebase()
 
         return snapshot.documents
@@ -141,7 +143,7 @@ class FirebasePersonalRepository private constructor(
                 .collection(COLLECTION_USER_PERSONAL)
                 .document(uid)
                 .collection(COLLECTION_REMINDERS)
-                .get()
+                .get(Source.SERVER)
                 .awaitFirebase()
 
         return snapshot.documents.mapNotNull { it.toSpendingReminder() }
@@ -180,7 +182,7 @@ class FirebasePersonalRepository private constructor(
                 .collection(COLLECTION_USER_PERSONAL)
                 .document(uid)
                 .collection(COLLECTION_RECURRING_RULES)
-                .get()
+                .get(Source.SERVER)
                 .awaitFirebase()
 
         return snapshot.documents
@@ -222,7 +224,7 @@ class FirebasePersonalRepository private constructor(
                 .collection(COLLECTION_USER_PERSONAL)
                 .document(uid)
                 .collection(COLLECTION_GOALS)
-                .get()
+                .get(Source.SERVER)
                 .awaitFirebase()
 
         return snapshot.documents
@@ -264,7 +266,7 @@ class FirebasePersonalRepository private constructor(
                 .collection(COLLECTION_USER_PERSONAL)
                 .document(uid)
                 .collection(COLLECTION_WALLETS)
-                .get()
+                .get(Source.SERVER)
                 .awaitFirebase()
 
         return snapshot.documents
@@ -361,6 +363,19 @@ class FirebasePersonalRepository private constructor(
             receiptImageUrl = getString(FIELD_RECEIPT_IMAGE_URL)?.takeIf { it.isNotBlank() },
             walletId = getString(FIELD_WALLET_ID)?.takeIf { it.isNotBlank() },
         )
+    }
+
+    private fun Transaction.isLegacyDemoSeedTransaction(): Boolean {
+        if (source != TransactionSource.MANUAL) return false
+        if (!sourceGroupId.isNullOrBlank() || !sourceBillId.isNullOrBlank()) return false
+        if (!recurringRuleId.isNullOrBlank() || !receiptImageUrl.isNullOrBlank() || !walletId.isNullOrBlank()) return false
+
+        return legacyDemoTransactionSignatures.any { signature ->
+            categoryId == signature.categoryId &&
+                amount == signature.amount &&
+                type == signature.type &&
+                abs((createdAt - date) - signature.createdBeforeDateByMs) <= LEGACY_DEMO_TIME_TOLERANCE_MS
+        }
     }
 
     private fun DocumentSnapshot.toStoredCategory(): StoredCategory? {
@@ -584,7 +599,7 @@ class FirebasePersonalRepository private constructor(
                     continuation.resume(task.result)
                 } else {
                     continuation.resumeWithException(
-                        task.exception ?: IllegalStateException("Tác vụ Firebase thất bại")
+                        task.exception ?: IllegalStateException("Tác vụ Firebase thất bại"),
                     )
                 }
             }
@@ -642,6 +657,18 @@ class FirebasePersonalRepository private constructor(
         private const val FIELD_BALANCE = "balance"
         private const val FIELD_COLOR = "color"
         private const val FIELD_IS_ARCHIVED = "isArchived"
+        private const val ONE_HOUR_MS = 60L * 60L * 1000L
+        private const val ONE_DAY_MS = 24L * ONE_HOUR_MS
+        private const val LEGACY_DEMO_TIME_TOLERANCE_MS = 1000L
+
+        private val legacyDemoTransactionSignatures =
+            listOf(
+                LegacyDemoTransactionSignature("c_food", 150_000.0, TransactionType.EXPENSE, 2L * ONE_HOUR_MS),
+                LegacyDemoTransactionSignature("c_transit", 50_000.0, TransactionType.EXPENSE, ONE_DAY_MS),
+                LegacyDemoTransactionSignature("c_grocery", 320_000.0, TransactionType.EXPENSE, 2L * ONE_DAY_MS),
+                LegacyDemoTransactionSignature("c_bonus", 200_000.0, TransactionType.INCOME, 3L * ONE_DAY_MS),
+                LegacyDemoTransactionSignature("c_fun", 100_000.0, TransactionType.EXPENSE, 4L * ONE_DAY_MS),
+            )
 
         @Volatile
         private var INSTANCE: FirebasePersonalRepository? = null
@@ -665,4 +692,11 @@ class FirebasePersonalRepository private constructor(
             )
         }
     }
+
+    private data class LegacyDemoTransactionSignature(
+        val categoryId: String,
+        val amount: Double,
+        val type: TransactionType,
+        val createdBeforeDateByMs: Long,
+    )
 }
