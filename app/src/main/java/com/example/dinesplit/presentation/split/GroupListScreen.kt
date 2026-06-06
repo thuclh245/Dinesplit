@@ -333,6 +333,7 @@ fun FinancialSummaryCard(
                         contentColor = colorScheme.onPrimary
                     ),
                     shape = CircleShape,
+                    modifier = Modifier.fillMaxWidth().height(40.dp),
                 )
             }
         }
@@ -362,6 +363,7 @@ fun FinancialSummaryCard(
                         contentColor = colorScheme.onSecondary
                     ),
                     shape = CircleShape,
+                    modifier = Modifier.fillMaxWidth().height(40.dp),
                 )
             }
         }

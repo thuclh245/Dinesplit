@@ -1,8 +1,9 @@
 package com.example.dinesplit.presentation.auth
 
-import androidx.compose.foundation.BorderStroke
+import android.app.Activity
+import androidx.activity.compose.rememberLauncherForActivityResult
+import androidx.activity.result.contract.ActivityResultContracts
 import androidx.compose.foundation.background
-import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.rememberScrollState
@@ -11,6 +12,7 @@ import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.automirrored.filled.ArrowBack
 import androidx.compose.material.icons.filled.*
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
@@ -22,41 +24,86 @@ import androidx.compose.ui.draw.clip
 import androidx.compose.ui.draw.shadow
 import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
-import androidx.compose.ui.graphics.vector.ImageVector
+import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.SpanStyle
 import androidx.compose.ui.text.buildAnnotatedString
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.input.ImeAction
 import androidx.compose.ui.text.input.KeyboardType
-import androidx.compose.ui.text.input.PasswordVisualTransformation
-import androidx.compose.ui.text.input.VisualTransformation
 import androidx.compose.ui.text.withStyle
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import androidx.compose.ui.semantics.Role
+import androidx.compose.ui.semantics.semantics
+import androidx.compose.ui.semantics.contentDescription
 import androidx.lifecycle.viewmodel.compose.viewModel
 import coil.compose.AsyncImage
 import com.example.dinesplit.ui.theme.DineSplitTheme
 import com.example.dinesplit.core.ui.PrimaryButton
+import com.example.dinesplit.core.ui.SecondaryButton
 import com.example.dinesplit.core.ui.AppIconButton
 import com.example.dinesplit.core.ui.AppTextField
 import com.example.dinesplit.core.ui.PasswordTextField
 import com.example.dinesplit.core.ui.AppDimens
 import com.example.dinesplit.core.ui.AppShapes
+import com.google.android.gms.auth.api.signin.GoogleSignIn
+import com.google.android.gms.auth.api.signin.GoogleSignInOptions
+import com.google.android.gms.common.api.ApiException
 import kotlinx.coroutines.flow.collectLatest
 
 @Composable
 fun RegisterScreen(
     onGoToLogin: () -> Unit,
     onRegisterSuccess: (String) -> Unit,
+    onGoogleLoginSuccess: (com.example.dinesplit.domain.model.AppStartDestination) -> Unit = {},
     viewModel: RegisterViewModel = viewModel(),
 ) {
     val uiState by viewModel.uiState.collectAsState()
+    val context = LocalContext.current
+    val googleSignInClient =
+        remember(context) {
+            val options =
+                GoogleSignInOptions.Builder(GoogleSignInOptions.DEFAULT_SIGN_IN)
+                    .requestIdToken(context.getString(com.example.dinesplit.R.string.default_web_client_id))
+                    .requestEmail()
+                    .build()
+            GoogleSignIn.getClient(context, options)
+        }
+    val googleSignInLauncher =
+        rememberLauncherForActivityResult(ActivityResultContracts.StartActivityForResult()) { result ->
+            val task = GoogleSignIn.getSignedInAccountFromIntent(result.data)
+            try {
+                val account = task.getResult(ApiException::class.java)
+                val idToken = account.idToken
+                if (idToken.isNullOrBlank()) {
+                    viewModel.onGoogleSignInError("Google không trả về mã đăng nhập. Vui lòng thử lại.")
+                } else {
+                    viewModel.loginWithGoogle(idToken)
+                }
+            } catch (e: ApiException) {
+                if (e.statusCode == 12501) {
+                    viewModel.onGoogleSignInError("Đã hủy đăng nhập Google.")
+                } else {
+                    val errorMsg = when (e.statusCode) {
+                        10 -> "Lỗi cấu hình Google Sign-In (10): Vui lòng đăng ký vân tay SHA-1 trong Firebase Console."
+                        7 -> "Lỗi kết nối mạng (7). Vui lòng kiểm tra internet."
+                        else -> "Đăng nhập Google thất bại (Mã lỗi: ${e.statusCode}). Vui lòng thử lại."
+                    }
+                    viewModel.onGoogleSignInError(errorMsg)
+                }
+            }
+        }
 
     LaunchedEffect(viewModel) {
         viewModel.effect.collectLatest { effect ->
-            if (effect is RegisterUiEffect.NavigateToCompleteProfile) {
-                onRegisterSuccess(effect.displayName)
+            when (effect) {
+                is RegisterUiEffect.NavigateToCompleteProfile -> {
+                    onRegisterSuccess(effect.displayName)
+                }
+                is RegisterUiEffect.NavigateToResolved -> {
+                    onGoogleLoginSuccess(effect.destination)
+                }
             }
         }
     }
@@ -69,6 +116,11 @@ fun RegisterScreen(
         onConfirmPasswordChange = viewModel::onConfirmPasswordChange,
         onTermsAcceptedChange = viewModel::onTermsAcceptedChange,
         onSubmit = viewModel::submit,
+        onGoogleSignIn = {
+            googleSignInClient.signOut().addOnCompleteListener {
+                googleSignInLauncher.launch(googleSignInClient.signInIntent)
+            }
+        },
         onGoToLogin = onGoToLogin,
     )
 }
@@ -82,6 +134,7 @@ private fun RegisterContent(
     onConfirmPasswordChange: (String) -> Unit,
     onTermsAcceptedChange: (Boolean) -> Unit,
     onSubmit: () -> Unit,
+    onGoogleSignIn: () -> Unit,
     onGoToLogin: () -> Unit,
 ) {
     Box(modifier = Modifier.fillMaxSize().background(MaterialTheme.colorScheme.surface)) {
@@ -119,10 +172,13 @@ private fun RegisterContent(
                 verticalAlignment = Alignment.CenterVertically,
                 horizontalArrangement = Arrangement.SpaceBetween,
             ) {
-                AppIconButton(onClick = onGoToLogin) {
+                AppIconButton(
+                    onClick = onGoToLogin,
+                    contentDescription = "Quay lại"
+                ) {
                     Icon(
-                        imageVector = Icons.Default.ArrowBack,
-                        contentDescription = "Back",
+                        imageVector = Icons.AutoMirrored.Filled.ArrowBack,
+                        contentDescription = "Quay lại",
                         tint = MaterialTheme.colorScheme.primary,
                     )
                 }
@@ -135,9 +191,12 @@ private fun RegisterContent(
                         ),
                     color = MaterialTheme.colorScheme.onSurface,
                 )
-                TextButton(onClick = { /* Help */ }) {
+                TextButton(
+                    onClick = { /* Help */ },
+                    modifier = Modifier.semantics { contentDescription = "Trợ giúp" }
+                ) {
                     Text(
-                        "Help",
+                        "Trợ giúp",
                         style = MaterialTheme.typography.labelMedium.copy(fontWeight = FontWeight.Bold),
                         color = MaterialTheme.colorScheme.primary,
                     )
@@ -149,6 +208,8 @@ private fun RegisterContent(
                 modifier =
                     Modifier
                         .fillMaxSize()
+                        .navigationBarsPadding()
+                        .imePadding()
                         .padding(horizontal = AppDimens.space2Xl)
                         .verticalScroll(rememberScrollState()),
                 verticalArrangement = Arrangement.spacedBy(AppDimens.space2Xl),
@@ -160,9 +221,9 @@ private fun RegisterContent(
                     Text(
                         text =
                             buildAnnotatedString {
-                                append("Join the ")
+                                append("Tham gia ")
                                 withStyle(SpanStyle(color = MaterialTheme.colorScheme.primary)) {
-                                    append("Table.")
+                                    append("bàn ăn.")
                                 }
                             },
                         style =
@@ -173,7 +234,7 @@ private fun RegisterContent(
                         color = MaterialTheme.colorScheme.onSurface,
                     )
                     Text(
-                        text = "Create your Social Ledger account to start splitting memories, not just bills.",
+                        text = "Tạo tài khoản DineSplit để chia sẻ kỷ niệm, không chỉ chia hóa đơn.",
                         style =
                             MaterialTheme.typography.bodyLarge.copy(
                                 fontWeight = FontWeight.Medium,
@@ -188,8 +249,8 @@ private fun RegisterContent(
                     AppTextField(
                         value = uiState.displayName,
                         onValueChange = onDisplayNameChange,
-                        label = "DISPLAY NAME",
-                        placeholder = "Foodie Traveler",
+                        label = "Tên hiển thị",
+                        placeholder = "Tên hiển thị của bạn",
                         leadingIcon = { Icon(imageVector = Icons.Default.Person, contentDescription = null, tint = MaterialTheme.colorScheme.onSurfaceVariant) },
                         isError = uiState.displayNameError != null,
                         supportingText = uiState.displayNameError,
@@ -198,8 +259,8 @@ private fun RegisterContent(
                     AppTextField(
                         value = uiState.email,
                         onValueChange = onEmailChange,
-                        label = "EMAIL ADDRESS",
-                        placeholder = "hello@dinesplit.com",
+                        label = "Email",
+                        placeholder = "email@example.com",
                         leadingIcon = { Icon(imageVector = Icons.Default.Mail, contentDescription = null, tint = MaterialTheme.colorScheme.onSurfaceVariant) },
                         isError = uiState.emailError != null,
                         supportingText = uiState.emailError,
@@ -209,7 +270,7 @@ private fun RegisterContent(
                     PasswordTextField(
                         value = uiState.password,
                         onValueChange = onPasswordChange,
-                        label = "PASSWORD",
+                        label = "Mật khẩu",
                         placeholder = "••••••••",
                         leadingIcon = { Icon(imageVector = Icons.Default.Lock, contentDescription = null, tint = MaterialTheme.colorScheme.onSurfaceVariant) },
                         isError = uiState.passwordError != null,
@@ -220,7 +281,7 @@ private fun RegisterContent(
                     PasswordTextField(
                         value = uiState.confirmPassword,
                         onValueChange = onConfirmPasswordChange,
-                        label = "CONFIRM PASSWORD",
+                        label = "Xác nhận mật khẩu",
                         placeholder = "••••••••",
                         leadingIcon = { Icon(imageVector = Icons.Default.LockReset, contentDescription = null, tint = MaterialTheme.colorScheme.onSurfaceVariant) },
                         isError = uiState.confirmPasswordError != null,
@@ -243,12 +304,12 @@ private fun RegisterContent(
                                 checkedColor = MaterialTheme.colorScheme.primary,
                                 uncheckedColor = MaterialTheme.colorScheme.outlineVariant,
                             ),
-                        modifier = Modifier.offset(y = -AppDimens.spaceSm),
+                        modifier = Modifier.offset(y = (-6).dp), // Offset optimized to align with first line of translated terms text
                     )
                     val uriHandler = androidx.compose.ui.platform.LocalUriHandler.current
                     val annotatedText =
                         buildAnnotatedString {
-                            append("By registering, you agree to our ")
+                            append("Bằng cách đăng ký, bạn đồng ý với ")
                             pushStringAnnotation(tag = "TERMS", annotation = "https://dinesplit.com/terms")
                             withStyle(
                                 SpanStyle(
@@ -257,10 +318,10 @@ private fun RegisterContent(
                                     textDecoration = androidx.compose.ui.text.style.TextDecoration.Underline,
                                 ),
                             ) {
-                                append("Terms of Service")
+                                append("Điều khoản dịch vụ")
                             }
                             pop()
-                            append(" and ")
+                            append(" và ")
                             pushStringAnnotation(tag = "PRIVACY", annotation = "https://dinesplit.com/privacy")
                             withStyle(
                                 SpanStyle(
@@ -269,10 +330,10 @@ private fun RegisterContent(
                                     textDecoration = androidx.compose.ui.text.style.TextDecoration.Underline,
                                 ),
                             ) {
-                                append("Privacy Policy")
+                                append("Chính sách quyền riêng tư")
                             }
                             pop()
-                            append(". We handle your data with care.")
+                            append(". Chúng tôi bảo vệ dữ liệu của bạn.")
                         }
                     androidx.compose.foundation.text.ClickableText(
                         text = annotatedText,
@@ -306,7 +367,7 @@ private fun RegisterContent(
                 }
 
                 PrimaryButton(
-                    text = "Create Account",
+                    text = "Tạo tài khoản",
                     onClick = onSubmit,
                     modifier = Modifier.fillMaxWidth(),
                     enabled = !uiState.isSubmitting,
@@ -321,7 +382,7 @@ private fun RegisterContent(
                     ) {
                         Box(modifier = Modifier.weight(1f).height(1.dp).background(MaterialTheme.colorScheme.surfaceContainerHighest))
                         Text(
-                            "OR CONTINUE WITH",
+                            "Hoặc tiếp tục với",
                             modifier = Modifier.padding(horizontal = AppDimens.spaceLg),
                             style = MaterialTheme.typography.labelSmall.copy(fontWeight = FontWeight.Bold, letterSpacing = 1.sp),
                             color = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.6f),
@@ -331,18 +392,17 @@ private fun RegisterContent(
 
                     Spacer(modifier = Modifier.height(AppDimens.spaceXl))
 
-                    Row(horizontalArrangement = Arrangement.spacedBy(AppDimens.spaceLg)) {
-                        SocialButton(
-                            iconUrl = "https://lh3.googleusercontent.com/aida-public/AB6AXuDpWtz23je5m8QkrgSxY1hqrDjt1DKEZ76ut_Cm8QeQRLBPHsAi9iPqcxSguk7cBDFu4WZRrH3QWg9pIgu3LdiwV-Tx2a0SXTLMK09ccp1RjZIAeylTpK6eW4YJztV_7lSJ5QuCOobycH1z6FYrl6tmau9FeGqrWtMCVmKps7wLwKNj69piYwl40TEYqfXG1YZkNvX-dAtkvcvT1jhTmEDaKaU1XG0DOwoiPWhk8zBdb_eVZ9Vcjr95baVidGx4Qmd3h8jNcIRvYn0",
-                            label = "Google",
-                            modifier = Modifier.weight(1f),
-                        )
-                        SocialButton(
-                            imageVector = Icons.Default.Smartphone, // Using Smartphone as a placeholder
-                            label = "Apple",
-                            modifier = Modifier.weight(1f),
-                        )
-                    }
+                    SecondaryButton(
+                        text = "Google",
+                        onClick = onGoogleSignIn,
+                        icon = {
+                            AsyncImage(
+                                model = "https://lh3.googleusercontent.com/aida-public/AB6AXuD3-5nU9KPj_Hs_UC9WFY9-eI6ZoanHilU8-FP0y2Z0yUjs__2H_sCJtrhbFEjh8z935q1mRmNyWkOKmTF31Qnr7UMVgXDUFaaY1i_Ll7DIKYx66AVwk18lQtplYDytARQ4c9gU4lxTrOhSIM5U48S4u_tcqAj821pr1082nimz0kbaFPFdlsPcphSKqv8EXbeYZdO1J8vArnX_cJH7xINCj9b9W0BjV3JXowL_BBf4NQDyzZ483yfi3nG6z8L2cq6BuUGiOEyYR1U",
+                                contentDescription = "Logo Google",
+                                modifier = Modifier.size(20.dp),
+                            )
+                        },
+                    )
                 }
 
                 // Footer
@@ -351,56 +411,21 @@ private fun RegisterContent(
                         Modifier
                             .fillMaxWidth()
                             .padding(vertical = AppDimens.space2Xl)
-                            .clickable { onGoToLogin() },
+                            .clickable(role = Role.Button) { onGoToLogin() },
                     horizontalArrangement = Arrangement.Center,
                 ) {
                     Text(
-                        "Already have an account? ",
+                        "Đã có tài khoản? ",
                         style = MaterialTheme.typography.bodyMedium,
                         color = MaterialTheme.colorScheme.onSurfaceVariant,
                     )
                     Text(
-                        "Sign In",
+                        "Đăng nhập",
                         style = MaterialTheme.typography.bodyMedium.copy(fontWeight = FontWeight.Bold),
                         color = MaterialTheme.colorScheme.primary,
                     )
                 }
             }
-        }
-    }
-}
-
-
-@Composable
-private fun SocialButton(
-    modifier: Modifier = Modifier,
-    iconUrl: String? = null,
-    imageVector: ImageVector? = null,
-    label: String,
-) {
-    Surface(
-        onClick = { },
-        modifier = modifier.height(AppDimens.buttonHeight),
-        shape = AppShapes.medium,
-        color = MaterialTheme.colorScheme.surfaceContainerLowest,
-        border = BorderStroke(1.dp, MaterialTheme.colorScheme.outlineVariant.copy(alpha = 0.15f)),
-    ) {
-        Row(
-            modifier = Modifier.fillMaxSize(),
-            verticalAlignment = Alignment.CenterVertically,
-            horizontalArrangement = Arrangement.Center,
-        ) {
-            if (iconUrl != null) {
-                AsyncImage(model = iconUrl, contentDescription = null, modifier = Modifier.size(20.dp))
-            } else if (imageVector != null) {
-                Icon(imageVector = imageVector, contentDescription = null, modifier = Modifier.size(20.dp), tint = Color.Black)
-            }
-            Spacer(modifier = Modifier.width(AppDimens.spaceSm))
-            Text(
-                text = label,
-                style = MaterialTheme.typography.labelLarge.copy(fontWeight = FontWeight.Bold),
-                color = MaterialTheme.colorScheme.onSurface,
-            )
         }
     }
 }
@@ -420,6 +445,7 @@ fun RegisterScreenPreview() {
             onConfirmPasswordChange = {},
             onTermsAcceptedChange = {},
             onSubmit = {},
+            onGoogleSignIn = {},
             onGoToLogin = {},
         )
     }

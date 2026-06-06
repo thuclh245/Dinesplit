@@ -11,6 +11,7 @@ import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
+import androidx.compose.material.icons.automirrored.filled.ReceiptLong
 import androidx.compose.material.icons.filled.*
 import androidx.compose.material.icons.outlined.BookmarkBorder
 import androidx.compose.material.icons.outlined.ChatBubbleOutline
@@ -722,7 +723,7 @@ private fun LinkedBillSummarySection(
                             horizontalArrangement = Arrangement.spacedBy(AppDimens.spaceXs)
                         ) {
                             Icon(
-                                imageVector = Icons.Default.ReceiptLong,
+                                imageVector = Icons.AutoMirrored.Filled.ReceiptLong,
                                 contentDescription = null,
                                 tint = MaterialTheme.colorScheme.primary,
                                 modifier = Modifier.size(AppDimens.spaceMd)
@@ -746,7 +747,7 @@ private fun LinkedBillSummarySection(
                     )
                 }
                 
-                if (summary.isParticipant) {
+                if (summary.isParticipant && summary.isAuthorized) {
                     Text(
                         text = if (summary.isSettled) "✓ ĐÃ XONG" else "⚠ CHỜ CHI",
                         style = MaterialTheme.typography.labelSmall.copy(fontWeight = FontWeight.ExtraBold),
@@ -772,7 +773,7 @@ private fun LinkedBillSummarySection(
                     )
                 }
                 
-                if (summary.isParticipant) {
+                if (summary.isParticipant && summary.isAuthorized) {
                     Column(horizontalAlignment = Alignment.End) {
                         Text(
                             text = if (summary.isIPayer) "Bạn đã trả trước" else "Bạn còn cần trả",
@@ -794,32 +795,34 @@ private fun LinkedBillSummarySection(
                 }
             }
 
-            Row(
-                modifier = Modifier.fillMaxWidth(),
-                horizontalArrangement = Arrangement.spacedBy(AppDimens.spaceSm)
-            ) {
-                TextButton(
-                    onClick = onViewBill,
-                    modifier = Modifier.weight(1f),
-                    shape = AppShapes.medium,
+            if (summary.isAuthorized) {
+                Row(
+                    modifier = Modifier.fillMaxWidth(),
+                    horizontalArrangement = Arrangement.spacedBy(AppDimens.spaceSm)
                 ) {
-                    Text(
-                        text = "Xem chi tiết",
-                        style = MaterialTheme.typography.labelMedium.copy(fontWeight = FontWeight.Bold)
-                    )
-                }
-
-                if (summary.isParticipant && !summary.isSettled && !summary.isMyPaid && !summary.isIPayer && summary.myShare > 0.0) {
-                    SmallButton(
-                        text = "Thanh toán",
-                        onClick = onSettleUp,
+                    TextButton(
+                        onClick = onViewBill,
                         modifier = Modifier.weight(1f),
                         shape = AppShapes.medium,
-                        colors = ButtonDefaults.buttonColors(
-                            containerColor = MaterialTheme.colorScheme.secondary,
-                            contentColor = MaterialTheme.colorScheme.onSecondary
+                    ) {
+                        Text(
+                            text = "Xem chi tiết",
+                            style = MaterialTheme.typography.labelMedium.copy(fontWeight = FontWeight.Bold)
                         )
-                    )
+                    }
+
+                    if (summary.isParticipant && !summary.isSettled && !summary.isMyPaid && !summary.isIPayer && summary.myShare > 0.0) {
+                        SmallButton(
+                            text = "Thanh toán",
+                            onClick = onSettleUp,
+                            modifier = Modifier.weight(1f),
+                            shape = AppShapes.medium,
+                            colors = ButtonDefaults.buttonColors(
+                                containerColor = MaterialTheme.colorScheme.secondary,
+                                contentColor = MaterialTheme.colorScheme.onSecondary
+                            )
+                        )
+                    }
                 }
             }
         }
@@ -949,12 +952,14 @@ private fun SocialSplitCard(
                 }
             }
 
-            DinePostImage(
-                imageUrl = post.imageUrls.firstOrNull(),
-                contentDescription = post.caption,
-                modifier = Modifier.padding(horizontal = AppDimens.spaceSm).aspectRatio(1f),
-                shape = AppShapes.large,
-            )
+            if (post.imageUrls.isNotEmpty()) {
+                DinePostImage(
+                    imageUrl = post.imageUrls.firstOrNull(),
+                    contentDescription = post.caption,
+                    modifier = Modifier.padding(horizontal = AppDimens.spaceSm).aspectRatio(1f),
+                    shape = AppShapes.large,
+                )
+            }
 
             Row(
                 modifier = Modifier.padding(horizontal = AppDimens.spaceLg, vertical = AppDimens.spaceSm).fillMaxWidth(),
@@ -1005,13 +1010,26 @@ private fun SocialSplitCard(
                 }
             }
 
-            val hasLinkedBill = !post.linkedGroupId.isNullOrBlank() && !post.linkedBillId.isNullOrBlank()
+            val hasLinkedBill = !post.linkedGroupId.isNullOrBlank() && !post.linkedBillId.isNullOrBlank() && post.id != post.linkedBillId
             if (hasLinkedBill) {
                 if (billSummary != null) {
+                    val context = androidx.compose.ui.platform.LocalContext.current
                     LinkedBillSummarySection(
                         summary = billSummary,
-                        onViewBill = onSettleUp,
-                        onSettleUp = onSettleUp
+                        onViewBill = {
+                            if (billSummary.isAuthorized) {
+                                onSettleUp()
+                            } else {
+                                android.widget.Toast.makeText(context, "Bạn không có quyền xem hóa đơn này.", android.widget.Toast.LENGTH_SHORT).show()
+                            }
+                        },
+                        onSettleUp = {
+                            if (billSummary.isAuthorized) {
+                                onSettleUp()
+                            } else {
+                                android.widget.Toast.makeText(context, "Bạn không có quyền xem hóa đơn này.", android.widget.Toast.LENGTH_SHORT).show()
+                            }
+                        }
                     )
                 } else {
                     Box(

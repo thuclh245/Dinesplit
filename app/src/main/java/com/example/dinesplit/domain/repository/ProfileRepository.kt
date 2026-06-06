@@ -6,6 +6,8 @@ import com.example.dinesplit.domain.model.UserProfile
 interface ProfileRepository {
     suspend fun getProfile(uid: String): UserProfile?
 
+    suspend fun getProfileByUsername(username: String): UserProfile?
+
     suspend fun searchProfiles(
         query: String,
         limit: Long = 20,

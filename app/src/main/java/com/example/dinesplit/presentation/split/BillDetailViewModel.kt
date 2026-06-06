@@ -33,6 +33,8 @@ data class BillDetailUiState(
     val paymentMessage: String? = null,
     val error: String? = null,
     val activeQrPayment: QrPayment? = null,
+    val isUnauthorized: Boolean = false,
+    val isNotFound: Boolean = false,
 )
 
 class BillDetailViewModel(
@@ -186,9 +188,48 @@ class BillDetailViewModel(
             runCatching {
                 combine(
                     repository.getBill(groupId, billId),
+                    repository.getGroup(groupId),
                     repository.getGroupMembers(groupId),
-                ) { bill, members -> bill to members }
-                    .collect { (bill, members) ->
+                ) { bill, group, members -> Triple(bill, group, members) }
+                    .collect { (bill, group, members) ->
+                        if (bill == null) {
+                            _uiState.update {
+                                it.copy(
+                                    bill = null,
+                                    members = emptyList(),
+                                    isLoading = false,
+                                    isUnauthorized = false,
+                                    isNotFound = true,
+                                    error = "Không tìm thấy hóa đơn",
+                                )
+                            }
+                            return@collect
+                        }
+
+                        val userId = currentUserId.orEmpty()
+                        val isGroupMember = group != null && (userId in group.memberIds && userId !in group.leftMemberIds || group.ownerId == userId)
+                        val isGroupMemberFromList = members.any { it.id == userId }
+                        val isBillParticipant = userId in bill.shares.keys
+                        val isBillCreatorOrPayer = bill.payerId == userId || bill.createdBy == userId
+
+                        val isAuthorized = userId.isNotBlank() && (
+                            isGroupMember || isGroupMemberFromList || isBillParticipant || isBillCreatorOrPayer
+                        )
+
+                        if (!isAuthorized) {
+                            _uiState.update {
+                                it.copy(
+                                    bill = null,
+                                    members = emptyList(),
+                                    isLoading = false,
+                                    isUnauthorized = true,
+                                    isNotFound = false,
+                                    error = "Bạn không có quyền xem hóa đơn này.",
+                                )
+                            }
+                            return@collect
+                        }
+
                         val effectiveMembers = buildEffectiveMembers(members, bill)
                         _uiState.update {
                             it.copy(
@@ -198,8 +239,10 @@ class BillDetailViewModel(
                                 isLoading = false,
                                 isUpdatingPayment = false,
                                 isDeleting = false,
-                                canManageBill = bill?.createdBy?.isNotBlank() == true && bill.createdBy == currentUserId,
-                                error = if (bill == null) "Không tìm thấy hóa đơn" else null,
+                                isUnauthorized = false,
+                                isNotFound = false,
+                                canManageBill = bill.createdBy.isNotBlank() && bill.createdBy == currentUserId,
+                                error = null,
                             )
                         }
                     }
@@ -210,6 +253,8 @@ class BillDetailViewModel(
                         isUpdatingPayment = false,
                         isDeleting = false,
                         canManageBill = false,
+                        isUnauthorized = false,
+                        isNotFound = false,
                         error = throwable.message ?: "Không thể tải chi tiết hóa đơn",
                     )
                 }

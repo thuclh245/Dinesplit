@@ -33,6 +33,7 @@ import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.text.withStyle
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import androidx.compose.ui.tooling.preview.Preview
 import coil.compose.AsyncImage
 
 @Composable
@@ -44,28 +45,38 @@ fun SplashContent(progress: Float = 0f) {
                 .background(MaterialTheme.colorScheme.surface),
     ) {
         // --- Background Editorial Texture ---
-        // Top right glow
+        // Top right glow - using radial gradient to prevent hard rectangular edge artifacts and ensure soft fallback
         Box(
             modifier =
                 Modifier
                     .align(Alignment.TopEnd)
                     .offset(x = 100.dp, y = (-100).dp)
                     .size(300.dp)
-                    .blur(100.dp)
-                    .clip(CircleShape)
-                    .background(MaterialTheme.colorScheme.primaryContainer.copy(alpha = 0.2f)),
+                    .background(
+                        Brush.radialGradient(
+                            colors = listOf(
+                                MaterialTheme.colorScheme.primaryContainer.copy(alpha = 0.2f),
+                                Color.Transparent
+                            )
+                        )
+                    ),
         )
 
-        // Bottom left glow
+        // Bottom left glow - using radial gradient to prevent hard rectangular edge artifacts and ensure soft fallback
         Box(
             modifier =
                 Modifier
                     .align(Alignment.BottomStart)
                     .offset(x = (-80).dp, y = 80.dp)
                     .size(280.dp)
-                    .blur(80.dp)
-                    .clip(CircleShape)
-                    .background(MaterialTheme.colorScheme.secondaryContainer.copy(alpha = 0.2f)),
+                    .background(
+                        Brush.radialGradient(
+                            colors = listOf(
+                                MaterialTheme.colorScheme.secondaryContainer.copy(alpha = 0.2f),
+                                Color.Transparent
+                            )
+                        )
+                    ),
         )
 
         // --- Floating Elements ---
@@ -119,15 +130,19 @@ fun SplashContent(progress: Float = 0f) {
         ) {
             // Top Section: Brand Icon
             Box(contentAlignment = Alignment.Center) {
-                // Ambient Glow
+                // Ambient Glow - using radial gradient to prevent square layout outline/clipping artifacts
                 Box(
                     modifier =
                         Modifier
                             .size(120.dp)
-                            .blur(24.dp)
-                            .alpha(0.2f)
-                            .clip(CircleShape)
-                            .background(MaterialTheme.colorScheme.primary),
+                            .background(
+                                Brush.radialGradient(
+                                    colors = listOf(
+                                        MaterialTheme.colorScheme.primary.copy(alpha = 0.2f),
+                                        Color.Transparent
+                                    )
+                                )
+                            ),
                 )
 
                 Box(
@@ -300,4 +315,12 @@ private fun UserAvatar(url: String) {
                 .background(MaterialTheme.colorScheme.surfaceContainer),
         contentScale = ContentScale.Crop,
     )
+}
+
+@Preview(showBackground = true)
+@Composable
+fun SplashContentPreview() {
+    MaterialTheme {
+        SplashContent(progress = 0.5f)
+    }
 }

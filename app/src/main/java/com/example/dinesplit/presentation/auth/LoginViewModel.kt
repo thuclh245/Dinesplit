@@ -15,9 +15,9 @@ import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.launch
 
 data class LoginUiState(
-    val email: String = "",
+    val emailOrUsername: String = "",
     val password: String = "",
-    val emailError: String? = null,
+    val emailOrUsernameError: String? = null,
     val passwordError: String? = null,
     val isSubmitting: Boolean = false,
     val submitError: String? = null,
@@ -38,8 +38,8 @@ class LoginViewModel(application: Application) : AndroidViewModel(application) {
     private val _effect = MutableSharedFlow<LoginUiEffect>()
     val effect: SharedFlow<LoginUiEffect> = _effect.asSharedFlow()
 
-    fun onEmailChange(value: String) {
-        _uiState.value = _uiState.value.copy(email = value, emailError = null, submitError = null)
+    fun onEmailOrUsernameChange(value: String) {
+        _uiState.value = _uiState.value.copy(emailOrUsername = value, emailOrUsernameError = null, submitError = null)
     }
 
     fun onPasswordChange(value: String) {
@@ -50,37 +50,58 @@ class LoginViewModel(application: Application) : AndroidViewModel(application) {
         val current = _uiState.value
         if (current.isSubmitting) return
 
-        val emailError = AuthInputValidator.validateEmail(current.email)
+        val emailOrUsernameError = AuthInputValidator.validateLoginIdentifier(current.emailOrUsername)
         val passwordError = AuthInputValidator.validatePasswordForLogin(current.password)
-        if (emailError != null || passwordError != null) {
-            _uiState.value = current.copy(emailError = emailError, passwordError = passwordError)
+        if (emailOrUsernameError != null || passwordError != null) {
+            _uiState.value = current.copy(emailOrUsernameError = emailOrUsernameError, passwordError = passwordError)
             return
         }
 
         viewModelScope.launch {
             _uiState.value = _uiState.value.copy(isSubmitting = true, submitError = null)
-            loginUseCase(current.email.trim(), current.password)
-                .onSuccess {
-                    try {
-                        val destination = resolveStartDestinationUseCase()
-                        _uiState.value = _uiState.value.copy(isSubmitting = false)
-                        _effect.emit(LoginUiEffect.NavigateToResolved(destination))
-                    } catch (e: Exception) {
-                        android.util.Log.e("LoginViewModel", "Error resolving destination", e)
+
+            val identifier = current.emailOrUsername.trim()
+            val emailResult = if (identifier.contains("@")) {
+                Result.success(identifier)
+            } else {
+                runCatching {
+                    val normalized = identifier.removePrefix("@").trim()
+                    val profileRepo = AppContainer.profileRepository(getApplication())
+                    val profile = profileRepo.getProfileByUsername(normalized)
+                    profile?.email ?: throw Exception("Không tìm thấy tài khoản với tên người dùng: $normalized")
+                }
+            }
+
+            emailResult.onSuccess { resolvedEmail ->
+                loginUseCase(resolvedEmail, current.password)
+                    .onSuccess {
+                        try {
+                            val destination = resolveStartDestinationUseCase()
+                            _uiState.value = _uiState.value.copy(isSubmitting = false)
+                            _effect.emit(LoginUiEffect.NavigateToResolved(destination))
+                        } catch (e: Exception) {
+                            android.util.Log.e("LoginViewModel", "Error resolving destination", e)
+                            _uiState.value =
+                                _uiState.value.copy(
+                                    isSubmitting = false,
+                                    submitError = "Đăng nhập thành công nhưng không thể tải thông tin cá nhân. Vui lòng kiểm tra kết nối internet.",
+                                )
+                        }
+                    }
+                    .onFailure { throwable ->
                         _uiState.value =
                             _uiState.value.copy(
                                 isSubmitting = false,
-                                submitError = "Successfully logged in, but couldn't load profile. Please check your internet connection.",
+                                submitError = FirebaseErrorMapper.toUserMessage(throwable),
                             )
                     }
-                }
-                .onFailure { throwable ->
-                    _uiState.value =
-                        _uiState.value.copy(
-                            isSubmitting = false,
-                            submitError = FirebaseErrorMapper.toUserMessage(throwable),
-                        )
-                }
+            }.onFailure { throwable ->
+                _uiState.value =
+                    _uiState.value.copy(
+                        isSubmitting = false,
+                        submitError = throwable.message ?: "Không thể xác thực tên người dùng.",
+                    )
+            }
         }
     }
 

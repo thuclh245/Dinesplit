@@ -122,7 +122,7 @@ fun BillDetailScreen(
     }
 
     LaunchedEffect(uiState.isLoading, uiState.bill, groupId, billId) {
-        if (!uiState.isLoading && uiState.bill == null) {
+        if (!uiState.isLoading && uiState.bill == null && !uiState.isUnauthorized) {
             onBillRemovedForPersonal(groupId, billId)
         }
     }
@@ -206,7 +206,7 @@ fun BillDetailScreen(
                 uiState.error != null ->
                     item {
                         BdMessageCard(
-                            title = "Không thể tải hóa đơn",
+                            title = if (uiState.isUnauthorized) "Không có quyền truy cập" else "Không thể tải hóa đơn",
                             message = uiState.error.orEmpty(),
                         )
                     }

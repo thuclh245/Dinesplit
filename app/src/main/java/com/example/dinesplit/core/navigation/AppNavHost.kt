@@ -83,6 +83,23 @@ fun AppNavHost(navController: NavHostController) {
                     onRegisterSuccess = { displayName ->
                         navController.navigate(AppRoute.CompleteProfile.createRoute(displayName))
                     },
+                    onGoogleLoginSuccess = { destination ->
+                        val target =
+                            when (destination) {
+                                AppStartDestination.MAIN -> NavGraph.MAIN
+                                AppStartDestination.COMPLETE_PROFILE -> AppRoute.CompleteProfile.route
+                                AppStartDestination.AUTH -> AppRoute.Login.route
+                            }
+
+                        if (target != AppRoute.Login.route) {
+                            navController.navigate(target) {
+                                if (target == NavGraph.MAIN) {
+                                    popUpTo(NavGraph.AUTH) { inclusive = true }
+                                }
+                                launchSingleTop = true
+                            }
+                        }
+                    },
                 )
             }
         }

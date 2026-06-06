@@ -24,6 +24,7 @@ import androidx.compose.ui.unit.sp
 import androidx.compose.foundation.selection.selectable
 import androidx.compose.ui.semantics.Role
 import androidx.compose.ui.semantics.semantics
+import androidx.compose.ui.semantics.contentDescription
 import androidx.lifecycle.viewmodel.compose.viewModel
 import com.example.dinesplit.core.ui.AppDimens
 import com.example.dinesplit.core.ui.AppScaffold
@@ -192,7 +193,7 @@ private fun OtherProfileHeader(
 ) {
     val resolvedBio = profile.bio.ifBlank { "Người dùng này chưa cập nhật tiểu sử." }
 
-    Column(modifier = Modifier.padding(24.dp)) {
+    Column(modifier = Modifier.padding(start = 24.dp, end = 24.dp, top = 8.dp, bottom = 16.dp)) {
         Row(
             modifier = Modifier.fillMaxWidth(),
             verticalAlignment = Alignment.CenterVertically,
@@ -244,7 +245,12 @@ private fun OtherProfileHeader(
                         enabled = !isFollowActionBusy,
                         isLoading = isFollowActionBusy,
                         shape = RoundedCornerShape(12.dp),
-                        modifier = Modifier.weight(1f).height(40.dp),
+                        modifier = Modifier
+                            .weight(1f)
+                            .height(40.dp)
+                            .semantics {
+                                contentDescription = if (isFollowing) "Bỏ theo dõi người dùng" else "Theo dõi người dùng"
+                            },
                         colors = ButtonDefaults.buttonColors(
                             containerColor = if (isFollowing) {
                                 MaterialTheme.colorScheme.surfaceContainer
@@ -271,12 +277,12 @@ private fun OtherProfileHeader(
         ) {
             OtherStatItem(label = "Bài viết", value = postsCount.toString())
             OtherStatItem(
-                label = "Người theo dõi",
+                label = "Theo dõi",
                 value = profile.followersCount.toString(),
                 modifier = Modifier.clickable { onFollowersClick() }
             )
             OtherStatItem(
-                label = "Đang theo dõi",
+                label = "Đang theo",
                 value = profile.followingCount.toString(),
                 modifier = Modifier.clickable { onFollowingClick() }
             )

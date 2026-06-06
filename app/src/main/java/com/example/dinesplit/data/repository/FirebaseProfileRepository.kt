@@ -41,6 +41,25 @@ class FirebaseProfileRepository private constructor(
         }
     }
 
+    override suspend fun getProfileByUsername(username: String): UserProfile? {
+        return try {
+            val normalizedUsername = normalizeUsername(username)
+            val claimSnapshot = firestore.collection(COLLECTION_USERNAME_CLAIMS)
+                .document(normalizedUsername)
+                .get()
+                .awaitFirebase()
+
+            if (!claimSnapshot.exists()) {
+                return null
+            }
+            val uid = claimSnapshot.getString(FIELD_UID) ?: return null
+            getProfile(uid)
+        } catch (e: Exception) {
+            android.util.Log.e("FirebaseProfileRepo", "Error fetching profile by username", e)
+            throw e
+        }
+    }
+
     override suspend fun searchProfiles(
         query: String,
         limit: Long,

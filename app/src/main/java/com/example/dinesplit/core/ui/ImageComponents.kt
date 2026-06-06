@@ -60,12 +60,15 @@ fun DineAvatarImage(
         contentAlignment = Alignment.Center
     ) {
         if (!imageUrl.isNullOrBlank() && !isError) {
+            val context = LocalContext.current
+            val request = remember(imageUrl) {
+                ImageRequest.Builder(context)
+                    .data(imageUrl)
+                    .crossfade(true)
+                    .build()
+            }
             AsyncImage(
-                model =
-                    ImageRequest.Builder(LocalContext.current)
-                        .data(imageUrl)
-                        .crossfade(true)
-                        .build(),
+                model = request,
                 contentDescription = name,
                 modifier = Modifier.fillMaxSize(),
                 contentScale = ContentScale.Crop,
@@ -112,12 +115,15 @@ fun DinePostImage(
         contentAlignment = Alignment.Center,
     ) {
         if (!imageUrl.isNullOrBlank() && !isError) {
+            val context = LocalContext.current
+            val request = remember(imageUrl) {
+                ImageRequest.Builder(context)
+                    .data(imageUrl)
+                    .crossfade(true)
+                    .build()
+            }
             AsyncImage(
-                model =
-                    ImageRequest.Builder(LocalContext.current)
-                        .data(imageUrl)
-                        .crossfade(true)
-                        .build(),
+                model = request,
                 contentDescription = contentDescription,
                 modifier = Modifier.fillMaxSize(),
                 contentScale = ContentScale.Crop,

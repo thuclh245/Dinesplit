@@ -49,6 +49,7 @@ fun AppTextField(
     visualTransformation: VisualTransformation = VisualTransformation.None,
     trailingIcon: @Composable (() -> Unit)? = null,
     leadingIcon: @Composable (() -> Unit)? = null,
+    prefix: @Composable (() -> Unit)? = null,
     textStyle: TextStyle? = null,
     minHeight: Dp = AppDimens.textFieldMinHeight,
 ) {
@@ -69,18 +70,19 @@ fun AppTextField(
         visualTransformation = visualTransformation,
         trailingIcon = trailingIcon,
         leadingIcon = leadingIcon,
+        prefix = prefix,
         textStyle = textStyle ?: MaterialTheme.typography.bodyLarge,
         shape = AppShapes.medium,
         colors =
             TextFieldDefaults.colors(
-                focusedContainerColor = MaterialTheme.colorScheme.surfaceContainer,
-                unfocusedContainerColor = MaterialTheme.colorScheme.surfaceContainer,
-                disabledContainerColor = MaterialTheme.colorScheme.surfaceContainer.copy(alpha = 0.7f),
-                errorContainerColor = MaterialTheme.colorScheme.surfaceContainer,
-                focusedIndicatorColor = Color.Transparent,
+                focusedContainerColor = MaterialTheme.colorScheme.surfaceContainerLowest,
+                unfocusedContainerColor = MaterialTheme.colorScheme.surfaceContainerLow,
+                disabledContainerColor = MaterialTheme.colorScheme.surfaceContainerLow.copy(alpha = 0.7f),
+                errorContainerColor = MaterialTheme.colorScheme.surfaceContainerLow,
+                focusedIndicatorColor = MaterialTheme.colorScheme.primary,
                 unfocusedIndicatorColor = Color.Transparent,
                 disabledIndicatorColor = Color.Transparent,
-                errorIndicatorColor = Color.Transparent,
+                errorIndicatorColor = MaterialTheme.colorScheme.error,
                 cursorColor = MaterialTheme.colorScheme.primary,
                 focusedTextColor = MaterialTheme.colorScheme.onSurface,
                 unfocusedTextColor = MaterialTheme.colorScheme.onSurface,
@@ -139,6 +141,7 @@ fun DineSplitTextField(
     visualTransformation: VisualTransformation = VisualTransformation.None,
     trailingIcon: @Composable (() -> Unit)? = null,
     leadingIcon: @Composable (() -> Unit)? = null,
+    prefix: @Composable (() -> Unit)? = null,
     textStyle: TextStyle? = null,
     minHeight: Dp = AppDimens.textFieldMinHeight,
 ) = AppTextField(
@@ -158,6 +161,7 @@ fun DineSplitTextField(
     visualTransformation = visualTransformation,
     trailingIcon = trailingIcon,
     leadingIcon = leadingIcon,
+    prefix = prefix,
     textStyle = textStyle,
     minHeight = minHeight,
 )
@@ -198,7 +202,7 @@ fun PasswordTextField(
             ) {
                 Icon(
                     imageVector = if (passwordVisible) Icons.Default.Visibility else Icons.Default.VisibilityOff,
-                    contentDescription = if (passwordVisible) "Ẩn mật khẩu" else "Hiển thị mật khẩu"
+                    contentDescription = if (passwordVisible) "Ẩn mật khẩu" else "Hiện mật khẩu"
                 )
             }
         }
@@ -215,6 +219,7 @@ fun SearchTextField(
     onClearClick: () -> Unit = {},
     keyboardOptions: KeyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Text, imeAction = ImeAction.Search),
     keyboardActions: KeyboardActions = KeyboardActions.Default,
+    minHeight: Dp = 44.dp,
 ) {
     AppTextField(
         value = value,
@@ -225,6 +230,7 @@ fun SearchTextField(
         singleLine = true,
         keyboardOptions = keyboardOptions,
         keyboardActions = keyboardActions,
+        minHeight = minHeight,
         leadingIcon = {
             Icon(
                 imageVector = Icons.Default.Search,
