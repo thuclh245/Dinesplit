@@ -751,20 +751,17 @@ class PersonalViewModel(application: Application) : AndroidViewModel(application
                         txnCalendar.get(Calendar.YEAR) == currentYear
                 }
                     .take(500)
+            val referenceMillis = System.currentTimeMillis()
             val upcomingRecurringExpense =
-                recurringRules
-                    .filter { it.isEnabled && it.type == TransactionType.EXPENSE }
-                    .sumOf { it.amount }
+                recurringRules.toUpcomingRecurringExpense(referenceMillis = referenceMillis)
             val categoryTypesById = categories.associate { it.id to it.type }
             val savingsGoal =
                 goals
-                    .filter { it.status == GoalStatus.ACTIVE }
-                    .filter { goal ->
-                        goal.categoryId == null ||
-                            categoryTypesById[goal.categoryId] == TransactionType.INCOME
-                    }
-                    .sumOf { (it.targetAmount - it.currentAmount).coerceAtLeast(0.0) }
-                    .coerceAtMost(5_000_000.0)
+                    .toPlanReserve(
+                        categoryTypesById = categoryTypesById,
+                        recurringRules = recurringRules,
+                        referenceMillis = referenceMillis,
+                    )
 
             _transactions.value = filteredTransactions
             _categories.value = categories
@@ -780,6 +777,7 @@ class PersonalViewModel(application: Application) : AndroidViewModel(application
                     insights = allTransactions.toMonthlyInsights(),
                     safeToSpend =
                         allTransactions.toSafeToSpendForecast(
+                            referenceMillis = referenceMillis,
                             upcomingRecurringExpense = upcomingRecurringExpense,
                             savingsGoal = savingsGoal,
                         ),

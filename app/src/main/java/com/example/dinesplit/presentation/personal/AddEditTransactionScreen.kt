@@ -820,11 +820,14 @@ private fun buildTransactionImpactPreview(
         }
 
     val recurringReserve =
-        recurringRules
-            .filter { it.isEnabled && it.type == TransactionType.EXPENSE }
-            .sumOf { it.amount }
+        recurringRules.toUpcomingRecurringExpense(referenceMillis = input.dateMillis)
     val categoryTypesById = categories.associate { it.id to it.type }
-    val goalReserveBefore = goals.toGoalReserve(categoryTypesById)
+    val goalReserveBefore =
+        goals.toPlanReserve(
+            categoryTypesById = categoryTypesById,
+            recurringRules = recurringRules,
+            referenceMillis = input.dateMillis,
+        )
     val goalsAfter =
         if (linkedGoal != null && goalImpact != null) {
             goals.map { goal ->
@@ -833,7 +836,12 @@ private fun buildTransactionImpactPreview(
         } else {
             goals
         }
-    val goalReserveAfter = goalsAfter.toGoalReserve(categoryTypesById)
+    val goalReserveAfter =
+        goalsAfter.toPlanReserve(
+            categoryTypesById = categoryTypesById,
+            recurringRules = recurringRules,
+            referenceMillis = input.dateMillis,
+        )
     val safeBefore =
         baseTransactions.toSafeToSpendForecast(
             referenceMillis = input.dateMillis,
@@ -990,16 +998,6 @@ private fun buildReminderImpactLine(
         isOverThreshold = isOverThreshold,
         isOverBudget = isOverBudget,
     )
-}
-
-private fun List<PersonalGoal>.toGoalReserve(categoryTypesById: Map<String, TransactionType>): Double {
-    return filter { it.status == GoalStatus.ACTIVE }
-        .filter { goal ->
-            goal.categoryId == null ||
-                categoryTypesById[goal.categoryId] == TransactionType.INCOME
-        }
-        .sumOf { goal -> (goal.targetAmount - goal.currentAmount).coerceAtLeast(0.0) }
-        .coerceAtMost(5_000_000.0)
 }
 
 private fun Transaction.isInsideReminderWindow(

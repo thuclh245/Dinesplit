@@ -49,7 +49,6 @@ import com.example.dinesplit.core.ui.AppDimens
 import com.example.dinesplit.core.ui.AppScaffold
 import com.example.dinesplit.core.ui.AppShapes
 import com.example.dinesplit.core.ui.BackNavigationButton
-import com.example.dinesplit.domain.model.GoalStatus
 import com.example.dinesplit.domain.model.Transaction
 import com.example.dinesplit.domain.model.TransactionSource
 import com.example.dinesplit.domain.model.TransactionType
@@ -845,16 +844,18 @@ private fun buildCashflowProjection(
     forecast: SafeToSpendForecast,
     scenario: CashflowScenario,
 ): CashflowProjection {
+    val referenceMillis = System.currentTimeMillis()
     val recurringReserve =
-        uiState.recurringRules
-            .filter { it.isEnabled && it.type == TransactionType.EXPENSE }
-            .sumOf { it.amount }
-    val goalRemaining =
-        uiState.goals
-            .filter { it.status == GoalStatus.ACTIVE }
-            .sumOf { (it.targetAmount - it.currentAmount).coerceAtLeast(0.0) }
+        uiState.recurringRules.toUpcomingRecurringExpense(referenceMillis = referenceMillis)
     val goalReserveCap = if (summary.totalIncome > 0.0) summary.totalIncome * 0.25 else 0.0
-    val goalReserve = goalRemaining.coerceAtMost(goalReserveCap)
+    val categoryTypesById = uiState.categories.associate { it.id to it.type }
+    val goalReserve =
+        uiState.goals.toPlanReserve(
+            categoryTypesById = categoryTypesById,
+            recurringRules = uiState.recurringRules,
+            reserveCap = goalReserveCap,
+            referenceMillis = referenceMillis,
+        )
     val reservedAmount = recurringReserve + goalReserve
     val projectedBalance = summary.balance - reservedAmount - scenario.amount
     val adjustedDaily = if (forecast.daysLeft > 0) {

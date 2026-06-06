@@ -1,5 +1,8 @@
 package com.example.dinesplit.presentation.personal
 
+import com.example.dinesplit.domain.model.GoalStatus
+import com.example.dinesplit.domain.model.PersonalGoal
+import com.example.dinesplit.domain.model.RecurringRule
 import com.example.dinesplit.domain.model.Transaction
 import com.example.dinesplit.domain.model.TransactionType
 import java.util.Calendar
@@ -224,6 +227,48 @@ fun List<Transaction>.toSafeToSpendForecast(
     )
 }
 
+internal fun List<PersonalGoal>.toPlanReserve(
+    categoryTypesById: Map<String, TransactionType>,
+    recurringRules: List<RecurringRule> = emptyList(),
+    reserveCap: Double = 5_000_000.0,
+    referenceMillis: Long = System.currentTimeMillis(),
+): Double {
+    val recurringExpenseByCategoryId =
+        recurringRules
+            .upcomingExpenseRules(referenceMillis)
+            .groupBy { it.categoryId }
+            .mapValues { (_, rules) -> rules.sumOf { it.amount } }
+
+    return filter { it.status == GoalStatus.ACTIVE }
+        .sumOf { goal ->
+            val remaining = (goal.targetAmount - goal.currentAmount).coerceAtLeast(0.0)
+            val categoryId = goal.categoryId?.takeIf { it.isNotBlank() }
+            when (categoryId?.let { categoryTypesById[it] }) {
+                null -> remaining
+                TransactionType.INCOME -> remaining
+                TransactionType.EXPENSE -> {
+                    val coveredByRecurring = recurringExpenseByCategoryId[categoryId] ?: 0.0
+                    (remaining - coveredByRecurring).coerceAtLeast(0.0)
+                }
+            }
+        }
+        .coerceAtMost(reserveCap)
+}
+
+internal fun List<RecurringRule>.toUpcomingRecurringExpense(
+    referenceMillis: Long = System.currentTimeMillis(),
+): Double = upcomingExpenseRules(referenceMillis).sumOf { it.amount }
+
+private fun List<RecurringRule>.upcomingExpenseRules(referenceMillis: Long): List<RecurringRule> {
+    val monthEnd = endOfMonthMillis(referenceMillis)
+    return filter { rule ->
+        rule.isEnabled &&
+            rule.type == TransactionType.EXPENSE &&
+            rule.nextRunAt > referenceMillis &&
+            rule.nextRunAt <= monthEnd
+    }
+}
+
 private fun List<Transaction>.filterByMonthOffset(
     referenceMillis: Long,
     offset: Int,
@@ -240,6 +285,17 @@ private fun List<Transaction>.filterByMonthOffset(
         val calendar = Calendar.getInstance().apply { timeInMillis = transaction.date }
         calendar.get(Calendar.MONTH) == targetMonth && calendar.get(Calendar.YEAR) == targetYear
     }
+}
+
+private fun endOfMonthMillis(referenceMillis: Long): Long {
+    return Calendar.getInstance().apply {
+        timeInMillis = referenceMillis
+        set(Calendar.DAY_OF_MONTH, getActualMaximum(Calendar.DAY_OF_MONTH))
+        set(Calendar.HOUR_OF_DAY, 23)
+        set(Calendar.MINUTE, 59)
+        set(Calendar.SECOND, 59)
+        set(Calendar.MILLISECOND, 999)
+    }.timeInMillis
 }
 
 private fun dayName(dayOfWeek: Int): String {
