@@ -192,7 +192,7 @@ fun PersonalScreen(
                 uiState.errorMessage?.let { message ->
                     item {
                         ErrorStateBlock(
-                            title = "Không thể tải dữ liệu Cá nhân",
+                            title = "Không thể tải dữ liệu Ví",
                             subtitle = message,
                             onRetryClick = onRefresh,
                         )
@@ -531,7 +531,7 @@ private fun PersonalSignalGrid(
             SignalTile(
                 modifier = Modifier.weight(1f),
                 icon = Icons.Default.AutoGraph,
-                label = "Điểm cá nhân",
+                label = "Điểm ví",
                 value = score.value.toString(),
                 subtitle = score.label,
                 color = scoreBandColor(score.band),

@@ -43,22 +43,12 @@ data class PersonalNotificationTrigger(
     val label: String,
     val amount: Double? = null,
     val categoryName: String? = null,
-    val score: Int? = null,
-    val band: String? = null,
     val triggerType: PersonalTriggerType,
 )
 
 enum class PersonalTriggerType {
-    TRANSACTION_ADDED,
-    CATEGORY_CREATED,
     REMINDER_CREATED,
     REMINDER_THRESHOLD_REACHED,
-    RECURRING_RULE_CREATED,
-    GOAL_CREATED,
-    WALLET_CREATED,
-    SAFE_TO_SPEND_CHANGED,
-    PERSONAL_SCORE_CHANGED,
-    SPLIT_BRIDGED_TO_PERSONAL,
 }
 
 data class PersonalReminderTrigger(
@@ -172,18 +162,6 @@ object NotificationFactory {
     ): Notification {
         val amountText = trigger.amount?.let { formatMoney(it) }
         val (title, subtitle, destination) = when (trigger.triggerType) {
-            PersonalTriggerType.TRANSACTION_ADDED ->
-                Triple(
-                    "Đã lưu giao dịch cá nhân",
-                    listOfNotNull(trigger.categoryName, amountText).joinToString(" - "),
-                    NotificationDestination.TRANSACTION_DETAIL,
-                )
-            PersonalTriggerType.CATEGORY_CREATED ->
-                Triple(
-                    "Danh mục đã sẵn sàng",
-                    "${trigger.label} hiện đã có trong Cá nhân",
-                    NotificationDestination.CATEGORY_MANAGEMENT,
-                )
             PersonalTriggerType.REMINDER_CREATED ->
                 Triple(
                     "Đã bật cảnh báo ngân sách",
@@ -195,42 +173,6 @@ object NotificationFactory {
                     "Cảnh báo chi tiêu: ${trigger.categoryName ?: trigger.label}",
                     amountText?.let { "Chi tiêu hiện tại là $it" } ?: trigger.label,
                     NotificationDestination.SPENDING_REMINDERS,
-                )
-            PersonalTriggerType.RECURRING_RULE_CREATED ->
-                Triple(
-                    "Đã thêm khoản lặp lại",
-                    "${trigger.label}${amountText?.let { " - $it" }.orEmpty()}",
-                    NotificationDestination.PERSONAL_PLANS,
-                )
-            PersonalTriggerType.GOAL_CREATED ->
-                Triple(
-                    "Đã thêm mục tiêu",
-                    "${trigger.label}${amountText?.let { " - mục tiêu $it" }.orEmpty()}",
-                    NotificationDestination.PERSONAL_PLANS,
-                )
-            PersonalTriggerType.WALLET_CREATED ->
-                Triple(
-                    "Đã thêm ví",
-                    "${trigger.label}${amountText?.let { " - số dư $it" }.orEmpty()}",
-                    NotificationDestination.PERSONAL_PLANS,
-                )
-            PersonalTriggerType.SAFE_TO_SPEND_CHANGED ->
-                Triple(
-                    "Đã cập nhật mức an toàn chi tiêu",
-                    "${trigger.label}${amountText?.let { " - $it hôm nay" }.orEmpty()}",
-                    NotificationDestination.PERSONAL,
-                )
-            PersonalTriggerType.PERSONAL_SCORE_CHANGED ->
-                Triple(
-                    "Điểm cá nhân: ${trigger.band ?: "đã cập nhật"}",
-                    "Điểm hiện tại ${trigger.score ?: 0}. ${trigger.label}",
-                    NotificationDestination.PERSONAL,
-                )
-            PersonalTriggerType.SPLIT_BRIDGED_TO_PERSONAL ->
-                Triple(
-                    "Đã lưu chia tiền vào Cá nhân",
-                    "${trigger.label}${amountText?.let { " - $it" }.orEmpty()}",
-                    NotificationDestination.TRANSACTION_DETAIL,
                 )
         }
 
@@ -268,26 +210,6 @@ object NotificationFactory {
         )
     }
 
-    fun transactionAdded(
-        amount: Double,
-        categoryName: String,
-        type: TransactionType,
-        userId: String,
-        transactionId: String? = null,
-    ): Notification {
-        val typeLabel = if (type == TransactionType.EXPENSE) "chi tiêu" else "thu nhập"
-        return fromPersonalTrigger(
-            trigger = PersonalNotificationTrigger(
-                relatedId = transactionId,
-                label = "Đã thêm $typeLabel",
-                amount = amount,
-                categoryName = categoryName,
-                triggerType = PersonalTriggerType.TRANSACTION_ADDED,
-            ),
-            userId = userId,
-        )
-    }
-
     fun reminderCreated(
         categoryName: String,
         budgetAmount: Double,
@@ -301,22 +223,6 @@ object NotificationFactory {
                     categoryName = categoryName,
                     triggerType = PersonalTriggerType.REMINDER_CREATED,
                 ),
-            userId = userId,
-        )
-    }
-
-    fun categoryCreated(
-        categoryName: String,
-        type: TransactionType,
-        userId: String,
-    ): Notification {
-        val typeLabel = if (type == TransactionType.EXPENSE) "chi tiêu" else "thu nhập"
-        return fromPersonalTrigger(
-            trigger = PersonalNotificationTrigger(
-                label = "Danh mục $typeLabel '$categoryName'",
-                categoryName = categoryName,
-                triggerType = PersonalTriggerType.CATEGORY_CREATED,
-            ),
             userId = userId,
         )
     }

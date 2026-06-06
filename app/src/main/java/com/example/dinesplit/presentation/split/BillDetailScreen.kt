@@ -264,7 +264,7 @@ fun BillDetailScreen(
         AlertDialog(
             onDismissRequest = { if (!uiState.isDeleting) showDeleteDialog = false },
             title = { Text("Xóa hóa đơn?") },
-            text = { Text("Hành động này sẽ xóa bill khỏi nhóm và gỡ khoản chi đồng bộ trong Ví cá nhân.") },
+            text = { Text("Hành động này sẽ xóa bill khỏi nhóm và gỡ khoản chi đồng bộ trong Ví DineSplit.") },
             confirmButton = {
                 TextButton(
                     enabled = !uiState.isDeleting,

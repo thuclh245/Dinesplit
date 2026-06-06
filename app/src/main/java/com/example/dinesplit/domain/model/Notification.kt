@@ -2,7 +2,7 @@ package com.example.dinesplit.domain.model
 
 /**
  * Core notification model for the notification feed.
- * Can represent split payment updates, transaction alerts, and activity notifications.
+ * Can represent split payment updates, spending reminders, and activity notifications.
  */
 data class Notification(
     val id: String,
@@ -26,7 +26,7 @@ enum class NotificationType {
     PAYMENT_PENDING, // Bill waiting for payment
     BILL_CREATED, // New split bill created
     SPLIT_COMPLETED, // All members confirmed split
-    TRANSACTION_ALERT, // Personal finance milestone
+    TRANSACTION_ALERT, // Spending reminder / budget alert
     ACTIVITY_UPDATE, // Feed/social activity
     OTHER,
 }

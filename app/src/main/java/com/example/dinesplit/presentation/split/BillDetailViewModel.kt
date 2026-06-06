@@ -429,12 +429,12 @@ class BillDetailViewModel(
                 _uiState.update {
                     it.copy(
                         activeQrPayment = null,
-                        paymentMessage = "ÄÃ£ gá»­i yÃªu cáº§u xÃ¡c nháº­n thanh toÃ¡n"
+                        paymentMessage = "Đã gửi yêu cầu xác nhận thanh toán"
                     )
                 }
             } else {
                 _uiState.update {
-                    it.copy(paymentMessage = result.exceptionOrNull()?.message ?: "KhÃ´ng thá»ƒ bÃ¡o Ä‘Ã£ thanh toÃ¡n")
+                    it.copy(paymentMessage = result.exceptionOrNull()?.message ?: "Không thể báo đã thanh toán")
                 }
             }
         }
@@ -457,19 +457,19 @@ class BillDetailViewModel(
                 if (statusResult.isSuccess) {
                     repository.markBillMemberPaid(groupId, billId, payment.payerUid)
                 } else {
-                    Result.failure(statusResult.exceptionOrNull() ?: IllegalStateException("KhÃ´ng thá»ƒ xÃ¡c nháº­n thanh toÃ¡n"))
+                    Result.failure(statusResult.exceptionOrNull() ?: IllegalStateException("Không thể xác nhận thanh toán"))
                 }
 
             if (paidResult.isSuccess) {
                 notifyPaymentConfirmed(payment)
                 _uiState.update {
-                    it.copy(isUpdatingPayment = false, paymentMessage = "ÄÃ£ xÃ¡c nháº­n Ä‘Ã£ nháº­n tiá»n")
+                    it.copy(isUpdatingPayment = false, paymentMessage = "Đã xác nhận đã nhận tiền")
                 }
             } else {
                 _uiState.update {
                     it.copy(
                         isUpdatingPayment = false,
-                        paymentMessage = paidResult.exceptionOrNull()?.message ?: "KhÃ´ng thá»ƒ xÃ¡c nháº­n thanh toÃ¡n"
+                        paymentMessage = paidResult.exceptionOrNull()?.message ?: "Không thể xác nhận thanh toán"
                     )
                 }
             }
@@ -486,13 +486,13 @@ class BillDetailViewModel(
                     paymentId = payment.id,
                     status = QrPaymentStatus.REJECTED,
                     bankTransactionRef = payment.bankTransactionRef.ifBlank { "REJECTED_BY_RECEIVER" }
-                )
+            )
             if (result.isSuccess) {
                 notifyPaymentRejected(payment)
-                _uiState.update { it.copy(paymentMessage = "ÄÃ£ tá»« chá»‘i xÃ¡c nháº­n thanh toÃ¡n") }
+                _uiState.update { it.copy(paymentMessage = "Đã từ chối xác nhận thanh toán") }
             } else {
                 _uiState.update {
-                    it.copy(paymentMessage = result.exceptionOrNull()?.message ?: "KhÃ´ng thá»ƒ tá»« chá»‘i thanh toÃ¡n")
+                    it.copy(paymentMessage = result.exceptionOrNull()?.message ?: "Không thể từ chối thanh toán")
                 }
             }
         }
@@ -507,14 +507,14 @@ class BillDetailViewModel(
             Notification(
                 id = "${now}_${bill.id}_${payment.payerUid}_marked_paid",
                 userId = payment.receiverUid,
-                title = "$payerName Ä‘Ã£ bÃ¡o Ä‘Ã£ thanh toÃ¡n",
-                subtitle = "${bill.name} - ${formatReminderAmount(payment.amount)} Ä‘",
+                title = "$payerName đã báo đã thanh toán",
+                subtitle = "${bill.name} - ${formatReminderAmount(payment.amount)} đ",
                 type = NotificationType.PAYMENT_PENDING,
                 relatedId = bill.id,
                 isRead = false,
                 createdAt = now,
                 updatedAt = now,
-                deepLinkDestination = "SPLIT_DETAIL",
+                deepLinkDestination = NotificationDestination.SPLIT_DETAIL.name,
                 deepLinkTargetId = bill.id,
                 senderId = payment.payerUid,
                 groupId = groupId,
@@ -531,14 +531,14 @@ class BillDetailViewModel(
             Notification(
                 id = "${now}_${bill.id}_${payment.payerUid}_confirmed",
                 userId = payment.payerUid,
-                title = "$receiverName Ä‘Ã£ xÃ¡c nháº­n thanh toÃ¡n",
-                subtitle = "${bill.name} - ${formatReminderAmount(payment.amount)} Ä‘",
+                title = "$receiverName đã xác nhận thanh toán",
+                subtitle = "${bill.name} - ${formatReminderAmount(payment.amount)} đ",
                 type = NotificationType.PAYMENT_COMPLETED,
                 relatedId = bill.id,
                 isRead = false,
                 createdAt = now,
                 updatedAt = now,
-                deepLinkDestination = "SPLIT_DETAIL",
+                deepLinkDestination = NotificationDestination.SPLIT_DETAIL.name,
                 deepLinkTargetId = bill.id,
                 senderId = payment.receiverUid,
                 groupId = groupId,
@@ -555,14 +555,14 @@ class BillDetailViewModel(
             Notification(
                 id = "${now}_${bill.id}_${payment.payerUid}_rejected",
                 userId = payment.payerUid,
-                title = "$receiverName cáº§n kiá»ƒm tra láº¡i thanh toÃ¡n",
-                subtitle = "${bill.name} - ${formatReminderAmount(payment.amount)} Ä‘",
+                title = "$receiverName cần kiểm tra lại thanh toán",
+                subtitle = "${bill.name} - ${formatReminderAmount(payment.amount)} đ",
                 type = NotificationType.PAYMENT_PENDING,
                 relatedId = bill.id,
                 isRead = false,
                 createdAt = now,
                 updatedAt = now,
-                deepLinkDestination = "SPLIT_DETAIL",
+                deepLinkDestination = NotificationDestination.SPLIT_DETAIL.name,
                 deepLinkTargetId = bill.id,
                 senderId = payment.receiverUid,
                 groupId = groupId,

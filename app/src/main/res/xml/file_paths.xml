@@ -3,4 +3,7 @@
     <cache-path
         name="receipt_cache"
         path="receipts/" />
+    <cache-path
+        name="bill_receipt_cache"
+        path="bill_receipts/" />
 </paths>

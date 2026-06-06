@@ -78,7 +78,7 @@ fun PersonalIntelligenceScreen(
     var selectedScenario by rememberSaveable { mutableStateOf(CashflowScenario.DINNER_WEEKEND) }
 
     AppScaffold(
-        title = "Thông tin cá nhân",
+        title = "Thông tin Ví",
         navigationIcon = {
             BackNavigationButton(onClick = onBack)
         },

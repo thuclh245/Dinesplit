@@ -749,7 +749,7 @@ private fun LinkedBillSummarySection(
                 
                 if (summary.isParticipant && summary.isAuthorized) {
                     Text(
-                        text = if (summary.isSettled) "✓ ĐÃ XONG" else "⚠ CHỜ CHI",
+                        text = if (summary.isSettled) "✓ ĐÃ XONG" else "⚠ CHỜ TRẢ",
                         style = MaterialTheme.typography.labelSmall.copy(fontWeight = FontWeight.ExtraBold),
                         color = if (summary.isSettled) MaterialTheme.colorScheme.secondary else MaterialTheme.colorScheme.error
                     )

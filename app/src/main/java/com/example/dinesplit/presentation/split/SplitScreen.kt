@@ -603,7 +603,7 @@ private fun BillItem(
                     shape = RoundedCornerShape(AppDimens.radiusSm),
                 ) {
                     Text(
-                        if (bill.isSettled()) "SETTLED" else "OPEN",
+                        if (bill.isSettled()) "ĐÃ XONG" else "CHỜ TRẢ",
                         modifier = Modifier.padding(horizontal = 6.dp, vertical = 2.dp),
                         style =
                             MaterialTheme.typography.labelSmall.copy(

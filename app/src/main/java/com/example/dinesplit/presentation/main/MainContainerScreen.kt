@@ -355,6 +355,9 @@ fun MainContainerScreen(
                             transactionId = transactionId,
                             transaction = personalAllTransactions.firstOrNull { it.id == transactionId },
                             onBack = navigateBackFromNotificationTarget,
+                            onOpenLinkedBill = { groupId, billId ->
+                                mainNavController.navigate(AppRoute.BillDetail.createRoute(groupId, billId))
+                            },
                         )
                     }
                     
@@ -598,7 +601,10 @@ fun MainContainerScreen(
                             onBack = navigateBackFromNotificationTarget,
                             onNavigateToFollowList = { uid, tabIndex ->
                                 mainNavController.navigate(AppRoute.FollowList.createRoute(uid, tabIndex))
-                            }
+                            },
+                            onBillClick = { groupId, billId ->
+                                mainNavController.navigate(AppRoute.BillDetail.createRoute(groupId, billId))
+                            },
                         )
                     }
 
@@ -635,7 +641,7 @@ fun MainContainerScreen(
                 val title = when {
                     currentRoute?.contains(AppRoute.Feed.route) == true -> "DineSplit"
                     currentRoute?.contains(AppRoute.Split.route) == true -> "Chia tiền"
-                    currentRoute?.contains(AppRoute.Personal.route) == true -> "Ví cá nhân"
+                    currentRoute?.contains(AppRoute.Personal.route) == true -> "Ví DineSplit"
                     currentRoute?.contains(AppRoute.Profile.route) == true -> profileUiState.profile?.displayName ?: "Hồ sơ"
                     else -> "DineSplit"
                 }

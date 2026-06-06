@@ -313,7 +313,7 @@ private fun HistoryTransactionRow(
                     },
             )
             Text(
-                text = if (item.type == TransactionType.INCOME) "ĐÃ NHẬN" else "CÁ NHÂN",
+                text = if (item.type == TransactionType.INCOME) "ĐÃ NHẬN" else "VÍ",
                 style = MaterialTheme.typography.labelSmall,
                 color =
                     if (item.type == TransactionType.INCOME) {

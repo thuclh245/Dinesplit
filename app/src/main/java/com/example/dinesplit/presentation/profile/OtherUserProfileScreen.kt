@@ -45,6 +45,7 @@ fun OtherUserProfileScreen(
     userName: String, // represents the target user's UID (passed from navigation)
     onBack: () -> Unit = {},
     onNavigateToFollowList: (String, Int) -> Unit = { _, _ -> },
+    onBillClick: (String, String) -> Unit = { _, _ -> },
 ) {
     val context = LocalContext.current
     val application = context.applicationContext as Application
@@ -168,7 +169,7 @@ fun OtherUserProfileScreen(
                                     }
                                 }
                                 1 -> {
-                                    OtherTaggedBillsList(bills = uiState.taggedBills, onBillClick = { _, _ -> })
+                                    OtherTaggedBillsList(bills = uiState.taggedBills, onBillClick = onBillClick)
                                 }
                             }
                         }

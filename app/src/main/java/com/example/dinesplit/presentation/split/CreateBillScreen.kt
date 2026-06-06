@@ -1,5 +1,10 @@
 package com.example.dinesplit.presentation.split
 
+import android.content.Context
+import android.net.Uri
+import androidx.activity.compose.rememberLauncherForActivityResult
+import androidx.activity.result.PickVisualMediaRequest
+import androidx.activity.result.contract.ActivityResultContracts
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
@@ -25,6 +30,7 @@ import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
+import androidx.compose.material.icons.automirrored.filled.ReceiptLong
 import androidx.compose.material.icons.filled.Add
 import androidx.compose.material.icons.filled.Check
 import androidx.compose.material.icons.filled.DateRange
@@ -38,13 +44,16 @@ import com.example.dinesplit.core.ui.AppCard
 import com.example.dinesplit.core.ui.OutlinedAppCard
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
+import androidx.compose.material3.LinearProgressIndicator
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.SnackbarHost
 import androidx.compose.material3.SnackbarHostState
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
+import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.DisposableEffect
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
@@ -63,6 +72,7 @@ import androidx.compose.ui.text.TextStyle
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import androidx.core.content.FileProvider
 import com.example.dinesplit.core.common.AppContainer
 import com.example.dinesplit.core.firebase.FirebaseProviders
 import com.example.dinesplit.core.ui.DineAvatarImage
@@ -74,7 +84,14 @@ import com.example.dinesplit.domain.model.Bill
 import com.example.dinesplit.domain.model.BillItem
 import com.example.dinesplit.domain.model.Member
 import com.example.dinesplit.domain.model.SplitMethod
+import com.example.dinesplit.data.ocr.MlKitReceiptTextRecognizer
+import com.example.dinesplit.domain.receipt.ReceiptOcrParser
+import com.example.dinesplit.domain.receipt.ReceiptOcrResult
 import kotlinx.coroutines.launch
+import java.io.File
+import java.text.NumberFormat
+import java.util.Locale
+import kotlin.math.roundToLong
 
 @Composable
 fun CreateBillScreen(
@@ -90,6 +107,7 @@ fun CreateBillScreen(
             CreateBillViewModel(
                 repository = AppContainer.splitRepository(context),
                 groupId = groupId,
+                notificationRepository = AppContainer.notificationRepository(context),
                 currentUserId = FirebaseProviders.auth.currentUser?.uid,
                 editBillId = billId,
             )
@@ -97,6 +115,66 @@ fun CreateBillScreen(
     val uiState by vm.uiState.collectAsState()
     val snackbarHostState = remember { SnackbarHostState() }
     val coroutineScope = rememberCoroutineScope()
+    var isScanningReceipt by remember { mutableStateOf(false) }
+    var receiptOcrStatus by remember { mutableStateOf<String?>(null) }
+    var pendingCameraReceiptUri by remember { mutableStateOf<Uri?>(null) }
+    val receiptTextRecognizer =
+        remember(context) {
+            MlKitReceiptTextRecognizer(context.applicationContext)
+        }
+
+    DisposableEffect(receiptTextRecognizer) {
+        onDispose {
+            receiptTextRecognizer.close()
+        }
+    }
+
+    fun applyReceiptImage(selectedUri: Uri) {
+        coroutineScope.launch {
+            isScanningReceipt = true
+            receiptOcrStatus = "Đang đọc hóa đơn để điền bill..."
+            runCatching {
+                val rawText = receiptTextRecognizer.recognize(selectedUri)
+                val result =
+                    ReceiptOcrParser.parse(
+                        rawText = rawText,
+                        categories = emptyList(),
+                    )
+                vm.applyReceiptOcr(
+                    amount = result.amount,
+                    merchantName = result.merchantName,
+                )
+                receiptOcrStatus = result.toBillReceiptOcrStatus()
+            }.onFailure {
+                receiptOcrStatus = "Không thể đọc hóa đơn. Bạn vẫn có thể nhập tên bill và tổng tiền thủ công."
+            }
+            isScanningReceipt = false
+        }
+    }
+
+    val receiptPickerLauncher =
+        rememberLauncherForActivityResult(
+            contract = ActivityResultContracts.PickVisualMedia(),
+        ) { uri ->
+            uri?.let { selectedUri -> applyReceiptImage(selectedUri) }
+        }
+    val receiptDocumentPickerLauncher =
+        rememberLauncherForActivityResult(
+            contract = ActivityResultContracts.OpenDocument(),
+        ) { uri ->
+            uri?.let { selectedUri -> applyReceiptImage(selectedUri) }
+        }
+    val receiptCameraLauncher =
+        rememberLauncherForActivityResult(
+            contract = ActivityResultContracts.TakePicture(),
+        ) { captured ->
+            val capturedUri = pendingCameraReceiptUri
+            if (captured && capturedUri != null) {
+                applyReceiptImage(capturedUri)
+            } else {
+                receiptOcrStatus = "Chưa chụp được ảnh hóa đơn."
+            }
+        }
 
     Scaffold(
         containerColor = MaterialTheme.colorScheme.surface,
@@ -138,6 +216,25 @@ fun CreateBillScreen(
                             },
                         onTotalAmountChange = vm::onTotalAmountChange,
                         isTotalAmountEditable = uiState.selectedMethod != SplitMethod.ITEMIZED,
+                    )
+                }
+                item {
+                    CreateBillReceiptScanSection(
+                        isScanning = isScanningReceipt,
+                        status = receiptOcrStatus,
+                        onPickImage = {
+                            receiptPickerLauncher.launch(
+                                PickVisualMediaRequest(ActivityResultContracts.PickVisualMedia.ImageOnly),
+                            )
+                        },
+                        onTakePhoto = {
+                            val cameraUri = createBillReceiptCameraUri(context)
+                            pendingCameraReceiptUri = cameraUri
+                            receiptCameraLauncher.launch(cameraUri)
+                        },
+                        onOpenFile = {
+                            receiptDocumentPickerLauncher.launch(arrayOf("image/*"))
+                        },
                     )
                 }
                 item {
@@ -434,6 +531,74 @@ private fun CreateBillPayerSection(
                         },
                     )
                 }
+            }
+        }
+    }
+}
+
+@Composable
+private fun CreateBillReceiptScanSection(
+    isScanning: Boolean,
+    status: String?,
+    onPickImage: () -> Unit,
+    onTakePhoto: () -> Unit,
+    onOpenFile: () -> Unit,
+) {
+    val colorScheme = MaterialTheme.colorScheme
+
+    Column {
+        Text(
+            text = "QUÉT HÓA ĐƠN",
+            style = MaterialTheme.typography.labelSmall,
+            fontWeight = FontWeight.Bold,
+            color = colorScheme.onSurfaceVariant.copy(alpha = 0.7f),
+            modifier = Modifier.padding(start = AppDimens.spaceXs, bottom = AppDimens.spaceSm),
+        )
+
+        AppCard(
+            modifier = Modifier.fillMaxWidth(),
+            contentPadding = PaddingValues(AppDimens.spaceLg),
+        ) {
+            Column(verticalArrangement = Arrangement.spacedBy(AppDimens.spaceMd)) {
+                Row(
+                    modifier = Modifier.fillMaxWidth(),
+                    verticalAlignment = Alignment.CenterVertically,
+                    horizontalArrangement = Arrangement.spacedBy(AppDimens.spaceMd),
+                ) {
+                    Icon(
+                        imageVector = Icons.AutoMirrored.Filled.ReceiptLong,
+                        contentDescription = null,
+                        tint = colorScheme.primary,
+                    )
+                    Text(
+                        text = "Đọc tổng tiền và tên quán để tạo bill nhanh. Bạn vẫn chỉnh lại trước khi lưu.",
+                        style = MaterialTheme.typography.bodySmall,
+                        color = colorScheme.onSurfaceVariant,
+                        modifier = Modifier.weight(1f),
+                    )
+                }
+
+                if (isScanning) {
+                    LinearProgressIndicator(modifier = Modifier.fillMaxWidth())
+                }
+
+                Row(horizontalArrangement = Arrangement.spacedBy(AppDimens.spaceSm)) {
+                    TextButton(enabled = !isScanning, onClick = onPickImage) {
+                        Text("Thư viện")
+                    }
+                    TextButton(enabled = !isScanning, onClick = onTakePhoto) {
+                        Text("Chụp")
+                    }
+                    TextButton(enabled = !isScanning, onClick = onOpenFile) {
+                        Text("Tệp")
+                    }
+                }
+
+                Text(
+                    text = status ?: "Chọn ảnh hóa đơn nếu muốn tự động điền tên bill và tổng tiền.",
+                    style = MaterialTheme.typography.bodySmall,
+                    color = colorScheme.onSurfaceVariant,
+                )
             }
         }
     }
@@ -895,4 +1060,38 @@ private fun formatCurrencyInput(value: String): String {
 
 private fun String.onlyDigits(): String {
     return filter { it.isDigit() }
+}
+
+private fun ReceiptOcrResult.toBillReceiptOcrStatus(): String {
+    if (rawText.isBlank()) {
+        return "Không tìm thấy chữ trong ảnh. Nhập bill thủ công hoặc thử ảnh rõ hơn."
+    }
+
+    val detectedParts =
+        listOfNotNull(
+            merchantName,
+            amount?.let(::formatBillReceiptAmountLabel),
+        )
+    val detectedText = detectedParts.joinToString(" - ")
+
+    return if (detectedText.isBlank()) {
+        "Đã đọc hóa đơn nhưng chưa nhận ra tổng tiền. Bạn có thể nhập thủ công."
+    } else {
+        "Đã điền từ hóa đơn: $detectedText"
+    }
+}
+
+private fun formatBillReceiptAmountLabel(amount: Double): String {
+    val formatter = NumberFormat.getNumberInstance(Locale("vi", "VN"))
+    return "${formatter.format(amount.roundToLong())} VND"
+}
+
+private fun createBillReceiptCameraUri(context: Context): Uri {
+    val receiptDirectory = File(context.cacheDir, "bill_receipts").apply { mkdirs() }
+    val receiptFile = File(receiptDirectory, "bill_receipt_${System.currentTimeMillis()}.jpg")
+    return FileProvider.getUriForFile(
+        context,
+        "${context.packageName}.fileprovider",
+        receiptFile,
+    )
 }

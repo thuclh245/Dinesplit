@@ -12,9 +12,7 @@ import com.example.dinesplit.domain.model.Bill
 import com.example.dinesplit.domain.model.GoalStatus
 import com.example.dinesplit.domain.model.NotificationFactory
 import com.example.dinesplit.domain.model.PersonalGoal
-import com.example.dinesplit.domain.model.PersonalNotificationTrigger
 import com.example.dinesplit.domain.model.PersonalReminderTrigger
-import com.example.dinesplit.domain.model.PersonalTriggerType
 import com.example.dinesplit.domain.model.PersonalWallet
 import com.example.dinesplit.domain.model.RecurringCadence
 import com.example.dinesplit.domain.model.RecurringRule
@@ -25,11 +23,14 @@ import com.example.dinesplit.domain.model.TransactionSource
 import com.example.dinesplit.domain.model.TransactionType
 import com.example.dinesplit.domain.model.WalletType
 import com.google.firebase.auth.FirebaseAuth
+import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.Job
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
+import kotlinx.coroutines.flow.collectLatest
+import kotlinx.coroutines.flow.combine
 import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.launch
 import java.util.Calendar
@@ -68,6 +69,7 @@ class PersonalViewModel(application: Application) : AndroidViewModel(application
     private var lastLoadedUserId: String? = null
     private var authStateListener: FirebaseAuth.AuthStateListener? = null
     private var refreshJob: Job? = null
+    private var splitSyncJob: Job? = null
 
     init {
         setupAuthStateListener()
@@ -85,6 +87,7 @@ class PersonalViewModel(application: Application) : AndroidViewModel(application
     private fun handleAuthUserChanged(userId: String?) {
         if (userId.isNullOrBlank()) {
             refreshJob?.cancel()
+            splitSyncJob?.cancel()
             lastLoadedUserId = null
             clearAllData()
             return
@@ -92,8 +95,10 @@ class PersonalViewModel(application: Application) : AndroidViewModel(application
 
         if (userId != lastLoadedUserId || _uiState.value.currentUserId != userId) {
             refreshJob?.cancel()
+            splitSyncJob?.cancel()
             lastLoadedUserId = userId
             clearAllData(currentUserId = userId, isLoading = true)
+            startSplitBillSync(userId)
             refreshState()
         }
     }
@@ -123,6 +128,7 @@ class PersonalViewModel(application: Application) : AndroidViewModel(application
             FirebaseProviders.auth.removeAuthStateListener(it)
         }
         refreshJob?.cancel()
+        splitSyncJob?.cancel()
     }
 
     fun addTransaction(transaction: Transaction) {
@@ -151,17 +157,6 @@ class PersonalViewModel(application: Application) : AndroidViewModel(application
                     }
                 }
 
-                // Kích hoạt thông báo cho giao dịch được thêm
-                val notification =
-                    NotificationFactory.transactionAdded(
-                        amount = preparedTransaction.amount,
-                        categoryName = preparedTransaction.category,
-                        type = preparedTransaction.type,
-                        userId = currentUserId(),
-                        transactionId = preparedTransaction.id,
-                    )
-                notificationRepository.insertNotification(notification)
-
                 refreshStateInternal(showLoading = false)
             }.onFailure { throwable ->
                 setError(throwable)
@@ -174,7 +169,7 @@ class PersonalViewModel(application: Application) : AndroidViewModel(application
             runCatching {
                 val uid = currentUserId()
                 if (uid.isBlank()) return@runCatching
-                syncSplitBillTransactionForCurrentUser(bill = bill, uid = uid, emitNotification = true)
+                syncSplitBillTransactionForCurrentUser(bill = bill, uid = uid)
                 refreshStateInternal(showLoading = false)
             }.onFailure { throwable ->
                 setError(throwable)
@@ -202,7 +197,7 @@ class PersonalViewModel(application: Application) : AndroidViewModel(application
             runCatching {
                 val uid = currentUserId()
                 if (uid.isBlank()) return@runCatching
-                syncSplitBillTransactionForCurrentUser(bill = bill, uid = uid, emitNotification = false)
+                syncSplitBillTransactionForCurrentUser(bill = bill, uid = uid)
                 refreshStateInternal(showLoading = false)
             }.onFailure { throwable ->
                 setError(throwable)
@@ -213,7 +208,6 @@ class PersonalViewModel(application: Application) : AndroidViewModel(application
     private suspend fun syncSplitBillTransactionForCurrentUser(
         bill: Bill,
         uid: String,
-        emitNotification: Boolean = false,
     ) {
         val transactionId = splitTransactionId(bill.groupId, bill.id)
         val legacyTransactionId = "split_${bill.id}"
@@ -251,47 +245,84 @@ class PersonalViewModel(application: Application) : AndroidViewModel(application
         if (legacyTransactionId != transactionId) {
             repository.deleteTransaction(legacyTransactionId)
         }
-        if (emitNotification) {
-            notificationRepository.insertNotification(
-                NotificationFactory.fromPersonalTrigger(
-                    PersonalNotificationTrigger(
-                        relatedId = splitTransaction.id,
-                        label = bill.name,
-                        amount = amount,
-                        categoryName = category.name,
-                        triggerType = PersonalTriggerType.SPLIT_BRIDGED_TO_PERSONAL,
-                    ),
-                    uid,
-                ),
-            )
-        }
     }
 
     private suspend fun syncSplitBillsForCurrentUser(uid: String) {
         if (uid.isBlank()) return
 
-        val activeSplitTransactionIds = mutableSetOf<String>()
         val groups = splitRepository.getGroups().first()
-
-        groups.forEach { group ->
-            val bills = splitRepository.getBills(group.id).first()
-            bills.forEach { bill ->
-                val transactionId = splitTransactionId(bill.groupId, bill.id)
-                if ((bill.shares[uid] ?: 0.0) > 0.0) {
-                    activeSplitTransactionIds += transactionId
-                }
-                syncSplitBillTransactionForCurrentUser(
-                    bill = bill,
-                    uid = uid,
-                    emitNotification = false,
-                )
+        val bills =
+            groups.flatMap { group ->
+                splitRepository.getBills(group.id).first()
             }
+
+        syncSplitBillTransactionsForCurrentUser(uid = uid, bills = bills)
+    }
+
+    private suspend fun syncSplitBillTransactionsForCurrentUser(
+        uid: String,
+        bills: List<Bill>,
+    ) {
+        if (uid.isBlank()) return
+
+        val activeSplitTransactionIds = mutableSetOf<String>()
+        bills.forEach { bill ->
+            val transactionId = splitTransactionId(bill.groupId, bill.id)
+            if ((bill.shares[uid] ?: 0.0) > 0.0) {
+                activeSplitTransactionIds += transactionId
+            }
+            syncSplitBillTransactionForCurrentUser(
+                bill = bill,
+                uid = uid,
+            )
         }
 
         repository.getAllTransactions()
             .filter { transaction -> transaction.source == TransactionSource.SPLIT }
             .filter { transaction -> transaction.id !in activeSplitTransactionIds }
             .forEach { transaction -> repository.deleteTransaction(transaction.id) }
+    }
+
+    private fun startSplitBillSync(expectedUserId: String) {
+        if (expectedUserId.isBlank()) return
+
+        splitSyncJob =
+            viewModelScope.launch(Dispatchers.IO) {
+                try {
+                    splitRepository.getGroups().collectLatest { groups ->
+                        if (!isCurrentUser(expectedUserId)) return@collectLatest
+
+                        val activeGroups = groups.filter { group -> group.id.isNotBlank() }
+                        if (activeGroups.isEmpty()) {
+                            syncSplitBillTransactionsForCurrentUser(uid = expectedUserId, bills = emptyList())
+                            refreshStateInternal(
+                                showLoading = false,
+                                expectedUserId = expectedUserId,
+                                syncSplitBills = false,
+                            )
+                            return@collectLatest
+                        }
+
+                        val billFlows = activeGroups.map { group -> splitRepository.getBills(group.id) }
+                        combine(billFlows) { billLists ->
+                            billLists.flatMap { bills -> bills }
+                        }.collectLatest { bills ->
+                            if (!isCurrentUser(expectedUserId)) return@collectLatest
+                            syncSplitBillTransactionsForCurrentUser(uid = expectedUserId, bills = bills)
+                            refreshStateInternal(
+                                showLoading = false,
+                                expectedUserId = expectedUserId,
+                                syncSplitBills = false,
+                            )
+                        }
+                    }
+                } catch (throwable: Throwable) {
+                    if (throwable is CancellationException) throw throwable
+                    if (isCurrentUser(expectedUserId)) {
+                        setError(throwable)
+                    }
+                }
+            }
     }
 
     private fun splitTransactionId(
@@ -321,15 +352,6 @@ class PersonalViewModel(application: Application) : AndroidViewModel(application
                         isActive = false,
                     ),
                 )
-
-                // Kích hoạt thông báo cho danh mục được tạo
-                val notification =
-                    NotificationFactory.categoryCreated(
-                        categoryName = name,
-                        type = type,
-                        userId = currentUserId(),
-                    )
-                notificationRepository.insertNotification(notification)
 
                 refreshStateInternal(showLoading = false)
             }.onFailure { throwable ->
@@ -483,18 +505,6 @@ class PersonalViewModel(application: Application) : AndroidViewModel(application
                         updatedAt = now,
                     )
                 repository.insertRecurringRule(rule)
-                notificationRepository.insertNotification(
-                    NotificationFactory.fromPersonalTrigger(
-                        PersonalNotificationTrigger(
-                            relatedId = rule.id,
-                            label = rule.name,
-                            amount = rule.amount,
-                            categoryName = rule.categoryName,
-                            triggerType = PersonalTriggerType.RECURRING_RULE_CREATED,
-                        ),
-                        uid,
-                    ),
-                )
                 refreshStateInternal(showLoading = false)
             }.onFailure { throwable -> setError(throwable) }
         }
@@ -540,17 +550,6 @@ class PersonalViewModel(application: Application) : AndroidViewModel(application
                         updatedAt = now,
                     )
                 repository.insertGoal(goal)
-                notificationRepository.insertNotification(
-                    NotificationFactory.fromPersonalTrigger(
-                        PersonalNotificationTrigger(
-                            relatedId = goal.id,
-                            label = goal.title,
-                            amount = goal.targetAmount,
-                            triggerType = PersonalTriggerType.GOAL_CREATED,
-                        ),
-                        uid,
-                    ),
-                )
                 refreshStateInternal(showLoading = false)
             }.onFailure { throwable -> setError(throwable) }
         }
@@ -630,17 +629,6 @@ class PersonalViewModel(application: Application) : AndroidViewModel(application
                         updatedAt = now,
                     )
                 repository.insertWallet(wallet)
-                notificationRepository.insertNotification(
-                    NotificationFactory.fromPersonalTrigger(
-                        PersonalNotificationTrigger(
-                            relatedId = wallet.id,
-                            label = wallet.name,
-                            amount = wallet.balance,
-                            triggerType = PersonalTriggerType.WALLET_CREATED,
-                        ),
-                        uid,
-                    ),
-                )
                 refreshStateInternal(showLoading = false)
             }.onFailure { throwable -> setError(throwable) }
         }
@@ -670,6 +658,7 @@ class PersonalViewModel(application: Application) : AndroidViewModel(application
     private suspend fun refreshStateInternal(
         showLoading: Boolean = true,
         expectedUserId: String = currentUserId(),
+        syncSplitBills: Boolean = true,
     ) {
         if (expectedUserId.isBlank()) {
             clearAllData()
@@ -702,8 +691,10 @@ class PersonalViewModel(application: Application) : AndroidViewModel(application
 
             _categories.value = categories
 
-            runCatching {
-                syncSplitBillsForCurrentUser(expectedUserId)
+            if (syncSplitBills) {
+                runCatching {
+                    syncSplitBillsForCurrentUser(expectedUserId)
+                }
             }
             if (!isCurrentUser(expectedUserId)) return
 

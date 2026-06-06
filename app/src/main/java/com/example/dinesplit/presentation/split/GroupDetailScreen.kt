@@ -772,7 +772,7 @@ private fun DetailBillCard(
                     shape = AppShapes.full,
                 ) {
                     Text(
-                        text = if (bill.isSettled()) "ĐÃ THANH TOÁN" else "OPEN",
+                        text = if (bill.isSettled()) "ĐÃ THANH TOÁN" else "CHỜ TRẢ",
                         style = MaterialTheme.typography.labelSmall.copy(fontWeight = FontWeight.Bold),
                         color = if (bill.isSettled()) colorScheme.secondary else colorScheme.primary,
                         modifier = Modifier.padding(horizontal = 6.dp, vertical = 2.dp),

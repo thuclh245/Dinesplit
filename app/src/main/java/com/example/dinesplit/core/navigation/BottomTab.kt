@@ -26,7 +26,7 @@ sealed class BottomTab(
 
     data object Personal : BottomTab(
         route = AppRoute.Personal.route,
-        label = "Cá nhân",
+        label = "Ví",
         icon = Icons.Outlined.AccountBalanceWallet
     )
 

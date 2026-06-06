@@ -7,7 +7,11 @@ import androidx.lifecycle.viewModelScope
 import com.example.dinesplit.domain.model.Bill
 import com.example.dinesplit.domain.model.BillItem
 import com.example.dinesplit.domain.model.Member
+import com.example.dinesplit.domain.model.NotificationFactory
 import com.example.dinesplit.domain.model.SplitMethod
+import com.example.dinesplit.domain.model.SplitNotificationTrigger
+import com.example.dinesplit.domain.model.SplitTriggerType
+import com.example.dinesplit.domain.repository.NotificationRepository
 import com.example.dinesplit.domain.repository.SplitRepository
 import com.example.dinesplit.domain.usecase.SplitCalculationEngine
 import kotlinx.coroutines.flow.MutableStateFlow
@@ -45,6 +49,7 @@ private val fallbackBillMembers =
 class CreateBillViewModel(
     private val repository: SplitRepository,
     private val groupId: String,
+    private val notificationRepository: NotificationRepository? = null,
     private val autoLoadMembers: Boolean = true,
     private val currentUserId: String? = null,
     private val editBillId: String? = null,
@@ -240,6 +245,40 @@ class CreateBillViewModel(
         }
     }
 
+    fun applyReceiptOcr(
+        amount: Double?,
+        merchantName: String?,
+    ) {
+        val cleanMerchantName = merchantName?.trim().orEmpty()
+        _uiState.update { state ->
+            val detectedAmount = amount?.takeIf { value -> value > 0.0 }
+            val updatedTotal = detectedAmount?.let(::amountToInputString)
+            if (detectedAmount != null && state.selectedMethod == SplitMethod.ITEMIZED) {
+                applyReceiptAmountToFirstItem(detectedAmount)
+            }
+
+            state.copy(
+                billName =
+                    if (state.billName.isBlank() && cleanMerchantName.isNotBlank()) {
+                        cleanMerchantName
+                    } else {
+                        state.billName
+                    },
+                totalAmountStr = updatedTotal ?: state.totalAmountStr,
+                error = null,
+            )
+        }
+    }
+
+    private fun applyReceiptAmountToFirstItem(amount: Double) {
+        if (billItems.isEmpty()) {
+            billItems.add(BillItem(name = "Món 1", price = amount, sharedByMemberIds = emptyList()))
+            return
+        }
+
+        billItems[0] = billItems[0].copy(price = amount)
+    }
+
     fun addItem() {
         billItems.add(BillItem(name = "Món ${billItems.size + 1}", price = 0.0, sharedByMemberIds = emptyList()))
     }
@@ -333,6 +372,13 @@ class CreateBillViewModel(
 
         _uiState.update { it.copy(isLoading = true, error = null) }
         val result = repository.saveBill(bill)
+        if (result.isSuccess && !currentState.isEditMode) {
+            notifyBillCreated(
+                bill = bill,
+                members = currentState.members,
+                senderId = normalizedCurrentUserId,
+            )
+        }
         _uiState.update {
             if (result.isSuccess) {
                 it.copy(isLoading = false, isSaved = true, savedBill = bill)
@@ -343,12 +389,67 @@ class CreateBillViewModel(
         return result
     }
 
+    private suspend fun notifyBillCreated(
+        bill: Bill,
+        members: List<Member>,
+        senderId: String,
+    ) {
+        val notifications = notificationRepository ?: return
+        if (senderId.isBlank()) return
+
+        val senderName =
+            members.firstOrNull { member -> member.id == senderId }
+                ?.name
+                ?.takeIf { name -> name.isNotBlank() }
+                ?: "Thanh vien"
+        val recipientIds =
+            (bill.shares.keys + bill.payerId)
+                .filter { memberId -> memberId.isNotBlank() && memberId != senderId }
+                .distinct()
+
+        recipientIds.forEach { recipientId ->
+            val amount = bill.shares[recipientId]?.takeIf { value -> value > 0.0 } ?: bill.totalAmount
+            val notification =
+                NotificationFactory.fromSplitTrigger(
+                    trigger =
+                        SplitNotificationTrigger(
+                            billId = bill.id,
+                            groupId = bill.groupId,
+                            billTitle = bill.name,
+                            amount = amount,
+                            triggeredByUserId = senderId,
+                            triggeredByUserName = senderName,
+                            triggerType = SplitTriggerType.BILL_CREATED,
+                        ),
+                    recipientUserId = recipientId,
+                ).copy(
+                    id = billCreatedNotificationId(bill.id, recipientId),
+                    senderId = senderId,
+                )
+
+            runCatching {
+                notifications.insertNotification(notification)
+            }
+        }
+    }
+
+    private fun billCreatedNotificationId(
+        billId: String,
+        recipientId: String,
+    ): String {
+        val rawId = "bill_created_${billId}_$recipientId"
+        return rawId
+            .replace("/", "_")
+            .replace("\\", "_")
+    }
+
     private fun validateBillInput(state: CreateBillUiState): String? {
         val totalAmount = calculateTotalAmount(state)
         val selectedMembers = state.selectedMemberIds.toList()
-        val hasAnyQrInput = state.paymentQrBankCode.isNotBlank() ||
-            state.paymentQrAccountNumber.isNotBlank() ||
-            state.paymentQrAccountName.isNotBlank()
+        val hasAnyQrInput =
+            state.paymentQrBankCode.isNotBlank() ||
+                state.paymentQrAccountNumber.isNotBlank() ||
+                state.paymentQrAccountName.isNotBlank()
 
         return when {
             groupId.isBlank() -> "Thiếu nhóm để lưu hóa đơn"

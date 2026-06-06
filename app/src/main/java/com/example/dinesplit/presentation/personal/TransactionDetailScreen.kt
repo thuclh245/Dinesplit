@@ -12,7 +12,9 @@ import com.example.dinesplit.core.ui.AppCard
 import com.example.dinesplit.core.ui.AppDimens
 import com.example.dinesplit.core.ui.AppScaffold
 import com.example.dinesplit.core.ui.BackNavigationButton
+import com.example.dinesplit.core.ui.PrimaryButton
 import com.example.dinesplit.domain.model.Transaction
+import com.example.dinesplit.domain.model.TransactionSource
 import com.example.dinesplit.domain.model.TransactionType
 import com.example.dinesplit.ui.theme.DineSplitTheme
 import java.text.NumberFormat
@@ -25,6 +27,7 @@ fun TransactionDetailScreen(
     transactionId: String,
     transaction: Transaction?,
     onBack: () -> Unit,
+    onOpenLinkedBill: (String, String) -> Unit = { _, _ -> },
 ) {
     AppScaffold(
         title = "Chi tiết giao dịch",
@@ -39,11 +42,14 @@ fun TransactionDetailScreen(
             if (transaction == null) {
                 AppCard {
                     Text(
-                         text = "Không tìm thấy giao dịch: $transactionId",
-                         style = MaterialTheme.typography.bodyLarge
-                     )
+                        text = "Không tìm thấy giao dịch: $transactionId",
+                        style = MaterialTheme.typography.bodyLarge,
+                    )
                 }
             } else {
+                val linkedGroupId = transaction.sourceGroupId
+                val linkedBillId = transaction.sourceBillId
+
                 AppCard {
                     Column(verticalArrangement = Arrangement.spacedBy(AppDimens.spaceSm)) {
                         Text(
@@ -61,21 +67,38 @@ fun TransactionDetailScreen(
                                 },
                         )
                         Text(
-                             text = "Loại: ${transaction.type.displayLabel()}",
-                             style = MaterialTheme.typography.bodyMedium,
-                             color = MaterialTheme.colorScheme.onSurfaceVariant
-                         )
-                         Text(
-                             text = "Ngày: ${formatDateTime(transaction.date)}",
-                             style = MaterialTheme.typography.bodyMedium,
-                             color = MaterialTheme.colorScheme.onSurfaceVariant
-                         )
-                         if (!transaction.note.isNullOrBlank()) {
-                             Text(
-                                 text = "Ghi chú: ${transaction.note}",
-                                 style = MaterialTheme.typography.bodyMedium
-                             )
-                         }
+                            text = "Loại: ${transaction.type.displayLabel()}",
+                            style = MaterialTheme.typography.bodyMedium,
+                            color = MaterialTheme.colorScheme.onSurfaceVariant,
+                        )
+                        Text(
+                            text = "Nguồn: ${transaction.source.displayLabel()}",
+                            style = MaterialTheme.typography.bodyMedium,
+                            color = MaterialTheme.colorScheme.onSurfaceVariant,
+                        )
+                        Text(
+                            text = "Ngày: ${formatDateTime(transaction.date)}",
+                            style = MaterialTheme.typography.bodyMedium,
+                            color = MaterialTheme.colorScheme.onSurfaceVariant,
+                        )
+                        if (!transaction.note.isNullOrBlank()) {
+                            Text(
+                                text = "Ghi chú: ${transaction.note}",
+                                style = MaterialTheme.typography.bodyMedium,
+                            )
+                        }
+                        if (
+                            transaction.source == TransactionSource.SPLIT &&
+                            !linkedGroupId.isNullOrBlank() &&
+                            !linkedBillId.isNullOrBlank()
+                        ) {
+                            PrimaryButton(
+                                text = "Xem bill gốc",
+                                onClick = {
+                                    onOpenLinkedBill(linkedGroupId, linkedBillId)
+                                },
+                            )
+                        }
                         Text(
                             text = "Id: ${transaction.id}",
                             style = MaterialTheme.typography.bodySmall,
@@ -99,24 +122,37 @@ private fun formatDateTime(epochMillis: Long): String {
     return formatter.format(Date(epochMillis))
 }
 
+private fun TransactionSource.displayLabel(): String {
+    return when (this) {
+        TransactionSource.MANUAL -> "Thủ công"
+        TransactionSource.SPLIT -> "Chia tiền"
+        TransactionSource.RECURRING -> "Lặp lại"
+        TransactionSource.RECEIPT -> "Hóa đơn"
+    }
+}
+
 @Preview(showBackground = true, showSystemUi = true)
 @Composable
 private fun TransactionDetailScreenPreview() {
     DineSplitTheme {
-         TransactionDetailScreen(
-             transactionId = "tx_1",
-             transaction = Transaction(
-                 id = "tx_1",
-                 userId = "user_1",
-                 amount = 525000.0,
-                 type = TransactionType.EXPENSE,
-                 categoryId = "c_food",
-                 category = "Ăn Ngoài",
-                 note = "Bữa tối cùng đội",
-                 date = System.currentTimeMillis(),
-                 createdAt = System.currentTimeMillis()
-             ),
-             onBack = {}
+        TransactionDetailScreen(
+            transactionId = "tx_1",
+            transaction =
+                Transaction(
+                    id = "tx_1",
+                    userId = "user_1",
+                    amount = 525000.0,
+                    type = TransactionType.EXPENSE,
+                    categoryId = "c_food",
+                    category = "Ăn Ngoài",
+                    note = "Bữa tối cùng đội",
+                    date = System.currentTimeMillis(),
+                    createdAt = System.currentTimeMillis(),
+                    source = TransactionSource.SPLIT,
+                    sourceGroupId = "group_1",
+                    sourceBillId = "bill_1",
+                ),
+            onBack = {},
         )
     }
 }

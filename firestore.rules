@@ -308,9 +308,9 @@ service cloud.firestore {
         && groupData(groupId).ownerId == request.auth.uid;
     }
 
-    function validCrossUserSplitReminder(data, uid) {
+    function validCrossUserSplitNotification(data, uid) {
       return signedIn()
-        && data.type in ['PAYMENT_PENDING', 'PAYMENT_COMPLETED']
+        && data.type in ['BILL_CREATED', 'PAYMENT_PENDING', 'PAYMENT_COMPLETED', 'SPLIT_COMPLETED']
         && data.senderId == request.auth.uid
         && data.groupId is string
         && request.auth.uid in groupData(data.groupId).memberIds
@@ -591,7 +591,7 @@ service cloud.firestore {
         allow create: if validNotification(request.resource.data, uid, notificationId)
           && (
             isOwner(uid)
-            || validCrossUserSplitReminder(request.resource.data, uid)
+            || validCrossUserSplitNotification(request.resource.data, uid)
           );
         allow update: if isOwner(uid)
           && validNotification(request.resource.data, uid, notificationId);

@@ -145,7 +145,7 @@ fun NotificationScreen(
                     item {
                         EmptyStateBlock(
                             title = emptyTitleFor(selectedFilter),
-                            subtitle = "Cảnh báo cá nhân, cập nhật chia tiền và hoạt động bảng tin sẽ xuất hiện ở đây khi chúng được tạo.",
+                            subtitle = "Nhắc nhở chi tiêu, cập nhật chia tiền và hoạt động bảng tin sẽ xuất hiện ở đây khi chúng được tạo.",
                         )
                     }
                 } else {
@@ -222,7 +222,7 @@ private fun NotificationOverviewCard(
             Row(horizontalArrangement = Arrangement.spacedBy(AppDimens.spaceMd)) {
                 NotificationMetric(
                     modifier = Modifier.weight(1f),
-                    label = "Cá nhân",
+                    label = "Nhắc nhở",
                     value = personalCount.toString(),
                     color = MaterialTheme.colorScheme.secondary,
                 )
@@ -603,7 +603,7 @@ private fun notificationAccentColor(notification: Notification): Color {
 
 private fun notificationTypeLabel(notification: Notification): String {
     return when {
-        notification.isPersonalAlert() -> "Cá nhân"
+        notification.isPersonalAlert() -> "Nhắc nhở"
         notification.isSplitAlert() -> "Chia tiền"
         notification.type == NotificationType.ACTIVITY_UPDATE -> "Bảng tin"
         else -> "Hệ thống"
@@ -613,7 +613,7 @@ private fun notificationTypeLabel(notification: Notification): String {
 private enum class NotificationFilter(val label: String) {
     ALL("Tất cả"),
     UNREAD("Chưa đọc"),
-    PERSONAL("Cá nhân"),
+    PERSONAL("Nhắc nhở"),
     SPLIT("Chia tiền"),
     FEED("Bảng tin"),
 }
@@ -646,7 +646,7 @@ private fun emptyTitleFor(filter: NotificationFilter): String {
     return when (filter) {
         NotificationFilter.ALL -> "Chưa có thông báo nào"
         NotificationFilter.UNREAD -> "Không có thông báo chưa đọc"
-        NotificationFilter.PERSONAL -> "Không có cảnh báo cá nhân"
+        NotificationFilter.PERSONAL -> "Không có nhắc nhở chi tiêu"
         NotificationFilter.SPLIT -> "Không có cập nhật chia tiền"
         NotificationFilter.FEED -> "Không có cập nhật bảng tin"
     }

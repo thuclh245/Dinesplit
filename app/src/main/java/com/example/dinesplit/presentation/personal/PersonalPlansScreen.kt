@@ -113,7 +113,7 @@ fun PersonalPlansScreen(
         }
 
     AppScaffold(
-        title = "Kế hoạch cá nhân",
+        title = "Kế hoạch Ví",
         navigationIcon = {
             BackNavigationButton(onClick = onBack)
         },
@@ -279,7 +279,7 @@ private fun PlanCockpitCard(
                 }
                 Column(modifier = Modifier.weight(1f)) {
                     Text(
-                        text = "Công cụ lập kế hoạch cá nhân",
+                        text = "Công cụ lập kế hoạch Ví",
                         style = MaterialTheme.typography.titleMedium,
                         fontWeight = FontWeight.Bold,
                     )
