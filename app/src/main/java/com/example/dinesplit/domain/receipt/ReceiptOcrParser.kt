@@ -4,6 +4,7 @@ import com.example.dinesplit.domain.model.TransactionType
 import java.text.Normalizer
 import java.util.Locale
 import kotlin.math.ln
+import kotlin.math.roundToLong
 
 object ReceiptOcrParser {
     private const val DONG_LETTER = "\u0111"
@@ -67,6 +68,26 @@ object ReceiptOcrParser {
             "phone",
             "address",
             "mst",
+        )
+
+    private val itemLineNoiseKeywords =
+        listOf(
+            "receipt",
+            "invoice",
+            "bill",
+            "hoa don",
+            "ngay",
+            "date",
+            "time",
+            "tel",
+            "phone",
+            "address",
+            "mst",
+            "ban",
+            "table",
+            "mon an",
+            "sl",
+            "thanh tien",
         )
 
     private val categoryBuckets =
@@ -169,11 +190,14 @@ object ReceiptOcrParser {
                 .filter { it.isNotBlank() }
                 .toList()
 
+        val amount = extractTotalAmount(lines)
+
         return ReceiptOcrResult(
             rawText = rawText,
-            amount = extractTotalAmount(lines),
+            amount = amount,
             category = inferCategory(rawText, categories),
             merchantName = inferMerchantName(lines),
+            items = extractLineItems(lines, amount),
         )
     }
 
@@ -211,6 +235,312 @@ object ReceiptOcrParser {
         return candidates
             .maxWithOrNull(compareBy<AmountCandidate> { it.score }.thenBy { it.value })
             ?.value
+    }
+
+    private fun extractLineItems(
+        lines: List<String>,
+        totalAmount: Double?,
+    ): List<ReceiptOcrItem> {
+        val singleLineItems = lines.mapNotNull { line ->
+            val normalizedLine = line.searchable()
+            val isTotalLine = totalKeywords.any { normalizedLine.contains(it) }
+            val isNonItemLine =
+                nonTotalKeywords.any { normalizedLine.contains(it) } ||
+                    normalizedLine.hasItemLineNoise()
+
+            if (isTotalLine || isNonItemLine) return@mapNotNull null
+
+            val amountMatches =
+                amountPattern.findAll(line).mapNotNull { match ->
+                    val value = match.groupValues[1].parseMoneyToken() ?: return@mapNotNull null
+                    if (value < 1_000.0 || value > 1_000_000_000.0) return@mapNotNull null
+                    if (totalAmount != null && value > totalAmount) return@mapNotNull null
+                    match to value
+                }.toList()
+
+            val (amountMatch, amount) = amountMatches.maxByOrNull { (_, value) -> value } ?: return@mapNotNull null
+            val (rawName, quantity) = line.substring(0, amountMatch.range.first).toReceiptItemNameAndQuantity()
+            if (rawName.isBlank()) return@mapNotNull null
+            if (!rawName.any { it.isLetter() }) return@mapNotNull null
+
+            ReceiptOcrItem(
+                name = rawName.take(48),
+                amount = amount,
+                quantity = quantity,
+                unitPrice = amount / quantity,
+            )
+        }
+
+        return singleLineItems
+            .ifEmpty { extractColumnarLineItems(lines, totalAmount) }
+            .ifEmpty { extractInterleavedLineItems(lines, totalAmount) }
+            .ifEmpty { extractSparseLineItems(lines, totalAmount) }
+    }
+
+    private fun extractColumnarLineItems(
+        lines: List<String>,
+        totalAmount: Double?,
+    ): List<ReceiptOcrItem> {
+        val itemHeaderIndex =
+            lines.indexOfFirst { line ->
+                val searchableLine = line.searchable()
+                searchableLine.contains("mon an") ||
+                    searchableLine.contains("item") ||
+                    searchableLine.contains("description")
+            }
+        val startIndex = itemHeaderIndex.takeIf { it >= 0 }?.plus(1) ?: 0
+
+        val quantityHeaderIndex =
+            lines.indexOfFirst { line ->
+                val searchableLine = line.searchable().trim()
+                searchableLine == "sl" ||
+                    searchableLine.startsWith("sl ") ||
+                    searchableLine.contains(" sl ") ||
+                    searchableLine == "qty" ||
+                    searchableLine.contains("so luong") ||
+                    searchableLine.contains("quantity")
+            }
+        val amountHeaderIndex =
+            lines.indexOfFirst { line ->
+                val searchableLine = line.searchable().trim()
+                searchableLine == "thanh tien" ||
+                    searchableLine.contains("thanh tien") ||
+                    searchableLine == "amount" ||
+                    searchableLine == "price"
+            }
+        if (itemHeaderIndex < 0 && quantityHeaderIndex < 0 && amountHeaderIndex < 0) {
+            return emptyList()
+        }
+        val totalSummaryIndex =
+            lines.drop(startIndex).indexOfFirst { line ->
+                line.isTotalSummaryLine()
+            }.takeIf { it >= 0 }?.plus(startIndex) ?: -1
+
+        val sectionItems =
+            extractColumnarSections(
+                lines = lines,
+                itemHeaderIndex = itemHeaderIndex,
+                quantityHeaderIndex = quantityHeaderIndex,
+                amountHeaderIndex = amountHeaderIndex,
+                totalSummaryIndex = totalSummaryIndex,
+                totalAmount = totalAmount,
+            )
+        if (sectionItems.isNotEmpty()) return sectionItems
+
+        val endIndex =
+            lines.drop(startIndex).indexOfFirst { line ->
+                totalKeywords
+                    .filterNot { keyword -> keyword == "thanh tien" }
+                    .any { keyword -> line.searchable().contains(keyword) }
+            }.takeIf { it >= 0 }?.plus(startIndex) ?: lines.size
+
+        val scanLines = lines.subList(startIndex, endIndex.coerceAtLeast(startIndex))
+        val names =
+            scanLines.mapNotNull { line ->
+                val searchableLine = line.searchable()
+                val hasAmount = amountPattern.containsMatchIn(line)
+                val isNoise =
+                    nonTotalKeywords.any { searchableLine.contains(it) } ||
+                        searchableLine.hasItemLineNoise()
+                if (!hasAmount && !isNoise && searchableLine.any { it.isLetter() }) {
+                    line.cleanReceiptItemName().takeIf { it.isNotBlank() }
+                } else {
+                    null
+                }
+            }
+        val quantities =
+            scanLines.mapNotNull { line ->
+                line.trim().toIntOrNull()?.takeIf { it in 1..999 }
+            }
+        val amounts =
+            scanLines.mapNotNull { line ->
+                val searchableLine = line.searchable()
+                val isNoise =
+                    nonTotalKeywords.any { searchableLine.contains(it) } ||
+                        searchableLine.hasItemLineNoise()
+                if (isNoise) return@mapNotNull null
+
+                amountPattern.findAll(line)
+                    .mapNotNull { match -> match.groupValues[1].parseMoneyToken() }
+                    .filter { value ->
+                        value >= 1_000.0 &&
+                            value <= 1_000_000_000.0 &&
+                            (totalAmount == null || value <= totalAmount)
+                    }
+                    .maxOrNull()
+            }
+
+        if (names.isEmpty() || amounts.isEmpty()) return emptyList()
+
+        return names.take(amounts.size).mapIndexed { index, name ->
+            val quantity = quantities.getOrNull(index)?.coerceAtLeast(1) ?: 1
+            val amount = amounts[index]
+            ReceiptOcrItem(
+                name = name.take(48),
+                amount = amount,
+                quantity = quantity,
+                unitPrice = amount / quantity,
+            )
+        }
+    }
+
+    private fun extractColumnarSections(
+        lines: List<String>,
+        itemHeaderIndex: Int,
+        quantityHeaderIndex: Int,
+        amountHeaderIndex: Int,
+        totalSummaryIndex: Int,
+        totalAmount: Double?,
+    ): List<ReceiptOcrItem> {
+        if (itemHeaderIndex < 0 || amountHeaderIndex < 0) return emptyList()
+
+        val nameEnd =
+            listOf(quantityHeaderIndex, amountHeaderIndex, totalSummaryIndex)
+                .filter { it > itemHeaderIndex }
+                .minOrNull()
+                ?: lines.size
+        val names =
+            lines.subList(itemHeaderIndex + 1, nameEnd)
+                .mapNotNull { line -> line.toColumnItemNameOrNull() }
+
+        if (names.isEmpty()) return emptyList()
+
+        val quantities =
+            if (quantityHeaderIndex >= 0) {
+                extractReceiptQuantities(
+                    lines = lines.subList(quantityHeaderIndex + 1, lines.size),
+                    limit = names.size,
+                )
+            } else {
+                emptyList()
+            }
+
+        val amountEnd =
+            totalSummaryIndex
+                .takeIf { it > amountHeaderIndex }
+                ?: lines.size
+        val amounts =
+            lines.subList(amountHeaderIndex + 1, amountEnd)
+                .flatMap { line -> line.extractReceiptAmounts(totalAmount) }
+                .filterNot { value -> totalAmount != null && value.roundMoney() == totalAmount.roundMoney() }
+                .take(names.size)
+
+        if (amounts.isEmpty()) return emptyList()
+
+        return names.take(amounts.size).mapIndexed { index, name ->
+            val quantity = quantities.getOrNull(index)?.coerceAtLeast(1) ?: 1
+            val amount = amounts[index]
+            ReceiptOcrItem(
+                name = name.take(48),
+                amount = amount,
+                quantity = quantity,
+                unitPrice = amount / quantity,
+            )
+        }
+    }
+
+    private fun extractSparseLineItems(
+        lines: List<String>,
+        totalAmount: Double?,
+    ): List<ReceiptOcrItem> {
+        val totalIndex =
+            lines.indexOfFirst { line -> line.isTotalSummaryLine() }
+                .takeIf { it >= 0 }
+                ?: lines.size
+        val scanLines = lines.take(totalIndex)
+        val names =
+            scanLines.mapNotNull { line ->
+                line.toSparseItemNameOrNull()
+            }
+        val quantities =
+            scanLines.mapNotNull { line ->
+                line.trim().toIntOrNull()?.takeIf { it in 1..999 }
+            }
+        val amounts =
+            scanLines
+                .flatMap { line -> line.extractReceiptAmounts(totalAmount) }
+                .let { values ->
+                    if (totalAmount != null && values.size > names.size) {
+                        values.filterNot { value -> value.roundMoney() == totalAmount.roundMoney() }
+                    } else {
+                        values
+                    }
+                }
+                .take(names.size)
+
+        if (names.size < 2 || amounts.size < names.size) return emptyList()
+
+        return names.mapIndexed { index, name ->
+            val quantity = quantities.getOrNull(index)?.coerceAtLeast(1) ?: 1
+            val amount = amounts[index]
+            ReceiptOcrItem(
+                name = name.take(48),
+                amount = amount,
+                quantity = quantity,
+                unitPrice = amount / quantity,
+            )
+        }
+    }
+
+    private fun extractInterleavedLineItems(
+        lines: List<String>,
+        totalAmount: Double?,
+    ): List<ReceiptOcrItem> {
+        val totalIndex =
+            lines.indexOfFirst { line -> line.isTotalSummaryLine() }
+                .takeIf { it >= 0 }
+                ?: lines.size
+        val scanLines = lines.take(totalIndex)
+        val items = mutableListOf<ReceiptOcrItem>()
+        var index = 0
+
+        while (index < scanLines.size) {
+            val name = scanLines[index].toSparseItemNameOrNull()
+            if (name == null) {
+                index++
+                continue
+            }
+
+            var quantity = 1
+            var amount: Double? = null
+            var consumedUntil = index
+            val lookAheadEnd = minOf(scanLines.lastIndex, index + 6)
+            var cursor = index + 1
+
+            while (cursor <= lookAheadEnd) {
+                val nextName = scanLines[cursor].toSparseItemNameOrNull()
+                if (nextName != null && amount == null && cursor > index + 1) break
+
+                if (quantity == 1) {
+                    quantity = scanLines[cursor].trim().toIntOrNull()?.takeIf { it in 1..999 } ?: quantity
+                }
+                val lineAmounts =
+                    scanLines[cursor]
+                        .extractReceiptAmounts(totalAmount)
+                        .filterNot { value -> totalAmount != null && value.roundMoney() == totalAmount.roundMoney() }
+                if (lineAmounts.isNotEmpty()) {
+                    amount = lineAmounts.maxOrNull()
+                    consumedUntil = cursor
+                    break
+                }
+                cursor++
+            }
+
+            if (amount != null) {
+                items +=
+                    ReceiptOcrItem(
+                        name = name.take(48),
+                        amount = amount,
+                        quantity = quantity.coerceAtLeast(1),
+                        unitPrice = amount / quantity.coerceAtLeast(1),
+                    )
+                index = consumedUntil + 1
+            } else {
+                index++
+            }
+        }
+
+        return items.takeIf { it.size >= 2 }.orEmpty()
     }
 
     private fun inferCategory(
@@ -280,6 +610,121 @@ object ReceiptOcrParser {
             } ?: return null
 
         return normalized.toDoubleOrNull()
+    }
+
+    private fun String.cleanReceiptItemName(): String {
+        return toReceiptItemNameAndQuantity().first
+    }
+
+    private fun String.toReceiptItemNameAndQuantity(): Pair<String, Int> {
+        val cleanText =
+            replace(Regex("""\s+"""), " ")
+            .trim()
+        val quantityPatterns =
+            listOf(
+                Regex("""(?i)\s+x\s*(\d{1,3})$"""),
+                Regex("""(?i)\s+(\d{1,3})\s*x$"""),
+                Regex("""\s+(\d{1,3})$"""),
+            )
+
+        quantityPatterns.forEach { pattern ->
+            val match = pattern.find(cleanText) ?: return@forEach
+            val quantity = match.groupValues[1].toIntOrNull()?.takeIf { it in 1..999 } ?: return@forEach
+            val name = cleanText.removeRange(match.range).trim(' ', '-', ':', '.', ',')
+            if (name.isNotBlank()) return name to quantity
+        }
+
+        return cleanText.trim(' ', '-', ':', '.', ',') to 1
+    }
+
+    private fun String.toColumnItemNameOrNull(): String? {
+        val searchableLine = searchable()
+        val hasAmount = amountPattern.containsMatchIn(this)
+        val isNumericOnly = trim().toIntOrNull() != null
+        val isNoise =
+            nonTotalKeywords.any { searchableLine.contains(it) } ||
+                searchableLine.hasItemLineNoise() ||
+                isTotalSummaryLine()
+
+        return if (!hasAmount && !isNumericOnly && !isNoise && searchableLine.any { it.isLetter() }) {
+            cleanReceiptItemName().takeIf { it.isNotBlank() }
+        } else {
+            null
+        }
+    }
+
+    private fun String.toSparseItemNameOrNull(): String? {
+        val searchableLine = searchable()
+        if (searchableLine.isSparseDocumentNoise()) return null
+
+        return toColumnItemNameOrNull()
+    }
+
+    private fun String.extractReceiptAmounts(totalAmount: Double?): List<Double> {
+        val searchableLine = searchable()
+        if (searchableLine.isSparseDocumentNoise()) return emptyList()
+        if (nonTotalKeywords.any { searchableLine.contains(it) }) return emptyList()
+
+        return amountPattern.findAll(this)
+            .mapNotNull { match -> match.groupValues[1].parseMoneyToken() }
+            .filter { value ->
+                value >= 1_000.0 &&
+                    value <= 1_000_000_000.0 &&
+                    (totalAmount == null || value <= totalAmount)
+            }
+            .toList()
+    }
+
+    private fun extractReceiptQuantities(
+        lines: List<String>,
+        limit: Int,
+    ): List<Int> {
+        val quantities = mutableListOf<Int>()
+        lines.forEach { line ->
+            if (quantities.size >= limit) return quantities
+            val searchableLine = line.searchable()
+            if (searchableLine.isSparseDocumentNoise()) return@forEach
+            if (line.extractReceiptAmounts(totalAmount = null).isNotEmpty()) return@forEach
+
+            val quantity =
+                Regex("""\b\d{1,3}\b""")
+                    .findAll(line)
+                    .mapNotNull { match -> match.value.toIntOrNull()?.takeIf { it in 1..999 } }
+                    .firstOrNull()
+                    ?: return@forEach
+            quantities += quantity
+        }
+        return quantities
+    }
+
+    private fun String.isTotalSummaryLine(): Boolean {
+        val searchableLine = searchable()
+        return totalKeywords
+            .filterNot { keyword -> keyword == "thanh tien" }
+            .any { keyword -> searchableLine.contains(keyword) }
+    }
+
+    private fun Double.roundMoney(): Long = roundToLong()
+
+    private fun String.isSparseDocumentNoise(): Boolean {
+        return contains("dinesplit") ||
+            contains("hoa don") ||
+            contains("ocr") ||
+            contains("expected") ||
+            contains("cam on") ||
+            contains("ngay") ||
+            contains("ban:")
+    }
+
+    private fun String.hasItemLineNoise(): Boolean {
+        val normalized = trim()
+        return itemLineNoiseKeywords.any { keyword ->
+            if (keyword.length <= 3) {
+                normalized == keyword
+            } else {
+                normalized.contains(keyword)
+            }
+        }
     }
 
     private fun normalizeMixedSeparators(token: String): String? {

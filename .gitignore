@@ -23,6 +23,11 @@ Thumbs.db
 # Log files
 *.log
 
+# Node/Firebase Functions generated files
+node_modules/
+functions/node_modules/
+functions/package-lock.json
+
 # Captures
 /captures/
 

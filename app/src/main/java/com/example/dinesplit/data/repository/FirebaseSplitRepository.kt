@@ -541,6 +541,11 @@ class FirebaseSplitRepository(
                 name = name,
                 price = (item["price"] as? Number)?.toDouble() ?: 0.0,
                 sharedByMemberIds = sharedBy,
+                quantity = ((item["quantity"] as? Number)?.toInt() ?: 1).coerceAtLeast(1),
+                unitPrice =
+                    (item["unitPrice"] as? Number)?.toDouble()
+                        ?: (((item["price"] as? Number)?.toDouble() ?: 0.0) /
+                            ((item["quantity"] as? Number)?.toInt() ?: 1).coerceAtLeast(1)),
             )
         }
     }
@@ -610,6 +615,8 @@ class FirebaseSplitRepository(
             "id" to id,
             "name" to name,
             "price" to price,
+            "quantity" to quantity,
+            "unitPrice" to unitPrice,
             "sharedByMemberIds" to sharedByMemberIds,
         )
     }

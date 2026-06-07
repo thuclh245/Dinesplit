@@ -13,4 +13,12 @@ data class ReceiptOcrResult(
     val amount: Double?,
     val category: ReceiptCategoryOption?,
     val merchantName: String?,
+    val items: List<ReceiptOcrItem> = emptyList(),
+)
+
+data class ReceiptOcrItem(
+    val name: String,
+    val amount: Double,
+    val quantity: Int = 1,
+    val unitPrice: Double = amount,
 )

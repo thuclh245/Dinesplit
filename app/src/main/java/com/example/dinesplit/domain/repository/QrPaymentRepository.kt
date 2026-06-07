@@ -8,4 +8,5 @@ interface QrPaymentRepository {
     fun observeQrPayment(paymentId: String): Flow<QrPayment?>
     fun observeBillPayments(groupId: String, billId: String): Flow<List<QrPayment>>
     suspend fun updateQrPaymentStatus(paymentId: String, status: String, bankTransactionRef: String?): Result<Unit>
+    // VNPAY payment methods are temporarily disabled until Functions deploy permissions are available.
 }

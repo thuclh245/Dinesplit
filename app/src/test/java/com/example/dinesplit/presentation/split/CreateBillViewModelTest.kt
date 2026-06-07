@@ -1,6 +1,7 @@
 package com.example.dinesplit.presentation.split
 
 import com.example.dinesplit.domain.model.SplitMethod
+import com.example.dinesplit.domain.receipt.ReceiptOcrItem
 import com.example.dinesplit.domain.repository.impl.FakeSplitRepository
 import kotlinx.coroutines.runBlocking
 import org.junit.Assert.assertEquals
@@ -100,6 +101,45 @@ class CreateBillViewModelTest {
             vm.onMethodSelect(SplitMethod.ITEMIZED)
 
             assertEquals(250000.0, vm.billItems.first().price, 0.001)
+        }
+
+    @Test
+    fun `receipt ocr populates itemized items and defaults empty item sharers to all members`() =
+        runBlocking {
+            val repo = FakeSplitRepository()
+            val vm = CreateBillViewModel(repository = repo, groupId = "g1", autoLoadMembers = false, currentUserId = "1")
+
+            vm.setMembersForTest(repo.getCurrentMembers())
+            vm.applyReceiptOcr(
+                amount = 225_000.0,
+                merchantName = "DINESPLIT CAFE",
+                items =
+                    listOf(
+                        ReceiptOcrItem(name = "Pho bo dac biet", amount = 130_000.0, quantity = 2, unitPrice = 65_000.0),
+                        ReceiptOcrItem(name = "Tra sua tran chau", amount = 70_000.0, quantity = 2, unitPrice = 35_000.0),
+                        ReceiptOcrItem(name = "Nuoc suoi", amount = 15_000.0),
+                        ReceiptOcrItem(name = "Phi dich vu", amount = 10_000.0),
+                    ),
+            )
+
+            assertEquals(SplitMethod.ITEMIZED, vm.uiState.value.selectedMethod)
+            assertEquals(4, vm.billItems.size)
+            assertEquals("DINESPLIT CAFE", vm.uiState.value.billName)
+            assertEquals(225000.0, vm.billItems.sumOf { it.price }, 0.001)
+
+            vm.saveBillBlocking()
+
+            val saved = repo.lastSavedBill
+            assertNotNull(saved)
+            assertEquals(4, saved!!.items.size)
+            assertEquals(2, saved.items.first().quantity)
+            assertEquals(65_000.0, saved.items.first().unitPrice, 0.001)
+            saved.items.forEach { item ->
+                assertEquals(listOf("1", "2", "3"), item.sharedByMemberIds)
+            }
+            assertEquals(75_000.0, saved.shares["1"] ?: 0.0, 0.001)
+            assertEquals(75_000.0, saved.shares["2"] ?: 0.0, 0.001)
+            assertEquals(75_000.0, saved.shares["3"] ?: 0.0, 0.001)
         }
 
     @Test

@@ -722,8 +722,14 @@ private fun BdItemBreakdown(items: List<BillItem>) {
                                 maxLines = 1,
                                 overflow = TextOverflow.Ellipsis,
                             )
+                            val itemMeta =
+                                if (item.quantity > 1) {
+                                    "${item.quantity} x ${formatAmount(item.unitPrice)} đ · ${item.sharedByMemberIds.size} người chia"
+                                } else {
+                                    "${item.sharedByMemberIds.size} người chia"
+                                }
                             Text(
-                                text = "${item.sharedByMemberIds.size} người chia",
+                                text = itemMeta,
                                 style = MaterialTheme.typography.bodySmall,
                                 color = colorScheme.onSurfaceVariant,
                             )

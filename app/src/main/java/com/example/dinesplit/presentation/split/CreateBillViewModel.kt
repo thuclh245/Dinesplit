@@ -12,6 +12,7 @@ import com.example.dinesplit.domain.model.NotificationFactory
 import com.example.dinesplit.domain.model.SplitMethod
 import com.example.dinesplit.domain.model.SplitNotificationTrigger
 import com.example.dinesplit.domain.model.SplitTriggerType
+import com.example.dinesplit.domain.receipt.ReceiptOcrItem
 import com.example.dinesplit.domain.repository.NotificationRepository
 import com.example.dinesplit.domain.repository.QrPaymentRepository
 import com.example.dinesplit.domain.repository.SplitRepository
@@ -312,12 +313,29 @@ class CreateBillViewModel(
     fun applyReceiptOcr(
         amount: Double?,
         merchantName: String?,
+        items: List<ReceiptOcrItem> = emptyList(),
     ) {
         val cleanMerchantName = merchantName?.trim().orEmpty()
+        val detectedItems =
+            items
+                .filter { item -> item.name.isNotBlank() && item.amount > 0.0 }
+                .map { item ->
+                    BillItem(
+                        name = item.name,
+                        price = item.amount,
+                        sharedByMemberIds = emptyList(),
+                        quantity = item.quantity,
+                        unitPrice = item.unitPrice,
+                    )
+                }
         _uiState.update { state ->
             val detectedAmount = amount?.takeIf { value -> value > 0.0 }
-            val updatedTotal = detectedAmount?.let(::amountToInputString)
-            if (detectedAmount != null && state.selectedMethod == SplitMethod.ITEMIZED) {
+            val detectedItemsTotal = detectedItems.sumOf { it.price }.takeIf { value -> value > 0.0 }
+            val updatedTotal = (detectedAmount ?: detectedItemsTotal)?.let(::amountToInputString)
+            if (detectedItems.isNotEmpty()) {
+                billItems.clear()
+                billItems.addAll(detectedItems)
+            } else if (detectedAmount != null && state.selectedMethod == SplitMethod.ITEMIZED) {
                 applyReceiptAmountToFirstItem(detectedAmount)
             }
 
@@ -329,6 +347,7 @@ class CreateBillViewModel(
                         state.billName
                     },
                 totalAmountStr = updatedTotal ?: state.totalAmountStr,
+                selectedMethod = if (detectedItems.isNotEmpty()) SplitMethod.ITEMIZED else state.selectedMethod,
                 error = null,
             )
         }
@@ -336,15 +355,15 @@ class CreateBillViewModel(
 
     private fun applyReceiptAmountToFirstItem(amount: Double) {
         if (billItems.isEmpty()) {
-            billItems.add(BillItem(name = "Món 1", price = amount, sharedByMemberIds = emptyList()))
+            billItems.add(BillItem(name = "Món 1", price = amount, sharedByMemberIds = emptyList(), unitPrice = amount))
             return
         }
 
-        billItems[0] = billItems[0].copy(price = amount)
+        billItems[0] = billItems[0].copy(price = amount, quantity = 1, unitPrice = amount)
     }
 
     fun addItem() {
-        billItems.add(BillItem(name = "Món ${billItems.size + 1}", price = 0.0, sharedByMemberIds = emptyList()))
+        billItems.add(BillItem(name = "Món ${billItems.size + 1}", price = 0.0, sharedByMemberIds = emptyList(), unitPrice = 0.0))
     }
 
     fun removeItem(item: BillItem) {
@@ -402,6 +421,12 @@ class CreateBillViewModel(
         }
 
         val totalAmount = calculateTotalAmount(currentState)
+        val itemizedItemsForSave =
+            if (currentState.selectedMethod == SplitMethod.ITEMIZED) {
+                normalizedItemizedItems(currentState)
+            } else {
+                emptyList()
+            }
         val shares =
             calculateShares(totalAmount, currentState).getOrElse { throwable ->
                 val message = throwable.message ?: "Không thể tính tiền chia"
@@ -428,7 +453,7 @@ class CreateBillViewModel(
                 totalAmount = totalAmount,
                 payerId = currentState.payerId,
                 method = currentState.selectedMethod,
-                items = if (currentState.selectedMethod == SplitMethod.ITEMIZED) billItems.toList() else emptyList(),
+                items = itemizedItemsForSave,
                 shares = shares,
                 paidMemberIds = paidMemberIds,
                 createdBy = originalBill?.createdBy?.ifBlank { normalizedCurrentUserId } ?: normalizedCurrentUserId,
@@ -538,8 +563,6 @@ class CreateBillViewModel(
             state.selectedMethod == SplitMethod.ITEMIZED &&
                 billItems.any { it.name.isBlank() || it.price <= 0.0 } -> "Mỗi món cần có tên và giá hợp lệ"
             state.selectedMethod == SplitMethod.ITEMIZED &&
-                billItems.any { it.sharedByMemberIds.isEmpty() } -> "Mỗi món cần chọn người chia"
-            state.selectedMethod == SplitMethod.ITEMIZED &&
                 billItems.any { item -> item.sharedByMemberIds.any { it !in state.selectedMemberIds } } ->
                 "Người chia món phải nằm trong danh sách tham gia"
             else -> null
@@ -550,7 +573,7 @@ class CreateBillViewModel(
         val enteredTotal = _uiState.value.totalAmountStr.toDoubleOrNull() ?: 0.0
         if (enteredTotal <= 0.0 || billItems.isEmpty() || billItems.any { it.price > 0.0 }) return
 
-        billItems[0] = billItems[0].copy(price = enteredTotal)
+        billItems[0] = billItems[0].copy(price = enteredTotal, quantity = 1, unitPrice = enteredTotal)
     }
 
     private fun calculateTotalAmount(state: CreateBillUiState): Double {
@@ -583,6 +606,17 @@ class CreateBillViewModel(
                     items = billItems.toList(),
                     memberIds = selectedMemberIds,
                 )
+        }
+    }
+
+    private fun normalizedItemizedItems(state: CreateBillUiState): List<BillItem> {
+        val selectedMemberIds = state.selectedMemberIds.toList()
+        return billItems.map { item ->
+            if (item.sharedByMemberIds.isEmpty()) {
+                item.copy(sharedByMemberIds = selectedMemberIds)
+            } else {
+                item
+            }
         }
     }
 

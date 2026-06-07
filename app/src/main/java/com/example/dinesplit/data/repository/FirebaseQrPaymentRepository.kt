@@ -13,12 +13,12 @@ import kotlinx.coroutines.channels.awaitClose
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.callbackFlow
 import kotlinx.coroutines.suspendCancellableCoroutine
+import java.util.Date
 import kotlin.coroutines.resume
 import kotlin.coroutines.resumeWithException
-import java.util.Date
 
 class FirebaseQrPaymentRepository private constructor(
-    private val firestore: FirebaseFirestore = FirebaseProviders.firestore
+    private val firestore: FirebaseFirestore = FirebaseProviders.firestore,
 ) : QrPaymentRepository {
 
     override suspend fun createQrPayment(payment: QrPayment): Result<Unit> = runCatching {
