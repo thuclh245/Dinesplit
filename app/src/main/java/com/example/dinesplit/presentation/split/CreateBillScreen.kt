@@ -39,6 +39,7 @@ import androidx.compose.material.icons.filled.Info
 import androidx.compose.material.icons.filled.KeyboardArrowDown
 import androidx.compose.material3.DropdownMenu
 import androidx.compose.material3.DropdownMenuItem
+import androidx.compose.material3.Checkbox
 import androidx.compose.material3.HorizontalDivider
 import com.example.dinesplit.core.ui.AppCard
 import com.example.dinesplit.core.ui.OutlinedAppCard
@@ -70,6 +71,7 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.TextStyle
 import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.core.content.FileProvider
@@ -855,30 +857,13 @@ private fun ItemizedSplitDetailsList(
                         modifier = Modifier.padding(top = AppDimens.spaceSm),
                     )
                     Spacer(modifier = Modifier.height(AppDimens.spaceSm))
-                    Row(horizontalArrangement = Arrangement.spacedBy(AppDimens.spaceSm)) {
-                        members.forEach { member ->
-                            val selected = item.sharedByMemberIds.contains(member.id)
-                            Box(
-                                modifier =
-                                    Modifier
-                                        .clip(AppShapes.full)
-                                        .background(if (selected) colorScheme.primary else colorScheme.surfaceContainerHigh)
-                                        .clickable {
-                                            val ids = item.sharedByMemberIds.toMutableList()
-                                            if (selected) ids.remove(member.id) else ids.add(member.id)
-                                            onUpdateItem(item.copy(sharedByMemberIds = ids))
-                                        }
-                                        .padding(horizontal = AppDimens.spaceSm, vertical = AppDimens.spaceXs),
-                            ) {
-                                Text(
-                                    member.initial,
-                                    color = if (selected) colorScheme.surfaceContainerLowest else colorScheme.onSurfaceVariant,
-                                    style = MaterialTheme.typography.bodySmall.copy(fontWeight = FontWeight.Bold),
-                                    fontWeight = FontWeight.Bold,
-                                )
-                            }
-                        }
-                    }
+                    ItemParticipantsDropdown(
+                        members = members,
+                        selectedMemberIds = item.sharedByMemberIds,
+                        onSelectionChange = { selectedIds ->
+                            onUpdateItem(item.copy(sharedByMemberIds = selectedIds))
+                        },
+                    )
                     if (billItems.size > 1) {
                         Spacer(modifier = Modifier.height(AppDimens.spaceSm))
                         Text(
@@ -906,6 +891,133 @@ private fun ItemizedSplitDetailsList(
                 Spacer(modifier = Modifier.width(8.dp))
                 Text("Thêm món", color = colorScheme.primary, fontWeight = FontWeight.Bold)
             }
+        }
+    }
+}
+
+@Composable
+private fun ItemParticipantsDropdown(
+    members: List<Member>,
+    selectedMemberIds: List<String>,
+    onSelectionChange: (List<String>) -> Unit,
+) {
+    val colorScheme = MaterialTheme.colorScheme
+    var expanded by remember { mutableStateOf(false) }
+    val selectedIdSet = selectedMemberIds.toSet()
+    val selectedMembers = members.filter { member -> member.id in selectedIdSet }
+    val selectedLabel =
+        when {
+            selectedMembers.isEmpty() -> "Chưa chọn người ăn món"
+            selectedMembers.size <= 2 -> selectedMembers.joinToString { member -> member.name }
+            else -> selectedMembers.take(2).joinToString { member -> member.name } + " +${selectedMembers.size - 2}"
+        }
+
+    Box(modifier = Modifier.fillMaxWidth()) {
+        Surface(
+            color = colorScheme.surface,
+            shape = AppShapes.large,
+            modifier =
+                Modifier
+                    .fillMaxWidth()
+                    .border(1.dp, colorScheme.outlineVariant.copy(alpha = 0.7f), AppShapes.large)
+                    .clickable { expanded = true },
+        ) {
+            Row(
+                modifier =
+                    Modifier
+                        .fillMaxWidth()
+                        .padding(horizontal = AppDimens.spaceMd, vertical = AppDimens.spaceSm),
+                verticalAlignment = Alignment.CenterVertically,
+                horizontalArrangement = Arrangement.spacedBy(AppDimens.spaceSm),
+            ) {
+                Column(modifier = Modifier.weight(1f)) {
+                    Text(
+                        text = "Người cùng ăn",
+                        style = MaterialTheme.typography.labelSmall,
+                        color = colorScheme.onSurfaceVariant,
+                    )
+                    Text(
+                        text = selectedLabel,
+                        style = MaterialTheme.typography.bodyMedium.copy(fontWeight = FontWeight.SemiBold),
+                        color = if (selectedMembers.isEmpty()) colorScheme.onSurfaceVariant else colorScheme.onSurface,
+                        maxLines = 1,
+                        overflow = TextOverflow.Ellipsis,
+                    )
+                }
+                Surface(
+                    color = if (selectedMembers.isEmpty()) colorScheme.surfaceContainerHigh else colorScheme.primaryContainer,
+                    shape = AppShapes.full,
+                ) {
+                    Text(
+                        text = "${selectedMembers.size}/${members.size}",
+                        style = MaterialTheme.typography.labelSmall.copy(fontWeight = FontWeight.Bold),
+                        color = if (selectedMembers.isEmpty()) colorScheme.onSurfaceVariant else colorScheme.primary,
+                        modifier = Modifier.padding(horizontal = AppDimens.spaceSm, vertical = AppDimens.spaceXs),
+                    )
+                }
+                Icon(
+                    Icons.Default.KeyboardArrowDown,
+                    contentDescription = null,
+                    tint = colorScheme.onSurfaceVariant,
+                )
+            }
+        }
+
+        DropdownMenu(
+            expanded = expanded,
+            onDismissRequest = { expanded = false },
+            modifier = Modifier.fillMaxWidth(0.86f),
+        ) {
+            members.forEach { member ->
+                val selected = member.id in selectedIdSet
+                DropdownMenuItem(
+                    leadingIcon = {
+                        AvatarBubble(member = member, selected = selected)
+                    },
+                    text = {
+                        Column {
+                            Text(
+                                text = member.name,
+                                style = MaterialTheme.typography.bodyMedium.copy(fontWeight = FontWeight.Bold),
+                                maxLines = 1,
+                                overflow = TextOverflow.Ellipsis,
+                            )
+                            Text(
+                                text = if (selected) "Đang chọn" else "Chưa chọn",
+                                style = MaterialTheme.typography.bodySmall,
+                                color = colorScheme.onSurfaceVariant,
+                            )
+                        }
+                    },
+                    trailingIcon = {
+                        Checkbox(
+                            checked = selected,
+                            onCheckedChange = null,
+                        )
+                    },
+                    onClick = {
+                        val nextIds = selectedIdSet.toMutableSet()
+                        if (selected) {
+                            nextIds.remove(member.id)
+                        } else {
+                            nextIds.add(member.id)
+                        }
+                        onSelectionChange(members.map { it.id }.filter { it in nextIds })
+                    },
+                )
+            }
+
+            HorizontalDivider(color = colorScheme.outlineVariant.copy(alpha = 0.3f))
+            DropdownMenuItem(
+                text = {
+                    Text(
+                        text = "Xong",
+                        color = colorScheme.primary,
+                        fontWeight = FontWeight.Bold,
+                    )
+                },
+                onClick = { expanded = false },
+            )
         }
     }
 }
