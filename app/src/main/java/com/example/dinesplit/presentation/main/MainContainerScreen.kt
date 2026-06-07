@@ -732,6 +732,7 @@ private fun MainBottomBar(
     modifier: Modifier = Modifier,
 ) {
     val colorScheme = MaterialTheme.colorScheme
+    val navigationBarPadding = WindowInsets.navigationBars.asPaddingValues().calculateBottomPadding()
     val tabs = remember {
         listOf(
             BottomTab.Feed,
@@ -744,7 +745,7 @@ private fun MainBottomBar(
     Surface(
         modifier = modifier
             .fillMaxWidth()
-            .windowInsetsPadding(WindowInsets.navigationBars),
+            .height(72.dp + navigationBarPadding),
         color = colorScheme.surfaceContainerLowest,
         tonalElevation = AppDimens.level3,
     ) {
@@ -791,6 +792,7 @@ private fun MainBottomBar(
                     }
                 }
             }
+            Spacer(modifier = Modifier.height(navigationBarPadding))
         }
     }
 }
