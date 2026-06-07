@@ -42,7 +42,8 @@ class FirebaseSplitRepository(
                     .whereArrayContains("memberIds", currentUserId)
                     .addSnapshotListener { snapshot, error ->
                         if (error != null) {
-                            close(error)
+                            android.util.Log.w("FirebaseSplitRepo", "getGroups: ${error.message}")
+                            trySend(emptyList())
                             return@addSnapshotListener
                         }
                         trySend(snapshot?.toVisibleGroups().orEmpty())
@@ -58,7 +59,8 @@ class FirebaseSplitRepository(
                     .document(groupId)
                     .addSnapshotListener { snapshot, error ->
                         if (error != null) {
-                            close(error)
+                            android.util.Log.w("FirebaseSplitRepo", "getGroup($groupId): ${error.message}")
+                            trySend(null)
                             return@addSnapshotListener
                         }
                         trySend(snapshot?.toGroup()?.takeUnless { group -> group.isLegacyDemoSplitGroup() })
@@ -76,7 +78,8 @@ class FirebaseSplitRepository(
                     .orderBy("date", com.google.firebase.firestore.Query.Direction.DESCENDING)
                     .addSnapshotListener { snapshot, error ->
                         if (error != null) {
-                            close(error)
+                            android.util.Log.w("FirebaseSplitRepo", "getBills($groupId): ${error.message}")
+                            trySend(emptyList())
                             return@addSnapshotListener
                         }
                         trySend(snapshot?.toBills().orEmpty())
@@ -97,7 +100,8 @@ class FirebaseSplitRepository(
                     .document(billId)
                     .addSnapshotListener { snapshot, error ->
                         if (error != null) {
-                            close(error)
+                            android.util.Log.w("FirebaseSplitRepo", "getBill($groupId/$billId): ${error.message}")
+                            trySend(null)
                             return@addSnapshotListener
                         }
                         trySend(snapshot?.toBill()?.takeUnless { bill -> bill.isLegacyDemoSplitBill() })
@@ -209,7 +213,7 @@ class FirebaseSplitRepository(
             val groupRegistration: ListenerRegistration =
                 groupRef.addSnapshotListener { snapshot, error ->
                     if (error != null) {
-                        close(error)
+                        android.util.Log.w("FirebaseSplitRepo", "getGroupMembers/group($groupId): ${error.message}")
                         return@addSnapshotListener
                     }
                     latestGroupSnapshot = snapshot
@@ -219,7 +223,8 @@ class FirebaseSplitRepository(
             val membersRegistration: ListenerRegistration =
                 membersColl.addSnapshotListener { snapshot, error ->
                     if (error != null) {
-                        close(error)
+                        android.util.Log.w("FirebaseSplitRepo", "getGroupMembers/members($groupId): ${error.message}")
+                        trySend(emptyList())
                         return@addSnapshotListener
                     }
                     if (snapshot != null) {

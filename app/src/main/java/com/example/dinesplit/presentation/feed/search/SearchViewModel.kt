@@ -35,7 +35,8 @@ class SearchViewModel(application: Application) : AndroidViewModel(application) 
     private val _uiState = MutableStateFlow(SearchUiState())
     val uiState: StateFlow<SearchUiState> = _uiState.asStateFlow()
 
-    private var currentUserId: String? = null
+    var currentUserId: String? = null
+        private set
 
     init {
         // 1. Lắng nghe Session người dùng để tải dữ lịch sử và đề xuất Khám phá

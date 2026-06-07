@@ -219,7 +219,11 @@ fun MainContainerScreen(
                                 mainNavController.navigate(AppRoute.PostDetail.createRoute(postId))
                             },
                             onNavigateToUserProfile = { userId ->
-                                mainNavController.navigate(AppRoute.OtherUserProfile.createRoute(userId))
+                                if (userId == profileUiState.profile?.uid) {
+                                    mainNavController.navigate(AppRoute.Profile.route)
+                                } else {
+                                    mainNavController.navigate(AppRoute.OtherUserProfile.createRoute(userId))
+                                }
                             },
                             onNavigateToEditPost = { postId ->
                                 mainNavController.navigate(AppRoute.EditPost.createRoute(postId))
@@ -544,7 +548,11 @@ fun MainContainerScreen(
                                 mainNavController.navigate(AppRoute.PostDetail.createRoute(postId))
                             },
                             onOpenUserProfile = { userId ->
-                                mainNavController.navigate(AppRoute.OtherUserProfile.createRoute(userId))
+                                if (userId == profileUiState.profile?.uid) {
+                                    mainNavController.navigate(AppRoute.Profile.route)
+                                } else {
+                                    mainNavController.navigate(AppRoute.OtherUserProfile.createRoute(userId))
+                                }
                             }
                         )
                     }

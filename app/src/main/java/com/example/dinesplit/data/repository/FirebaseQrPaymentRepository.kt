@@ -33,7 +33,8 @@ class FirebaseQrPaymentRepository private constructor(
             .document(paymentId)
             .addSnapshotListener { snapshot, error ->
                 if (error != null) {
-                    close(error)
+                    android.util.Log.w("FirebaseQrPaymentRepo", "observeQrPayment($paymentId): ${error.message}")
+                    trySend(null)
                     return@addSnapshotListener
                 }
                 trySend(snapshot?.toQrPayment())
@@ -47,7 +48,8 @@ class FirebaseQrPaymentRepository private constructor(
             .whereEqualTo("billId", billId)
             .addSnapshotListener { snapshot, error ->
                 if (error != null) {
-                    close(error)
+                    android.util.Log.w("FirebaseQrPaymentRepo", "observeBillPayments($groupId/$billId): ${error.message}")
+                    trySend(emptyList())
                     return@addSnapshotListener
                 }
                 val payments =

@@ -37,7 +37,8 @@ class FirebaseNotificationRepository private constructor(
                     .orderBy(FIELD_CREATED_AT, com.google.firebase.firestore.Query.Direction.DESCENDING)
                     .addSnapshotListener { snapshot, error ->
                         if (error != null) {
-                            close(error)
+                            android.util.Log.w("FirebaseNotifRepo", "observeNotifications: ${error.message}")
+                            trySend(emptyList())
                             return@addSnapshotListener
                         }
 

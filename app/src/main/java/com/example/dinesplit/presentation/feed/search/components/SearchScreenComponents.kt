@@ -133,6 +133,7 @@ fun SearchPersonCard(
     user: UserProfile,
     isFollowing: Boolean = false,
     isFollower: Boolean = false,
+    isMe: Boolean = false,
     onClick: () -> Unit,
 ) {
     ClickableAppCard(
@@ -171,6 +172,7 @@ fun SearchPersonCard(
             }
 
             val buttonText = when {
+                isMe -> "Trang của bạn"
                 isFollowing && isFollower -> "Bạn bè"
                 isFollowing -> "Đang theo dõi"
                 else -> "Xem hồ sơ"
@@ -184,12 +186,16 @@ fun SearchPersonCard(
                 shape = CircleShape,
                 colors =
                     ButtonDefaults.buttonColors(
-                        containerColor = if (isStatus) {
+                        containerColor = if (isMe) {
+                            MaterialTheme.colorScheme.primaryContainer
+                        } else if (isStatus) {
                             MaterialTheme.colorScheme.surfaceContainer
                         } else {
                             MaterialTheme.colorScheme.primary.copy(alpha = 0.1f)
                         },
-                        contentColor = if (isStatus) {
+                        contentColor = if (isMe) {
+                            MaterialTheme.colorScheme.onPrimaryContainer
+                        } else if (isStatus) {
                             MaterialTheme.colorScheme.onSurfaceVariant
                         } else {
                             MaterialTheme.colorScheme.primary

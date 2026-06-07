@@ -243,11 +243,13 @@ fun SearchScreen(
                                 ) { user ->
                                     val isFollowing = uiState.myFollowingIds.contains(user.uid)
                                     val isFollower = uiState.myFollowerIds.contains(user.uid)
+                                    val isMe = user.uid == viewModel.currentUserId
                                     Box(modifier = Modifier.padding(horizontal = AppDimens.spaceLg)) {
                                         SearchPersonCard(
                                             user = user,
                                             isFollowing = isFollowing,
                                             isFollower = isFollower,
+                                            isMe = isMe,
                                             onClick = { onOpenUserProfile(user.uid) }
                                         )
                                     }
@@ -317,11 +319,13 @@ fun SearchScreen(
                                         ) { user ->
                                             val isFollowing = uiState.myFollowingIds.contains(user.uid)
                                             val isFollower = uiState.myFollowerIds.contains(user.uid)
+                                            val isMe = user.uid == viewModel.currentUserId
                                             Box(modifier = Modifier.padding(horizontal = AppDimens.spaceLg)) {
                                                 SearchPersonCard(
                                                     user = user,
                                                     isFollowing = isFollowing,
                                                     isFollower = isFollower,
+                                                    isMe = isMe,
                                                     onClick = { onOpenUserProfile(user.uid) }
                                                 )
                                             }
@@ -394,11 +398,13 @@ fun SearchScreen(
                                     ) { user ->
                                         val isFollowing = uiState.myFollowingIds.contains(user.uid)
                                         val isFollower = uiState.myFollowerIds.contains(user.uid)
+                                        val isMe = user.uid == viewModel.currentUserId
                                         Box(modifier = Modifier.padding(horizontal = AppDimens.spaceLg)) {
                                             SearchPersonCard(
                                                 user = user,
                                                 isFollowing = isFollowing,
                                                 isFollower = isFollower,
+                                                isMe = isMe,
                                                 onClick = { onOpenUserProfile(user.uid) }
                                             )
                                         }

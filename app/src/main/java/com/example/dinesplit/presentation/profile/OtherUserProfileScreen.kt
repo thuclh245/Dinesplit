@@ -96,6 +96,7 @@ fun OtherUserProfileScreen(
                             isFollowedByOther = uiState.isFollowedByOther,
                             isFollowActionBusy = uiState.isFollowActionBusy,
                             postsCount = uiState.posts.size,
+                            isMe = uiState.isMe,
                             onToggleFollow = vm::toggleFollow,
                             onMessageClick = { onOpenChat(profile.uid) },
                             onFollowingClick = { onNavigateToFollowList(profile.uid, 0) },
@@ -193,6 +194,7 @@ private fun OtherProfileHeader(
     isFollowedByOther: Boolean,
     isFollowActionBusy: Boolean,
     postsCount: Int,
+    isMe: Boolean = false,
     onToggleFollow: () -> Unit,
     onMessageClick: () -> Unit,
     onFollowingClick: () -> Unit,
@@ -246,58 +248,76 @@ private fun OtherProfileHeader(
                     maxLines = 1,
                     overflow = TextOverflow.Ellipsis
                 )
+
+                if (isMe) {
+                    Row(horizontalArrangement = Arrangement.spacedBy(12.dp)) {
+                        SuggestionChip(
+                            onClick = {},
+                            label = { Text("Trang cá nhân của bạn") },
+                            colors = SuggestionChipDefaults.suggestionChipColors(
+                                containerColor = MaterialTheme.colorScheme.primaryContainer,
+                                labelColor = MaterialTheme.colorScheme.onPrimaryContainer
+                            ),
+                            border = null,
+                            shape = RoundedCornerShape(12.dp),
+                            modifier = Modifier.height(40.dp)
+                        )
+                    }
+                }
             }
         }
 
         Spacer(modifier = Modifier.height(16.dp))
 
-        Row(
-            modifier = Modifier.fillMaxWidth(),
-            horizontalArrangement = Arrangement.spacedBy(10.dp),
-        ) {
-            SmallButton(
-                text = followText,
-                onClick = onToggleFollow,
-                enabled = !isFollowActionBusy,
-                isLoading = isFollowActionBusy,
-                shape = RoundedCornerShape(12.dp),
-                modifier = Modifier
-                    .weight(1f)
-                    .height(40.dp)
-                    .semantics {
-                        contentDescription = if (isFollowing) "Bỏ theo dõi người dùng" else "Theo dõi người dùng"
+        if (!isMe) {
+            Row(
+                modifier = Modifier.fillMaxWidth(),
+                horizontalArrangement = Arrangement.spacedBy(10.dp),
+            ) {
+                SmallButton(
+                    text = followText,
+                    onClick = onToggleFollow,
+                    enabled = !isFollowActionBusy,
+                    isLoading = isFollowActionBusy,
+                    shape = RoundedCornerShape(12.dp),
+                    modifier = Modifier
+                        .weight(1f)
+                        .height(40.dp)
+                        .semantics {
+                            contentDescription = if (isFollowing) "Bỏ theo dõi người dùng" else "Theo dõi người dùng"
+                        },
+                    colors = ButtonDefaults.buttonColors(
+                        containerColor = if (isFollowing) {
+                            MaterialTheme.colorScheme.surfaceContainer
+                        } else {
+                            MaterialTheme.colorScheme.primary
+                        },
+                        contentColor = if (isFollowing) {
+                            MaterialTheme.colorScheme.onSurface
+                        } else {
+                            MaterialTheme.colorScheme.onPrimary
+                        }
+                    ),
+                )
+                SmallButton(
+                    text = "Nhắn tin",
+                    onClick = onMessageClick,
+                    shape = RoundedCornerShape(12.dp),
+                    modifier = Modifier
+                        .weight(1f)
+                        .height(40.dp),
+                    icon = {
+                        Icon(
+                            imageVector = Icons.AutoMirrored.Filled.Chat,
+                            contentDescription = null,
+                            modifier = Modifier.size(16.dp),
+                        )
                     },
-                colors = ButtonDefaults.buttonColors(
-                    containerColor = if (isFollowing) {
-                        MaterialTheme.colorScheme.surfaceContainer
-                    } else {
-                        MaterialTheme.colorScheme.primary
-                    },
-                    contentColor = if (isFollowing) {
-                        MaterialTheme.colorScheme.onSurface
-                    } else {
-                        MaterialTheme.colorScheme.onPrimary
-                    }
-                ),
-            )
-            SmallButton(
-                text = "Nhắn tin",
-                onClick = onMessageClick,
-                shape = RoundedCornerShape(12.dp),
-                modifier = Modifier
-                    .weight(1f)
-                    .height(40.dp),
-                icon = {
-                    Icon(
-                        imageVector = Icons.AutoMirrored.Filled.Chat,
-                        contentDescription = null,
-                        modifier = Modifier.size(16.dp),
-                    )
-                },
-            )
-        }
+                )
+            }
 
-        Spacer(modifier = Modifier.height(24.dp))
+            Spacer(modifier = Modifier.height(24.dp))
+        }
 
         // Stats
         Row(

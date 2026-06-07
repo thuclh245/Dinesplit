@@ -29,7 +29,8 @@ class FirebaseFeedRepository(
                     .orderBy("createdAt", Query.Direction.DESCENDING)
                     .addSnapshotListener { snapshot, error ->
                         if (error != null) {
-                            close(error)
+                            android.util.Log.w("FirebaseFeedRepo", "getFeedPosts: ${error.message}")
+                            trySend(emptyList())
                             return@addSnapshotListener
                         }
                         val posts =
@@ -91,7 +92,8 @@ class FirebaseFeedRepository(
                     .whereGreaterThan("expiresAt", now)
                     .addSnapshotListener { snapshot, error ->
                         if (error != null) {
-                            close(error)
+                            android.util.Log.w("FirebaseFeedRepo", "getActiveStories: ${error.message}")
+                            trySend(emptyList())
                             return@addSnapshotListener
                         }
                         val stories =
@@ -148,7 +150,8 @@ class FirebaseFeedRepository(
                     .orderBy("createdAt", Query.Direction.DESCENDING)
                     .addSnapshotListener { snapshot, error ->
                         if (error != null) {
-                            close(error)
+                            android.util.Log.w("FirebaseFeedRepo", "getUserPosts: ${error.message}")
+                            trySend(emptyList())
                             return@addSnapshotListener
                         }
                         val posts =
@@ -421,7 +424,8 @@ class FirebaseFeedRepository(
             
             val userListener = userRef.addSnapshotListener { userSnap, userErr ->
                 if (userErr != null) {
-                    close(userErr)
+                    android.util.Log.w("FirebaseFeedRepo", "getSavedPosts: ${userErr.message}")
+                    trySend(emptyList())
                     return@addSnapshotListener
                 }
                 val savedIds = (userSnap?.get("savedPostIds") as? List<*>)?.mapNotNull { it?.toString() } ?: emptyList()
@@ -465,7 +469,8 @@ class FirebaseFeedRepository(
                     .orderBy("createdAt", Query.Direction.ASCENDING)
                     .addSnapshotListener { snapshot, error ->
                         if (error != null) {
-                            close(error)
+                            android.util.Log.w("FirebaseFeedRepo", "getComments($postId): ${error.message}")
+                            trySend(emptyList())
                             return@addSnapshotListener
                         }
                         val comments =

@@ -28,6 +28,7 @@ data class OtherUserProfileUiState(
     val isFollowing: Boolean = false,
     val isFollowedByOther: Boolean = false,
     val isFollowActionBusy: Boolean = false,
+    val isMe: Boolean = false,
     val errorMessage: String? = null
 )
 
@@ -81,11 +82,14 @@ class OtherUserProfileViewModel(
                     false
                 }
 
+                val isMe = targetUid == currentUserId
+
                 _uiState.value = _uiState.value.copy(
                     isLoading = false,
                     profile = profile,
                     isFollowing = following,
-                    isFollowedByOther = followedByOther
+                    isFollowedByOther = followedByOther,
+                    isMe = isMe
                 )
 
                 launch {
