@@ -73,7 +73,7 @@ fun SearchTopBar(
                 value = query,
                 onValueChange = onQueryChange,
                 label = "",
-                placeholder = "Tìm kiếm...",
+                placeholder = "Tìm người dùng, bài viết, địa điểm...",
                 onClearClick = { onQueryChange("") },
                 keyboardActions = KeyboardActions(onSearch = { onSearchAction() }),
                 minHeight = 44.dp,

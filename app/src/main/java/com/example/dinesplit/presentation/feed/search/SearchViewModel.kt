@@ -7,9 +7,6 @@ import com.example.dinesplit.core.common.AppContainer
 import com.example.dinesplit.core.firebase.FirebaseErrorMapper
 import com.example.dinesplit.core.firebase.FirebaseProviders
 import com.example.dinesplit.domain.model.Post
-import com.example.dinesplit.domain.model.UserProfile
-import com.google.android.gms.tasks.Task
-import com.google.firebase.firestore.DocumentSnapshot
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.FlowPreview
 import kotlinx.coroutines.async
@@ -22,10 +19,6 @@ import kotlinx.coroutines.flow.debounce
 import kotlinx.coroutines.flow.distinctUntilChanged
 import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
-import kotlinx.coroutines.suspendCancellableCoroutine
-import java.util.UUID
-import kotlin.coroutines.resume
-import kotlin.coroutines.resumeWithException
 
 
 @OptIn(FlowPreview::class)
@@ -105,14 +98,11 @@ class SearchViewModel(application: Application) : AndroidViewModel(application) 
         runCatching {
             coroutineScope {
                 val userDeferred = async(Dispatchers.IO) { profileRepository.searchProfiles(trimmed) }
-                val postDeferred = async(Dispatchers.IO) { searchPostsFromFirestore(normalized) }
-                val placeDeferred = async(Dispatchers.IO) { searchPlacesFromFirestore(normalized) }
+                val postDeferred = async(Dispatchers.IO) { feedRepository.searchPosts(trimmed) }
 
-                Triple(
-                    userDeferred.await(),
-                    postDeferred.await(),
-                    placeDeferred.await()
-                )
+                val users = userDeferred.await()
+                val posts = postDeferred.await()
+                Triple(users, posts, buildPlaceResults(normalized, posts))
             }
         }.onSuccess { triple ->
             val users = triple.first.getOrDefault(emptyList())
@@ -142,32 +132,6 @@ class SearchViewModel(application: Application) : AndroidViewModel(application) 
                 )
             }
         }
-    }
-
-    private suspend fun searchPostsFromFirestore(query: String): List<Post> {
-        val snapshot = firestore.collection("posts")
-            .orderBy("caption")
-            .startAt(query)
-            .endAt(query + "\uf8ff")
-            .limit(20)
-            .get()
-            .awaitFirebase()
-
-        return snapshot.documents.mapNotNull { document ->
-            document.toObject(Post::class.java)?.copy(id = document.id)
-        }
-    }
-
-    private suspend fun searchPlacesFromFirestore(query: String): List<PlaceUiModel> {
-        val snapshot = firestore.collection("places")
-            .orderBy("name")
-            .startAt(query)
-            .endAt(query + "\uf8ff")
-            .limit(12)
-            .get()
-            .awaitFirebase()
-
-        return snapshot.documents.mapNotNull { document -> document.toPlaceUiModel() }
     }
 
     // EXPLORE MODE DATA EXTRACTION FLOW
@@ -289,39 +253,44 @@ class SearchViewModel(application: Application) : AndroidViewModel(application) 
     }
 
 
-    private fun DocumentSnapshot.toPlaceUiModel(): PlaceUiModel? {
-        if (!exists()) return null
-        val placeId = getString("id")?.takeIf { it.isNotBlank() } ?: id
-        val name = getString("name") ?: return null
-        val category = getString("category") ?: ""
-        val rating = getString("rating") ?: "4.5"
-        val distance = getString("distance") ?: "1.0 km"
-        val priceRange = getString("priceRange") ?: "$$"
-        val imageUrl = getString("imageUrl") ?: ""
+    private fun buildPlaceResults(query: String, posts: List<Post>): List<PlaceUiModel> {
+        val fallbackPlaces = getSuggestedPlaces()
+        val fallbackImage = fallbackPlaces.firstOrNull()?.image.orEmpty()
 
-        return PlaceUiModel(
-            id = placeId,
-            name = name,
-            category = category,
-            rating = rating,
-            distance = distance,
-            priceRange = priceRange,
-            image = imageUrl
-        )
-    }
-
-    private suspend fun <T> Task<T>.awaitFirebase(): T {
-        return suspendCancellableCoroutine { continuation ->
-            addOnCompleteListener { task ->
-                if (task.isSuccessful) {
-                    continuation.resume(task.result)
-                } else {
-                    continuation.resumeWithException(
-                        task.exception ?: IllegalStateException("Firebase failed")
-                    )
-                }
+        val placesFromPosts = posts
+            .mapNotNull { post ->
+                val location = post.location?.trim()?.takeIf { it.isNotBlank() } ?: return@mapNotNull null
+                location to post
             }
+            .groupBy { (location, _) -> location.lowercase() }
+            .entries
+            .mapIndexed { index, entry ->
+                val locationName = entry.value.first().first
+                val relatedPosts = entry.value.map { it.second }
+                val matchingFallback = fallbackPlaces.find { it.name.equals(locationName, ignoreCase = true) }
+
+                matchingFallback?.copy(
+                    id = "post_location_$index",
+                    category = "Có ${relatedPosts.size} bài viết liên quan",
+                    image = relatedPosts.firstNotNullOfOrNull { it.imageUrls.firstOrNull() } ?: matchingFallback.image
+                ) ?: PlaceUiModel(
+                    id = "post_location_$index",
+                    name = locationName,
+                    category = "Có ${relatedPosts.size} bài viết liên quan",
+                    rating = "4.8",
+                    distance = "Từ bảng tin",
+                    priceRange = "DineSplit",
+                    image = relatedPosts.firstNotNullOfOrNull { it.imageUrls.firstOrNull() } ?: fallbackImage
+                )
+            }
+
+        val fallbackMatches = fallbackPlaces.filter { place ->
+            place.name.lowercase().contains(query) || place.category.lowercase().contains(query)
         }
+
+        return (placesFromPosts + fallbackMatches)
+            .distinctBy { it.name.lowercase() }
+            .take(12)
     }
 
     private fun getSuggestedPlaces(): List<PlaceUiModel> {
