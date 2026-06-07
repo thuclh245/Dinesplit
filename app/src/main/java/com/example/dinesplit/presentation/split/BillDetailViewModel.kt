@@ -12,6 +12,7 @@ import com.example.dinesplit.domain.model.QrPaymentStatus
 import com.example.dinesplit.domain.repository.NotificationRepository
 import com.example.dinesplit.domain.repository.SplitRepository
 import com.example.dinesplit.domain.repository.QrPaymentRepository
+import com.example.dinesplit.domain.repository.ProfileRepository
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
@@ -45,6 +46,7 @@ class BillDetailViewModel(
     private val repository: SplitRepository,
     private val notificationRepository: NotificationRepository,
     private val qrPaymentRepository: QrPaymentRepository,
+    private val profileRepository: ProfileRepository,
     private val groupId: String,
     private val billId: String,
     private val currentUserId: String?,
@@ -223,8 +225,28 @@ class BillDetailViewModel(
                         val isBillParticipant = userId in bill.shares.keys
                         val isBillCreatorOrPayer = bill.payerId == userId || bill.createdBy == userId
 
+                        // Check mutual followers (friendship) with bill creator or group owner
+                        var isFriend = false
+                        if (userId.isNotBlank()) {
+                            val creatorId = bill.createdBy
+                            val ownerId = group?.ownerId.orEmpty()
+                            val targetIds = listOfNotNull(
+                                creatorId.takeIf { it.isNotBlank() && it != userId },
+                                ownerId.takeIf { it.isNotBlank() && it != userId }
+                            ).distinct()
+
+                            for (targetId in targetIds) {
+                                val followsTarget = profileRepository.isFollowing(userId, targetId).getOrDefault(false)
+                                val targetFollowsMe = profileRepository.isFollowing(targetId, userId).getOrDefault(false)
+                                if (followsTarget && targetFollowsMe) {
+                                    isFriend = true
+                                    break
+                                }
+                            }
+                        }
+
                         val isAuthorized = userId.isNotBlank() && (
-                            isGroupMember || isGroupMemberFromList || isBillParticipant || isBillCreatorOrPayer
+                            isGroupMember || isGroupMemberFromList || isBillParticipant || isBillCreatorOrPayer || isFriend
                         )
 
                         if (!isAuthorized) {

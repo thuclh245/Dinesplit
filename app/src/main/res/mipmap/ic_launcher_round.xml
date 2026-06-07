@@ -1,0 +1,61 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!--
+  DineSplit default launcher round icon (fallback for non-adaptive contexts).
+  Terracotta background circle + white fork & knife.
+-->
+<vector xmlns:android="http://schemas.android.com/apk/res/android"
+    android:width="96dp"
+    android:height="96dp"
+    android:viewportWidth="96"
+    android:viewportHeight="96">
+
+    <!-- Terracotta background circle -->
+    <path
+        android:fillColor="#C9401A"
+        android:pathData="M48,48 m-48,0 a48,48 0 1,0 96,0 a48,48 0 1,0 -96,0" />
+
+    <!-- ===== FORK (left, slightly rotated) ===== -->
+
+    <!-- Fork handle -->
+    <path
+        android:fillColor="#FFFFFF"
+        android:pathData="M32,74 L35.5,74 L42,42 L38.5,42 Z" />
+
+    <!-- Fork tines base bar -->
+    <path
+        android:fillColor="#FFFFFF"
+        android:pathData="M37,42 L44,42 L44,37 L37,37 Z" />
+
+    <!-- Fork tine 1 (left) -->
+    <path
+        android:fillColor="#FFFFFF"
+        android:pathData="M37,22 L39,22 L39,37 L37,37 Z" />
+
+    <!-- Fork tine 2 (middle) -->
+    <path
+        android:fillColor="#FFFFFF"
+        android:pathData="M40.5,22 L42.5,22 L42.5,37 L40.5,37 Z" />
+
+    <!-- Fork tine 3 (right) -->
+    <path
+        android:fillColor="#FFFFFF"
+        android:pathData="M44,22 L46,22 L46,37 L44,37 Z" />
+
+    <!-- ===== KNIFE (right, slightly rotated opposite) ===== -->
+
+    <!-- Knife handle -->
+    <path
+        android:fillColor="#FFFFFF"
+        android:pathData="M60.5,74 L64,74 L57,42 L53.5,42 Z" />
+
+    <!-- Knife blade body (tapers to tip) -->
+    <path
+        android:fillColor="#FFFFFF"
+        android:pathData="M53.5,42 L57,42 L63,22 L58,22 Z" />
+
+    <!-- Knife blade tip accent -->
+    <path
+        android:fillColor="#FFFFFF"
+        android:pathData="M58,22 L63,22 L62,25 Z" />
+
+</vector>

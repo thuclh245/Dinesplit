@@ -109,7 +109,8 @@ fun FeedRoute(
     onNavigateToCreateStory: () -> Unit,
     onNavigateToPostDetail: (String) -> Unit,
     onNavigateToUserProfile: (String) -> Unit,
-    onNavigateToEditPost: (String) -> Unit
+    onNavigateToEditPost: (String) -> Unit,
+    onOpenAssistant: () -> Unit
 ) {
     val context = LocalContext.current
     val application = context.applicationContext as android.app.Application
@@ -133,6 +134,7 @@ fun FeedRoute(
         bottomPadding = bottomPadding,
         onOpenNotifications = onOpenNotifications,
         onOpenSearch = onOpenSearch,
+        onOpenAssistant = onOpenAssistant,
         onCreatePost = onNavigateToCreatePost,
         onCreateStory = onNavigateToCreateStory,
         onOpenPostDetail = onNavigateToPostDetail,
@@ -160,6 +162,7 @@ fun FeedScreen(
     bottomPadding: Dp = 80.dp,
     onOpenNotifications: () -> Unit,
     onOpenSearch: () -> Unit,
+    onOpenAssistant: () -> Unit = {},
     onCreatePost: () -> Unit = {},
     onCreateStory: () -> Unit = {},
     onOpenPostDetail: (String) -> Unit = {},
@@ -311,20 +314,21 @@ fun FeedScreen(
                     }
                 }
 
-                ExtendedFloatingActionButton(
-                    onClick = onCreatePost,
-                    containerColor = MaterialTheme.colorScheme.secondary,
-                    contentColor = MaterialTheme.colorScheme.onSecondary,
+                FloatingActionButton(
+                    onClick = onOpenAssistant,
+                    containerColor = MaterialTheme.colorScheme.primary,
+                    contentColor = MaterialTheme.colorScheme.onPrimary,
                     shape = CircleShape,
-                    icon = {
-                        Icon(Icons.Default.AddAPhoto, contentDescription = null, modifier = Modifier.size(20.dp))
-                    },
-                    text = {
-                        Text("Đăng bài", style = MaterialTheme.typography.labelLarge.copy(fontWeight = FontWeight.Bold))
-                    },
                     modifier = Modifier
-                        .shadow(12.dp, CircleShape, spotColor = MaterialTheme.colorScheme.secondary.copy(alpha = 0.4f)),
-                )
+                        .size(56.dp)
+                        .shadow(12.dp, CircleShape, spotColor = MaterialTheme.colorScheme.primary.copy(alpha = 0.4f)),
+                ) {
+                    Icon(
+                        imageVector = Icons.Default.AutoAwesome,
+                        contentDescription = "Hỏi đáp chatbot",
+                        modifier = Modifier.size(24.dp)
+                    )
+                }
             }
         },
     ) { padding ->
@@ -1269,7 +1273,7 @@ private fun LinkedBillSummarySection(
                         }
                     }
                     Text(
-                        text = summary.billName,
+                        text = if (summary.isAuthorized) summary.billName else "Hóa đơn chia tiền",
                         style = MaterialTheme.typography.labelMedium.copy(fontWeight = FontWeight.Bold),
                         maxLines = 1,
                         overflow = TextOverflow.Ellipsis,
@@ -1544,38 +1548,45 @@ private fun SocialSplitCard(
 
             val hasLinkedBill = !post.linkedGroupId.isNullOrBlank() && !post.linkedBillId.isNullOrBlank() && post.id != post.linkedBillId
             if (hasLinkedBill) {
-                if (billSummary != null) {
-                    val context = androidx.compose.ui.platform.LocalContext.current
-                    LinkedBillSummarySection(
-                        summary = billSummary,
-                        onViewBill = {
-                            if (billSummary.isAuthorized) {
-                                onSettleUp()
-                            } else {
-                                android.widget.Toast.makeText(context, "Bạn không có quyền xem hóa đơn này.", android.widget.Toast.LENGTH_SHORT).show()
-                            }
-                        },
-                        onSettleUp = {
-                            if (billSummary.isAuthorized) {
-                                onSettleUp()
-                            } else {
-                                android.widget.Toast.makeText(context, "Bạn không có quyền xem hóa đơn này.", android.widget.Toast.LENGTH_SHORT).show()
-                            }
+                when {
+                    billSummary == null -> {
+                        // Still loading
+                        Box(
+                            modifier = Modifier
+                                .fillMaxWidth()
+                                .padding(horizontal = AppDimens.spaceLg, vertical = AppDimens.spaceSm)
+                                .height(60.dp)
+                                .background(MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.2f), AppShapes.large),
+                            contentAlignment = Alignment.Center
+                        ) {
+                            CircularProgressIndicator(
+                                modifier = Modifier.size(20.dp),
+                                strokeWidth = 2.dp,
+                                color = MaterialTheme.colorScheme.outline
+                            )
                         }
-                    )
-                } else {
-                    Box(
-                        modifier = Modifier
-                            .fillMaxWidth()
-                            .padding(horizontal = AppDimens.spaceLg, vertical = AppDimens.spaceSm)
-                            .height(100.dp)
-                            .background(MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.2f), AppShapes.large),
-                        contentAlignment = Alignment.Center
-                    ) {
-                        CircularProgressIndicator(
-                            modifier = Modifier.size(20.dp),
-                            strokeWidth = 2.dp,
-                            color = MaterialTheme.colorScheme.outline
+                    }
+                    billSummary.billName.isBlank() && !billSummary.isAuthorized -> {
+                        // Bill not found or inaccessible sentinel — hide silently
+                    }
+                    else -> {
+                        val context = androidx.compose.ui.platform.LocalContext.current
+                        LinkedBillSummarySection(
+                            summary = billSummary,
+                            onViewBill = {
+                                if (billSummary.isAuthorized) {
+                                    onSettleUp()
+                                } else {
+                                    android.widget.Toast.makeText(context, "Bạn không có quyền xem hóa đơn này.", android.widget.Toast.LENGTH_SHORT).show()
+                                }
+                            },
+                            onSettleUp = {
+                                if (billSummary.isAuthorized) {
+                                    onSettleUp()
+                                } else {
+                                    android.widget.Toast.makeText(context, "Bạn không có quyền xem hóa đơn này.", android.widget.Toast.LENGTH_SHORT).show()
+                                }
+                            }
                         )
                     }
                 }

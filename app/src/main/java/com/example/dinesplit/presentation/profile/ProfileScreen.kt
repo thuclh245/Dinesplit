@@ -65,6 +65,12 @@ fun ProfileScreen(
     onOpenPostDetail: (String) -> Unit = {},
     onBillClick: (String, String) -> Unit = { _, _ -> },
     onNavigateToFollowList: (Int) -> Unit = {},
+    isNotificationsEnabled: Boolean = true,
+    isNotificationsMutedPermanently: Boolean = false,
+    muteUntilTimestamp: Long = 0L,
+    onNotificationsEnabledChange: (Boolean) -> Unit = {},
+    onMutePermanentlyChange: (Boolean) -> Unit = {},
+    onMuteUntilChange: (Int) -> Unit = {},
 ) {
     val resolvedHandle = userHandle.ifBlank { "@" }
     val resolvedBio = userBio.ifBlank { "Add a bio so friends know who they are splitting with." }
@@ -109,7 +115,7 @@ fun ProfileScreen(
                         contentDescription = null,
                         tint = MaterialTheme.colorScheme.primary,
                     )
-                    Text("Cài đặt riêng tư")
+                    Text("Cài đặt & riêng tư")
                 }
             },
             text = {
@@ -136,6 +142,35 @@ fun ProfileScreen(
                         )
                         Switch(
                             checked = isPublic,
+                            onCheckedChange = null
+                        )
+                    }
+
+                    HorizontalDivider(color = MaterialTheme.colorScheme.outlineVariant.copy(alpha = 0.5f), modifier = Modifier.padding(vertical = AppDimens.spaceSm))
+
+                    Text(
+                        text = "Cài đặt thông báo",
+                        style = MaterialTheme.typography.titleSmall.copy(fontWeight = FontWeight.Bold),
+                        color = MaterialTheme.colorScheme.primary
+                    )
+
+                    Row(
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .toggleable(
+                                value = isNotificationsEnabled,
+                                role = Role.Switch,
+                                onValueChange = onNotificationsEnabledChange
+                            ),
+                        verticalAlignment = Alignment.CenterVertically,
+                        horizontalArrangement = Arrangement.SpaceBetween
+                    ) {
+                        Text(
+                            text = "Nhận thông báo",
+                            style = MaterialTheme.typography.bodyLarge.copy(fontWeight = FontWeight.SemiBold)
+                        )
+                        Switch(
+                            checked = isNotificationsEnabled,
                             onCheckedChange = null
                         )
                     }

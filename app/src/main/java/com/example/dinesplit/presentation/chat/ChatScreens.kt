@@ -206,8 +206,7 @@ fun ChatDetailScreen(
                 Column(
                     modifier = Modifier
                         .fillMaxSize()
-                        .imePadding()
-                        .navigationBarsPadding(),
+                        .imePadding(),
                 ) {
                     ActiveCallBanner(uiState = uiState, onOpen = viewModel::openActiveCall)
 

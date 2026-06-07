@@ -6,6 +6,7 @@ import androidx.core.net.toUri
 import androidx.lifecycle.AndroidViewModel
 import androidx.lifecycle.viewModelScope
 import com.example.dinesplit.core.common.AppContainer
+import com.example.dinesplit.core.notification.FcmManager
 import com.example.dinesplit.core.firebase.FirebaseErrorMapper
 import com.example.dinesplit.domain.exception.UsernameAlreadyExistsException
 import com.example.dinesplit.domain.model.LinkedBillSummary
@@ -42,6 +43,9 @@ data class ProfileUiState(
     val savedPosts: List<Post> = emptyList(),
     val taggedBills: List<LinkedBillSummary> = emptyList(),
     val isSettingsDialogOpen: Boolean = false,
+    val isNotificationsEnabled: Boolean = true,
+    val isNotificationsMutedPermanently: Boolean = false,
+    val muteUntilTimestamp: Long = 0L,
 )
 
 data class EditProfileUiState(
@@ -92,6 +96,7 @@ class ProfileViewModel(application: Application) : AndroidViewModel(application)
 
     @OptIn(kotlinx.coroutines.ExperimentalCoroutinesApi::class)
     fun loadProfile() {
+        loadNotificationSettings()
         val session = observeSessionUseCase().value
         if (session == null) {
             _profileUiState.value = ProfileUiState(isLoading = false, errorMessage = "Session expired")
@@ -348,6 +353,13 @@ class ProfileViewModel(application: Application) : AndroidViewModel(application)
             postsJob?.cancel()
             savedPostsJob?.cancel()
             taggedBillsJob?.cancel()
+
+            runCatching {
+                FcmManager.deleteDeviceToken()
+            }.onFailure { throwable ->
+                android.util.Log.e("ProfileViewModel", "Failed to delete FCM token on logout", throwable)
+            }
+
             logoutUseCase()
             _profileUiState.value = _profileUiState.value.copy(isLoggingOut = false)
             _effect.emit(ProfileUiEffect.LogoutSuccess)
@@ -368,6 +380,38 @@ class ProfileViewModel(application: Application) : AndroidViewModel(application)
                     )
                 }
         }
+    }
+
+    fun loadNotificationSettings() {
+        val enabled = FcmManager.isNotificationsEnabled()
+        val mutePermanently = FcmManager.isMutePermanently()
+        val muteUntil = FcmManager.getMuteUntil()
+        
+        _profileUiState.value = _profileUiState.value.copy(
+            isNotificationsEnabled = enabled,
+            isNotificationsMutedPermanently = mutePermanently,
+            muteUntilTimestamp = muteUntil
+        )
+    }
+
+    fun setNotificationsEnabled(enabled: Boolean) {
+        FcmManager.setNotificationsEnabled(enabled)
+        _profileUiState.value = _profileUiState.value.copy(isNotificationsEnabled = enabled)
+    }
+
+    fun setMutePermanently(mute: Boolean) {
+        FcmManager.setMutePermanently(mute)
+        _profileUiState.value = _profileUiState.value.copy(isNotificationsMutedPermanently = mute)
+    }
+
+    fun setMuteUntil(durationHours: Int) {
+        val until = if (durationHours > 0) {
+            System.currentTimeMillis() + durationHours * 60 * 60 * 1000L
+        } else {
+            0L
+        }
+        FcmManager.setMuteUntil(until)
+        _profileUiState.value = _profileUiState.value.copy(muteUntilTimestamp = until)
     }
 
     fun setSettingsDialogOpen(open: Boolean) {

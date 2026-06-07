@@ -43,6 +43,8 @@ import com.example.dinesplit.presentation.chat.ChatDetailScreen
 import com.example.dinesplit.presentation.chat.ChatListScreen
 import com.example.dinesplit.presentation.feed.CreatePostScreen
 import com.example.dinesplit.presentation.feed.CreatePostMode
+import com.example.dinesplit.core.firebase.FirebaseProviders
+import com.example.dinesplit.core.notification.NotificationHelper
 import com.example.dinesplit.presentation.feed.CreatePostViewModel
 import com.example.dinesplit.presentation.feed.FeedRoute
 import com.example.dinesplit.presentation.feed.PostDetailScreen
@@ -77,6 +79,11 @@ import com.example.dinesplit.presentation.split.GroupListScreen
 import com.example.dinesplit.presentation.split.SettleSummaryScreen
 import com.example.dinesplit.presentation.split.SplitScreen
 import com.example.dinesplit.ui.theme.DineSplitTheme
+import com.example.dinesplit.core.notification.FcmManager
+import com.example.dinesplit.core.ui.AppShapes
+import android.os.Build
+import androidx.activity.compose.rememberLauncherForActivityResult
+import androidx.activity.result.contract.ActivityResultContracts
 import kotlinx.coroutines.flow.collectLatest
 import kotlin.math.roundToInt
 
@@ -177,6 +184,82 @@ fun MainContainerScreen(
         }
     }
 
+    var showPermissionPrompt by remember { mutableStateOf(false) }
+
+    LaunchedEffect(profileUiState.profile?.uid) {
+        val uid = profileUiState.profile?.uid
+        if (!uid.isNullOrBlank()) {
+            FcmManager.registerCurrentToken(uid)
+            showPermissionPrompt = FcmManager.shouldShowSoftPrompt()
+
+            var isFirstSnapshot = true
+            val registration = FirebaseProviders.firestore
+                .collection("user_notifications")
+                .document(uid)
+                .collection("notifications")
+                .orderBy("createdAt", com.google.firebase.firestore.Query.Direction.DESCENDING)
+                .limit(5)
+                .addSnapshotListener { snapshot: com.google.firebase.firestore.QuerySnapshot?, error: com.google.firebase.firestore.FirebaseFirestoreException? ->
+                    if (error != null) return@addSnapshotListener
+                    if (snapshot == null) return@addSnapshotListener
+
+                    if (isFirstSnapshot) {
+                        isFirstSnapshot = false
+                        return@addSnapshotListener
+                    }
+
+                    for (change in snapshot.documentChanges) {
+                        if (change.type == com.google.firebase.firestore.DocumentChange.Type.ADDED) {
+                            val doc = change.document
+                            val isRead = doc.getBoolean("isRead") ?: false
+                            val title = doc.getString("title").orEmpty()
+                            val subtitle = doc.getString("subtitle").orEmpty()
+                            val createdAt = doc.getLong("createdAt") ?: 0L
+
+                            val age = System.currentTimeMillis() - createdAt
+                            if (!isRead && title.isNotEmpty() && subtitle.isNotEmpty() && age < 30_000L) {
+                                val senderId = doc.getString("senderId")
+                                if (!senderId.isNullOrBlank()) {
+                                    com.google.firebase.firestore.FirebaseFirestore.getInstance()
+                                        .collection("users")
+                                        .document(senderId)
+                                        .get()
+                                        .addOnSuccessListener { userSnap ->
+                                            val avatarUrl = userSnap.getString("avatarUrl")
+                                            NotificationHelper.showNotification(
+                                                context = context,
+                                                title = title,
+                                                body = subtitle,
+                                                avatarUrl = avatarUrl
+                                            )
+                                        }
+                                        .addOnFailureListener {
+                                            NotificationHelper.showNotification(
+                                                context = context,
+                                                title = title,
+                                                body = subtitle
+                                            )
+                                        }
+                                } else {
+                                    NotificationHelper.showNotification(
+                                        context = context,
+                                        title = title,
+                                        body = subtitle
+                                    )
+                                }
+                            }
+                        }
+                    }
+                }
+
+            try {
+                kotlinx.coroutines.awaitCancellation()
+            } finally {
+                registration.remove()
+            }
+        }
+    }
+
     LaunchedEffect(currentRoute) {
         topBarOffsetHeightPx = 0f
         bottomBarOffsetHeightPx = 0f
@@ -186,6 +269,18 @@ fun MainContainerScreen(
     val bottomBarOffsetHeightDp = with(density) { bottomBarOffsetHeightPx.toDp() }
     val dynamicBottomPadding = remember(bottomBarOffsetHeightDp, bottomBarHeightDp) {
         maxOf(0.dp, (bottomBarHeightDp + 16.dp) - bottomBarOffsetHeightDp)
+    }
+
+    if (showPermissionPrompt) {
+        NotificationPermissionGate(
+            onDismiss = { showPermissionPrompt = false },
+            onPermissionGranted = {
+                val uid = profileUiState.profile?.uid
+                if (!uid.isNullOrBlank()) {
+                    FcmManager.registerCurrentToken(uid)
+                }
+            }
+        )
     }
 
     Scaffold(
@@ -213,6 +308,7 @@ fun MainContainerScreen(
                             bottomPadding = dynamicBottomPadding,
                             onOpenNotifications = onOpenNotifications,
                             onOpenSearch = { mainNavController.navigate(AppRoute.Search.route) },
+                            onOpenAssistant = onOpenAssistant,
                             onNavigateToCreatePost = { mainNavController.navigate(AppRoute.CreatePost.route) },
                             onNavigateToCreateStory = { mainNavController.navigate(AppRoute.CreateStory.route) },
                             onNavigateToPostDetail = { postId ->
@@ -503,6 +599,12 @@ fun MainContainerScreen(
                                     isLoggingOut = profileUiState.isLoggingOut,
                                     isPublic = profileUiState.profile?.isPublic ?: true,
                                     isSettingsDialogOpen = profileUiState.isSettingsDialogOpen,
+                                    isNotificationsEnabled = profileUiState.isNotificationsEnabled,
+                                    isNotificationsMutedPermanently = profileUiState.isNotificationsMutedPermanently,
+                                    muteUntilTimestamp = profileUiState.muteUntilTimestamp,
+                                    onNotificationsEnabledChange = profileViewModel::setNotificationsEnabled,
+                                    onMutePermanentlyChange = profileViewModel::setMutePermanently,
+                                    onMuteUntilChange = profileViewModel::setMuteUntil,
                                     onCloseSettings = { profileViewModel.setSettingsDialogOpen(false) },
                                     bottomPadding = dynamicBottomPadding,
                                     onEditProfile = { mainNavController.navigate(AppRoute.EditProfile.route) },
@@ -891,4 +993,72 @@ private fun MainBottomBarPreview() {
             onTabSelected = {},
         )
     }
+}
+
+@Composable
+fun NotificationPermissionGate(
+    onDismiss: () -> Unit,
+    onPermissionGranted: () -> Unit
+) {
+    val permissionLauncher = rememberLauncherForActivityResult(
+        contract = ActivityResultContracts.RequestPermission(),
+        onResult = { isGranted ->
+            if (isGranted) {
+                onPermissionGranted()
+            }
+            onDismiss()
+        }
+    )
+
+    AlertDialog(
+        onDismissRequest = onDismiss,
+        title = {
+            Text(
+                text = "Bật thông báo DineSplit?",
+                style = MaterialTheme.typography.titleLarge,
+                fontWeight = FontWeight.Bold,
+                color = MaterialTheme.colorScheme.onSurface
+            )
+        },
+        text = {
+            Text(
+                text = "DineSplit sẽ nhắc bạn khi có bình luận mới, hóa đơn cần thanh toán, lời mời nhóm hoặc thông báo quan trọng.",
+                style = MaterialTheme.typography.bodyMedium,
+                color = MaterialTheme.colorScheme.onSurfaceVariant
+            )
+        },
+        confirmButton = {
+            TextButton(
+                onClick = {
+                    if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU) {
+                        permissionLauncher.launch(android.Manifest.permission.POST_NOTIFICATIONS)
+                    } else {
+                        onPermissionGranted()
+                        onDismiss()
+                    }
+                }
+            ) {
+                Text(
+                    text = "Cho phép",
+                    fontWeight = FontWeight.Bold,
+                    color = MaterialTheme.colorScheme.primary
+                )
+            }
+        },
+        dismissButton = {
+            TextButton(
+                onClick = {
+                    FcmManager.saveDismissedPromptTime()
+                    onDismiss()
+                }
+            ) {
+                Text(
+                    text = "Để sau",
+                    color = MaterialTheme.colorScheme.onSurfaceVariant
+                )
+            }
+        },
+        shape = AppShapes.large,
+        containerColor = MaterialTheme.colorScheme.surfaceContainerHigh
+    )
 }

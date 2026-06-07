@@ -112,6 +112,7 @@ fun BillDetailScreen(
                 repository = AppContainer.splitRepository(context),
                 notificationRepository = AppContainer.notificationRepository(context),
                 qrPaymentRepository = AppContainer.qrPaymentRepository(context),
+                profileRepository = AppContainer.profileRepository(context),
                 groupId = groupId,
                 billId = billId,
                 currentUserId = FirebaseProviders.auth.currentUser?.uid,

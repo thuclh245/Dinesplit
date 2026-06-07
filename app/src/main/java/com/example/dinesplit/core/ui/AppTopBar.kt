@@ -194,15 +194,6 @@ fun HomeTopBar(
                 }
             }
             Row(horizontalArrangement = Arrangement.spacedBy(4.dp)) {
-                if (onOpenAssistant != null) {
-                    IconButton(onClick = onOpenAssistant) {
-                        Icon(
-                            imageVector = Icons.Default.AutoAwesome,
-                            contentDescription = "Trợ lý DineSplit",
-                            tint = MaterialTheme.colorScheme.primary,
-                        )
-                    }
-                }
                 if (onOpenChats != null) {
                     IconButton(onClick = onOpenChats) {
                         Icon(

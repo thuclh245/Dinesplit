@@ -4,11 +4,24 @@ import android.app.Application
 import android.util.Log
 import coil.Coil
 import com.example.dinesplit.core.di.CoilConfiguration
+import com.example.dinesplit.core.notification.NotificationHelper
+import com.example.dinesplit.core.notification.FcmManager
 
 class DineSplitApplication : Application() {
     override fun onCreate() {
         super.onCreate()
+        FcmManager.initialize(this)
         initializeCoil()
+        initializeNotificationChannel()
+    }
+
+    private fun initializeNotificationChannel() {
+        try {
+            NotificationHelper.createNotificationChannel(this)
+            Log.d("DineSplitApp", "Notification channel created successfully")
+        } catch (e: Exception) {
+            Log.e("DineSplitApp", "Failed to create notification channel", e)
+        }
     }
 
     private fun initializeCoil() {

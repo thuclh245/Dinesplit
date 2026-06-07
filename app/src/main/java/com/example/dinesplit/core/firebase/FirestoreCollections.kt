@@ -18,4 +18,5 @@ object FirestoreCollections {
     const val SPLITS = "splits"
     const val LIKES = "likes"
     const val COMMENTS = "comments"
+    const val FCM_TOKENS = "fcmTokens"
 }

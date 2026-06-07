@@ -47,7 +47,7 @@ class FeedViewModel(application: Application) : AndroidViewModel(application) {
     private val getCurrentUserProfileUseCase = AppContainer.getCurrentUserProfileUseCase(application)
     private val likePostUseCase = AppContainer.likePostUseCase()
     private val unlikePostUseCase = AppContainer.unlikePostUseCase()
-    private val getLinkedBillSummaryUseCase = AppContainer.getLinkedBillSummaryUseCase()
+    private val getLinkedBillSummaryUseCase = AppContainer.getLinkedBillSummaryUseCase(application)
 
     private val _paginationState = MutableStateFlow(PaginationState())
     private val _viewedStoryIds = MutableStateFlow<Set<String>>(emptySet())
@@ -276,13 +276,37 @@ class FeedViewModel(application: Application) : AndroidViewModel(application) {
                     getLinkedBillSummaryUseCase(groupId, billId, currentUserId)
                         .catch { throwable ->
                             android.util.Log.w("FeedViewModel", "Cannot load linked bill summary for post $postId", throwable)
-                            _linkedBillSummaries.value = _linkedBillSummaries.value - postId
+                            // Store a sentinel "not found" value so UI stops the loading spinner
+                            _linkedBillSummaries.value = _linkedBillSummaries.value + (postId to LinkedBillSummary(
+                                billId = billId ?: "",
+                                groupId = groupId,
+                                billName = "",
+                                totalAmount = 0.0,
+                                isSettled = false,
+                                myShare = 0.0,
+                                isMyPaid = false,
+                                isIPayer = false,
+                                isParticipant = false,
+                                isAuthorized = false,
+                            ))
                         }
                         .collect { summary ->
                         if (summary != null) {
                             _linkedBillSummaries.value = _linkedBillSummaries.value + (postId to summary)
                         } else {
-                            _linkedBillSummaries.value = _linkedBillSummaries.value - postId
+                            // Bill not found — store a sentinel so UI stops spinning
+                            _linkedBillSummaries.value = _linkedBillSummaries.value + (postId to LinkedBillSummary(
+                                billId = billId ?: "",
+                                groupId = groupId,
+                                billName = "",
+                                totalAmount = 0.0,
+                                isSettled = false,
+                                myShare = 0.0,
+                                isMyPaid = false,
+                                isIPayer = false,
+                                isParticipant = false,
+                                isAuthorized = false,
+                            ))
                         }
                     }
                 }

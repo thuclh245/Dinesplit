@@ -680,6 +680,10 @@ service cloud.firestore {
         allow create, update, delete: if signedIn()
           && request.auth.uid == followerUid;
       }
+
+      match /fcmTokens/{deviceId} {
+        allow read, write: if isOwner(uid);
+      }
     }
 
     match /usernames/{usernameLower} {

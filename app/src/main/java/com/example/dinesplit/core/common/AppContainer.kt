@@ -85,8 +85,8 @@ object AppContainer {
         return GetGroupsUseCase(splitRepository())
     }
 
-    fun getLinkedBillSummaryUseCase(): GetLinkedBillSummaryUseCase {
-        return GetLinkedBillSummaryUseCase(splitRepository())
+    fun getLinkedBillSummaryUseCase(context: Context): GetLinkedBillSummaryUseCase {
+        return GetLinkedBillSummaryUseCase(splitRepository(), profileRepository(context))
     }
 
     fun resolveStartDestinationUseCase(context: Context): ResolveStartDestinationUseCase {

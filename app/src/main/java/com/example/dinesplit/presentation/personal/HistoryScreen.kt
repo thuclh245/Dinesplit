@@ -95,12 +95,6 @@ fun HistoryScreen(
     }
 
     // CHỐT CHẶN HIỆU NĂNG 3: Tính toán số liệu tổng Thu/Chi nhanh gọn trong bộ nhớ đệm
-    val summaryStats = remember(filteredTransactions) {
-        val income = filteredTransactions.filter { it.type == TransactionType.INCOME }.sumOf { parseAmount(it.amount) }
-        val expense = filteredTransactions.filter { it.type == TransactionType.EXPENSE }.sumOf { parseAmount(it.amount) }
-        Pair(income, expense)
-    }
-
     AppScaffold(
         title = "Sổ cái",
         navigationIcon = {
@@ -118,44 +112,6 @@ fun HistoryScreen(
                 style = MaterialTheme.typography.displaySmall,
                 fontWeight = FontWeight.ExtraBold,
             )
-
-            // Summary card - Thẻ tóm tắt
-            AppCard {
-                Column(verticalArrangement = Arrangement.spacedBy(AppDimens.spaceMd)) {
-                    Row(
-                        modifier = Modifier.fillMaxWidth(),
-                        horizontalArrangement = Arrangement.SpaceBetween,
-                    ) {
-                        Column {
-                            Text("Thu nhập", style = MaterialTheme.typography.labelSmall)
-                            Text(
-                                "+${formatHistoryMoney(summaryStats.first)}",
-                                style = MaterialTheme.typography.titleMedium,
-                                color = MaterialTheme.colorScheme.primary,
-                            )
-                        }
-                        Column(horizontalAlignment = Alignment.End) {
-                            Text("Chi tiêu", style = MaterialTheme.typography.labelSmall)
-                            Text(
-                                "-${formatHistoryMoney(summaryStats.second)}",
-                                style = MaterialTheme.typography.titleMedium,
-                                color = MaterialTheme.colorScheme.error,
-                            )
-                        }
-                    }
-                    HorizontalDivider()
-                    Row(horizontalArrangement = Arrangement.spacedBy(AppDimens.spaceSm)) {
-                        val netBalance = summaryStats.first - summaryStats.second
-                        Text("Ròng:", style = MaterialTheme.typography.labelSmall)
-                        Text(
-                            text = if (netBalance >= 0) "+${formatHistoryMoney(netBalance)}" else formatHistoryMoney(netBalance),
-                            style = MaterialTheme.typography.titleSmall,
-                            fontWeight = FontWeight.ExtraBold,
-                            color = if (netBalance >= 0) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.error,
-                        )
-                    }
-                }
-            }
 
             SearchTextField(
                 value = query,
