@@ -374,6 +374,8 @@ class BillDetailViewModel(
         }
     }
 
+    // VNPAY callable Functions flow is temporarily disabled until deploy permissions are available.
+
     private fun buildPaymentQrUrl(
         bill: Bill,
         amount: Double,
@@ -575,4 +577,5 @@ class BillDetailViewModel(
             .replace("/", "_")
             .replace("\\", "_")
     }
+
 }

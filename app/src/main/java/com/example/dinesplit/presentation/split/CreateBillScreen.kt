@@ -2,6 +2,7 @@ package com.example.dinesplit.presentation.split
 
 import android.content.Context
 import android.net.Uri
+import android.util.Log
 import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.result.PickVisualMediaRequest
 import androidx.activity.result.contract.ActivityResultContracts
@@ -142,9 +143,18 @@ fun CreateBillScreen(
                         rawText = rawText,
                         categories = emptyList(),
                     )
+                Log.d(
+                    "ReceiptOCR",
+                    "raw=${rawText.replace("\n", " | ")} " +
+                        "items=${result.items.size} " +
+                        "parsedItems=${result.items.joinToString { item -> "${item.name}:${item.quantity}x${item.amount.toLong()}" }} " +
+                        "amount=${result.amount} " +
+                        "fallbackReason=${if (result.items.isEmpty()) "NO_VALID_ITEMS" else "NONE"}",
+                )
                 vm.applyReceiptOcr(
                     amount = result.amount,
                     merchantName = result.merchantName,
+                    items = result.items,
                 )
                 receiptOcrStatus = result.toBillReceiptOcrStatus()
             }.onFailure {
@@ -823,35 +833,70 @@ private fun ItemizedSplitDetailsList(
                             .background(colorScheme.surfaceContainerLow, AppShapes.large)
                             .padding(AppDimens.spaceLg),
                 ) {
+                    AppTextField(
+                        value = item.name,
+                        onValueChange = { onUpdateItem(item.copy(name = it)) },
+                        label = "",
+                        placeholder = "Tên món ăn",
+                        textStyle = MaterialTheme.typography.bodyMedium.copy(fontWeight = FontWeight.Bold, color = colorScheme.onSurface),
+                        modifier = Modifier.fillMaxWidth(),
+                        minHeight = 40.dp,
+                    )
+                    Spacer(modifier = Modifier.height(AppDimens.spaceSm))
                     Row(
                         verticalAlignment = Alignment.CenterVertically,
-                        horizontalArrangement = Arrangement.spacedBy(AppDimens.spaceMd),
+                        horizontalArrangement = Arrangement.spacedBy(AppDimens.spaceSm),
                     ) {
                         AppTextField(
-                            value = item.name,
-                            onValueChange = { onUpdateItem(item.copy(name = it)) },
-                            label = "",
-                            placeholder = "Tên món ăn",
-                            textStyle = MaterialTheme.typography.bodyMedium.copy(fontWeight = FontWeight.Bold, color = colorScheme.onSurface),
-                            modifier = Modifier.weight(1f),
-                            minHeight = 40.dp
-                        )
-
-                        AppTextField(
-                            value = if (item.price <= 0.0) "" else formatCurrencyInput(item.price.toLong().toString()),
+                            value = item.quantity.coerceAtLeast(1).toString(),
                             onValueChange = { value ->
-                                onUpdateItem(item.copy(price = value.onlyDigits().toDoubleOrNull() ?: 0.0))
+                                val quantity = value.onlyDigits().toIntOrNull() ?: 1
+                                onUpdateItem(item.withQuantity(quantity))
                             },
                             label = "",
-                            placeholder = "0 đ",
+                            placeholder = "SL",
+                            textStyle = MaterialTheme.typography.bodyMedium.copy(fontWeight = FontWeight.Bold, color = colorScheme.onSurface),
+                            keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number),
+                            modifier = Modifier.width(72.dp),
+                            minHeight = 40.dp,
+                        )
+                        AppTextField(
+                            value = if (item.unitPrice <= 0.0) "" else formatCurrencyInput(item.unitPrice.toLong().toString()),
+                            onValueChange = { value ->
+                                val unitPrice = value.onlyDigits().toDoubleOrNull() ?: 0.0
+                                onUpdateItem(item.withUnitPrice(unitPrice))
+                            },
+                            label = "",
+                            placeholder = "Đơn giá",
                             textStyle = MaterialTheme.typography.bodyMedium.copy(fontWeight = FontWeight.Bold, color = colorScheme.primary),
                             keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number),
-                            modifier = Modifier.width(112.dp),
-                            minHeight = 40.dp
+                            modifier = Modifier.weight(1f),
+                            minHeight = 40.dp,
                         )
+                        Surface(
+                            color = colorScheme.surface,
+                            shape = AppShapes.large,
+                            modifier = Modifier.width(104.dp),
+                        ) {
+                            Column(modifier = Modifier.padding(horizontal = AppDimens.spaceSm, vertical = AppDimens.spaceXs)) {
+                                Text(
+                                    text = "Thành tiền",
+                                    style = MaterialTheme.typography.labelSmall,
+                                    color = colorScheme.onSurfaceVariant,
+                                    maxLines = 1,
+                                )
+                                Text(
+                                    text = formatCurrencyInput(item.price.toLong().toString()),
+                                    style = MaterialTheme.typography.bodySmall.copy(fontWeight = FontWeight.Bold),
+                                    color = colorScheme.primary,
+                                    maxLines = 1,
+                                    overflow = TextOverflow.Ellipsis,
+                                )
+                            }
+                        }
                     }
                     Text(
-                        text = "Nhập giá món và chọn người cùng ăn món này",
+                        text = "Nhập số lượng, đơn giá và chọn người cùng ăn món này",
                         style = MaterialTheme.typography.labelSmall,
                         color = colorScheme.onSurfaceVariant,
                         modifier = Modifier.padding(top = AppDimens.spaceSm),
@@ -907,10 +952,11 @@ private fun ItemParticipantsDropdown(
     val selectedMembers = members.filter { member -> member.id in selectedIdSet }
     val selectedLabel =
         when {
-            selectedMembers.isEmpty() -> "Chưa chọn người ăn món"
+            selectedMembers.isEmpty() -> "Mặc định: tất cả người tham gia"
             selectedMembers.size <= 2 -> selectedMembers.joinToString { member -> member.name }
             else -> selectedMembers.take(2).joinToString { member -> member.name } + " +${selectedMembers.size - 2}"
         }
+    val selectedCountLabel = if (selectedMembers.isEmpty()) "Tất cả" else "${selectedMembers.size}/${members.size}"
 
     Box(modifier = Modifier.fillMaxWidth()) {
         Surface(
@@ -949,7 +995,7 @@ private fun ItemParticipantsDropdown(
                     shape = AppShapes.full,
                 ) {
                     Text(
-                        text = "${selectedMembers.size}/${members.size}",
+                        text = selectedCountLabel,
                         style = MaterialTheme.typography.labelSmall.copy(fontWeight = FontWeight.Bold),
                         color = if (selectedMembers.isEmpty()) colorScheme.onSurfaceVariant else colorScheme.primary,
                         modifier = Modifier.padding(horizontal = AppDimens.spaceSm, vertical = AppDimens.spaceXs),
@@ -1174,6 +1220,29 @@ private fun String.onlyDigits(): String {
     return filter { it.isDigit() }
 }
 
+private fun BillItem.withQuantity(quantity: Int): BillItem {
+    val safeQuantity = quantity.coerceAtLeast(1)
+    val safeUnitPrice =
+        unitPrice.takeIf { it > 0.0 }
+            ?: price.takeIf { it > 0.0 }?.div(this.quantity.coerceAtLeast(1))
+            ?: 0.0
+    return copy(
+        quantity = safeQuantity,
+        unitPrice = safeUnitPrice,
+        price = safeUnitPrice * safeQuantity,
+    )
+}
+
+private fun BillItem.withUnitPrice(unitPrice: Double): BillItem {
+    val safeQuantity = quantity.coerceAtLeast(1)
+    val safeUnitPrice = unitPrice.coerceAtLeast(0.0)
+    return copy(
+        quantity = safeQuantity,
+        unitPrice = safeUnitPrice,
+        price = safeUnitPrice * safeQuantity,
+    )
+}
+
 private fun ReceiptOcrResult.toBillReceiptOcrStatus(): String {
     if (rawText.isBlank()) {
         return "Không tìm thấy chữ trong ảnh. Nhập bill thủ công hoặc thử ảnh rõ hơn."
@@ -1183,11 +1252,14 @@ private fun ReceiptOcrResult.toBillReceiptOcrStatus(): String {
         listOfNotNull(
             merchantName,
             amount?.let(::formatBillReceiptAmountLabel),
+            items.takeIf { it.isNotEmpty() }?.let { "${it.size} món" },
         )
     val detectedText = detectedParts.joinToString(" - ")
 
     return if (detectedText.isBlank()) {
         "Đã đọc hóa đơn nhưng chưa nhận ra tổng tiền. Bạn có thể nhập thủ công."
+    } else if (items.isEmpty() && amount != null) {
+        "Đã nhận tổng tiền ${formatBillReceiptAmountLabel(amount)} nhưng chưa tách được món. Thử ảnh rõ hơn hoặc nhập món thủ công."
     } else {
         "Đã điền từ hóa đơn: $detectedText"
     }

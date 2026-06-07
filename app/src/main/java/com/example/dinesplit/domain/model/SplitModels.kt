@@ -32,6 +32,8 @@ data class BillItem(
     val name: String,
     val price: Double,
     val sharedByMemberIds: List<String>,
+    val quantity: Int = 1,
+    val unitPrice: Double = price,
 )
 
 data class Bill(

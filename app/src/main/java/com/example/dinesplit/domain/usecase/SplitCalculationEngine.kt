@@ -75,22 +75,33 @@ object SplitCalculationEngine {
 
         val validMemberIds = cleanMemberIds.toSet()
         val shares = cleanMemberIds.associateWith { 0L }.toMutableMap()
+        var defaultSharedTotal = 0L
 
         items.forEach { item ->
             if (item.name.isBlank()) return Result.failure(IllegalArgumentException("Item name is required"))
             if (item.price <= 0.0) return Result.failure(IllegalArgumentException("Item price must be positive"))
-            if (item.sharedByMemberIds.isEmpty()) {
-                return Result.failure(IllegalArgumentException("Each item needs at least one sharer"))
-            }
             if (item.sharedByMemberIds.any { it !in validMemberIds }) {
                 return Result.failure(IllegalArgumentException("Item sharers must be selected members"))
             }
 
             val price = item.price.roundToLong()
-            val sharers = item.sharedByMemberIds.distinct()
-            val baseShare = price / sharers.size
-            val remainder = price % sharers.size
-            sharers.forEachIndexed { index, memberId ->
+            if (item.sharedByMemberIds.isEmpty()) {
+                defaultSharedTotal += price
+                return@forEach
+            }
+
+            val distinctSharers = item.sharedByMemberIds.distinct()
+            val baseShare = price / distinctSharers.size
+            val remainder = price % distinctSharers.size
+            distinctSharers.forEachIndexed { index, memberId ->
+                shares[memberId] = shares.getValue(memberId) + baseShare + if (index < remainder) 1 else 0
+            }
+        }
+
+        if (defaultSharedTotal > 0L) {
+            val baseShare = defaultSharedTotal / cleanMemberIds.size
+            val remainder = defaultSharedTotal % cleanMemberIds.size
+            cleanMemberIds.forEachIndexed { index, memberId ->
                 shares[memberId] = shares.getValue(memberId) + baseShare + if (index < remainder) 1 else 0
             }
         }
