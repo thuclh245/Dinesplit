@@ -12,6 +12,7 @@ import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
 import androidx.compose.material.icons.automirrored.filled.ReceiptLong
+import androidx.compose.material.icons.automirrored.filled.Send
 import androidx.compose.material.icons.filled.*
 import androidx.compose.material.icons.outlined.BookmarkBorder
 import androidx.compose.material.icons.outlined.ChatBubbleOutline
@@ -65,6 +66,7 @@ import com.example.dinesplit.domain.model.Story
 import com.example.dinesplit.domain.model.UserProfile
 import com.example.dinesplit.ui.theme.AppColors
 import com.example.dinesplit.ui.theme.DineSplitTheme
+import kotlinx.coroutines.launch
 import java.text.NumberFormat
 import java.util.Date
 import java.util.Locale
@@ -149,6 +151,7 @@ fun FeedScreen(
     val listState = rememberLazyListState()
     var postToDeleteId by remember { mutableStateOf<String?>(null) }
     var selectedStory by remember { mutableStateOf<Story?>(null) }
+    var commentsPost by remember { mutableStateOf<Post?>(null) }
 
     // BẪY VÒNG ĐỜI: Tự động quét lại dữ liệu đám mây khi người dùng quay về từ màn tạo bài viết
     DisposableEffect(lifecycleOwner) {
@@ -212,6 +215,13 @@ fun FeedScreen(
                 selectedStory = null
                 onOpenUserProfile(story.authorUid)
             },
+        )
+    }
+
+    commentsPost?.let { post ->
+        CommentsBottomSheet(
+            post = post,
+            onDismiss = { commentsPost = null },
         )
     }
 
@@ -361,7 +371,7 @@ fun FeedScreen(
                                 billSummary = billSummary,
                                 onLike = { onLikePost(post.id) },
                                 onUnlike = { onUnlikePost(post.id) },
-                                onComment = { onOpenPostDetail(post.id) },
+                                onComment = { commentsPost = post },
                                 onShare = {
                                     val shareText = buildString {
                                         append("${post.authorName} đã chia sẻ tại DineSplit!\n")
@@ -786,6 +796,196 @@ private fun StoryViewerDialog(
     }
 }
 
+@OptIn(ExperimentalMaterial3Api::class)
+@Composable
+private fun CommentsBottomSheet(
+    post: Post,
+    onDismiss: () -> Unit,
+) {
+    val context = LocalContext.current
+    val application = context.applicationContext as android.app.Application
+    val repository = remember { AppContainer.feedRepository() }
+    val observeSessionUseCase = remember { AppContainer.observeSessionUseCase(application) }
+    val getCurrentUserProfileUseCase = remember { AppContainer.getCurrentUserProfileUseCase(application) }
+    val comments by remember(post.id) { repository.getComments(post.id) }.collectAsState(initial = emptyList())
+    val session by observeSessionUseCase().collectAsState()
+    val scope = rememberCoroutineScope()
+    var input by remember(post.id) { mutableStateOf("") }
+    var isSubmitting by remember(post.id) { mutableStateOf(false) }
+    var errorMessage by remember(post.id) { mutableStateOf<String?>(null) }
+    val sheetState = rememberModalBottomSheetState(skipPartiallyExpanded = true)
+
+    ModalBottomSheet(
+        onDismissRequest = onDismiss,
+        sheetState = sheetState,
+        containerColor = MaterialTheme.colorScheme.surface,
+        dragHandle = {
+            Column(horizontalAlignment = Alignment.CenterHorizontally) {
+                BottomSheetDefaults.DragHandle()
+                Text(
+                    text = "Bình luận",
+                    style = MaterialTheme.typography.titleMedium.copy(fontWeight = FontWeight.Bold),
+                )
+            }
+        },
+    ) {
+        Column(
+            modifier = Modifier
+                .fillMaxWidth()
+                .navigationBarsPadding()
+                .imePadding(),
+        ) {
+            if (comments.isEmpty()) {
+                Box(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .heightIn(min = 220.dp)
+                        .padding(AppDimens.spaceLg),
+                    contentAlignment = Alignment.Center,
+                ) {
+                    Text(
+                        text = "Chưa có bình luận nào",
+                        style = MaterialTheme.typography.bodyMedium,
+                        color = MaterialTheme.colorScheme.outline,
+                    )
+                }
+            } else {
+                LazyColumn(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .heightIn(max = 420.dp),
+                    contentPadding = PaddingValues(horizontal = AppDimens.screenHorizontal, vertical = AppDimens.spaceMd),
+                    verticalArrangement = Arrangement.spacedBy(AppDimens.spaceMd),
+                ) {
+                    items(comments, key = { it.id }) { comment ->
+                        Row(
+                            modifier = Modifier.fillMaxWidth(),
+                            horizontalArrangement = Arrangement.spacedBy(AppDimens.spaceSm),
+                            verticalAlignment = Alignment.Top,
+                        ) {
+                            DineAvatarImage(
+                                imageUrl = comment.authorAvatar,
+                                name = comment.authorName,
+                                size = 34.dp,
+                            )
+                            Column(
+                                modifier = Modifier.weight(1f),
+                                verticalArrangement = Arrangement.spacedBy(2.dp),
+                            ) {
+                                Surface(
+                                    color = MaterialTheme.colorScheme.surfaceContainerHigh,
+                                    shape = AppShapes.large,
+                                ) {
+                                    Column(
+                                        modifier = Modifier.padding(horizontal = AppDimens.spaceMd, vertical = AppDimens.spaceSm),
+                                        verticalArrangement = Arrangement.spacedBy(2.dp),
+                                    ) {
+                                        Text(
+                                            text = comment.authorName,
+                                            style = MaterialTheme.typography.labelMedium.copy(fontWeight = FontWeight.Bold),
+                                        )
+                                        Text(
+                                            text = comment.content,
+                                            style = MaterialTheme.typography.bodyMedium,
+                                        )
+                                    }
+                                }
+                                Text(
+                                    text = formatStoryTime(comment.createdAt),
+                                    style = MaterialTheme.typography.labelSmall,
+                                    color = MaterialTheme.colorScheme.outline,
+                                )
+                            }
+                        }
+                    }
+                }
+            }
+
+            errorMessage?.let { message ->
+                Text(
+                    text = message,
+                    color = MaterialTheme.colorScheme.error,
+                    style = MaterialTheme.typography.labelMedium,
+                    modifier = Modifier.padding(horizontal = AppDimens.screenHorizontal, vertical = AppDimens.spaceXs),
+                )
+            }
+
+            Row(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .padding(horizontal = AppDimens.screenHorizontal, vertical = AppDimens.spaceMd),
+                verticalAlignment = Alignment.CenterVertically,
+                horizontalArrangement = Arrangement.spacedBy(AppDimens.spaceSm),
+            ) {
+                OutlinedTextField(
+                    value = input,
+                    onValueChange = { input = it },
+                    modifier = Modifier.weight(1f),
+                    placeholder = { Text("Viết bình luận...") },
+                    minLines = 1,
+                    maxLines = 4,
+                    shape = AppShapes.large,
+                )
+                IconButton(
+                    onClick = {
+                        val trimmed = input.trim()
+                        if (trimmed.isBlank() || isSubmitting) return@IconButton
+                        val currentSession = session
+                        if (currentSession == null) {
+                            errorMessage = "Phiên đăng nhập hết hạn. Vui lòng đăng nhập lại."
+                            return@IconButton
+                        }
+                        scope.launch {
+                            isSubmitting = true
+                            errorMessage = null
+                            runCatching {
+                                val profile = getCurrentUserProfileUseCase(currentSession.uid)
+                                repository.addComment(
+                                    post.id,
+                                    com.example.dinesplit.domain.model.Comment(
+                                        authorUid = currentSession.uid,
+                                        authorName = profile?.displayName?.takeIf { it.isNotBlank() }
+                                            ?: currentSession.email.substringBefore('@'),
+                                        authorAvatar = profile?.avatarUrl.orEmpty(),
+                                        content = trimmed,
+                                        createdAt = Date(),
+                                    ),
+                                )
+                            }.onSuccess {
+                                input = ""
+                            }.onFailure { throwable ->
+                                errorMessage = "Không thể gửi bình luận: ${throwable.localizedMessage ?: "Vui lòng thử lại"}"
+                            }
+                            isSubmitting = false
+                        }
+                    },
+                    enabled = input.isNotBlank() && !isSubmitting,
+                    modifier = Modifier
+                        .size(48.dp)
+                        .background(
+                            if (input.isNotBlank()) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.surfaceContainerHigh,
+                            CircleShape,
+                        ),
+                ) {
+                    if (isSubmitting) {
+                        CircularProgressIndicator(
+                            modifier = Modifier.size(20.dp),
+                            strokeWidth = 2.dp,
+                            color = MaterialTheme.colorScheme.onPrimary,
+                        )
+                    } else {
+                        Icon(
+                            Icons.AutoMirrored.Filled.Send,
+                            contentDescription = "Gửi",
+                            tint = if (input.isNotBlank()) MaterialTheme.colorScheme.onPrimary else MaterialTheme.colorScheme.outline,
+                        )
+                    }
+                }
+            }
+        }
+    }
+}
+
 private fun formatStoryTime(createdAt: Date?): String {
     if (createdAt == null) return "Vừa xong"
     val elapsedMinutes = ((System.currentTimeMillis() - createdAt.time) / 60_000).coerceAtLeast(0)
@@ -962,6 +1162,8 @@ private fun SocialSplitCard(
     onSettleUp: () -> Unit,
 ) {
     var showMenu by remember { mutableStateOf(false) }
+    var isCaptionExpanded by remember(post.id) { mutableStateOf(false) }
+    val canExpandCaption = post.caption.length > 120 || post.caption.count { it == '\n' } > 1
 
     AppCard(
         modifier = Modifier
@@ -1160,16 +1362,32 @@ private fun SocialSplitCard(
                 }
             }
 
-            Text(
-                text = buildAnnotatedString {
-                    withStyle(SpanStyle(fontWeight = FontWeight.Bold)) { append("${post.authorName} ") }
-                    append(post.caption)
-                },
-                style = MaterialTheme.typography.bodySmall,
-                modifier = Modifier.padding(horizontal = AppDimens.spaceLg).padding(bottom = AppDimens.spaceLg),
-                maxLines = 2,
-                overflow = TextOverflow.Ellipsis,
-            )
+            if (post.caption.isNotBlank()) {
+                Column(
+                    modifier = Modifier
+                        .padding(horizontal = AppDimens.spaceLg)
+                        .padding(bottom = AppDimens.spaceLg),
+                    verticalArrangement = Arrangement.spacedBy(AppDimens.spaceXs),
+                ) {
+                    Text(
+                        text = buildAnnotatedString {
+                            withStyle(SpanStyle(fontWeight = FontWeight.Bold)) { append("${post.authorName} ") }
+                            append(post.caption)
+                        },
+                        style = MaterialTheme.typography.bodySmall,
+                        maxLines = if (isCaptionExpanded) Int.MAX_VALUE else 2,
+                        overflow = if (isCaptionExpanded) TextOverflow.Clip else TextOverflow.Ellipsis,
+                    )
+                    if (canExpandCaption) {
+                        Text(
+                            text = if (isCaptionExpanded) "Ẩn bớt" else "Xem thêm",
+                            style = MaterialTheme.typography.labelMedium.copy(fontWeight = FontWeight.Bold),
+                            color = MaterialTheme.colorScheme.primary,
+                            modifier = Modifier.clickable { isCaptionExpanded = !isCaptionExpanded },
+                        )
+                    }
+                }
+            }
         }
     }
 }
