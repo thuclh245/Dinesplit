@@ -125,6 +125,8 @@ sealed class AppRoute(val route: String) {
         }
     }
 
+    data object DebtReminder : AppRoute("debt_reminder")
+
     data object BillDetail : AppRoute("bill_detail") {
         const val ARG_GROUP_ID = "groupId"
         const val ARG_BILL_ID = "billId"

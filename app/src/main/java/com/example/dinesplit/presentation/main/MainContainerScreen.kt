@@ -64,6 +64,7 @@ import com.example.dinesplit.presentation.profile.ProfileViewModel
 import com.example.dinesplit.presentation.split.BillDetailScreen
 import com.example.dinesplit.presentation.split.CreateBillScreen
 import com.example.dinesplit.presentation.split.CreateGroupScreen
+import com.example.dinesplit.presentation.split.DebtReminderScreen
 import com.example.dinesplit.presentation.split.GroupDetailScreen
 import com.example.dinesplit.presentation.split.GroupListScreen
 import com.example.dinesplit.presentation.split.SettleSummaryScreen
@@ -238,6 +239,9 @@ fun MainContainerScreen(
                             onNavigateToSettleSummary = { groupId ->
                                 mainNavController.navigate(AppRoute.SettleSummary.createRoute(groupId))
                             },
+                            onOpenDebtReminder = {
+                                mainNavController.navigate(AppRoute.DebtReminder.route)
+                            },
                         )
                     }
 
@@ -255,6 +259,9 @@ fun MainContainerScreen(
                             notificationUnreadCount = notificationUiState.unreadCount,
                             onNavigateToSettleSummary = { groupId ->
                                 mainNavController.navigate(AppRoute.SettleSummary.createRoute(groupId))
+                            },
+                            onOpenDebtReminder = {
+                                mainNavController.navigate(AppRoute.DebtReminder.route)
                             },
                         )
                     }
@@ -281,6 +288,12 @@ fun MainContainerScreen(
                         val groupId = backStackEntry.arguments?.getString(AppRoute.SettleSummary.ARG_ID).orEmpty()
                         SettleSummaryScreen(
                             groupId = groupId,
+                            onBack = { mainNavController.navigateUp() },
+                        )
+                    }
+
+                    composable(AppRoute.DebtReminder.route) {
+                        DebtReminderScreen(
                             onBack = { mainNavController.navigateUp() },
                         )
                     }

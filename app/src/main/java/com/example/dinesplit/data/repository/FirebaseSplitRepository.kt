@@ -20,6 +20,8 @@ import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.callbackFlow
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.suspendCancellableCoroutine
+import java.text.Normalizer
+import java.util.Locale
 import kotlin.coroutines.resume
 import kotlin.coroutines.resumeWithException
 
@@ -59,7 +61,7 @@ class FirebaseSplitRepository(
                             close(error)
                             return@addSnapshotListener
                         }
-                        trySend(snapshot?.toGroup())
+                        trySend(snapshot?.toGroup()?.takeUnless { group -> group.isLegacyDemoSplitGroup() })
                     }
 
             awaitClose { registration.remove() }
@@ -98,7 +100,7 @@ class FirebaseSplitRepository(
                             close(error)
                             return@addSnapshotListener
                         }
-                        trySend(snapshot?.toBill())
+                        trySend(snapshot?.toBill()?.takeUnless { bill -> bill.isLegacyDemoSplitBill() })
                     }
 
             awaitClose { registration.remove() }
@@ -336,6 +338,7 @@ class FirebaseSplitRepository(
         return documents
             .filter { document -> document.isVisibleTo(currentUserId) }
             .mapNotNull { doc -> doc.toGroup() }
+            .filterNot { group -> group.isLegacyDemoSplitGroup() }
     }
 
     private fun DocumentSnapshot.isVisibleTo(currentUserId: String?): Boolean {
@@ -461,7 +464,39 @@ class FirebaseSplitRepository(
     }
 
     private fun QuerySnapshot.toBills(): List<Bill> {
-        return documents.mapNotNull { doc -> doc.toBill() }
+        return documents
+            .mapNotNull { doc -> doc.toBill() }
+            .filterNot { bill -> bill.isLegacyDemoSplitBill() }
+    }
+
+    private fun Group.isLegacyDemoSplitGroup(): Boolean {
+        val normalizedId = id.toDemoKey()
+        val normalizedName = name.toDemoKey()
+
+        return LEGACY_DEMO_ID_MARKERS.any { marker -> normalizedId.contains(marker) } ||
+            LEGACY_DEMO_GROUP_NAME_MARKERS.any { marker -> normalizedName.contains(marker) } ||
+            memberIds.any { memberId -> memberId in LEGACY_DEMO_MEMBER_IDS }
+    }
+
+    private fun Bill.isLegacyDemoSplitBill(): Boolean {
+        val normalizedId = id.toDemoKey()
+        val normalizedGroupId = groupId.toDemoKey()
+        val normalizedName = name.toDemoKey()
+
+        return LEGACY_DEMO_ID_MARKERS.any { marker ->
+            normalizedId.contains(marker) || normalizedGroupId.contains(marker)
+        } ||
+            LEGACY_DEMO_BILL_NAME_MARKERS.any { marker -> normalizedName.contains(marker) } ||
+            payerId in LEGACY_DEMO_MEMBER_IDS ||
+            createdBy in LEGACY_DEMO_MEMBER_IDS ||
+            shares.keys.any { memberId -> memberId in LEGACY_DEMO_MEMBER_IDS }
+    }
+
+    private fun String.toDemoKey(): String {
+        val decomposed = Normalizer.normalize(this, Normalizer.Form.NFD)
+        return DIACRITICS_REGEX.replace(decomposed, "")
+            .lowercase(Locale.ROOT)
+            .trim()
     }
 
     private fun DocumentSnapshot.toBill(): Bill? {
@@ -602,6 +637,23 @@ class FirebaseSplitRepository(
     }
 
     companion object {
+        private val DIACRITICS_REGEX = "\\p{InCombiningDiacriticalMarks}+".toRegex()
+        private val LEGACY_DEMO_ID_MARKERS = listOf("demo", "mock", "seed")
+        private val LEGACY_DEMO_MEMBER_IDS =
+            setOf("chef_hoang_uid", "foodie_lan_uid", "cafe_huy_uid")
+        private val LEGACY_DEMO_GROUP_NAME_MARKERS =
+            listOf(
+                "hoi an trua dong nghiep",
+                "hoi ca phe cuoi tuan",
+                "team an nhau sai gon",
+            )
+        private val LEGACY_DEMO_BILL_NAME_MARKERS =
+            listOf(
+                "hoa don am thuc",
+                "bua bun bo o xuan",
+                "tiec nuong bbq cuoi tuan",
+            )
+
         @Volatile
         private var INSTANCE: FirebaseSplitRepository? = null
 

@@ -80,11 +80,12 @@ fun SplitScreen(
     onGroupClick: (String) -> Unit,
     onBillClick: (groupId: String, billId: String) -> Unit = { _, _ -> },
     onNavigateToSettleSummary: (String) -> Unit = {},
+    onOpenDebtReminder: () -> Unit = {},
 ) {
     val context = LocalContext.current
     val viewModel =
-        remember {
-            SplitDashboardViewModel(AppContainer.splitRepository(context))
+        remember(context) {
+            SplitDashboardViewModel(repository = AppContainer.splitRepository(context))
         }
     val uiState by viewModel.uiState.collectAsState()
 
@@ -130,9 +131,7 @@ fun SplitScreen(
                             android.widget.Toast.makeText(context, "Vui lòng chọn hoặc tham gia một nhóm để thực hiện thanh toán.", android.widget.Toast.LENGTH_SHORT).show()
                         }
                     },
-                    onRemindClick = {
-                        android.widget.Toast.makeText(context, "Tính năng nhắc nợ đang được phát triển.", android.widget.Toast.LENGTH_SHORT).show()
-                    }
+                    onRemindClick = onOpenDebtReminder,
                 )
             }
 
@@ -251,7 +250,7 @@ private fun GroupsSection(
                     CreateGroupDashboardCard(onClick = onNewGroup)
                 }
             } else {
-                items(groups.take(6), key = { it.id }) { group ->
+                items(groups.take(3), key = { it.id }) { group ->
                     val bills = billsByGroup[group.id].orEmpty()
                     GroupCard(
                         group = group,

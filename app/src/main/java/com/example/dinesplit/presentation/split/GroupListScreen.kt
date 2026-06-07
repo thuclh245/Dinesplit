@@ -88,6 +88,7 @@ fun GroupListScreen(
     onOpenNotifications: () -> Unit = {},
     notificationUnreadCount: Int = 0,
     onNavigateToSettleSummary: (String) -> Unit = {},
+    onOpenDebtReminder: () -> Unit = {},
 ) {
     val colorScheme = MaterialTheme.colorScheme
     val context = LocalContext.current
@@ -141,9 +142,7 @@ fun GroupListScreen(
                             android.widget.Toast.makeText(context, "Vui lòng chọn hoặc tham gia một nhóm để thực hiện thanh toán.", android.widget.Toast.LENGTH_SHORT).show()
                         }
                     },
-                    onRemindClick = {
-                        android.widget.Toast.makeText(context, "Tính năng nhắc nợ đang được phát triển.", android.widget.Toast.LENGTH_SHORT).show()
-                    }
+                    onRemindClick = onOpenDebtReminder,
                 )
             }
 
