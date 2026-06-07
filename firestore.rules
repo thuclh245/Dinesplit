@@ -612,6 +612,15 @@ service cloud.firestore {
       allow read, write: if signedIn();
     }
 
+    match /stories/{storyId} {
+      allow read: if signedIn();
+      allow create: if signedIn()
+        && request.resource.data.id == storyId
+        && request.resource.data.authorUid == request.auth.uid;
+      allow update, delete: if signedIn()
+        && resource.data.authorUid == request.auth.uid;
+    }
+
     match /groups/{groupId} {
       allow create: if validNewGroup(request.resource.data, groupId);
 

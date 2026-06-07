@@ -36,6 +36,7 @@ import com.example.dinesplit.core.ui.ErrorStateBlock
 import com.example.dinesplit.core.ui.HomeTopBar
 import com.example.dinesplit.core.ui.LoadingBlock
 import com.example.dinesplit.presentation.feed.CreatePostScreen
+import com.example.dinesplit.presentation.feed.CreatePostMode
 import com.example.dinesplit.presentation.feed.CreatePostViewModel
 import com.example.dinesplit.presentation.feed.FeedRoute
 import com.example.dinesplit.presentation.feed.PostDetailScreen
@@ -206,6 +207,7 @@ fun MainContainerScreen(
                             onOpenNotifications = onOpenNotifications,
                             onOpenSearch = { mainNavController.navigate(AppRoute.Search.route) },
                             onNavigateToCreatePost = { mainNavController.navigate(AppRoute.CreatePost.route) },
+                            onNavigateToCreateStory = { mainNavController.navigate(AppRoute.CreateStory.route) },
                             onNavigateToPostDetail = { postId ->
                                 mainNavController.navigate(AppRoute.PostDetail.createRoute(postId))
                             },
@@ -544,6 +546,15 @@ fun MainContainerScreen(
                         val createPostViewModel: CreatePostViewModel = viewModel()
                         CreatePostScreen(
                             viewModel = createPostViewModel,
+                            onBack = { mainNavController.navigateUp() }
+                        )
+                    }
+
+                    composable(AppRoute.CreateStory.route) {
+                        val createPostViewModel: CreatePostViewModel = viewModel()
+                        CreatePostScreen(
+                            viewModel = createPostViewModel,
+                            initialMode = CreatePostMode.STORY,
                             onBack = { mainNavController.navigateUp() }
                         )
                     }

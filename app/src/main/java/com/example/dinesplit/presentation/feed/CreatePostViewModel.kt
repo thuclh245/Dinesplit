@@ -10,6 +10,7 @@ import com.example.dinesplit.core.firebase.FirebaseProviders
 import com.example.dinesplit.domain.model.Post
 import com.example.dinesplit.domain.model.Group
 import com.example.dinesplit.domain.model.Bill
+import com.example.dinesplit.domain.model.Story
 import com.google.android.gms.tasks.Task
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.flow.MutableStateFlow
@@ -23,6 +24,11 @@ import java.util.UUID
 import kotlin.coroutines.resume
 import kotlin.coroutines.resumeWithException
 import kotlinx.coroutines.flow.SharingStarted
+
+enum class CreatePostMode {
+    POST,
+    STORY,
+}
 
 class CreatePostViewModel(application: Application) : AndroidViewModel(application) {
 
@@ -46,6 +52,9 @@ class CreatePostViewModel(application: Application) : AndroidViewModel(applicati
 
     private val _visibility = MutableStateFlow("public")
     val visibility: StateFlow<String> = _visibility.asStateFlow()
+
+    private val _postMode = MutableStateFlow(CreatePostMode.POST)
+    val postMode: StateFlow<CreatePostMode> = _postMode.asStateFlow()
 
     private val _isLoadingExistingPost = MutableStateFlow(false)
     val isLoadingExistingPost: StateFlow<Boolean> = _isLoadingExistingPost.asStateFlow()
@@ -71,9 +80,11 @@ class CreatePostViewModel(application: Application) : AndroidViewModel(applicati
     val isFormValid: StateFlow<Boolean> = combine(
         _imageUri,
         _restaurantName,
-        _caption
-    ) { image, restaurant, captionText ->
-        image != null && restaurant.isNotBlank() && captionText.trim().length >= 3
+        _caption,
+        _postMode
+    ) { image, restaurant, captionText, mode ->
+        image != null && captionText.trim().length >= 3 &&
+            (mode == CreatePostMode.STORY || restaurant.isNotBlank())
     }.stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), false)
 
     private var lastSubmit: SubmitDraft? = null
@@ -133,12 +144,25 @@ class CreatePostViewModel(application: Application) : AndroidViewModel(applicati
         _visibility.value = value
     }
 
+    fun updatePostMode(value: CreatePostMode) {
+        if (currentPostId != null) return
+        _postMode.value = value
+        if (value == CreatePostMode.STORY) {
+            _selectedGroupId.value = null
+            _selectedBillId.value = null
+            _selectedBillName.value = null
+            _availableBills.value = emptyList()
+            observeBillsJob?.cancel()
+        }
+    }
+
     fun resetUiState() {
         _uiState.value = CreatePostUiState.Idle
         _imageUri.value = null
         _restaurantName.value = ""
         _caption.value = ""
         _visibility.value = "public"
+        _postMode.value = CreatePostMode.POST
         _isLoadingExistingPost.value = false
         currentPostId = null
         _selectedGroupId.value = null
@@ -148,13 +172,15 @@ class CreatePostViewModel(application: Application) : AndroidViewModel(applicati
         observeBillsJob?.cancel()
     }
 
-    fun initializePostMode(postId: String?) {
+    fun initializePostMode(postId: String?, initialMode: CreatePostMode = CreatePostMode.POST) {
         if (postId.isNullOrBlank()) {
             resetUiState()
+            updatePostMode(initialMode)
             loadGroups()
             return
         }
         currentPostId = postId
+        _postMode.value = CreatePostMode.POST
         _isLoadingExistingPost.value = true
         viewModelScope.launch(Dispatchers.IO) {
             try {
@@ -197,6 +223,7 @@ class CreatePostViewModel(application: Application) : AndroidViewModel(applicati
         val restName = _restaurantName.value
         val capt = _caption.value
         val vis = _visibility.value
+        val mode = _postMode.value
 
         lastSubmit = SubmitDraft(imgUri, restName, capt)
 
@@ -204,7 +231,7 @@ class CreatePostViewModel(application: Application) : AndroidViewModel(applicati
             _uiState.value = CreatePostUiState.Error("Please select a photo")
             return
         }
-        if (restName.isBlank()) {
+        if (mode == CreatePostMode.POST && restName.isBlank()) {
             _uiState.value = CreatePostUiState.Error("Please enter a restaurant")
             return
         }
@@ -225,6 +252,31 @@ class CreatePostViewModel(application: Application) : AndroidViewModel(applicati
                 val profile = getCurrentUserProfileUseCase(session.uid)
                 val displayName = profile?.displayName?.takeIf { it.isNotBlank() }
                     ?: session.email.substringBefore('@')
+
+                if (mode == CreatePostMode.STORY && currentPostId == null) {
+                    val storyId = UUID.randomUUID().toString()
+                    val finalImageUrl = if (imgUri.toString().startsWith("content://") || imgUri.toString().startsWith("file://")) {
+                        feedRepository.uploadStoryImage(storyId, imgUri)
+                    } else {
+                        imgUri.toString()
+                    }
+                    val createdAt = java.util.Date()
+                    val story = Story(
+                        id = storyId,
+                        authorUid = session.uid,
+                        authorName = displayName,
+                        authorAvatar = profile?.avatarUrl.orEmpty(),
+                        caption = capt.trim(),
+                        imageUrl = finalImageUrl,
+                        location = restName.trim().takeIf { it.isNotBlank() },
+                        visibility = vis,
+                        createdAt = createdAt,
+                        expiresAt = java.util.Date(createdAt.time + 24L * 60 * 60 * 1000),
+                    )
+                    feedRepository.createStory(story)
+                    _uiState.value = CreatePostUiState.Success
+                    return@launch
+                }
 
                 val postId = currentPostId ?: UUID.randomUUID().toString()
                 val finalImageUrl = if (imgUri.toString().startsWith("content://") || imgUri.toString().startsWith("file://")) {

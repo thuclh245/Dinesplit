@@ -9,6 +9,7 @@ import com.example.dinesplit.core.firebase.FirebaseProviders
 import com.example.dinesplit.domain.model.LinkedBillSummary
 import com.example.dinesplit.domain.model.NotificationDestination
 import com.example.dinesplit.domain.model.Post
+import com.example.dinesplit.domain.model.Story
 import com.example.dinesplit.domain.model.UserProfile
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.Job
@@ -22,6 +23,7 @@ import java.util.UUID
 
 data class FeedUiState(
     val posts: List<Post> = emptyList(),
+    val stories: List<Story> = emptyList(),
     val currentUser: UserProfile? = null,
     val viewedStoryIds: Set<String> = emptySet(),
     val isLoading: Boolean = true,
@@ -54,6 +56,7 @@ class FeedViewModel(application: Application) : AndroidViewModel(application) {
     private val _linkedBillSummaries = MutableStateFlow<Map<String, LinkedBillSummary>>(emptyMap())
     private val _currentUserProfile = MutableStateFlow<UserProfile?>(null)
     private val _initialLikedPostIds = MutableStateFlow<Set<String>>(emptySet())
+    private val _stories = MutableStateFlow<List<Story>>(emptyList())
     private var shouldUpdateInitialLikes = true
 
     private val activeBillJobs = mutableMapOf<String, Job>()
@@ -66,6 +69,7 @@ class FeedViewModel(application: Application) : AndroidViewModel(application) {
             _viewedStoryIds,
             _currentUserProfile,
             _initialLikedPostIds,
+            _stories,
         ) { array ->
             @Suppress("UNCHECKED_CAST")
             val pagination = array[0] as PaginationState
@@ -77,6 +81,8 @@ class FeedViewModel(application: Application) : AndroidViewModel(application) {
             val currentUser = array[4] as UserProfile?
             @Suppress("UNCHECKED_CAST")
             val initialLikedIds = array[5] as Set<String>
+            @Suppress("UNCHECKED_CAST")
+            val stories = array[6] as List<Story>
 
             val currentUserId = session?.uid.orEmpty()
 
@@ -107,6 +113,7 @@ class FeedViewModel(application: Application) : AndroidViewModel(application) {
 
             FeedUiState(
                 posts = sortedPosts,
+                stories = stories,
                 currentUser = currentUser,
                 viewedStoryIds = viewedIds,
                 isLoading = pagination.isLoading,
@@ -124,6 +131,7 @@ class FeedViewModel(application: Application) : AndroidViewModel(application) {
 
     init {
         loadInitialFeed()
+        observeActiveStories()
         viewModelScope.launch {
             observeSessionUseCase().collect { session ->
                 shouldUpdateInitialLikes = true
@@ -151,6 +159,7 @@ class FeedViewModel(application: Application) : AndroidViewModel(application) {
     }
 
     private var feedJob: Job? = null
+    private var storiesJob: Job? = null
 
     private fun loadInitialFeed() {
         shouldUpdateInitialLikes = true
@@ -180,6 +189,20 @@ class FeedViewModel(application: Application) : AndroidViewModel(application) {
                     errorMessage = "Không thể tải bảng tin: ${e.localizedMessage ?: "Lỗi kết nối"}",
                     isLoading = false
                 )
+            }
+        }
+    }
+
+    private fun observeActiveStories() {
+        storiesJob?.cancel()
+        storiesJob = viewModelScope.launch {
+            runCatching {
+                AppContainer.feedRepository().getActiveStories().collect { stories ->
+                    _stories.value = stories
+                }
+            }.onFailure { throwable ->
+                android.util.Log.e("FeedViewModel", "Failed to load stories", throwable)
+                _stories.value = emptyList()
             }
         }
     }

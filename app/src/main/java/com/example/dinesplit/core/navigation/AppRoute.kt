@@ -44,6 +44,8 @@ sealed class AppRoute(val route: String) {
 
     data object CreatePost : AppRoute("create_post")
 
+    data object CreateStory : AppRoute("create_story")
+
     data object EditPost : AppRoute("edit_post") {
         const val ARG_ID = "postId"
         val routeWithArg = "$route/{$ARG_ID}"

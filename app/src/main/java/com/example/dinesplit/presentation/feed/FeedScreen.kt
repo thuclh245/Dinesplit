@@ -39,6 +39,8 @@ import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import androidx.compose.ui.window.Dialog
+import androidx.compose.ui.window.DialogProperties
 import androidx.lifecycle.Lifecycle
 import androidx.lifecycle.LifecycleEventObserver
 import androidx.lifecycle.ViewModel
@@ -59,6 +61,7 @@ import com.example.dinesplit.core.ui.LoadingBlock
 import com.example.dinesplit.core.ui.HomeTopBar
 import com.example.dinesplit.domain.model.LinkedBillSummary
 import com.example.dinesplit.domain.model.Post
+import com.example.dinesplit.domain.model.Story
 import com.example.dinesplit.domain.model.UserProfile
 import com.example.dinesplit.ui.theme.AppColors
 import com.example.dinesplit.ui.theme.DineSplitTheme
@@ -74,6 +77,7 @@ fun FeedRoute(
     onOpenSearch: () -> Unit,
     onSettleUp: (String, String) -> Unit,
     onNavigateToCreatePost: () -> Unit,
+    onNavigateToCreateStory: () -> Unit,
     onNavigateToPostDetail: (String) -> Unit,
     onNavigateToUserProfile: (String) -> Unit,
     onNavigateToEditPost: (String) -> Unit
@@ -101,6 +105,7 @@ fun FeedRoute(
         onOpenNotifications = onOpenNotifications,
         onOpenSearch = onOpenSearch,
         onCreatePost = onNavigateToCreatePost,
+        onCreateStory = onNavigateToCreateStory,
         onOpenPostDetail = onNavigateToPostDetail,
         onOpenUserProfile = onNavigateToUserProfile,
         onEditPost = onNavigateToEditPost,
@@ -125,6 +130,7 @@ fun FeedScreen(
     onOpenNotifications: () -> Unit,
     onOpenSearch: () -> Unit,
     onCreatePost: () -> Unit = {},
+    onCreateStory: () -> Unit = {},
     onOpenPostDetail: (String) -> Unit = {},
     onOpenUserProfile: (String) -> Unit = {},
     onEditPost: (String) -> Unit = {},
@@ -142,6 +148,7 @@ fun FeedScreen(
     val currentOnRefresh by rememberUpdatedState(onRefresh)
     val listState = rememberLazyListState()
     var postToDeleteId by remember { mutableStateOf<String?>(null) }
+    var selectedStory by remember { mutableStateOf<Story?>(null) }
 
     // BẪY VÒNG ĐỜI: Tự động quét lại dữ liệu đám mây khi người dùng quay về từ màn tạo bài viết
     DisposableEffect(lifecycleOwner) {
@@ -193,6 +200,17 @@ fun FeedScreen(
                 TextButton(onClick = { postToDeleteId = null }) {
                     Text("Hủy")
                 }
+            },
+        )
+    }
+
+    selectedStory?.let { story ->
+        StoryViewerDialog(
+            story = story,
+            onDismiss = { selectedStory = null },
+            onOpenAuthor = {
+                selectedStory = null
+                onOpenUserProfile(story.authorUid)
             },
         )
     }
@@ -264,14 +282,33 @@ fun FeedScreen(
                     }
                 }
                 state.posts.isEmpty() -> {
-                    Box(modifier = Modifier.fillMaxSize().padding(top = 64.dp + statusBarHeight), contentAlignment = Alignment.Center) {
-                        EmptyStateBlock(
-                            title = "Chưa có bài viết nào",
-                            subtitle = "Hãy là người đầu tiên chia sẻ khoảnh khắc ẩm thực!",
-                            actionText = "Đăng bài ngay",
-                            onActionClick = onCreatePost,
-                            modifier = Modifier.padding(AppDimens.spaceLg),
-                        )
+                    Column(
+                        modifier = Modifier
+                            .fillMaxSize()
+                            .padding(top = 64.dp + statusBarHeight),
+                    ) {
+                        state.currentUser?.let { currentUser ->
+                            RecentGroupVibes(
+                                stories = emptyList(),
+                                viewedStoryIds = state.viewedStoryIds,
+                                currentUser = currentUser,
+                                myActiveStory = null,
+                                onVibeClick = { story ->
+                                    onMarkStoryAsViewed(story.id)
+                                    selectedStory = story
+                                },
+                                onCreatePostClick = onCreateStory,
+                            )
+                        }
+                        Box(modifier = Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
+                            EmptyStateBlock(
+                                title = "Chưa có bài viết nào",
+                                subtitle = "Hãy là người đầu tiên chia sẻ khoảnh khắc ẩm thực!",
+                                actionText = "Đăng bài ngay",
+                                onActionClick = onCreatePost,
+                                modifier = Modifier.padding(AppDimens.spaceLg),
+                            )
+                        }
                     }
                 }
                 else -> {
@@ -282,32 +319,31 @@ fun FeedScreen(
                         contentPadding = PaddingValues(top = 64.dp + statusBarHeight, bottom = bottomPadding + 96.dp),
                     ) {
                         // KHOẢNH KHẮC BẠN BÈ (STORY COMPONENT) INTEGRATION
-                        item {
-                            val currentUser = state.currentUser
-                            val myActivePost = if (currentUser != null) {
-                                state.posts.firstOrNull { post ->
-                                    post.authorUid == currentUser.uid &&
-                                            post.createdAt?.let { (System.currentTimeMillis() - it.time) < 24 * 60 * 60 * 1000 } == true
+                        if (state.stories.isNotEmpty() || state.currentUser != null) {
+                            item {
+                                val currentUser = state.currentUser
+                                val myActiveStory = currentUser?.let { user ->
+                                    state.stories.firstOrNull { story -> story.authorUid == user.uid }
                                 }
-                            } else null
 
-                            val otherVibesPosts = state.posts
-                                .filter { post -> currentUser == null || post.authorUid != currentUser.uid }
-                                .distinctBy { it.authorUid }
-                                .sortedBy { post -> state.viewedStoryIds.contains(post.id) }
-                                .take(8)
+                                val otherStories = state.stories
+                                    .filter { story -> currentUser == null || story.authorUid != currentUser.uid }
+                                    .distinctBy { it.authorUid }
+                                    .sortedBy { story -> state.viewedStoryIds.contains(story.id) }
+                                    .take(8)
 
-                            RecentGroupVibes(
-                                posts = otherVibesPosts,
-                                viewedStoryIds = state.viewedStoryIds,
-                                currentUser = currentUser,
-                                myActivePost = myActivePost,
-                                onVibeClick = { post ->
-                                    onMarkStoryAsViewed(post.id)
-                                    onOpenPostDetail(post.id)
-                                },
-                                onCreatePostClick = onCreatePost,
-                            )
+                                RecentGroupVibes(
+                                    stories = otherStories,
+                                    viewedStoryIds = state.viewedStoryIds,
+                                    currentUser = currentUser,
+                                    myActiveStory = myActiveStory,
+                                    onVibeClick = { story ->
+                                        onMarkStoryAsViewed(story.id)
+                                        selectedStory = story
+                                    },
+                                    onCreatePostClick = onCreateStory,
+                                )
+                            }
                         }
 
                         // DANH SÁCH BÀI ĐĂNG CHUẨN KEYED ITEMS ĐẠT HIỆU NĂNG TỐI ĐA
@@ -382,11 +418,11 @@ fun FeedScreen(
 
 @Composable
 private fun RecentGroupVibes(
-    posts: List<Post> = emptyList(),
+    stories: List<Story> = emptyList(),
     viewedStoryIds: Set<String> = emptySet(),
     currentUser: UserProfile? = null,
-    myActivePost: Post? = null,
-    onVibeClick: (Post) -> Unit = {},
+    myActiveStory: Story? = null,
+    onVibeClick: (Story) -> Unit = {},
     onCreatePostClick: () -> Unit = {},
 ) {
     Column(modifier = Modifier.padding(bottom = AppDimens.spaceLg)) {
@@ -404,285 +440,360 @@ private fun RecentGroupVibes(
             ),
         )
 
-        if (posts.isEmpty() && currentUser == null) {
-            LazyRow(
-                contentPadding = PaddingValues(horizontal = AppDimens.spaceXl),
-                horizontalArrangement = Arrangement.spacedBy(AppDimens.spaceLg),
-            ) {
-                items(vibes) { vibe ->
-                    Column(
-                        horizontalAlignment = Alignment.CenterHorizontally,
-                        verticalArrangement = Arrangement.spacedBy(AppDimens.spaceSm),
-                    ) {
-                        Box(
-                            modifier = Modifier
-                                .size(80.dp)
-                                .background(
-                                    if (vibe.hasStory) {
-                                        Brush.sweepGradient(
-                                            listOf(
-                                                MaterialTheme.colorScheme.primary,
-                                                MaterialTheme.colorScheme.secondary,
-                                                MaterialTheme.colorScheme.primary,
-                                            )
-                                        )
-                                    } else {
-                                        Brush.linearGradient(
-                                            listOf(
-                                                MaterialTheme.colorScheme.surfaceContainerHigh,
-                                                MaterialTheme.colorScheme.surfaceContainerHigh,
-                                            )
-                                        )
-                                    },
-                                    CircleShape,
-                                )
-                                .padding(AppDimens.spaceXs),
-                        ) {
-                            DineAvatarImage(
-                                imageUrl = vibe.avatar,
-                                name = vibe.name,
-                                modifier = Modifier
-                                    .fillMaxSize()
-                                    .border(AppDimens.spaceXs, MaterialTheme.colorScheme.background, CircleShape),
-                                size = 72.dp,
-                            )
-                        }
-                        Text(
-                            vibe.name,
-                            style = MaterialTheme.typography.labelSmall.copy(fontWeight = FontWeight.SemiBold),
-                            color = MaterialTheme.colorScheme.onSurface,
-                        )
-                    }
+        LazyRow(
+            contentPadding = PaddingValues(horizontal = AppDimens.spaceXl),
+            horizontalArrangement = Arrangement.spacedBy(AppDimens.spaceLg),
+        ) {
+            if (currentUser != null) {
+                item {
+                    StoryPreviewCard(
+                        imageUrl = myActiveStory?.imageUrl,
+                        avatarUrl = currentUser.avatarUrl,
+                        authorName = "Tin của tôi",
+                        subtitle = if (myActiveStory != null) "Đang hoạt động" else "Tạo tin mới",
+                        isUnseen = myActiveStory?.let { !viewedStoryIds.contains(it.id) } == true,
+                        showAddBadge = myActiveStory == null,
+                        onClick = {
+                            if (myActiveStory != null) {
+                                onVibeClick(myActiveStory)
+                            } else {
+                                onCreatePostClick()
+                            }
+                        },
+                    )
                 }
             }
+
+            items(stories, key = { it.id }) { story ->
+                StoryPreviewCard(
+                    imageUrl = story.imageUrl,
+                    avatarUrl = story.authorAvatar,
+                    authorName = story.authorName,
+                    subtitle = story.location.orEmpty(),
+                    isUnseen = !viewedStoryIds.contains(story.id),
+                    onClick = { onVibeClick(story) },
+                )
+            }
+        }
+    }
+}
+
+@Composable
+private fun StoryPreviewCard(
+    imageUrl: String?,
+    avatarUrl: String?,
+    authorName: String,
+    subtitle: String,
+    isUnseen: Boolean,
+    showAddBadge: Boolean = false,
+    onClick: () -> Unit,
+) {
+    Box(
+        modifier = Modifier
+            .width(100.dp)
+            .height(150.dp)
+            .clip(AppShapes.large)
+            .background(MaterialTheme.colorScheme.primaryContainer)
+            .clickable(onClick = onClick),
+    ) {
+        if (!imageUrl.isNullOrBlank()) {
+            DinePostImage(
+                imageUrl = imageUrl,
+                contentDescription = null,
+                modifier = Modifier.fillMaxSize().alpha(0.85f),
+                shape = AppShapes.large,
+            )
         } else {
-            LazyRow(
-                contentPadding = PaddingValues(horizontal = AppDimens.spaceXl),
-                horizontalArrangement = Arrangement.spacedBy(AppDimens.spaceLg),
+            Box(
+                modifier = Modifier.fillMaxSize().background(
+                    Brush.linearGradient(
+                        listOf(
+                            MaterialTheme.colorScheme.primary.copy(0.4f),
+                            MaterialTheme.colorScheme.secondary.copy(0.4f),
+                        ),
+                    ),
+                ),
+                contentAlignment = Alignment.Center,
             ) {
-                if (currentUser != null) {
-                    item {
-                        Box(
-                            modifier = Modifier
-                                .width(100.dp)
-                                .height(150.dp)
-                                .clip(AppShapes.large)
-                                .background(MaterialTheme.colorScheme.primaryContainer)
-                                .clickable {
-                                    if (myActivePost != null) {
-                                        onVibeClick(myActivePost)
-                                    } else {
-                                        onCreatePostClick()
-                                    }
-                                },
-                        ) {
-                            if (myActivePost != null && myActivePost.imageUrls.isNotEmpty()) {
-                                DinePostImage(
-                                    imageUrl = myActivePost.imageUrls.firstOrNull(),
-                                    contentDescription = null,
-                                    modifier = Modifier.fillMaxSize().alpha(0.85f),
-                                    shape = AppShapes.large,
-                                )
-                            } else {
-                                Box(
-                                    modifier = Modifier.fillMaxSize().background(
-                                        Brush.linearGradient(
-                                            listOf(
-                                                MaterialTheme.colorScheme.primary.copy(0.4f),
-                                                MaterialTheme.colorScheme.secondary.copy(0.4f),
-                                            ),
-                                        ),
-                                    ),
-                                    contentAlignment = Alignment.Center,
-                                ) {
-                                    Icon(
-                                        Icons.Default.Restaurant,
-                                        contentDescription = null,
-                                        tint = AppColors.surfaceWhite.copy(0.6f),
-                                        modifier = Modifier.size(36.dp),
-                                    )
-                                }
-                            }
-                            Box(
-                                modifier = Modifier.fillMaxSize().background(
-                                    Brush.verticalGradient(listOf(Color.Transparent, Color.Black.copy(alpha = 0.75f))),
+                Icon(
+                    Icons.Default.AddPhotoAlternate,
+                    contentDescription = null,
+                    tint = AppColors.surfaceWhite.copy(0.6f),
+                    modifier = Modifier.size(36.dp),
+                )
+            }
+        }
+        Box(
+            modifier = Modifier.fillMaxSize().background(
+                Brush.verticalGradient(listOf(Color.Transparent, Color.Black.copy(alpha = 0.75f))),
+            ),
+        )
+        Box(
+            modifier = Modifier
+                .align(Alignment.TopStart)
+                .padding(AppDimens.spaceSm)
+                .size(36.dp)
+                .background(
+                    Brush.sweepGradient(
+                        listOf(
+                            MaterialTheme.colorScheme.primary,
+                            MaterialTheme.colorScheme.secondary,
+                            MaterialTheme.colorScheme.primary,
+                        ),
+                    ),
+                    CircleShape,
+                )
+                .padding(2.dp),
+        ) {
+            DineAvatarImage(
+                imageUrl = avatarUrl,
+                name = authorName,
+                modifier = Modifier.fillMaxSize().border(2.dp, MaterialTheme.colorScheme.background, CircleShape),
+                size = 32.dp,
+            )
+        }
+        if (isUnseen) {
+            Box(
+                modifier = Modifier
+                    .align(Alignment.TopEnd)
+                    .padding(AppDimens.spaceSm)
+                    .size(10.dp)
+                    .background(MaterialTheme.colorScheme.secondary, CircleShape)
+                    .border(2.dp, AppColors.surfaceWhite, CircleShape),
+            )
+        } else if (showAddBadge) {
+            Box(
+                modifier = Modifier
+                    .align(Alignment.TopEnd)
+                    .padding(AppDimens.spaceSm)
+                    .size(16.dp)
+                    .background(MaterialTheme.colorScheme.primary, CircleShape)
+                    .border(1.dp, AppColors.surfaceWhite, CircleShape),
+                contentAlignment = Alignment.Center,
+            ) {
+                Icon(
+                    imageVector = Icons.Default.Add,
+                    contentDescription = "Thêm tin",
+                    tint = AppColors.surfaceWhite,
+                    modifier = Modifier.size(10.dp),
+                )
+            }
+        }
+        Column(
+            modifier = Modifier.align(Alignment.BottomStart).padding(AppDimens.spaceSm),
+        ) {
+            Text(
+                text = authorName,
+                style = MaterialTheme.typography.labelSmall.copy(fontWeight = FontWeight.Bold),
+                color = AppColors.surfaceWhite,
+                maxLines = 1,
+                overflow = TextOverflow.Ellipsis,
+            )
+            if (subtitle.isNotBlank()) {
+                Text(
+                    text = subtitle,
+                    style = MaterialTheme.typography.labelSmall,
+                    color = AppColors.surfaceWhite.copy(alpha = 0.75f),
+                    maxLines = 1,
+                    overflow = TextOverflow.Ellipsis,
+                )
+            }
+        }
+    }
+}
+
+@Composable
+private fun StoryViewerDialog(
+    story: Story,
+    onDismiss: () -> Unit,
+    onOpenAuthor: () -> Unit,
+) {
+    Dialog(
+        onDismissRequest = onDismiss,
+        properties = DialogProperties(
+            usePlatformDefaultWidth = false,
+            decorFitsSystemWindows = false,
+        ),
+    ) {
+        Box(
+            modifier = Modifier
+                .fillMaxSize()
+                .background(Color.Black),
+        ) {
+            if (story.imageUrl.isNotBlank()) {
+                DinePostImage(
+                    imageUrl = story.imageUrl,
+                    contentDescription = story.caption,
+                    modifier = Modifier.fillMaxSize(),
+                    shape = RoundedCornerShape(0.dp),
+                )
+            } else {
+                Box(
+                    modifier = Modifier
+                        .fillMaxSize()
+                        .background(
+                            Brush.linearGradient(
+                                listOf(
+                                    MaterialTheme.colorScheme.primary,
+                                    MaterialTheme.colorScheme.tertiary,
+                                    Color(0xFF111111),
                                 ),
-                            )
-
-                            Box(
-                                modifier = Modifier
-                                    .align(Alignment.TopStart)
-                                    .padding(AppDimens.spaceSm)
-                                    .size(36.dp)
-                                    .background(
-                                        Brush.sweepGradient(
-                                            listOf(
-                                                MaterialTheme.colorScheme.primary,
-                                                MaterialTheme.colorScheme.secondary,
-                                                MaterialTheme.colorScheme.primary,
-                                            ),
-                                        ),
-                                        CircleShape,
-                                    )
-                                    .padding(2.dp),
-                            ) {
-                                DineAvatarImage(
-                                    imageUrl = currentUser.avatarUrl,
-                                    name = currentUser.displayName,
-                                    modifier = Modifier.fillMaxSize().border(2.dp, MaterialTheme.colorScheme.background, CircleShape),
-                                    size = 32.dp,
-                                )
-                            }
-
-                            if (myActivePost != null && !viewedStoryIds.contains(myActivePost.id)) {
-                                Box(
-                                    modifier = Modifier
-                                        .align(Alignment.TopEnd)
-                                        .padding(AppDimens.spaceSm)
-                                        .size(10.dp)
-                                        .background(MaterialTheme.colorScheme.secondary, CircleShape)
-                                        .border(2.dp, AppColors.surfaceWhite, CircleShape),
-                                )
-                            } else if (myActivePost == null) {
-                                Box(
-                                    modifier = Modifier
-                                        .align(Alignment.TopEnd)
-                                        .padding(AppDimens.spaceSm)
-                                        .size(16.dp)
-                                        .background(MaterialTheme.colorScheme.primary, CircleShape)
-                                        .border(1.dp, AppColors.surfaceWhite, CircleShape),
-                                    contentAlignment = Alignment.Center,
-                                ) {
-                                    Icon(
-                                        imageVector = Icons.Default.Add,
-                                        contentDescription = "Thêm tin",
-                                        tint = AppColors.surfaceWhite,
-                                        modifier = Modifier.size(10.dp),
-                                    )
-                                }
-                            }
-
-                            Column(
-                                modifier = Modifier.align(Alignment.BottomStart).padding(AppDimens.spaceSm),
-                            ) {
-                                Text(
-                                    text = "Tin của tôi",
-                                    style = MaterialTheme.typography.labelSmall.copy(fontWeight = FontWeight.Bold),
-                                    color = AppColors.surfaceWhite,
-                                    maxLines = 1,
-                                    overflow = TextOverflow.Ellipsis,
-                                )
-                                Text(
-                                    text = if (myActivePost != null) "Đang hoạt động" else "Tạo tin mới",
-                                    style = MaterialTheme.typography.labelSmall,
-                                    color = AppColors.surfaceWhite.copy(alpha = 0.75f),
-                                    maxLines = 1,
-                                    overflow = TextOverflow.Ellipsis,
-                                )
-                            }
-                        }
-                    }
-                }
-
-                items(posts) { post ->
-                    Box(
-                        modifier = Modifier
-                            .width(100.dp)
-                            .height(150.dp)
-                            .clip(AppShapes.large)
-                            .background(MaterialTheme.colorScheme.primaryContainer)
-                            .clickable { onVibeClick(post) },
-                    ) {
-                        if (post.imageUrls.isNotEmpty()) {
-                            DinePostImage(
-                                imageUrl = post.imageUrls.firstOrNull(),
-                                contentDescription = null,
-                                modifier = Modifier.fillMaxSize().alpha(0.85f),
-                                shape = AppShapes.large,
-                            )
-                        } else {
-                            Box(
-                                modifier = Modifier.fillMaxSize().background(
-                                    Brush.linearGradient(
-                                        listOf(
-                                            MaterialTheme.colorScheme.primary.copy(0.4f),
-                                            MaterialTheme.colorScheme.secondary.copy(0.4f),
-                                        ),
-                                    ),
-                                ),
-                                contentAlignment = Alignment.Center,
-                            ) {
-                                Icon(
-                                    Icons.Default.Restaurant,
-                                    contentDescription = null,
-                                    tint = AppColors.surfaceWhite.copy(0.6f),
-                                    modifier = Modifier.size(36.dp),
-                                )
-                            }
-                        }
-                        Box(
-                            modifier = Modifier.fillMaxSize().background(
-                                Brush.verticalGradient(listOf(Color.Transparent, Color.Black.copy(alpha = 0.75f))),
                             ),
+                        ),
+                    contentAlignment = Alignment.Center,
+                ) {
+                    Icon(
+                        Icons.Default.Restaurant,
+                        contentDescription = null,
+                        tint = AppColors.surfaceWhite.copy(alpha = 0.34f),
+                        modifier = Modifier.size(88.dp),
+                    )
+                }
+            }
+
+            Box(
+                modifier = Modifier
+                    .fillMaxSize()
+                    .background(
+                        Brush.verticalGradient(
+                            listOf(
+                                Color.Black.copy(alpha = 0.62f),
+                                Color.Transparent,
+                                Color.Black.copy(alpha = 0.88f),
+                            ),
+                        ),
+                    ),
+            )
+
+            Column(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .statusBarsPadding()
+                    .padding(horizontal = AppDimens.screenHorizontal, vertical = AppDimens.spaceMd),
+                verticalArrangement = Arrangement.spacedBy(AppDimens.spaceMd),
+            ) {
+                Box(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .height(3.dp)
+                        .clip(CircleShape)
+                        .background(AppColors.surfaceWhite.copy(alpha = 0.88f)),
+                )
+
+                Row(
+                    modifier = Modifier.fillMaxWidth(),
+                    verticalAlignment = Alignment.CenterVertically,
+                    horizontalArrangement = Arrangement.spacedBy(AppDimens.spaceMd),
+                ) {
+                    Row(
+                        modifier = Modifier
+                            .weight(1f)
+                            .clip(AppShapes.medium)
+                            .clickable(onClick = onOpenAuthor)
+                            .padding(vertical = 4.dp),
+                        verticalAlignment = Alignment.CenterVertically,
+                        horizontalArrangement = Arrangement.spacedBy(AppDimens.spaceSm),
+                    ) {
+                        DineAvatarImage(
+                            imageUrl = story.authorAvatar,
+                            name = story.authorName,
+                            size = 42.dp,
+                            modifier = Modifier.border(2.dp, AppColors.surfaceWhite.copy(alpha = 0.9f), CircleShape),
                         )
-                        Box(
-                            modifier = Modifier
-                                .align(Alignment.TopStart)
-                                .padding(AppDimens.spaceSm)
-                                .size(36.dp)
-                                .background(
-                                    Brush.sweepGradient(
-                                        listOf(
-                                            MaterialTheme.colorScheme.primary,
-                                            MaterialTheme.colorScheme.secondary,
-                                            MaterialTheme.colorScheme.primary,
-                                        ),
-                                    ),
-                                    CircleShape,
-                                )
-                                .padding(2.dp),
-                        ) {
-                            DineAvatarImage(
-                                imageUrl = post.authorAvatar,
-                                name = post.authorName,
-                                modifier = Modifier.fillMaxSize().border(2.dp, MaterialTheme.colorScheme.background, CircleShape),
-                                size = 32.dp,
-                            )
-                        }
-                        if (!viewedStoryIds.contains(post.id)) {
-                            Box(
-                                modifier = Modifier
-                                    .align(Alignment.TopEnd)
-                                    .padding(AppDimens.spaceSm)
-                                    .size(10.dp)
-                                    .background(MaterialTheme.colorScheme.secondary, CircleShape)
-                                    .border(2.dp, AppColors.surfaceWhite, CircleShape),
-                            )
-                        }
-                        Column(
-                            modifier = Modifier.align(Alignment.BottomStart).padding(AppDimens.spaceSm),
-                        ) {
+                        Column {
                             Text(
-                                text = post.authorName,
-                                style = MaterialTheme.typography.labelSmall.copy(fontWeight = FontWeight.Bold),
+                                text = story.authorName,
+                                style = MaterialTheme.typography.titleSmall.copy(fontWeight = FontWeight.Bold),
                                 color = AppColors.surfaceWhite,
                                 maxLines = 1,
                                 overflow = TextOverflow.Ellipsis,
                             )
-                            if (!post.location.isNullOrBlank()) {
-                                Text(
-                                    text = post.location,
-                                    style = MaterialTheme.typography.labelSmall,
-                                    color = AppColors.surfaceWhite.copy(alpha = 0.75f),
-                                    maxLines = 1,
-                                    overflow = TextOverflow.Ellipsis,
-                                )
-                            }
+                            Text(
+                                text = formatStoryTime(story.createdAt),
+                                style = MaterialTheme.typography.labelSmall,
+                                color = AppColors.surfaceWhite.copy(alpha = 0.78f),
+                            )
                         }
+                    }
+
+                    IconButton(
+                        onClick = onDismiss,
+                        modifier = Modifier
+                            .size(42.dp)
+                            .background(Color.Black.copy(alpha = 0.26f), CircleShape),
+                    ) {
+                        Icon(
+                            Icons.Default.Close,
+                            contentDescription = "Đóng",
+                            tint = AppColors.surfaceWhite,
+                        )
                     }
                 }
             }
+
+            Column(
+                modifier = Modifier
+                    .align(Alignment.BottomStart)
+                    .fillMaxWidth()
+                    .navigationBarsPadding()
+                    .padding(AppDimens.screenHorizontal)
+                    .padding(bottom = AppDimens.spaceLg),
+                verticalArrangement = Arrangement.spacedBy(AppDimens.spaceMd),
+            ) {
+                if (!story.location.isNullOrBlank()) {
+                    Surface(
+                        color = AppColors.surfaceWhite.copy(alpha = 0.16f),
+                        contentColor = AppColors.surfaceWhite,
+                        shape = CircleShape,
+                    ) {
+                        Row(
+                            modifier = Modifier.padding(horizontal = AppDimens.spaceMd, vertical = 8.dp),
+                            verticalAlignment = Alignment.CenterVertically,
+                            horizontalArrangement = Arrangement.spacedBy(AppDimens.spaceXs),
+                        ) {
+                            Icon(
+                                Icons.Default.LocationOn,
+                                contentDescription = null,
+                                modifier = Modifier.size(16.dp),
+                            )
+                            Text(
+                                text = story.location,
+                                style = MaterialTheme.typography.labelMedium.copy(fontWeight = FontWeight.SemiBold),
+                                maxLines = 1,
+                                overflow = TextOverflow.Ellipsis,
+                            )
+                        }
+                    }
+                }
+
+                if (story.caption.isNotBlank()) {
+                    Text(
+                        text = story.caption,
+                        style = MaterialTheme.typography.titleMedium.copy(fontWeight = FontWeight.SemiBold),
+                        color = AppColors.surfaceWhite,
+                        maxLines = 4,
+                        overflow = TextOverflow.Ellipsis,
+                    )
+                }
+
+                Text(
+                    text = "Khoảnh khắc 24h",
+                    style = MaterialTheme.typography.labelMedium.copy(fontWeight = FontWeight.Bold),
+                    color = AppColors.surfaceWhite.copy(alpha = 0.72f),
+                )
+            }
         }
+    }
+}
+
+private fun formatStoryTime(createdAt: Date?): String {
+    if (createdAt == null) return "Vừa xong"
+    val elapsedMinutes = ((System.currentTimeMillis() - createdAt.time) / 60_000).coerceAtLeast(0)
+    return when {
+        elapsedMinutes < 1 -> "Vừa xong"
+        elapsedMinutes < 60 -> "${elapsedMinutes} phút"
+        elapsedMinutes < 24 * 60 -> "${elapsedMinutes / 60} giờ"
+        else -> "24 giờ"
     }
 }
 
@@ -1153,15 +1264,6 @@ private fun EditorialMomentCard(image: String, title: String, status: String) {
         }
     }
 }
-
-data class Vibe(val name: String, val avatar: String, val hasStory: Boolean)
-private val vibes = listOf(
-    Vibe("Minh Tú", "https://lh3.googleusercontent.com/aida-public/AB6AXuB-lcBKRoAYwQw73nIuBdULF7SZEeFfg2TOaffudPtrcOnyx_8_a249_LJcMx5TBluLjiWE8fbEcy4eV7gK7RbihQblIjmgOP5B7c55rKXy9JsKjJjQmetVj5yL0q9GvyYQPiR0_ZnmJv_VjBFl-eNXvTyxNV_wGEHIOerHgr7-Bhr0JQ52rl2IHVEA925v4ju8vhX_A3TbdL37vEXq2FZ6hzChgpASZ9lmR1dkpJprauIMSfg-jAAb0dHPuAtCHgI4cY8VOV-Agd4", true),
-    Vibe("Khánh Linh", "https://lh3.googleusercontent.com/aida-public/AB6AXuBz8Jc-E35SQpfts5F-5Eczw6dWoYmC-HCNwwt8GI_w0EWLE-2FnqQ8mgZvohpGRKnOAVGodaj82NSuuH_X44mCJJF7svdrXs69vjYwM96R4FUn5f4TKPG3hUkyjfKZH4SiY7gfmVzYcX-w6uDBdpBiMt_ZPYvDEIlUp5JJt-Wworohv65EZUi3d15JqXw6myxzpL87IYhIB4EmDZooMn6Y3D8DcEbET8nOa6KpvmgNiVWOgGg3Cd0oMcbuAHlEdpFlt0R-injRfPo", false),
-    Vibe("Thế Huy", "https://lh3.googleusercontent.com/aida-public/AB6AXuDgF0M5FazB2IT4juh4tcOt4K1Ebn3YjSLLXXnEO_orZuRvR7754qsoNDOrLZZRk9MBdEyyJm92iSBTTnUo254hKU062XQiAI0pDu2ZzQ6qUeeRLIRs31LkLGwZlpQVMko9-vOn8jdvYQxhY1IXcHNASxdE5qHGU8nV6uM1v89Ykoyi-NsBff_wlPgG-H-Xsclt1CrCt3PDOJlWGuMnbGFCAkt3p8c5XbDj3XqELFVIf12Tnm9BMHwVXvqOCJPx3F_X1-e8Nyuo7RU", false)
-)
-
-
 
 @Preview(showBackground = true)
 @Composable

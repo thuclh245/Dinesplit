@@ -5,6 +5,7 @@ import com.example.dinesplit.core.firebase.FirebaseProviders
 import com.example.dinesplit.domain.model.Comment
 import com.example.dinesplit.domain.model.NotificationDestination
 import com.example.dinesplit.domain.model.Post
+import com.example.dinesplit.domain.model.Story
 import com.example.dinesplit.domain.repository.FeedRepository
 import com.google.android.gms.tasks.Task
 import com.google.firebase.firestore.FirebaseFirestore
@@ -80,6 +81,65 @@ class FirebaseFeedRepository(
             awaitClose { subscription.remove() }
         }
 
+    override fun getActiveStories(): Flow<List<Story>> =
+        callbackFlow {
+            val currentUserId = FirebaseProviders.auth.currentUser?.uid
+            val now = java.util.Date()
+            val subscription =
+                firestore.collection("stories")
+                    .whereGreaterThan("expiresAt", now)
+                    .addSnapshotListener { snapshot, error ->
+                        if (error != null) {
+                            close(error)
+                            return@addSnapshotListener
+                        }
+                        val stories =
+                            snapshot?.documents?.mapNotNull { doc ->
+                                runCatching {
+                                    doc.toObject(Story::class.java)?.copy(id = doc.id)
+                                }.getOrNull()
+                            } ?: emptyList()
+
+                        fun sendStories(followedUids: List<String> = emptyList()) {
+                            val filtered = stories.filter { story ->
+                                story.expiresAt?.after(java.util.Date()) == true &&
+                                    (
+                                        story.visibility == "public" ||
+                                            story.authorUid == currentUserId ||
+                                            (story.visibility == "followers_only" && followedUids.contains(story.authorUid))
+                                    )
+                            }.sortedByDescending { it.createdAt?.time ?: 0L }
+                            trySend(filtered)
+                        }
+
+                        if (currentUserId.isNullOrBlank()) {
+                            sendStories()
+                        } else {
+                            firestore.collection("users")
+                                .document(currentUserId)
+                                .get()
+                                .addOnSuccessListener { userSnap ->
+                                    val docFollowedUids = (userSnap.get("followingIds") as? List<*>)?.mapNotNull { it?.toString() } ?: emptyList()
+                                    firestore.collection("users")
+                                        .document(currentUserId)
+                                        .collection("following")
+                                        .get()
+                                        .addOnSuccessListener { followingSnap ->
+                                            val subFollowedUids = followingSnap.documents.map { it.id }
+                                            sendStories((docFollowedUids + subFollowedUids).distinct())
+                                        }
+                                        .addOnFailureListener {
+                                            sendStories(docFollowedUids)
+                                        }
+                                }
+                                .addOnFailureListener {
+                                    sendStories()
+                                }
+                        }
+                    }
+            awaitClose { subscription.remove() }
+        }
+
     override fun getUserPosts(userId: String): Flow<List<Post>> =
         callbackFlow {
             val subscription =
@@ -120,6 +180,10 @@ class FirebaseFeedRepository(
         batch.commit().awaitFirebase()
     }
 
+    override suspend fun createStory(story: Story) {
+        firestore.collection("stories").document(story.id).set(story).awaitFirebase()
+    }
+
     override suspend fun updatePost(post: Post) {
         firestore.collection("posts").document(post.id).set(post).awaitFirebase()
     }
@@ -145,6 +209,16 @@ class FirebaseFeedRepository(
         imageUri: Uri,
     ): String {
         val storageRef = FirebaseProviders.storage.reference.child("posts/$postId/post_image.jpg")
+        storageRef.putFile(imageUri).awaitFirebase()
+        return storageRef.downloadUrl.awaitFirebase().toString()
+    }
+
+    override suspend fun uploadStoryImage(
+        storyId: String,
+        imageUri: Uri,
+    ): String {
+        val uid = FirebaseProviders.auth.currentUser?.uid ?: "anonymous"
+        val storageRef = FirebaseProviders.storage.reference.child("stories/$uid/$storyId.jpg")
         storageRef.putFile(imageUri).awaitFirebase()
         return storageRef.downloadUrl.awaitFirebase().toString()
     }

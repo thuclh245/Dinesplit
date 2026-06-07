@@ -16,6 +16,20 @@ service firebase.storage {
     match /receipts/{uid}/{allPaths=**} {
       allow read, write: if isAvatarOwner(uid);
     }
+
+    match /posts/{uid}/{allPaths=**} {
+      allow read: if signedIn();
+      allow write: if isAvatarOwner(uid);
+    }
+
+    match /posts/{postId}/{allPaths=**} {
+      allow read, write: if signedIn();
+    }
+
+    match /stories/{uid}/{allPaths=**} {
+      allow read: if signedIn();
+      allow write: if isAvatarOwner(uid);
+    }
   }
 }
 

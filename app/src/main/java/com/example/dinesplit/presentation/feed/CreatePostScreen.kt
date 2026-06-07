@@ -55,6 +55,7 @@ import com.example.dinesplit.domain.model.Bill
 fun CreatePostScreen(
     viewModel: CreatePostViewModel,
     postId: String? = null, // Hỗ trợ Edit Mode từ file dự án chính của nhóm
+    initialMode: CreatePostMode = CreatePostMode.POST,
     onBack: () -> Unit = {}
 ) {
     val uiState by viewModel.uiState.collectAsState()
@@ -64,12 +65,14 @@ fun CreatePostScreen(
     val visibility by viewModel.visibility.collectAsState()
     val isFormValid by viewModel.isFormValid.collectAsState()
     val isLoadingExistingPost by viewModel.isLoadingExistingPost.collectAsState()
+    val postMode by viewModel.postMode.collectAsState()
+    val isStoryMode = postMode == CreatePostMode.STORY
 
     val snackbarHostState = remember { SnackbarHostState() }
 
     // KHỞI TẠO LUỒNG ĐĂNG/SỬA: Nếu có postId, ra lệnh cho ViewModel nạp dữ liệu cũ về
-    LaunchedEffect(postId) {
-        viewModel.initializePostMode(postId)
+    LaunchedEffect(postId, initialMode) {
+        viewModel.initializePostMode(postId, initialMode)
     }
 
     // SIDE-EFFECTS CONTROL: Đảm bảo tác vụ điều hướng/thông báo lỗi mạng chạy chuẩn xác
@@ -93,7 +96,13 @@ fun CreatePostScreen(
     ) { uri: Uri? -> viewModel.updateImageUri(uri) }
 
     AppScaffold(
-        title = if (!postId.isNullOrBlank()) "Chỉnh sửa bài viết" else "Đăng bài viết mới",
+        title = if (!postId.isNullOrBlank()) {
+            "Chỉnh sửa bài viết"
+        } else if (isStoryMode) {
+            "Đăng tin 24h"
+        } else {
+            "Đăng bài viết mới"
+        },
         navigationIcon = {
             TextButton(onClick = onBack) {
                 Text("Hủy", color = MaterialTheme.colorScheme.primary, fontWeight = FontWeight.Bold)
@@ -116,6 +125,32 @@ fun CreatePostScreen(
                         .padding(horizontal = 16.dp, vertical = 8.dp),
                     verticalArrangement = Arrangement.spacedBy(20.dp)
                 ) {
+                    if (postId.isNullOrBlank()) {
+                        Row(
+                            modifier = Modifier.fillMaxWidth(),
+                            horizontalArrangement = Arrangement.spacedBy(8.dp),
+                        ) {
+                            FilterChip(
+                                selected = postMode == CreatePostMode.POST,
+                                onClick = { viewModel.updatePostMode(CreatePostMode.POST) },
+                                label = { Text("Bài viết") },
+                                leadingIcon = {
+                                    Icon(Icons.Default.PhotoLibrary, contentDescription = null, modifier = Modifier.size(18.dp))
+                                },
+                                modifier = Modifier.weight(1f),
+                            )
+                            FilterChip(
+                                selected = postMode == CreatePostMode.STORY,
+                                onClick = { viewModel.updatePostMode(CreatePostMode.STORY) },
+                                label = { Text("Tin 24h") },
+                                leadingIcon = {
+                                    Icon(Icons.Default.AddPhotoAlternate, contentDescription = null, modifier = Modifier.size(18.dp))
+                                },
+                                modifier = Modifier.weight(1f),
+                            )
+                        }
+                    }
+
                     // Cụm Chọn Ảnh Ẩm Thực Cao Cấp (Hỗ trợ cả fallback ảnh mồi ngẫu nhiên)
                     AppCard {
                         Box(
@@ -126,14 +161,14 @@ fun CreatePostScreen(
                                 .background(MaterialTheme.colorScheme.surfaceContainerHigh)
                                 .clickable(
                                     role = Role.Button,
-                                    onClickLabel = "Chọn ảnh món ăn"
+                                    onClickLabel = if (isStoryMode) "Chọn ảnh cho tin 24h" else "Chọn ảnh món ăn"
                                 ) { galleryLauncher.launch("image/*") },
                             contentAlignment = Alignment.Center
                         ) {
                             if (selectedImageUri != null) {
                                 AsyncImage(
                                     model = selectedImageUri,
-                                    contentDescription = "Chọn ảnh món ăn",
+                                    contentDescription = if (isStoryMode) "Chọn ảnh cho tin 24h" else "Chọn ảnh món ăn",
                                     modifier = Modifier.fillMaxSize(),
                                     contentScale = ContentScale.Crop
                                 )
@@ -158,7 +193,11 @@ fun CreatePostScreen(
                                     verticalArrangement = Arrangement.spacedBy(8.dp)
                                 ) {
                                     Icon(Icons.Default.AddPhotoAlternate, contentDescription = null, tint = MaterialTheme.colorScheme.primary, modifier = Modifier.size(32.dp))
-                                    Text("Nhấp chọn ảnh món ăn từ máy của bạn", style = MaterialTheme.typography.labelMedium, textAlign = TextAlign.Center)
+                                    Text(
+                                        if (isStoryMode) "Nhấp chọn ảnh cho tin 24h" else "Nhấp chọn ảnh món ăn từ máy của bạn",
+                                        style = MaterialTheme.typography.labelMedium,
+                                        textAlign = TextAlign.Center,
+                                    )
                                 }
                             }
                         }
@@ -168,8 +207,8 @@ fun CreatePostScreen(
                     AppTextField(
                         value = restaurantName,
                         onValueChange = { viewModel.updateRestaurantName(it) },
-                        label = "Tên quán ăn / Nhà hàng",
-                        placeholder = "Ví dụ: Bún bò Huế O Xuân"
+                        label = if (isStoryMode) "Địa điểm (Không bắt buộc)" else "Tên quán ăn / Nhà hàng",
+                        placeholder = if (isStoryMode) "Ví dụ: Highlands Coffee" else "Ví dụ: Bún bò Huế O Xuân"
                     )
 
                     AppTextField(
@@ -181,6 +220,7 @@ fun CreatePostScreen(
                     )
 
                     // Cụm Gắn Hóa Đơn Chia Tiền
+                    if (!isStoryMode) {
                     Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
                         Text(
                             text = "Hóa đơn liên kết (Không bắt buộc)",
@@ -257,11 +297,12 @@ fun CreatePostScreen(
                             }
                         }
                     }
+                    }
 
                     // Phân Vùng Chọn Quyền Hiển Thị (Public / Followers Only) từ file nhóm
                     Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
                         Text(
-                            text = "Chế độ hiển thị bài đăng",
+                            text = if (isStoryMode) "Ai có thể xem tin" else "Chế độ hiển thị bài đăng",
                             style = MaterialTheme.typography.titleSmall.copy(fontWeight = FontWeight.Bold, color = MaterialTheme.colorScheme.primary)
                         )
                         Row(
@@ -326,7 +367,13 @@ fun CreatePostScreen(
                         }
                     } else {
                         AppButton(
-                            text = if (postId.isNullOrBlank()) "Đăng bài viết" else "Cập nhật bài viết",
+                            text = if (!postId.isNullOrBlank()) {
+                                "Cập nhật bài viết"
+                            } else if (isStoryMode) {
+                                "Đăng tin 24h"
+                            } else {
+                                "Đăng bài viết"
+                            },
                             onClick = { viewModel.submitPost() },
                             enabled = isFormValid,
                             modifier = Modifier.fillMaxWidth()
