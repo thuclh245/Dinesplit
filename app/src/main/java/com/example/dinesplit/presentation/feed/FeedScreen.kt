@@ -2,6 +2,7 @@ package com.example.dinesplit.presentation.feed
 
 import android.content.Intent
 import androidx.compose.foundation.*
+import androidx.compose.foundation.interaction.MutableInteractionSource
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.LazyRow
@@ -50,6 +51,7 @@ import androidx.lifecycle.compose.LocalLifecycleOwner
 import androidx.lifecycle.viewmodel.compose.viewModel
 import coil.compose.AsyncImage
 import com.example.dinesplit.core.common.AppContainer
+import com.example.dinesplit.core.firebase.FirebaseErrorMapper
 import com.example.dinesplit.core.ui.AppCard
 import com.example.dinesplit.core.ui.AppDimens
 import com.example.dinesplit.core.ui.AppShapes
@@ -66,10 +68,35 @@ import com.example.dinesplit.domain.model.Story
 import com.example.dinesplit.domain.model.UserProfile
 import com.example.dinesplit.ui.theme.AppColors
 import com.example.dinesplit.ui.theme.DineSplitTheme
+import kotlinx.coroutines.flow.catch
 import kotlinx.coroutines.launch
 import java.text.NumberFormat
 import java.util.Date
 import java.util.Locale
+
+private data class StoryViewerTarget(
+    val authorUid: String,
+    val storyId: String,
+)
+
+private data class StoryGroupUiModel(
+    val authorUid: String,
+    val authorName: String,
+    val authorAvatar: String,
+    val stories: List<Story>,
+) {
+    val previewStory: Story
+        get() = stories.maxByOrNull { it.createdAt?.time ?: 0L } ?: stories.first()
+
+    fun firstUnseenOrPreview(viewedStoryIds: Set<String>): Story {
+        return stories.firstOrNull { it.id !in viewedStoryIds } ?: previewStory
+    }
+}
+
+private data class StoryGroupCollection(
+    val myGroup: StoryGroupUiModel?,
+    val otherGroups: List<StoryGroupUiModel>,
+)
 
 @Composable
 fun FeedRoute(
@@ -118,6 +145,8 @@ fun FeedRoute(
         onLikePost = { viewModel.onLikePost(it) },
         onUnlikePost = { viewModel.onUnlikePost(it) },
         onMarkStoryAsViewed = { viewModel.markStoryAsViewed(it) },
+        onLikeStory = { viewModel.onLikeStory(it) },
+        onUnlikeStory = { viewModel.onUnlikeStory(it) },
         onSavePost = { viewModel.onSavePost(it) },
         onUnsavePost = { viewModel.onUnsavePost(it) }
     )
@@ -143,6 +172,8 @@ fun FeedScreen(
     onLikePost: (String) -> Unit,
     onUnlikePost: (String) -> Unit,
     onMarkStoryAsViewed: (String) -> Unit,
+    onLikeStory: (String) -> Unit,
+    onUnlikeStory: (String) -> Unit,
     onSavePost: (String) -> Unit,
     onUnsavePost: (String) -> Unit
 ) {
@@ -150,7 +181,7 @@ fun FeedScreen(
     val currentOnRefresh by rememberUpdatedState(onRefresh)
     val listState = rememberLazyListState()
     var postToDeleteId by remember { mutableStateOf<String?>(null) }
-    var selectedStory by remember { mutableStateOf<Story?>(null) }
+    var selectedStoryTarget by remember { mutableStateOf<StoryViewerTarget?>(null) }
     var commentsPost by remember { mutableStateOf<Post?>(null) }
 
     // BẪY VÒNG ĐỜI: Tự động quét lại dữ liệu đám mây khi người dùng quay về từ màn tạo bài viết
@@ -207,15 +238,46 @@ fun FeedScreen(
         )
     }
 
-    selectedStory?.let { story ->
-        StoryViewerDialog(
-            story = story,
-            onDismiss = { selectedStory = null },
-            onOpenAuthor = {
-                selectedStory = null
-                onOpenUserProfile(story.authorUid)
-            },
-        )
+    selectedStoryTarget?.let { target ->
+        val storiesInGroup = uiState.stories
+            .filter { story -> story.authorUid == target.authorUid }
+            .sortedForStoryViewer()
+        val story = storiesInGroup.firstOrNull { it.id == target.storyId } ?: storiesInGroup.firstOrNull()
+
+        if (story != null) {
+            val currentUserId = uiState.currentUser?.uid.orEmpty()
+            val isLikedByMe = currentUserId.isNotBlank() && story.likedBy.contains(currentUserId)
+
+            LaunchedEffect(story.id) {
+                onMarkStoryAsViewed(story.id)
+            }
+
+            StoryViewerDialog(
+                stories = storiesInGroup,
+                currentStoryId = story.id,
+                isLikedByMe = isLikedByMe,
+                canLike = currentUserId.isNotBlank(),
+                onStoryChange = { storyId ->
+                    selectedStoryTarget = StoryViewerTarget(target.authorUid, storyId)
+                },
+                onDismiss = { selectedStoryTarget = null },
+                onOpenAuthor = {
+                    selectedStoryTarget = null
+                    onOpenUserProfile(story.authorUid)
+                },
+                onToggleLike = {
+                    if (isLikedByMe) {
+                        onUnlikeStory(story.id)
+                    } else {
+                        onLikeStory(story.id)
+                    }
+                },
+            )
+        } else {
+            LaunchedEffect(target) {
+                selectedStoryTarget = null
+            }
+        }
     }
 
     commentsPost?.let { post ->
@@ -249,17 +311,20 @@ fun FeedScreen(
                     }
                 }
 
-                FloatingActionButton(
+                ExtendedFloatingActionButton(
                     onClick = onCreatePost,
                     containerColor = MaterialTheme.colorScheme.secondary,
                     contentColor = MaterialTheme.colorScheme.onSecondary,
                     shape = CircleShape,
+                    icon = {
+                        Icon(Icons.Default.AddAPhoto, contentDescription = null, modifier = Modifier.size(20.dp))
+                    },
+                    text = {
+                        Text("Đăng bài", style = MaterialTheme.typography.labelLarge.copy(fontWeight = FontWeight.Bold))
+                    },
                     modifier = Modifier
-                        .size(52.dp)
                         .shadow(12.dp, CircleShape, spotColor = MaterialTheme.colorScheme.secondary.copy(alpha = 0.4f)),
-                ) {
-                    Icon(Icons.Default.AddAPhoto, contentDescription = "New Post", modifier = Modifier.size(22.dp))
-                }
+                )
             }
         },
     ) { padding ->
@@ -298,14 +363,17 @@ fun FeedScreen(
                             .padding(top = 64.dp + statusBarHeight),
                     ) {
                         state.currentUser?.let { currentUser ->
+                            val storyGroups = state.stories.toStoryGroupCollection(
+                                currentUserId = currentUser.uid,
+                                viewedStoryIds = state.viewedStoryIds,
+                            )
                             RecentGroupVibes(
-                                stories = emptyList(),
+                                storyGroups = storyGroups.otherGroups,
                                 viewedStoryIds = state.viewedStoryIds,
                                 currentUser = currentUser,
-                                myActiveStory = null,
-                                onVibeClick = { story ->
-                                    onMarkStoryAsViewed(story.id)
-                                    selectedStory = story
+                                myStoryGroup = storyGroups.myGroup,
+                                onVibeClick = { group, story ->
+                                    selectedStoryTarget = StoryViewerTarget(group.authorUid, story.id)
                                 },
                                 onCreatePostClick = onCreateStory,
                             )
@@ -332,24 +400,18 @@ fun FeedScreen(
                         if (state.stories.isNotEmpty() || state.currentUser != null) {
                             item {
                                 val currentUser = state.currentUser
-                                val myActiveStory = currentUser?.let { user ->
-                                    state.stories.firstOrNull { story -> story.authorUid == user.uid }
-                                }
-
-                                val otherStories = state.stories
-                                    .filter { story -> currentUser == null || story.authorUid != currentUser.uid }
-                                    .distinctBy { it.authorUid }
-                                    .sortedBy { story -> state.viewedStoryIds.contains(story.id) }
-                                    .take(8)
+                                val storyGroups = state.stories.toStoryGroupCollection(
+                                    currentUserId = currentUser?.uid,
+                                    viewedStoryIds = state.viewedStoryIds,
+                                )
 
                                 RecentGroupVibes(
-                                    stories = otherStories,
+                                    storyGroups = storyGroups.otherGroups,
                                     viewedStoryIds = state.viewedStoryIds,
                                     currentUser = currentUser,
-                                    myActiveStory = myActiveStory,
-                                    onVibeClick = { story ->
-                                        onMarkStoryAsViewed(story.id)
-                                        selectedStory = story
+                                    myStoryGroup = storyGroups.myGroup,
+                                    onVibeClick = { group, story ->
+                                        selectedStoryTarget = StoryViewerTarget(group.authorUid, story.id)
                                     },
                                     onCreatePostClick = onCreateStory,
                                 )
@@ -428,11 +490,11 @@ fun FeedScreen(
 
 @Composable
 private fun RecentGroupVibes(
-    stories: List<Story> = emptyList(),
+    storyGroups: List<StoryGroupUiModel> = emptyList(),
     viewedStoryIds: Set<String> = emptySet(),
     currentUser: UserProfile? = null,
-    myActiveStory: Story? = null,
-    onVibeClick: (Story) -> Unit = {},
+    myStoryGroup: StoryGroupUiModel? = null,
+    onVibeClick: (StoryGroupUiModel, Story) -> Unit = { _, _ -> },
     onCreatePostClick: () -> Unit = {},
 ) {
     Column(modifier = Modifier.padding(bottom = AppDimens.spaceLg)) {
@@ -456,36 +518,91 @@ private fun RecentGroupVibes(
         ) {
             if (currentUser != null) {
                 item {
+                    val previewStory = myStoryGroup?.previewStory
                     StoryPreviewCard(
-                        imageUrl = myActiveStory?.imageUrl,
+                        imageUrl = previewStory?.imageUrl,
                         avatarUrl = currentUser.avatarUrl,
                         authorName = "Tin của tôi",
-                        subtitle = if (myActiveStory != null) "Đang hoạt động" else "Tạo tin mới",
-                        isUnseen = myActiveStory?.let { !viewedStoryIds.contains(it.id) } == true,
-                        showAddBadge = myActiveStory == null,
+                        subtitle = myStoryGroup?.let { "${it.stories.size} tin đang hoạt động" } ?: "Tạo tin mới",
+                        isUnseen = myStoryGroup?.stories?.any { it.id !in viewedStoryIds } == true,
+                        showAddBadge = myStoryGroup == null,
                         onClick = {
-                            if (myActiveStory != null) {
-                                onVibeClick(myActiveStory)
+                            val group = myStoryGroup
+                            if (group != null) {
+                                onVibeClick(group, group.firstUnseenOrPreview(viewedStoryIds))
                             } else {
                                 onCreatePostClick()
                             }
                         },
                     )
                 }
+
+                if (myStoryGroup != null) {
+                    item {
+                        StoryPreviewCard(
+                            imageUrl = null,
+                            avatarUrl = currentUser.avatarUrl,
+                            authorName = "Tin mới",
+                            subtitle = "Đăng tin 24h",
+                            isUnseen = false,
+                            showAddBadge = true,
+                            onClick = onCreatePostClick,
+                        )
+                    }
+                }
             }
 
-            items(stories, key = { it.id }) { story ->
+            items(storyGroups, key = { it.authorUid }) { group ->
+                val story = group.firstUnseenOrPreview(viewedStoryIds)
                 StoryPreviewCard(
-                    imageUrl = story.imageUrl,
-                    avatarUrl = story.authorAvatar,
-                    authorName = story.authorName,
-                    subtitle = story.location.orEmpty(),
-                    isUnseen = !viewedStoryIds.contains(story.id),
-                    onClick = { onVibeClick(story) },
+                    imageUrl = group.previewStory.imageUrl,
+                    avatarUrl = group.authorAvatar,
+                    authorName = group.authorName,
+                    subtitle = group.previewStory.location.orEmpty().ifBlank { "${group.stories.size} tin" },
+                    isUnseen = group.stories.any { it.id !in viewedStoryIds },
+                    onClick = { onVibeClick(group, story) },
                 )
             }
         }
     }
+}
+
+private fun List<Story>.toStoryGroupCollection(
+    currentUserId: String?,
+    viewedStoryIds: Set<String>,
+): StoryGroupCollection {
+    val groups = filter { it.authorUid.isNotBlank() }
+        .groupBy { it.authorUid }
+        .values
+        .mapNotNull { it.toStoryGroupUiModel() }
+
+    val myGroup = currentUserId?.let { uid -> groups.firstOrNull { it.authorUid == uid } }
+    val otherGroups = groups
+        .filterNot { it.authorUid == currentUserId }
+        .sortedWith(
+            compareBy<StoryGroupUiModel> { group ->
+                group.stories.all { it.id in viewedStoryIds }
+            }.thenByDescending { group ->
+                group.previewStory.createdAt?.time ?: 0L
+            },
+        )
+
+    return StoryGroupCollection(myGroup = myGroup, otherGroups = otherGroups)
+}
+
+private fun List<Story>.toStoryGroupUiModel(): StoryGroupUiModel? {
+    val sortedStories = sortedForStoryViewer()
+    val previewStory = sortedStories.maxByOrNull { it.createdAt?.time ?: 0L } ?: return null
+    return StoryGroupUiModel(
+        authorUid = previewStory.authorUid,
+        authorName = previewStory.authorName,
+        authorAvatar = previewStory.authorAvatar,
+        stories = sortedStories,
+    )
+}
+
+private fun List<Story>.sortedForStoryViewer(): List<Story> {
+    return sortedBy { it.createdAt?.time ?: 0L }
 }
 
 @Composable
@@ -613,11 +730,46 @@ private fun StoryPreviewCard(
 }
 
 @Composable
+private fun StorySegmentTabs(
+    storyCount: Int,
+    currentIndex: Int,
+) {
+    Row(
+        modifier = Modifier.fillMaxWidth(),
+        horizontalArrangement = Arrangement.spacedBy(4.dp),
+    ) {
+        repeat(storyCount.coerceAtLeast(1)) { index ->
+            Box(
+                modifier = Modifier
+                    .weight(1f)
+                    .height(3.dp)
+                    .clip(CircleShape)
+                    .background(
+                        AppColors.surfaceWhite.copy(
+                            alpha = if (index <= currentIndex) 0.92f else 0.34f,
+                        ),
+                    ),
+            )
+        }
+    }
+}
+
+@Composable
 private fun StoryViewerDialog(
-    story: Story,
+    stories: List<Story>,
+    currentStoryId: String,
+    isLikedByMe: Boolean,
+    canLike: Boolean,
+    onStoryChange: (String) -> Unit,
     onDismiss: () -> Unit,
     onOpenAuthor: () -> Unit,
+    onToggleLike: () -> Unit,
 ) {
+    val currentIndex = stories.indexOfFirst { it.id == currentStoryId }.coerceAtLeast(0)
+    val story = stories.getOrNull(currentIndex) ?: return
+    val canMovePrevious = currentIndex > 0
+    val canMoveNext = currentIndex < stories.lastIndex
+
     Dialog(
         onDismissRequest = onDismiss,
         properties = DialogProperties(
@@ -675,6 +827,33 @@ private fun StoryViewerDialog(
                     ),
             )
 
+            Row(modifier = Modifier.fillMaxSize()) {
+                Box(
+                    modifier = Modifier
+                        .weight(1f)
+                        .fillMaxHeight()
+                        .clickable(
+                            interactionSource = remember { MutableInteractionSource() },
+                            indication = null,
+                            enabled = canMovePrevious,
+                        ) {
+                            onStoryChange(stories[currentIndex - 1].id)
+                        },
+                )
+                Box(
+                    modifier = Modifier
+                        .weight(1f)
+                        .fillMaxHeight()
+                        .clickable(
+                            interactionSource = remember { MutableInteractionSource() },
+                            indication = null,
+                            enabled = canMoveNext,
+                        ) {
+                            onStoryChange(stories[currentIndex + 1].id)
+                        },
+                )
+            }
+
             Column(
                 modifier = Modifier
                     .fillMaxWidth()
@@ -682,13 +861,7 @@ private fun StoryViewerDialog(
                     .padding(horizontal = AppDimens.screenHorizontal, vertical = AppDimens.spaceMd),
                 verticalArrangement = Arrangement.spacedBy(AppDimens.spaceMd),
             ) {
-                Box(
-                    modifier = Modifier
-                        .fillMaxWidth()
-                        .height(3.dp)
-                        .clip(CircleShape)
-                        .background(AppColors.surfaceWhite.copy(alpha = 0.88f)),
-                )
+                StorySegmentTabs(storyCount = stories.size, currentIndex = currentIndex)
 
                 Row(
                     modifier = Modifier.fillMaxWidth(),
@@ -743,11 +916,13 @@ private fun StoryViewerDialog(
 
             Column(
                 modifier = Modifier
-                    .align(Alignment.BottomStart)
+                    .align(Alignment.BottomCenter)
                     .fillMaxWidth()
                     .navigationBarsPadding()
-                    .padding(AppDimens.screenHorizontal)
-                    .padding(bottom = AppDimens.spaceLg),
+                    .padding(horizontal = AppDimens.screenHorizontal)
+                    .padding(top = AppDimens.spaceLg, bottom = AppDimens.space3Xl)
+                    .background(Color.Black.copy(alpha = 0.52f), RoundedCornerShape(24.dp))
+                    .padding(AppDimens.spaceLg),
                 verticalArrangement = Arrangement.spacedBy(AppDimens.spaceMd),
             ) {
                 if (!story.location.isNullOrBlank()) {
@@ -786,11 +961,49 @@ private fun StoryViewerDialog(
                     )
                 }
 
+                Row(
+                    modifier = Modifier.fillMaxWidth(),
+                    verticalAlignment = Alignment.CenterVertically,
+                    horizontalArrangement = Arrangement.SpaceBetween,
+                ) {
+                    Row(
+                        verticalAlignment = Alignment.CenterVertically,
+                        horizontalArrangement = Arrangement.spacedBy(AppDimens.spaceXs),
+                    ) {
+                        IconButton(
+                            onClick = onToggleLike,
+                            enabled = canLike,
+                            modifier = Modifier
+                                .size(46.dp)
+                                .background(AppColors.surfaceWhite.copy(alpha = 0.16f), CircleShape),
+                        ) {
+                            Icon(
+                                imageVector = if (isLikedByMe) Icons.Filled.Favorite else Icons.Outlined.FavoriteBorder,
+                                contentDescription = if (isLikedByMe) "Bỏ thả tim tin" else "Thả tim tin",
+                                tint = if (isLikedByMe) MaterialTheme.colorScheme.error else AppColors.surfaceWhite,
+                            )
+                        }
+                        Text(
+                            text = story.likesCount.toString(),
+                            style = MaterialTheme.typography.labelLarge.copy(fontWeight = FontWeight.Bold),
+                            color = AppColors.surfaceWhite,
+                        )
+                    }
+
+                    Text(
+                        text = "Khoảnh khắc 24h",
+                        style = MaterialTheme.typography.labelMedium.copy(fontWeight = FontWeight.Bold),
+                        color = AppColors.surfaceWhite.copy(alpha = 0.72f),
+                    )
+                }
+
+                /*
                 Text(
                     text = "Khoảnh khắc 24h",
                     style = MaterialTheme.typography.labelMedium.copy(fontWeight = FontWeight.Bold),
                     color = AppColors.surfaceWhite.copy(alpha = 0.72f),
                 )
+                */
             }
         }
     }
@@ -807,12 +1020,18 @@ private fun CommentsBottomSheet(
     val repository = remember { AppContainer.feedRepository() }
     val observeSessionUseCase = remember { AppContainer.observeSessionUseCase(application) }
     val getCurrentUserProfileUseCase = remember { AppContainer.getCurrentUserProfileUseCase(application) }
-    val comments by remember(post.id) { repository.getComments(post.id) }.collectAsState(initial = emptyList())
-    val session by observeSessionUseCase().collectAsState()
-    val scope = rememberCoroutineScope()
     var input by remember(post.id) { mutableStateOf("") }
     var isSubmitting by remember(post.id) { mutableStateOf(false) }
     var errorMessage by remember(post.id) { mutableStateOf<String?>(null) }
+    val comments by remember(post.id) {
+        repository.getComments(post.id)
+            .catch { throwable ->
+                errorMessage = FirebaseErrorMapper.toUserMessage(throwable)
+                emit(emptyList())
+            }
+    }.collectAsState(initial = emptyList())
+    val session by observeSessionUseCase().collectAsState()
+    val scope = rememberCoroutineScope()
     val sheetState = rememberModalBottomSheetState(skipPartiallyExpanded = true)
 
     ModalBottomSheet(

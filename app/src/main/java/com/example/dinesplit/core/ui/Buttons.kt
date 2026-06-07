@@ -3,6 +3,7 @@ package com.example.dinesplit.core.ui
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
+import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.heightIn
@@ -27,6 +28,7 @@ import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.LocalContentColor
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.minimumInteractiveComponentSize
+import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.semantics.contentDescription
@@ -247,7 +249,7 @@ fun SmallButton(
             },
         shape = shape,
         colors = colors,
-        contentPadding = ButtonDefaults.ContentPadding,
+        contentPadding = PaddingValues(horizontal = 10.dp, vertical = 0.dp),
     ) {
         if (isLoading) {
             CircularProgressIndicator(
@@ -264,12 +266,18 @@ fun SmallButton(
                 Text(
                     text = text,
                     style = MaterialTheme.typography.labelLarge,
+                    maxLines = 1,
+                    overflow = TextOverflow.Ellipsis,
+                    softWrap = false,
                 )
             }
         } else {
             Text(
                 text = text,
                 style = MaterialTheme.typography.labelLarge,
+                maxLines = 1,
+                overflow = TextOverflow.Ellipsis,
+                softWrap = false,
             )
         }
     }

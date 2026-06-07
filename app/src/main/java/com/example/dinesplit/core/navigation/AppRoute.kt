@@ -193,4 +193,28 @@ sealed class AppRoute(val route: String) {
     data object Notifications : AppRoute("notifications")
 
     data object Assistant : AppRoute("assistant")
+
+    data object ChatList : AppRoute("chat_list")
+
+    data object ChatDetail : AppRoute("chat_detail") {
+        const val ARG_USER_ID = "userId"
+        val routeWithArg = "$route/{$ARG_USER_ID}"
+
+        fun createRoute(userId: String): String {
+            return "$route/${Uri.encode(userId)}"
+        }
+    }
+
+    data object ChatCall : AppRoute("chat_call") {
+        const val ARG_THREAD_ID = "threadId"
+        const val ARG_CALL_ID = "callId"
+        val routeWithArg = "$route/{$ARG_THREAD_ID}/{$ARG_CALL_ID}"
+
+        fun createRoute(
+            threadId: String,
+            callId: String,
+        ): String {
+            return "$route/${Uri.encode(threadId)}/${Uri.encode(callId)}"
+        }
+    }
 }

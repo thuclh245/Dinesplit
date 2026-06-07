@@ -12,9 +12,21 @@ interface FeedRepository {
 
     fun getUserPosts(userId: String): Flow<List<Post>>
 
+    fun getPost(postId: String): Flow<Post?>
+
     suspend fun createPost(post: Post)
 
     suspend fun createStory(story: Story)
+
+    suspend fun likeStory(
+        storyId: String,
+        userId: String,
+    )
+
+    suspend fun unlikeStory(
+        storyId: String,
+        userId: String,
+    )
 
     suspend fun likePost(
         postId: String,

@@ -30,6 +30,10 @@ service firebase.storage {
       allow read: if signedIn();
       allow write: if isAvatarOwner(uid);
     }
+
+    match /chat/{threadId}/{uid}/{allPaths=**} {
+      allow read: if signedIn();
+      allow write: if isAvatarOwner(uid);
+    }
   }
 }
-

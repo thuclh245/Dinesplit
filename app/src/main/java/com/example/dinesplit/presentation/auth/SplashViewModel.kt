@@ -4,6 +4,7 @@ import android.app.Application
 import androidx.lifecycle.AndroidViewModel
 import androidx.lifecycle.viewModelScope
 import com.example.dinesplit.core.common.AppContainer
+import com.example.dinesplit.core.firebase.FirebaseProviders
 import com.example.dinesplit.domain.model.AppStartDestination
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
@@ -32,6 +33,8 @@ class SplashViewModel(application: Application) : AndroidViewModel(application) 
             // Khởi động tải trước (Prefetch) dữ liệu song song để lưu vào bộ nhớ đệm Firestore
             viewModelScope.launch {
                 runCatching {
+                    if (FirebaseProviders.auth.currentUser == null) return@runCatching
+
                     val feedRepo = AppContainer.feedRepository()
                     val profileRepo = AppContainer.profileRepository(getApplication())
 

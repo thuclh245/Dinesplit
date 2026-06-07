@@ -212,7 +212,7 @@ class PersonalViewModel(application: Application) : AndroidViewModel(application
         val transactionId = splitTransactionId(bill.groupId, bill.id)
         val legacyTransactionId = "split_${bill.id}"
         val amount = bill.shares[uid] ?: 0.0
-        if (amount <= 0.0) {
+        if (amount <= 0.0 || !bill.shouldCountAsPersonalExpense(uid)) {
             repository.deleteTransaction(transactionId)
             if (legacyTransactionId != transactionId) {
                 repository.deleteTransaction(legacyTransactionId)
@@ -268,7 +268,7 @@ class PersonalViewModel(application: Application) : AndroidViewModel(application
         val activeSplitTransactionIds = mutableSetOf<String>()
         bills.forEach { bill ->
             val transactionId = splitTransactionId(bill.groupId, bill.id)
-            if ((bill.shares[uid] ?: 0.0) > 0.0) {
+            if ((bill.shares[uid] ?: 0.0) > 0.0 && bill.shouldCountAsPersonalExpense(uid)) {
                 activeSplitTransactionIds += transactionId
             }
             syncSplitBillTransactionForCurrentUser(
@@ -329,6 +329,10 @@ class PersonalViewModel(application: Application) : AndroidViewModel(application
         groupId: String,
         billId: String,
     ): String = "split_${groupId}_$billId"
+
+    private fun Bill.shouldCountAsPersonalExpense(uid: String): Boolean {
+        return uid == payerId || uid in paidMemberIds
+    }
 
     fun addCategory(
         name: String,

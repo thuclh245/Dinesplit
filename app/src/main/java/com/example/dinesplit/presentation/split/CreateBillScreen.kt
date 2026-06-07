@@ -37,6 +37,7 @@ import androidx.compose.material.icons.filled.DateRange
 import androidx.compose.material.icons.filled.Edit
 import androidx.compose.material.icons.filled.Info
 import androidx.compose.material.icons.filled.KeyboardArrowDown
+import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.DropdownMenu
 import androidx.compose.material3.DropdownMenuItem
 import androidx.compose.material3.Checkbox
@@ -104,13 +105,15 @@ fun CreateBillScreen(
     onBillSavedForPersonal: (Bill) -> Unit = {},
 ) {
     val context = LocalContext.current
+    val currentUserId = FirebaseProviders.auth.currentUser?.uid.orEmpty()
     val vm =
-        viewModel ?: remember(groupId, billId) {
+        viewModel ?: remember(groupId, billId, currentUserId) {
             CreateBillViewModel(
                 repository = AppContainer.splitRepository(context),
                 groupId = groupId,
                 notificationRepository = AppContainer.notificationRepository(context),
-                currentUserId = FirebaseProviders.auth.currentUser?.uid,
+                qrPaymentRepository = AppContainer.qrPaymentRepository(context),
+                currentUserId = currentUserId,
                 editBillId = billId,
             )
         }
@@ -120,6 +123,7 @@ fun CreateBillScreen(
     var isScanningReceipt by remember { mutableStateOf(false) }
     var receiptOcrStatus by remember { mutableStateOf<String?>(null) }
     var pendingCameraReceiptUri by remember { mutableStateOf<Uri?>(null) }
+    var pendingPayerId by remember { mutableStateOf<String?>(null) }
     val receiptTextRecognizer =
         remember(context) {
             MlKitReceiptTextRecognizer(context.applicationContext)
@@ -151,6 +155,19 @@ fun CreateBillScreen(
                 receiptOcrStatus = "Không thể đọc hóa đơn. Bạn vẫn có thể nhập tên bill và tổng tiền thủ công."
             }
             isScanningReceipt = false
+        }
+    }
+
+    fun requestPayerSelection(memberId: String) {
+        if (memberId == uiState.payerId) return
+        if (uiState.isPayerChangeLocked) {
+            vm.setPayer(memberId)
+            return
+        }
+        if (currentUserId.isNotBlank() && memberId != currentUserId) {
+            pendingPayerId = memberId
+        } else {
+            vm.setPayer(memberId)
         }
     }
 
@@ -243,7 +260,9 @@ fun CreateBillScreen(
                     CreateBillPayerSection(
                         members = uiState.members,
                         currentPayerId = uiState.payerId,
-                        onSelectPayer = vm::setPayer,
+                        isPayerChangeLocked = uiState.isPayerChangeLocked,
+                        payerChangeLockedReason = uiState.payerChangeLockedReason,
+                        onSelectPayer = ::requestPayerSelection,
                     )
                 }
                 item {
@@ -269,8 +288,9 @@ fun CreateBillScreen(
                                 members = uiState.members,
                                 selectedIds = uiState.selectedMemberIds,
                                 payerId = uiState.payerId,
+                                isPayerChangeLocked = uiState.isPayerChangeLocked,
                                 onToggle = vm::toggleMemberSelection,
-                                onSelectPayer = vm::setPayer,
+                                onSelectPayer = ::requestPayerSelection,
                             )
 
                         SplitMethod.CUSTOM ->
@@ -302,6 +322,37 @@ fun CreateBillScreen(
                 )
             }
         }
+    }
+
+    pendingPayerId?.let { payerId ->
+        val payerName =
+            uiState.members.firstOrNull { member -> member.id == payerId }?.name
+                ?: "thành viên này"
+        AlertDialog(
+            onDismissRequest = { pendingPayerId = null },
+            title = { Text("Ghi nhận người trả trước?") },
+            text = {
+                Text(
+                    "Bạn đang ghi nhận $payerName là người đã trả trước bill này. " +
+                        "Thông tin QR trong bill nên là tài khoản nhận tiền của người này.",
+                )
+            },
+            confirmButton = {
+                TextButton(
+                    onClick = {
+                        vm.setPayer(payerId)
+                        pendingPayerId = null
+                    },
+                ) {
+                    Text("Xác nhận")
+                }
+            },
+            dismissButton = {
+                TextButton(onClick = { pendingPayerId = null }) {
+                    Text("Hủy")
+                }
+            },
+        )
     }
 
     LaunchedEffect(uiState.isSaved) {
@@ -474,6 +525,8 @@ private fun CreateBillMainInfoCard(
 private fun CreateBillPayerSection(
     members: List<Member>,
     currentPayerId: String,
+    isPayerChangeLocked: Boolean,
+    payerChangeLockedReason: String?,
     onSelectPayer: (String) -> Unit,
 ) {
     val colorScheme = MaterialTheme.colorScheme
@@ -482,7 +535,7 @@ private fun CreateBillPayerSection(
 
     Column {
         Text(
-            text = "NGƯỜI THANH TOÁN",
+            text = "NGƯỜI TRẢ TRƯỚC",
             style = MaterialTheme.typography.labelSmall,
             fontWeight = FontWeight.Bold,
             color = colorScheme.onSurfaceVariant.copy(alpha = 0.7f),
@@ -497,7 +550,7 @@ private fun CreateBillPayerSection(
                 modifier =
                     Modifier
                         .fillMaxWidth()
-                        .clickable { expanded = true }
+                        .clickable(enabled = !isPayerChangeLocked) { expanded = true }
                         .padding(AppDimens.spaceLg),
                 verticalAlignment = Alignment.CenterVertically,
                 horizontalArrangement = Arrangement.SpaceBetween,
@@ -518,12 +571,28 @@ private fun CreateBillPayerSection(
                     Spacer(modifier = Modifier.width(12.dp))
                     Column {
                         Text(payer?.name ?: "Không có", fontWeight = FontWeight.Bold, color = colorScheme.onSurface)
-                        Text("Trả toàn bộ hóa đơn", style = MaterialTheme.typography.bodySmall, color = colorScheme.onSurfaceVariant)
+                        Text("Đã trả trước cho quán", style = MaterialTheme.typography.bodySmall, color = colorScheme.onSurfaceVariant)
                     }
                 }
-                Icon(Icons.Default.KeyboardArrowDown, contentDescription = "Đổi người", tint = colorScheme.onSurfaceVariant)
+                Icon(
+                    Icons.Default.KeyboardArrowDown,
+                    contentDescription = "Đổi người trả trước",
+                    tint = if (isPayerChangeLocked) colorScheme.outline else colorScheme.onSurfaceVariant,
+                )
             }
-            DropdownMenu(expanded = expanded, onDismissRequest = { expanded = false }) {
+            if (isPayerChangeLocked && !payerChangeLockedReason.isNullOrBlank()) {
+                Text(
+                    text = payerChangeLockedReason,
+                    style = MaterialTheme.typography.bodySmall,
+                    color = colorScheme.onSurfaceVariant,
+                    modifier = Modifier.padding(
+                        start = AppDimens.spaceLg,
+                        end = AppDimens.spaceLg,
+                        bottom = AppDimens.spaceLg,
+                    ),
+                )
+            }
+            DropdownMenu(expanded = expanded && !isPayerChangeLocked, onDismissRequest = { expanded = false }) {
                 members.forEach { member ->
                     DropdownMenuItem(
                         text = { Text(member.name) },
@@ -632,7 +701,7 @@ private fun CreateBillPaymentQrSection(
         ) {
             Column(verticalArrangement = Arrangement.spacedBy(AppDimens.spaceMd)) {
                 Text(
-                    text = "Người đang nợ sẽ thấy QR này khi bấm Thanh toán QR trong chi tiết hóa đơn.",
+                    text = "QR này là tài khoản nhận tiền của người trả trước. Người đang nợ sẽ thấy QR khi bấm Thanh toán QR trong chi tiết hóa đơn.",
                     style = MaterialTheme.typography.bodySmall,
                     color = colorScheme.onSurfaceVariant,
                 )
@@ -726,6 +795,7 @@ private fun EqualSplitDetailsList(
     members: List<Member>,
     selectedIds: Set<String>,
     payerId: String,
+    isPayerChangeLocked: Boolean,
     onToggle: (String) -> Unit,
     onSelectPayer: (String) -> Unit,
 ) {
@@ -733,6 +803,7 @@ private fun EqualSplitDetailsList(
         members = members,
         selectedIds = selectedIds,
         payerId = payerId,
+        isPayerChangeLocked = isPayerChangeLocked,
         onToggle = onToggle,
         onSelectPayer = onSelectPayer,
     )
@@ -1027,6 +1098,7 @@ private fun SplitMemberListCard(
     members: List<Member>,
     selectedIds: Set<String>,
     payerId: String,
+    isPayerChangeLocked: Boolean,
     onToggle: (String) -> Unit,
     onSelectPayer: (String) -> Unit,
 ) {
@@ -1051,7 +1123,7 @@ private fun SplitMemberListCard(
                         Box(
                             modifier = Modifier
                                 .size(48.dp)
-                                .clickable { onSelectPayer(member.id) },
+                                .clickable(enabled = !isPayerChangeLocked) { onSelectPayer(member.id) },
                             contentAlignment = Alignment.Center,
                         ) {
                             Box(
@@ -1149,7 +1221,7 @@ private fun CreateBillBottomAction(
                 .navigationBarsPadding(),
     ) {
         PrimaryButton(
-            text = if (isEditMode) "Lưu thay đổi" else "Xác nhận hóa đơn",
+            text = if (isEditMode) "Lưu thay đổi" else "Ghi nhận hóa đơn",
             onClick = onConfirm,
             enabled = !isLoading,
             isLoading = isLoading,

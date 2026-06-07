@@ -32,6 +32,7 @@ import androidx.lifecycle.viewModelScope
 import androidx.lifecycle.viewmodel.compose.viewModel
 import coil.compose.AsyncImage
 import com.example.dinesplit.core.common.AppContainer
+import com.example.dinesplit.core.firebase.FirebaseErrorMapper
 import com.example.dinesplit.core.ui.AppCard
 import com.example.dinesplit.core.ui.AppDimens
 import com.example.dinesplit.core.ui.AppScaffold
@@ -48,6 +49,7 @@ import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.SharingStarted
 import kotlinx.coroutines.flow.StateFlow
+import kotlinx.coroutines.flow.catch
 import kotlinx.coroutines.flow.combine
 import kotlinx.coroutines.flow.stateIn
 import kotlinx.coroutines.flow.update
@@ -55,7 +57,6 @@ import kotlinx.coroutines.launch
 import java.text.SimpleDateFormat
 import java.util.Date
 import java.util.Locale
-import java.util.UUID
 
 
 sealed interface PostDetailUiState {
@@ -98,13 +99,20 @@ class PostDetailViewModel(
 
     val uiState: StateFlow<PostDetailUiState> =
         combine(
-            AppContainer.feedRepository().getFeedPosts(),
-            AppContainer.feedRepository().getComments(postId),
+            firestore.getPost(postId)
+                .catch { throwable ->
+                    _errorMessage.value = FirebaseErrorMapper.toUserMessage(throwable)
+                    emit(null)
+                },
+            AppContainer.feedRepository().getComments(postId)
+                .catch { throwable ->
+                    _errorMessage.value = FirebaseErrorMapper.toUserMessage(throwable)
+                    emit(emptyList())
+                },
             observeSessionUseCase(),
             _isSubmitting,
             _errorMessage
-        ) { posts, comments, session, submitting, errorMsg ->
-            val post = posts.firstOrNull { it.id == postId }
+        ) { post, comments, session, submitting, errorMsg ->
             val uid = session?.uid
             val isLiked = uid != null && post?.likedBy?.contains(uid) == true
             
@@ -114,7 +122,9 @@ class PostDetailViewModel(
                 // Chuyển đổi dữ liệu domain Comment sang cấu trúc dữ liệu hiển thị PostComment có tính năng pending
                 val mappedComments = comments.map { domainComment ->
                     PostComment(
-                        id = UUID.randomUUID().toString(), // Khởi tạo ID an toàn cho LazyColumn
+                        id = domainComment.id.ifBlank {
+                            "${domainComment.authorUid}_${domainComment.createdAt?.time ?: 0L}"
+                        },
                         userId = domainComment.authorUid,
                         userName = domainComment.authorName,
                         userAvatarUrl = domainComment.authorAvatar,
@@ -144,10 +154,14 @@ class PostDetailViewModel(
         val userId = observeSessionUseCase().value?.uid ?: return
         val state = uiState.value as? PostDetailUiState.Success ?: return
         viewModelScope.launch {
-            if (state.content.isLiked) {
-                unlikeUseCase(postId, userId)
-            } else {
-                likeUseCase(postId, userId)
+            runCatching {
+                if (state.content.isLiked) {
+                    unlikeUseCase(postId, userId)
+                } else {
+                    likeUseCase(postId, userId)
+                }
+            }.onFailure { throwable ->
+                _errorMessage.value = FirebaseErrorMapper.toUserMessage(throwable)
             }
         }
     }

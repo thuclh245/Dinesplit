@@ -8,7 +8,9 @@ import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
+import androidx.compose.material.icons.automirrored.filled.Chat
 import androidx.compose.material.icons.filled.Add
+import androidx.compose.material.icons.filled.AutoAwesome
 import androidx.compose.material.icons.filled.Notifications
 import androidx.compose.material.icons.filled.Search
 import androidx.compose.material.icons.filled.Settings
@@ -75,6 +77,8 @@ fun HomeTopBar(
     userAvatarUrl: String?,
     title: String = "DineSplit",
     onAvatarClick: () -> Unit = {},
+    onOpenAssistant: (() -> Unit)? = null,
+    onOpenChats: (() -> Unit)? = null,
     onOpenSearch: (() -> Unit)? = null,
     onOpenNotifications: (() -> Unit)? = null,
     notificationUnreadCount: Int = 0,
@@ -190,6 +194,24 @@ fun HomeTopBar(
                 }
             }
             Row(horizontalArrangement = Arrangement.spacedBy(4.dp)) {
+                if (onOpenAssistant != null) {
+                    IconButton(onClick = onOpenAssistant) {
+                        Icon(
+                            imageVector = Icons.Default.AutoAwesome,
+                            contentDescription = "Trợ lý DineSplit",
+                            tint = MaterialTheme.colorScheme.primary,
+                        )
+                    }
+                }
+                if (onOpenChats != null) {
+                    IconButton(onClick = onOpenChats) {
+                        Icon(
+                            imageVector = Icons.AutoMirrored.Filled.Chat,
+                            contentDescription = "Tin nhắn",
+                            tint = MaterialTheme.colorScheme.primary,
+                        )
+                    }
+                }
                 if (onOpenSearch != null) {
                     IconButton(onClick = onOpenSearch) {
                         Icon(

@@ -63,7 +63,6 @@ fun CreatePostScreen(
     val caption by viewModel.caption.collectAsState()
     val selectedImageUri by viewModel.imageUri.collectAsState()
     val visibility by viewModel.visibility.collectAsState()
-    val isFormValid by viewModel.isFormValid.collectAsState()
     val isLoadingExistingPost by viewModel.isLoadingExistingPost.collectAsState()
     val postMode by viewModel.postMode.collectAsState()
     val isStoryMode = postMode == CreatePostMode.STORY
@@ -375,7 +374,7 @@ fun CreatePostScreen(
                                 "Đăng bài viết"
                             },
                             onClick = { viewModel.submitPost() },
-                            enabled = isFormValid,
+                            enabled = uiState !is CreatePostUiState.Loading,
                             modifier = Modifier.fillMaxWidth()
                         )
                     }

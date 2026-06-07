@@ -82,6 +82,7 @@ dependencies {
     implementation(libs.firebase.analytics)
     implementation(libs.mlkit.text.recognition)
     implementation(libs.google.play.services.auth)
+    implementation(libs.stream.webrtc.android)
 
     testImplementation(libs.junit)
     androidTestImplementation(libs.androidx.junit)

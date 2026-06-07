@@ -24,6 +24,7 @@ import kotlinx.coroutines.flow.SharedFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asSharedFlow
 import kotlinx.coroutines.flow.asStateFlow
+import kotlinx.coroutines.flow.catch
 import kotlinx.coroutines.flow.combine
 import kotlinx.coroutines.flow.flatMapLatest
 import kotlinx.coroutines.flow.flowOf
@@ -100,16 +101,28 @@ class ProfileViewModel(application: Application) : AndroidViewModel(application)
 
         postsJob?.cancel()
         postsJob = viewModelScope.launch {
-            AppContainer.feedRepository().getUserPosts(session.uid).collect { posts ->
-                _profileUiState.value = _profileUiState.value.copy(posts = posts)
-            }
+            AppContainer.feedRepository().getUserPosts(session.uid)
+                .catch { throwable ->
+                    _profileUiState.value =
+                        _profileUiState.value.copy(errorMessage = FirebaseErrorMapper.toUserMessage(throwable))
+                    emit(emptyList())
+                }
+                .collect { posts ->
+                    _profileUiState.value = _profileUiState.value.copy(posts = posts)
+                }
         }
 
         savedPostsJob?.cancel()
         savedPostsJob = viewModelScope.launch {
-            AppContainer.feedRepository().getSavedPosts(session.uid).collect { savedPosts ->
-                _profileUiState.value = _profileUiState.value.copy(savedPosts = savedPosts)
-            }
+            AppContainer.feedRepository().getSavedPosts(session.uid)
+                .catch { throwable ->
+                    _profileUiState.value =
+                        _profileUiState.value.copy(errorMessage = FirebaseErrorMapper.toUserMessage(throwable))
+                    emit(emptyList())
+                }
+                .collect { savedPosts ->
+                    _profileUiState.value = _profileUiState.value.copy(savedPosts = savedPosts)
+                }
         }
 
         taggedBillsJob?.cancel()
@@ -147,6 +160,10 @@ class ProfileViewModel(application: Application) : AndroidViewModel(application)
                         arrays.flatMap { it }.sortedByDescending { it.billId }
                     }
                 }
+            }.catch { throwable ->
+                _profileUiState.value =
+                    _profileUiState.value.copy(errorMessage = FirebaseErrorMapper.toUserMessage(throwable))
+                emit(emptyList())
             }.collect { summaries ->
                 _profileUiState.value = _profileUiState.value.copy(taggedBills = summaries)
             }
@@ -328,6 +345,9 @@ class ProfileViewModel(application: Application) : AndroidViewModel(application)
 
         viewModelScope.launch {
             _profileUiState.value = _profileUiState.value.copy(isLoggingOut = true)
+            postsJob?.cancel()
+            savedPostsJob?.cancel()
+            taggedBillsJob?.cancel()
             logoutUseCase()
             _profileUiState.value = _profileUiState.value.copy(isLoggingOut = false)
             _effect.emit(ProfileUiEffect.LogoutSuccess)

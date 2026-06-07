@@ -7,11 +7,13 @@ import androidx.lifecycle.viewModelScope
 import com.example.dinesplit.domain.model.Bill
 import com.example.dinesplit.domain.model.BillItem
 import com.example.dinesplit.domain.model.Member
+import com.example.dinesplit.domain.model.QrPaymentStatus
 import com.example.dinesplit.domain.model.NotificationFactory
 import com.example.dinesplit.domain.model.SplitMethod
 import com.example.dinesplit.domain.model.SplitNotificationTrigger
 import com.example.dinesplit.domain.model.SplitTriggerType
 import com.example.dinesplit.domain.repository.NotificationRepository
+import com.example.dinesplit.domain.repository.QrPaymentRepository
 import com.example.dinesplit.domain.repository.SplitRepository
 import com.example.dinesplit.domain.usecase.SplitCalculationEngine
 import kotlinx.coroutines.flow.MutableStateFlow
@@ -35,6 +37,8 @@ data class CreateBillUiState(
     val paymentQrBankCode: String = "",
     val paymentQrAccountNumber: String = "",
     val paymentQrAccountName: String = "",
+    val isPayerChangeLocked: Boolean = false,
+    val payerChangeLockedReason: String? = null,
     val error: String? = null,
     val isUsingFallbackMembers: Boolean = false,
 )
@@ -50,6 +54,7 @@ class CreateBillViewModel(
     private val repository: SplitRepository,
     private val groupId: String,
     private val notificationRepository: NotificationRepository? = null,
+    private val qrPaymentRepository: QrPaymentRepository? = null,
     private val autoLoadMembers: Boolean = true,
     private val currentUserId: String? = null,
     private val editBillId: String? = null,
@@ -60,6 +65,7 @@ class CreateBillViewModel(
     val billItems = mutableStateListOf<BillItem>()
     val customAmounts = mutableStateMapOf<String, String>()
     private var hasAppliedEditBill = false
+    private var hasOpenQrPaymentsForEdit = false
 
     init {
         if (autoLoadMembers) {
@@ -71,6 +77,7 @@ class CreateBillViewModel(
         if (!editBillId.isNullOrBlank()) {
             _uiState.update { it.copy(isEditMode = true, isLoading = true) }
             loadBillForEdit(editBillId)
+            observeEditBillPayments(editBillId)
         }
     }
 
@@ -151,12 +158,59 @@ class CreateBillViewModel(
                 paymentQrBankCode = bill.paymentQrBankCode,
                 paymentQrAccountNumber = bill.paymentQrAccountNumber,
                 paymentQrAccountName = bill.paymentQrAccountName,
+                isPayerChangeLocked = shouldLockPayerChange(bill),
+                payerChangeLockedReason = payerChangeLockReason(bill),
                 isEditMode = true,
                 isLoading = false,
                 originalBill = bill,
                 error = null,
             )
         }
+    }
+
+    private fun observeEditBillPayments(billId: String) {
+        val payments = qrPaymentRepository ?: return
+        viewModelScope.launch {
+            payments.observeBillPayments(groupId, billId).collect { billPayments ->
+                hasOpenQrPaymentsForEdit =
+                    billPayments.any { payment ->
+                        payment.status == QrPaymentStatus.PENDING ||
+                            payment.status == QrPaymentStatus.MARKED_PAID
+                    }
+                refreshPayerChangeLock()
+            }
+        }
+    }
+
+    private fun refreshPayerChangeLock() {
+        val bill = _uiState.value.originalBill ?: return
+        _uiState.update {
+            it.copy(
+                isPayerChangeLocked = shouldLockPayerChange(bill),
+                payerChangeLockedReason = payerChangeLockReason(bill),
+            )
+        }
+    }
+
+    private fun shouldLockPayerChange(bill: Bill): Boolean {
+        return bill.hasPaidDebtors() || hasOpenQrPaymentsForEdit
+    }
+
+    private fun payerChangeLockReason(bill: Bill): String? {
+        val hasPaidDebtors = bill.hasPaidDebtors()
+        return when {
+            hasPaidDebtors && hasOpenQrPaymentsForEdit ->
+                "Không thể đổi người trả trước vì bill đã có người trả và còn giao dịch QR đang chờ."
+            hasPaidDebtors ->
+                "Không thể đổi người trả trước vì bill đã có người trả tiền."
+            hasOpenQrPaymentsForEdit ->
+                "Không thể đổi người trả trước vì còn giao dịch QR đang chờ."
+            else -> null
+        }
+    }
+
+    private fun Bill.hasPaidDebtors(): Boolean {
+        return paidMemberIds.any { memberId -> memberId != payerId }
     }
 
     private fun applyMembers(
@@ -187,7 +241,17 @@ class CreateBillViewModel(
     }
 
     fun setPayer(memberId: String) {
-        _uiState.update { it.copy(payerId = memberId) }
+        val state = _uiState.value
+        if (state.isPayerChangeLocked && memberId != state.payerId) {
+            _uiState.update {
+                it.copy(
+                    error = state.payerChangeLockedReason
+                        ?: "Không thể đổi người trả trước cho bill này.",
+                )
+            }
+            return
+        }
+        _uiState.update { it.copy(payerId = memberId, error = null) }
     }
 
     fun toggleMemberSelection(memberId: String) {
@@ -346,9 +410,13 @@ class CreateBillViewModel(
             }
         val paidMemberIds =
             if (currentState.isEditMode) {
-                (originalBill?.paidMemberIds.orEmpty() + currentState.payerId)
-                    .filter { memberId -> memberId == currentState.payerId || memberId in shares.keys }
-                    .distinct()
+                if (originalBill?.payerId != currentState.payerId) {
+                    listOf(currentState.payerId)
+                } else {
+                    (originalBill.paidMemberIds + currentState.payerId)
+                        .filter { memberId -> memberId == currentState.payerId || memberId in shares.keys }
+                        .distinct()
+                }
             } else {
                 listOf(currentState.payerId)
             }
@@ -455,8 +523,8 @@ class CreateBillViewModel(
             groupId.isBlank() -> "Thiếu nhóm để lưu hóa đơn"
             totalAmount <= 0.0 -> "Tổng tiền phải lớn hơn 0"
             state.selectedMemberIds.isEmpty() -> "Cần chọn ít nhất một người tham gia"
-            state.payerId.isBlank() -> "Cần chọn người thanh toán"
-            state.payerId !in state.members.map { it.id } -> "Người thanh toán không hợp lệ"
+            state.payerId.isBlank() -> "Cần chọn người trả trước"
+            state.payerId !in state.members.map { it.id } -> "Người trả trước không hợp lệ"
             hasAnyQrInput && state.paymentQrBankCode.isBlank() -> "Nhập mã ngân hàng để tạo QR nhận tiền"
             hasAnyQrInput && state.paymentQrAccountNumber.isBlank() -> "Nhập số tài khoản để tạo QR nhận tiền"
             hasAnyQrInput && state.paymentQrAccountName.isBlank() -> "Nhập tên tài khoản để tạo QR nhận tiền"

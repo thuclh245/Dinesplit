@@ -7,7 +7,6 @@ import com.example.dinesplit.core.common.AppContainer
 import com.example.dinesplit.core.firebase.FirebaseErrorMapper
 import com.example.dinesplit.core.firebase.FirebaseProviders
 import com.example.dinesplit.domain.model.LinkedBillSummary
-import com.example.dinesplit.domain.model.NotificationDestination
 import com.example.dinesplit.domain.model.Post
 import com.example.dinesplit.domain.model.Story
 import com.example.dinesplit.domain.model.UserProfile
@@ -16,10 +15,10 @@ import kotlinx.coroutines.Job
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.SharingStarted
 import kotlinx.coroutines.flow.StateFlow
+import kotlinx.coroutines.flow.catch
 import kotlinx.coroutines.flow.combine
 import kotlinx.coroutines.flow.stateIn
 import kotlinx.coroutines.launch
-import java.util.UUID
 
 data class FeedUiState(
     val posts: List<Post> = emptyList(),
@@ -44,7 +43,6 @@ data class PaginationState(
 )
 
 class FeedViewModel(application: Application) : AndroidViewModel(application) {
-    private val firestore = FirebaseProviders.firestore
     private val observeSessionUseCase = AppContainer.observeSessionUseCase(application)
     private val getCurrentUserProfileUseCase = AppContainer.getCurrentUserProfileUseCase(application)
     private val likePostUseCase = AppContainer.likePostUseCase()
@@ -58,6 +56,7 @@ class FeedViewModel(application: Application) : AndroidViewModel(application) {
     private val _initialLikedPostIds = MutableStateFlow<Set<String>>(emptySet())
     private val _stories = MutableStateFlow<List<Story>>(emptyList())
     private var shouldUpdateInitialLikes = true
+    private var activeSessionUid: String? = null
 
     private val activeBillJobs = mutableMapOf<String, Job>()
 
@@ -130,29 +129,31 @@ class FeedViewModel(application: Application) : AndroidViewModel(application) {
         )
 
     init {
-        loadInitialFeed()
-        observeActiveStories()
         viewModelScope.launch {
             observeSessionUseCase().collect { session ->
                 shouldUpdateInitialLikes = true
                 val currentUserId = session?.uid.orEmpty()
-                val currentPosts = _paginationState.value.posts
-                if (currentUserId.isNotEmpty()) {
-                    _initialLikedPostIds.value = currentPosts.filter { it.likedBy.contains(currentUserId) }.map { it.id }.toSet()
-                } else {
-                    _initialLikedPostIds.value = emptySet()
+                if (session == null) {
+                    activeSessionUid = null
+                    clearFeedForSignedOut()
+                    return@collect
                 }
 
-                if (session != null) {
-                    observeBillSummaries(_paginationState.value.posts)
-                    try {
-                        val profile = getCurrentUserProfileUseCase(session.uid)
-                        _currentUserProfile.value = profile
-                    } catch (e: Exception) {
-                        android.util.Log.e("FeedViewModel", "Failed to fetch user profile", e)
-                    }
-                } else {
-                    _currentUserProfile.value = null
+                if (activeSessionUid != currentUserId) {
+                    activeSessionUid = currentUserId
+                    loadInitialFeed()
+                    observeActiveStories()
+                }
+
+                val currentPosts = _paginationState.value.posts
+                _initialLikedPostIds.value = currentPosts.filter { it.likedBy.contains(currentUserId) }.map { it.id }.toSet()
+
+                observeBillSummaries(_paginationState.value.posts)
+                try {
+                    val profile = getCurrentUserProfileUseCase(session.uid)
+                    _currentUserProfile.value = profile
+                } catch (e: Exception) {
+                    android.util.Log.e("FeedViewModel", "Failed to fetch user profile", e)
                 }
             }
         }
@@ -162,6 +163,11 @@ class FeedViewModel(application: Application) : AndroidViewModel(application) {
     private var storiesJob: Job? = null
 
     private fun loadInitialFeed() {
+        if (observeSessionUseCase().value == null) {
+            clearFeedForSignedOut()
+            return
+        }
+
         shouldUpdateInitialLikes = true
         feedJob?.cancel()
         feedJob = viewModelScope.launch {
@@ -194,6 +200,11 @@ class FeedViewModel(application: Application) : AndroidViewModel(application) {
     }
 
     private fun observeActiveStories() {
+        if (observeSessionUseCase().value == null) {
+            _stories.value = emptyList()
+            return
+        }
+
         storiesJob?.cancel()
         storiesJob = viewModelScope.launch {
             runCatching {
@@ -213,6 +224,11 @@ class FeedViewModel(application: Application) : AndroidViewModel(application) {
 
     fun refresh() {
         if (_paginationState.value.isRefreshing) return
+        if (observeSessionUseCase().value == null) {
+            clearFeedForSignedOut()
+            return
+        }
+
         viewModelScope.launch {
             _paginationState.value = _paginationState.value.copy(isRefreshing = true, errorMessage = null)
             try {
@@ -231,15 +247,38 @@ class FeedViewModel(application: Application) : AndroidViewModel(application) {
         }
     }
 
+    private fun clearFeedForSignedOut() {
+        feedJob?.cancel()
+        feedJob = null
+        storiesJob?.cancel()
+        storiesJob = null
+        activeBillJobs.values.forEach { it.cancel() }
+        activeBillJobs.clear()
+        _paginationState.value = PaginationState(isLoading = false, canLoadMore = false)
+        _stories.value = emptyList()
+        _linkedBillSummaries.value = emptyMap()
+        _currentUserProfile.value = null
+        _initialLikedPostIds.value = emptySet()
+    }
+
     private fun observeBillSummaries(posts: List<Post>) {
         val currentUserId = FirebaseProviders.auth.currentUser?.uid ?: return
         posts.forEach { post ->
             val postId = post.id
             val groupId = post.linkedGroupId
             val billId = post.linkedBillId
-            if (!groupId.isNullOrBlank() && !billId.isNullOrBlank() && !activeBillJobs.containsKey(postId)) {
+            if (!groupId.isNullOrBlank() &&
+                !billId.isNullOrBlank() &&
+                !isLegacyDemoLinkedBill(groupId, billId) &&
+                !activeBillJobs.containsKey(postId)
+            ) {
                 val job = viewModelScope.launch {
-                    getLinkedBillSummaryUseCase(groupId, billId, currentUserId).collect { summary ->
+                    getLinkedBillSummaryUseCase(groupId, billId, currentUserId)
+                        .catch { throwable ->
+                            android.util.Log.w("FeedViewModel", "Cannot load linked bill summary for post $postId", throwable)
+                            _linkedBillSummaries.value = _linkedBillSummaries.value - postId
+                        }
+                        .collect { summary ->
                         if (summary != null) {
                             _linkedBillSummaries.value = _linkedBillSummaries.value + (postId to summary)
                         } else {
@@ -253,6 +292,17 @@ class FeedViewModel(application: Application) : AndroidViewModel(application) {
     }
 
     // TUẦN 5 OPTIMIZATION: Thả tim lạc quan có khả năng tự động hoàn tác (Rollback) khi lỗi mạng
+    private fun isLegacyDemoLinkedBill(
+        groupId: String,
+        billId: String,
+    ): Boolean {
+        val groupKey = groupId.lowercase()
+        val billKey = billId.lowercase()
+        return listOf("demo", "mock", "seed").any { marker ->
+            groupKey.contains(marker) || billKey.contains(marker)
+        }
+    }
+
     fun onLikePost(postId: String) {
         val currentUser = uiState.value.currentUser ?: return
         val uid = currentUser.uid
@@ -271,6 +321,7 @@ class FeedViewModel(application: Application) : AndroidViewModel(application) {
         viewModelScope.launch(Dispatchers.IO) {
             runCatching {
                 likePostUseCase(postId, uid)
+                /*
                 
                 // KÍCH HOẠT BẢN ĐỒ THÔNG BÁO: Gửi thông báo đến chủ bài viết nếu đó không phải là mình
                 val postAuthorUid = oldPosts.firstOrNull { it.id == postId }?.authorUid
@@ -283,6 +334,7 @@ class FeedViewModel(application: Application) : AndroidViewModel(application) {
                         relatedId = postId
                     )
                 }
+                */
             }.onFailure { throwable ->
                 // ROLLBACK: Hoàn tác giao diện về trạng thái cũ nếu Firebase từ chối truy cập hoặc mất mạng
                 _paginationState.value = _paginationState.value.copy(
@@ -322,6 +374,7 @@ class FeedViewModel(application: Application) : AndroidViewModel(application) {
     }
 
     // SOCIAL NOTIFICATION TRIGGER MAP: Ghi dữ liệu chuẩn đường dẫn phân vùng /user_notifications/{uid}/
+    /*
     private suspend fun triggerSocialNotification(
         targetUserId: String,
         title: String,
@@ -353,16 +406,79 @@ class FeedViewModel(application: Application) : AndroidViewModel(application) {
         }
     }
 
+    */
     fun markStoryAsViewed(postId: String) {
         _viewedStoryIds.value = _viewedStoryIds.value + postId
     }
 
+    fun onLikeStory(storyId: String) {
+        val uid = uiState.value.currentUser?.uid ?: return
+        val oldStories = _stories.value
+        val story = oldStories.firstOrNull { it.id == storyId } ?: return
+        if (story.likedBy.contains(uid)) return
+
+        val updatedStories = oldStories.map { item ->
+            if (item.id == storyId) {
+                val newLikedBy = (item.likedBy + uid).distinct()
+                item.copy(likedBy = newLikedBy, likesCount = newLikedBy.size)
+            } else {
+                item
+            }
+        }
+        _stories.value = updatedStories
+
+        viewModelScope.launch(Dispatchers.IO) {
+            runCatching {
+                AppContainer.feedRepository().likeStory(storyId, uid)
+            }.onFailure { throwable ->
+                _stories.value = oldStories
+                _paginationState.value = _paginationState.value.copy(
+                    errorMessage = FirebaseErrorMapper.toUserMessage(throwable)
+                )
+            }
+        }
+    }
+
+    fun onUnlikeStory(storyId: String) {
+        val uid = uiState.value.currentUser?.uid ?: return
+        val oldStories = _stories.value
+        val story = oldStories.firstOrNull { it.id == storyId } ?: return
+        if (!story.likedBy.contains(uid)) return
+
+        val updatedStories = oldStories.map { item ->
+            if (item.id == storyId) {
+                val newLikedBy = item.likedBy.filterNot { it == uid }
+                item.copy(likedBy = newLikedBy, likesCount = newLikedBy.size)
+            } else {
+                item
+            }
+        }
+        _stories.value = updatedStories
+
+        viewModelScope.launch(Dispatchers.IO) {
+            runCatching {
+                AppContainer.feedRepository().unlikeStory(storyId, uid)
+            }.onFailure { throwable ->
+                _stories.value = oldStories
+                _paginationState.value = _paginationState.value.copy(
+                    errorMessage = FirebaseErrorMapper.toUserMessage(throwable)
+                )
+            }
+        }
+    }
+
     fun onSavePost(postId: String) {
         val uid = FirebaseProviders.auth.currentUser?.uid ?: uiState.value.currentUser?.uid ?: return
+        val oldProfile = _currentUserProfile.value
+        _currentUserProfile.value =
+            oldProfile?.copy(
+                savedPostIds = (oldProfile.savedPostIds + postId).distinct(),
+            )
         viewModelScope.launch {
             try {
                 AppContainer.feedRepository().savePost(postId, uid)
             } catch (e: java.lang.Exception) {
+                _currentUserProfile.value = oldProfile
                 android.util.Log.e("FeedViewModel", "Failed to save post: $postId", e)
             }
         }
@@ -370,10 +486,16 @@ class FeedViewModel(application: Application) : AndroidViewModel(application) {
 
     fun onUnsavePost(postId: String) {
         val uid = FirebaseProviders.auth.currentUser?.uid ?: uiState.value.currentUser?.uid ?: return
+        val oldProfile = _currentUserProfile.value
+        _currentUserProfile.value =
+            oldProfile?.copy(
+                savedPostIds = oldProfile.savedPostIds.filterNot { it == postId },
+            )
         viewModelScope.launch {
             try {
                 AppContainer.feedRepository().unsavePost(postId, uid)
             } catch (e: java.lang.Exception) {
+                _currentUserProfile.value = oldProfile
                 android.util.Log.e("FeedViewModel", "Failed to unsave post: $postId", e)
             }
         }

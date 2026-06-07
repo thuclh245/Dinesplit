@@ -11,6 +11,8 @@ data class Story(
     val imageUrl: String = "",
     val location: String? = null,
     val visibility: String = "public",
+    val likesCount: Int = 0,
+    val likedBy: List<String> = emptyList(),
     val createdAt: Date? = null,
     val expiresAt: Date? = null,
 )

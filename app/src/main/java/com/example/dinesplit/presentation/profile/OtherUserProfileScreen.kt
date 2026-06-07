@@ -7,6 +7,7 @@ import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
+import androidx.compose.material.icons.automirrored.filled.Chat
 import androidx.compose.material.icons.automirrored.filled.ReceiptLong
 import androidx.compose.material.icons.filled.*
 import androidx.compose.material3.*
@@ -46,6 +47,8 @@ fun OtherUserProfileScreen(
     onBack: () -> Unit = {},
     onNavigateToFollowList: (String, Int) -> Unit = { _, _ -> },
     onBillClick: (String, String) -> Unit = { _, _ -> },
+    onOpenPostDetail: (String) -> Unit = {},
+    onOpenChat: (String) -> Unit = {},
 ) {
     val context = LocalContext.current
     val application = context.applicationContext as Application
@@ -94,6 +97,7 @@ fun OtherUserProfileScreen(
                             isFollowActionBusy = uiState.isFollowActionBusy,
                             postsCount = uiState.posts.size,
                             onToggleFollow = vm::toggleFollow,
+                            onMessageClick = { onOpenChat(profile.uid) },
                             onFollowingClick = { onNavigateToFollowList(profile.uid, 0) },
                             onFollowersClick = { onNavigateToFollowList(profile.uid, 1) }
                         )
@@ -165,7 +169,7 @@ fun OtherUserProfileScreen(
                                             }
                                         }
                                     } else {
-                                        OtherPhotoGrid(posts = uiState.posts, onPostClick = { /* Can navigate to post detail if needed */ })
+                                        OtherPhotoGrid(posts = uiState.posts, onPostClick = onOpenPostDetail)
                                     }
                                 }
                                 1 -> {
@@ -190,10 +194,18 @@ private fun OtherProfileHeader(
     isFollowActionBusy: Boolean,
     postsCount: Int,
     onToggleFollow: () -> Unit,
+    onMessageClick: () -> Unit,
     onFollowingClick: () -> Unit,
     onFollowersClick: () -> Unit,
 ) {
     val resolvedBio = profile.bio.ifBlank { "Người dùng này chưa cập nhật tiểu sử." }
+    val followText =
+        when {
+            isFollowing && isFollowedByOther -> "Bạn bè"
+            isFollowing -> "Đang theo dõi"
+            isFollowedByOther -> "Theo dõi lại"
+            else -> "Theo dõi"
+        }
 
     Column(modifier = Modifier.padding(start = 24.dp, end = 24.dp, top = 8.dp, bottom = 16.dp)) {
         Row(
@@ -227,47 +239,62 @@ private fun OtherProfileHeader(
                 )
             }
 
-            Column(modifier = Modifier.weight(1f), verticalArrangement = Arrangement.spacedBy(16.dp)) {
+            Column(modifier = Modifier.weight(1f), verticalArrangement = Arrangement.spacedBy(8.dp)) {
                 Text(
                     text = if (profile.username.isNotBlank()) "@${profile.username}" else "@user",
                     style = MaterialTheme.typography.headlineSmall.copy(fontWeight = FontWeight.ExtraBold),
                     maxLines = 1,
                     overflow = TextOverflow.Ellipsis
                 )
-
-                Row(horizontalArrangement = Arrangement.spacedBy(12.dp)) {
-                    SmallButton(
-                        text = when {
-                            isFollowing && isFollowedByOther -> "Bạn bè"
-                            isFollowing -> "Đang theo dõi"
-                            isFollowedByOther -> "Theo dõi lại"
-                            else -> "Theo dõi"
-                        },
-                        onClick = onToggleFollow,
-                        enabled = !isFollowActionBusy,
-                        isLoading = isFollowActionBusy,
-                        shape = RoundedCornerShape(12.dp),
-                        modifier = Modifier
-                            .weight(1f)
-                            .height(40.dp)
-                            .semantics {
-                                contentDescription = if (isFollowing) "Bỏ theo dõi người dùng" else "Theo dõi người dùng"
-                            },
-                        colors = ButtonDefaults.buttonColors(
-                            containerColor = if (isFollowing) {
-                                MaterialTheme.colorScheme.surfaceContainer
-                            } else {
-                                MaterialTheme.colorScheme.primary
-                            },
-                            contentColor = if (isFollowing) {
-                                MaterialTheme.colorScheme.onSurface
-                            } else {
-                                MaterialTheme.colorScheme.onPrimary
-                            }
-                        ),
-                    )
-                }
             }
+        }
+
+        Spacer(modifier = Modifier.height(16.dp))
+
+        Row(
+            modifier = Modifier.fillMaxWidth(),
+            horizontalArrangement = Arrangement.spacedBy(10.dp),
+        ) {
+            SmallButton(
+                text = followText,
+                onClick = onToggleFollow,
+                enabled = !isFollowActionBusy,
+                isLoading = isFollowActionBusy,
+                shape = RoundedCornerShape(12.dp),
+                modifier = Modifier
+                    .weight(1f)
+                    .height(40.dp)
+                    .semantics {
+                        contentDescription = if (isFollowing) "Bỏ theo dõi người dùng" else "Theo dõi người dùng"
+                    },
+                colors = ButtonDefaults.buttonColors(
+                    containerColor = if (isFollowing) {
+                        MaterialTheme.colorScheme.surfaceContainer
+                    } else {
+                        MaterialTheme.colorScheme.primary
+                    },
+                    contentColor = if (isFollowing) {
+                        MaterialTheme.colorScheme.onSurface
+                    } else {
+                        MaterialTheme.colorScheme.onPrimary
+                    }
+                ),
+            )
+            SmallButton(
+                text = "Nhắn tin",
+                onClick = onMessageClick,
+                shape = RoundedCornerShape(12.dp),
+                modifier = Modifier
+                    .weight(1f)
+                    .height(40.dp),
+                icon = {
+                    Icon(
+                        imageVector = Icons.AutoMirrored.Filled.Chat,
+                        contentDescription = null,
+                        modifier = Modifier.size(16.dp),
+                    )
+                },
+            )
         }
 
         Spacer(modifier = Modifier.height(24.dp))

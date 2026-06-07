@@ -284,7 +284,8 @@ class FirebaseProfileRepository private constructor(
                         "createdAt" to System.currentTimeMillis(),
                         "updatedAt" to System.currentTimeMillis(),
                         "deepLinkDestination" to NotificationDestination.PROFILE.name,
-                        "deepLinkTargetId" to currentUid
+                        "deepLinkTargetId" to currentUid,
+                        "senderId" to currentUid,
                     )
                     transaction.set(notificationRef, notificationMap)
                 }

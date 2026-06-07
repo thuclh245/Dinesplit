@@ -16,11 +16,14 @@ import androidx.compose.ui.input.nestedscroll.NestedScrollConnection
 import androidx.compose.ui.input.nestedscroll.NestedScrollSource
 import androidx.compose.ui.input.nestedscroll.nestedScroll
 import androidx.compose.ui.platform.LocalDensity
+import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.IntOffset
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import androidx.lifecycle.ViewModel
+import androidx.lifecycle.ViewModelProvider
 import androidx.lifecycle.viewmodel.compose.viewModel
 import androidx.navigation.NavDestination.Companion.hierarchy
 import androidx.navigation.NavType
@@ -35,6 +38,9 @@ import com.example.dinesplit.core.ui.AppDimens
 import com.example.dinesplit.core.ui.ErrorStateBlock
 import com.example.dinesplit.core.ui.HomeTopBar
 import com.example.dinesplit.core.ui.LoadingBlock
+import com.example.dinesplit.presentation.chat.ChatCallScreen
+import com.example.dinesplit.presentation.chat.ChatDetailScreen
+import com.example.dinesplit.presentation.chat.ChatListScreen
 import com.example.dinesplit.presentation.feed.CreatePostScreen
 import com.example.dinesplit.presentation.feed.CreatePostMode
 import com.example.dinesplit.presentation.feed.CreatePostViewModel
@@ -84,6 +90,7 @@ fun MainContainerScreen(
     onOpenAssistant: () -> Unit,
     onLogout: () -> Unit,
 ) {
+    val application = LocalContext.current.applicationContext as Application
     val mainNavController = rememberNavController()
     val profileViewModel: ProfileViewModel = viewModel()
     val personalViewModel: PersonalViewModel = viewModel()
@@ -543,7 +550,10 @@ fun MainContainerScreen(
                     }
                     
                     composable(AppRoute.CreatePost.route) {
-                        val createPostViewModel: CreatePostViewModel = viewModel()
+                        val createPostViewModel: CreatePostViewModel = viewModel(
+                            key = "create_post",
+                            factory = createPostViewModelFactory(application),
+                        )
                         CreatePostScreen(
                             viewModel = createPostViewModel,
                             onBack = { mainNavController.navigateUp() }
@@ -551,7 +561,10 @@ fun MainContainerScreen(
                     }
 
                     composable(AppRoute.CreateStory.route) {
-                        val createPostViewModel: CreatePostViewModel = viewModel()
+                        val createPostViewModel: CreatePostViewModel = viewModel(
+                            key = "create_story",
+                            factory = createPostViewModelFactory(application),
+                        )
                         CreatePostScreen(
                             viewModel = createPostViewModel,
                             initialMode = CreatePostMode.STORY,
@@ -561,10 +574,13 @@ fun MainContainerScreen(
                     
                     composable(AppRoute.EditPost.routeWithArg) { backStackEntry ->
                         val postId = backStackEntry.arguments?.getString(AppRoute.EditPost.ARG_ID) ?: ""
-                        val createPostViewModel: CreatePostViewModel = viewModel()
+                        val createPostViewModel: CreatePostViewModel = viewModel(
+                            key = "edit_post_$postId",
+                            factory = createPostViewModelFactory(application),
+                        )
                         CreatePostScreen(
                             viewModel = createPostViewModel,
-                            postId = postId, 
+                            postId = postId,
                             onBack = { mainNavController.navigateUp() }
                         )
                     }
@@ -629,6 +645,42 @@ fun MainContainerScreen(
                             onBillClick = { groupId, billId ->
                                 mainNavController.navigate(AppRoute.BillDetail.createRoute(groupId, billId))
                             },
+                            onOpenPostDetail = { postId ->
+                                mainNavController.navigate(AppRoute.PostDetail.createRoute(postId))
+                            },
+                            onOpenChat = { userId ->
+                                mainNavController.navigate(AppRoute.ChatDetail.createRoute(userId))
+                            },
+                        )
+                    }
+
+                    composable(AppRoute.ChatList.route) {
+                        ChatListScreen(
+                            onBack = { mainNavController.navigateUp() },
+                            onOpenChat = { userId ->
+                                mainNavController.navigate(AppRoute.ChatDetail.createRoute(userId))
+                            },
+                        )
+                    }
+
+                    composable(AppRoute.ChatDetail.routeWithArg) { backStackEntry ->
+                        val userId = backStackEntry.arguments?.getString(AppRoute.ChatDetail.ARG_USER_ID).orEmpty()
+                        ChatDetailScreen(
+                            otherUserId = userId,
+                            onBack = { mainNavController.navigateUp() },
+                            onOpenCall = { threadId, callId ->
+                                mainNavController.navigate(AppRoute.ChatCall.createRoute(threadId, callId))
+                            },
+                        )
+                    }
+
+                    composable(AppRoute.ChatCall.routeWithArg) { backStackEntry ->
+                        val threadId = backStackEntry.arguments?.getString(AppRoute.ChatCall.ARG_THREAD_ID).orEmpty()
+                        val callId = backStackEntry.arguments?.getString(AppRoute.ChatCall.ARG_CALL_ID).orEmpty()
+                        ChatCallScreen(
+                            threadId = threadId,
+                            callId = callId,
+                            onBack = { mainNavController.navigateUp() },
                         )
                     }
 
@@ -691,6 +743,8 @@ fun MainContainerScreen(
                                 }
                             }
                         },
+                        onOpenAssistant = onOpenAssistant,
+                        onOpenChats = { mainNavController.navigate(AppRoute.ChatList.route) },
                         onOpenSearch = if (currentRoute?.contains(AppRoute.Profile.route) == true) null else { { mainNavController.navigate(AppRoute.Search.route) } },
                         onOpenNotifications = if (currentRoute?.contains(AppRoute.Profile.route) == true) null else onOpenNotifications,
                         notificationUnreadCount = notificationUiState.unreadCount,
@@ -804,6 +858,18 @@ private fun MainBottomBar(
                 }
             }
             Spacer(modifier = Modifier.height(navigationBarPadding))
+        }
+    }
+}
+
+private fun createPostViewModelFactory(application: Application): ViewModelProvider.Factory {
+    return object : ViewModelProvider.Factory {
+        @Suppress("UNCHECKED_CAST")
+        override fun <T : ViewModel> create(modelClass: Class<T>): T {
+            if (modelClass.isAssignableFrom(CreatePostViewModel::class.java)) {
+                return CreatePostViewModel(application) as T
+            }
+            throw IllegalArgumentException("Unknown ViewModel class")
         }
     }
 }

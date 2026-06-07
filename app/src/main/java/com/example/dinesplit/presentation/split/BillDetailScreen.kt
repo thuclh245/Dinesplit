@@ -446,7 +446,7 @@ private fun BdReceiptHeaderCard(
                 }
                 Spacer(modifier = Modifier.width(AppDimens.spaceSm))
                 Text(
-                    text = "Thanh toán bởi ",
+                    text = "Trả trước bởi ",
                     style = MaterialTheme.typography.bodySmall.copy(fontWeight = FontWeight.SemiBold),
                     color = colorScheme.onSurfaceVariant,
                 )
@@ -837,7 +837,7 @@ private fun BdBottomAction(
                 when {
                     isUpdating -> "Đang cập nhật thanh toán..."
                     hasPendingConfirmation -> "Chờ người nhận xác nhận"
-                    isCurrentMemberPayer -> "Bạn là người thanh toán"
+                    isCurrentMemberPayer -> "Bạn là người trả trước"
                     isCurrentMemberPaid -> "Bạn đã trả cho $payerName"
                     !hasPaymentQr -> "Bill chưa có QR nhận tiền"
                     else -> "Không thể thanh toán"
@@ -881,7 +881,7 @@ private fun QrPaymentDialog(
                 )
                 Spacer(modifier = Modifier.height(AppDimens.spaceXs))
                 Text(
-                    text = "Thanh toán hóa đơn cho $payerName",
+                    text = "Chuyển tiền lại cho $payerName",
                     style = MaterialTheme.typography.bodyMedium,
                     color = colorScheme.onSurfaceVariant
                 )
@@ -1039,7 +1039,7 @@ private fun resolveMemberName(
     members: List<Member>,
 ): String {
     return members.firstOrNull { it.id == memberId }?.name
-        ?: fallbackMemberName(memberId).ifBlank { "Người thanh toán" }
+        ?: fallbackMemberName(memberId).ifBlank { "Người trả trước" }
 }
 
 private fun resolveMemberInitial(

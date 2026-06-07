@@ -25,6 +25,10 @@ object AppContainer {
         return com.example.dinesplit.data.repository.FirebaseNotificationRepository.getInstance(context)
     }
 
+    fun chatRepository(context: Context): ChatRepository {
+        return FirebaseChatRepository.getInstance(context)
+    }
+
     fun feedRepository(): FeedRepository {
         return feedRepositoryInstance ?: synchronized(this) {
             feedRepositoryInstance ?: FirebaseFeedRepository(FirebaseFirestore.getInstance()).also {

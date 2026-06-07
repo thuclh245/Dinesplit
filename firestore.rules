@@ -9,6 +9,42 @@ service cloud.firestore {
       return signedIn() && request.auth.uid == uid;
     }
 
+    function chatThreadPath(threadId) {
+      return /databases/$(database)/documents/chat_threads/$(threadId);
+    }
+
+    function isChatParticipantData(data) {
+      return signedIn()
+        && (
+          (
+            data.participantLookup is map
+            && data.participantLookup[request.auth.uid] == true
+          )
+          || (
+            data.participants is list
+            && request.auth.uid in data.participants
+          )
+        );
+    }
+
+    function isChatParticipantListItem(data) {
+      return isChatParticipantData(data);
+    }
+
+    function isChatThreadPathForCurrentUser(threadId) {
+      return signedIn()
+        && (
+          threadId.matches(request.auth.uid + '_.*')
+          || threadId.matches('.*_' + request.auth.uid)
+        );
+    }
+
+    function isChatParticipant(threadId) {
+      return signedIn()
+        && exists(chatThreadPath(threadId))
+        && request.auth.uid in get(chatThreadPath(threadId)).data.participants;
+    }
+
     function validUserProfile(data) {
       return data.keys().hasOnly([
           'uid',
@@ -18,8 +54,17 @@ service cloud.firestore {
           'email',
           'avatarUrl',
           'bio',
+          'diningStyles',
+          'followersCount',
+          'followingCount',
+          'postsCount',
+          'savedPostIds',
+          'fcmToken',
           'createdAt',
-          'updatedAt'
+          'updatedAt',
+          'isPublic',
+          'followingIds',
+          'followerIds'
         ])
         && data.uid is string
         && data.displayName is string
@@ -28,12 +73,45 @@ service cloud.firestore {
         && data.email is string
         && data.avatarUrl is string
         && data.bio is string
-        && data.createdAt is int
-        && data.updatedAt is int
+        && data.diningStyles is list
+        && data.followersCount is int
+        && data.followingCount is int
+        && data.postsCount is int
+        && data.savedPostIds is list
+        && data.fcmToken is string
+        && (data.createdAt is int || data.createdAt is timestamp)
+        && (data.updatedAt is int || data.updatedAt is timestamp)
+        && data.isPublic is bool
+        && data.followingIds is list
+        && data.followerIds is list
         && data.uid == request.auth.uid
         && data.usernameLower == data.username.lower()
         && data.displayName.size() > 0
         && data.username.size() >= 3;
+    }
+
+    function validFollowerStatsUpdate(previous, data, uid) {
+      return signedIn()
+        && uid != request.auth.uid
+        && data.diff(previous).affectedKeys().hasOnly(['followerIds', 'followersCount'])
+        && previous.followerIds is list
+        && data.followerIds is list
+        && data.followersCount is int
+        && data.followersCount == data.followerIds.size()
+        && (
+          (
+            !(request.auth.uid in previous.followerIds)
+            && request.auth.uid in data.followerIds
+            && data.followerIds.hasAll(previous.followerIds)
+            && data.followerIds.size() == previous.followerIds.size() + 1
+          )
+          || (
+            request.auth.uid in previous.followerIds
+            && !(request.auth.uid in data.followerIds)
+            && previous.followerIds.hasAll(data.followerIds)
+            && data.followerIds.size() == previous.followerIds.size() - 1
+          )
+        );
     }
 
     function usernameClaimPath(usernameLower) {
@@ -318,6 +396,75 @@ service cloud.firestore {
         && exists(/databases/$(database)/documents/groups/$(data.groupId)/bills/$(data.relatedId));
     }
 
+    function postPath(postId) {
+      return /databases/$(database)/documents/posts/$(postId);
+    }
+
+    function storyPath(storyId) {
+      return /databases/$(database)/documents/stories/$(storyId);
+    }
+
+    function validCrossUserActivityNotification(data, uid) {
+      return signedIn()
+        && data.type == 'ACTIVITY_UPDATE'
+        && data.senderId == request.auth.uid
+        && data.userId == uid
+        && uid != request.auth.uid
+        && data.deepLinkDestination in ['PROFILE', 'ACTIVITY_DETAIL', 'POST_DETAIL']
+        && data.relatedId is string
+        && data.deepLinkTargetId is string
+        && (
+          (
+            data.deepLinkDestination in ['ACTIVITY_DETAIL', 'POST_DETAIL']
+            && data.deepLinkTargetId == data.relatedId
+            && exists(postPath(data.relatedId))
+            && get(postPath(data.relatedId)).data.authorUid == uid
+          )
+          || (
+            data.deepLinkDestination == 'PROFILE'
+            && data.deepLinkTargetId == request.auth.uid
+            && data.relatedId == request.auth.uid
+          )
+          || (
+            data.deepLinkDestination == 'PROFILE'
+            && data.deepLinkTargetId == request.auth.uid
+            && exists(storyPath(data.relatedId))
+            && getAfter(storyPath(data.relatedId)).data.authorUid == uid
+            && request.auth.uid in getAfter(storyPath(data.relatedId)).data.likedBy
+          )
+        );
+    }
+
+    function validStoryLikeUpdate(previous, data) {
+      return signedIn()
+        && previous.authorUid != request.auth.uid
+        && data.diff(previous).affectedKeys().hasOnly(['likedBy', 'likesCount'])
+        && data.likedBy is list
+        && data.likesCount is int
+        && data.likesCount == data.likedBy.size()
+        && (
+          (
+            !previous.keys().hasAny(['likedBy'])
+            && request.auth.uid in data.likedBy
+            && data.likedBy.size() == 1
+          )
+          || (
+            previous.likedBy is list
+            && !(request.auth.uid in previous.likedBy)
+            && request.auth.uid in data.likedBy
+            && data.likedBy.hasAll(previous.likedBy)
+            && data.likedBy.size() == previous.likedBy.size() + 1
+          )
+          || (
+            previous.likedBy is list
+            && request.auth.uid in previous.likedBy
+            && !(request.auth.uid in data.likedBy)
+            && previous.likedBy.hasAll(data.likedBy)
+            && data.likedBy.size() == previous.likedBy.size() - 1
+          )
+        );
+    }
+
     function validQrPayment(data, paymentId) {
       return data.keys().hasOnly([
           'id',
@@ -520,7 +667,19 @@ service cloud.firestore {
       allow get, list: if signedIn();
       allow create: if isOwner(uid) && validUserProfile(request.resource.data);
       allow update: if isOwner(uid) && validUserProfile(request.resource.data);
+      allow update: if validFollowerStatsUpdate(resource.data, request.resource.data, uid);
       allow delete: if isOwner(uid);
+
+      match /following/{targetUid} {
+        allow read: if signedIn();
+        allow create, update, delete: if isOwner(uid);
+      }
+
+      match /followers/{followerUid} {
+        allow read: if signedIn();
+        allow create, update, delete: if signedIn()
+          && request.auth.uid == followerUid;
+      }
     }
 
     match /usernames/{usernameLower} {
@@ -592,6 +751,7 @@ service cloud.firestore {
           && (
             isOwner(uid)
             || validCrossUserSplitNotification(request.resource.data, uid)
+            || validCrossUserActivityNotification(request.resource.data, uid)
           );
         allow update: if isOwner(uid)
           && validNotification(request.resource.data, uid, notificationId);
@@ -610,6 +770,10 @@ service cloud.firestore {
 
     match /posts/{postId} {
       allow read, write: if signedIn();
+
+      match /comments/{commentId} {
+        allow read, write: if signedIn();
+      }
     }
 
     match /stories/{storyId} {
@@ -617,8 +781,37 @@ service cloud.firestore {
       allow create: if signedIn()
         && request.resource.data.id == storyId
         && request.resource.data.authorUid == request.auth.uid;
-      allow update, delete: if signedIn()
+      allow update: if signedIn()
         && resource.data.authorUid == request.auth.uid;
+      allow update: if validStoryLikeUpdate(resource.data, request.resource.data);
+      allow delete: if signedIn()
+        && resource.data.authorUid == request.auth.uid;
+    }
+
+    match /chat_threads/{threadId} {
+      allow get: if isChatParticipantData(resource.data)
+        || isChatThreadPathForCurrentUser(threadId);
+      allow list: if isChatParticipantListItem(resource.data);
+      allow create: if isChatParticipantData(request.resource.data)
+        && request.resource.data.participants.size() == 2;
+      allow update: if isChatParticipantData(resource.data);
+      allow delete: if false;
+
+      match /messages/{messageId} {
+        allow read: if isChatParticipant(threadId);
+        allow create: if isChatParticipant(threadId)
+          && request.resource.data.senderId == request.auth.uid;
+        allow update: if isChatParticipant(threadId);
+        allow delete: if false;
+      }
+
+      match /calls/{callId} {
+        allow read: if isChatParticipant(threadId);
+        allow create: if isChatParticipant(threadId)
+          && request.resource.data.callerId == request.auth.uid;
+        allow update: if isChatParticipant(threadId);
+        allow delete: if false;
+      }
     }
 
     match /groups/{groupId} {

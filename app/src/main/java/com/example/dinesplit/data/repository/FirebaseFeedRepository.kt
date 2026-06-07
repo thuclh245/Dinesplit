@@ -8,6 +8,7 @@ import com.example.dinesplit.domain.model.Post
 import com.example.dinesplit.domain.model.Story
 import com.example.dinesplit.domain.repository.FeedRepository
 import com.google.android.gms.tasks.Task
+import com.google.firebase.firestore.DocumentSnapshot
 import com.google.firebase.firestore.FirebaseFirestore
 import com.google.firebase.firestore.Query
 import kotlinx.coroutines.channels.awaitClose
@@ -167,6 +168,28 @@ class FirebaseFeedRepository(
             awaitClose { subscription.remove() }
         }
 
+    override fun getPost(postId: String): Flow<Post?> =
+        callbackFlow {
+            if (postId.isBlank()) {
+                trySend(null)
+                close()
+                return@callbackFlow
+            }
+
+            val subscription =
+                firestore.collection("posts")
+                    .document(postId)
+                    .addSnapshotListener { snapshot, error ->
+                        if (error != null) {
+                            close(error)
+                            return@addSnapshotListener
+                        }
+                        trySend(snapshot?.toPost()?.takeIf { post -> isRealPost(post) })
+                    }
+
+            awaitClose { subscription.remove() }
+        }
+
     override suspend fun createPost(post: Post) {
         val batch = firestore.batch()
         val postRef = firestore.collection("posts").document(post.id)
@@ -182,6 +205,77 @@ class FirebaseFeedRepository(
 
     override suspend fun createStory(story: Story) {
         firestore.collection("stories").document(story.id).set(story).awaitFirebase()
+    }
+
+    override suspend fun likeStory(
+        storyId: String,
+        userId: String,
+    ) {
+        val storyRef = firestore.collection("stories").document(storyId)
+        firestore.runTransaction { transaction ->
+            val snapshot = transaction.get(storyRef)
+            if (!snapshot.exists()) return@runTransaction
+
+            val currentLikedBy = (snapshot.get("likedBy") as? List<*>)?.mapNotNull { it?.toString() } ?: emptyList()
+            val authorUid = snapshot.getString("authorUid").orEmpty()
+            val shouldCreateNotification = authorUid.isNotBlank() && authorUid != userId
+
+            var triggeredByUserName = "Ai đó"
+            if (shouldCreateNotification) {
+                val userSnapshot = transaction.get(firestore.collection("users").document(userId))
+                triggeredByUserName = userSnapshot.getString("displayName") ?: "Ai đó"
+            }
+
+            if (!currentLikedBy.contains(userId)) {
+                val newLikedBy = currentLikedBy + userId
+                transaction.update(storyRef, "likesCount", newLikedBy.size, "likedBy", newLikedBy)
+
+                if (shouldCreateNotification) {
+                    val now = System.currentTimeMillis()
+                    val storyTitle = snapshot.getString("caption")?.take(50)?.takeIf { it.isNotBlank() }
+                        ?: snapshot.getString("location")?.take(50)?.takeIf { it.isNotBlank() }
+                        ?: "tin của bạn"
+                    val notificationId = "${now}_story_like_$storyId"
+                    val notificationRef = firestore.collection("user_notifications")
+                        .document(authorUid)
+                        .collection("notifications")
+                        .document(notificationId)
+
+                    val notificationMap = mapOf(
+                        "id" to notificationId,
+                        "userId" to authorUid,
+                        "title" to "$triggeredByUserName đã thả tim tin của bạn",
+                        "subtitle" to storyTitle,
+                        "type" to "ACTIVITY_UPDATE",
+                        "relatedId" to storyId,
+                        "isRead" to false,
+                        "createdAt" to now,
+                        "updatedAt" to now,
+                        "deepLinkDestination" to NotificationDestination.PROFILE.name,
+                        "deepLinkTargetId" to userId,
+                        "senderId" to userId,
+                    )
+                    transaction.set(notificationRef, notificationMap)
+                }
+            }
+        }.awaitFirebase()
+    }
+
+    override suspend fun unlikeStory(
+        storyId: String,
+        userId: String,
+    ) {
+        val storyRef = firestore.collection("stories").document(storyId)
+        firestore.runTransaction { transaction ->
+            val snapshot = transaction.get(storyRef)
+            if (!snapshot.exists()) return@runTransaction
+
+            val currentLikedBy = (snapshot.get("likedBy") as? List<*>)?.mapNotNull { it?.toString() } ?: emptyList()
+            if (currentLikedBy.contains(userId)) {
+                val newLikedBy = currentLikedBy - userId
+                transaction.update(storyRef, "likesCount", newLikedBy.size, "likedBy", newLikedBy)
+            }
+        }.awaitFirebase()
     }
 
     override suspend fun updatePost(post: Post) {
@@ -271,7 +365,8 @@ class FirebaseFeedRepository(
                         "createdAt" to System.currentTimeMillis(),
                         "updatedAt" to System.currentTimeMillis(),
                         "deepLinkDestination" to NotificationDestination.ACTIVITY_DETAIL.name,
-                        "deepLinkTargetId" to postId
+                        "deepLinkTargetId" to postId,
+                        "senderId" to userId,
                     )
                     transaction.set(notificationRef, notificationMap)
                 }
@@ -420,7 +515,8 @@ class FirebaseFeedRepository(
                     "createdAt" to System.currentTimeMillis(),
                     "updatedAt" to System.currentTimeMillis(),
                     "deepLinkDestination" to NotificationDestination.ACTIVITY_DETAIL.name,
-                    "deepLinkTargetId" to postId
+                    "deepLinkTargetId" to postId,
+                    "senderId" to comment.authorUid,
                 )
                 transaction.set(notificationRef, notificationMap)
             }
@@ -510,6 +606,13 @@ class FirebaseFeedRepository(
                 }
             }
         }
+    }
+
+    private fun DocumentSnapshot.toPost(): Post? {
+        if (!exists()) return null
+        return runCatching {
+            toObject(Post::class.java)?.copy(id = id)
+        }.getOrNull()
     }
 
     private fun isRealPost(post: Post): Boolean {

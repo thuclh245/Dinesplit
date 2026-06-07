@@ -213,7 +213,7 @@ fun AppNavHost(navController: NavHostController) {
         }
 
         composable(AppRoute.Assistant.route) {
-            AssistantScreen()
+            AssistantScreen(onBack = { navController.navigateUp() })
         }
     }
 }
