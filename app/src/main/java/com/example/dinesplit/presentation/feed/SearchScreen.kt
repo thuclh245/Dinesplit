@@ -32,6 +32,12 @@ import com.example.dinesplit.presentation.feed.search.SearchFilter
 import com.example.dinesplit.presentation.feed.search.SearchViewModel
 import com.example.dinesplit.presentation.feed.search.components.*
 
+/**
+ * Màn hình Tìm kiếm (Search Screen)
+ * Cho phép người dùng tìm kiếm bạn bè, bài viết ăn uống, hoặc địa điểm ẩm thực.
+ * Cung cấp tính năng xem gợi ý bạn bè, địa điểm xu hướng, lịch sử tìm kiếm gần đây
+ * và mở địa điểm trên ứng dụng bản đồ (Google Maps).
+ */
 @Composable
 fun SearchScreen(
     onBack: () -> Unit,
@@ -40,13 +46,17 @@ fun SearchScreen(
     viewModel: SearchViewModel = androidx.lifecycle.viewmodel.compose.viewModel()
 ) {
     val context = LocalContext.current
+    // Lắng nghe trạng thái UI từ ViewModel
     val uiState by viewModel.uiState.collectAsState()
+    // Lưu trữ địa điểm đang được chọn để xem chi tiết
     var selectedPlaceForDetail by remember { mutableStateOf<PlaceUiModel?>(null) }
 
+    // Tải các quan hệ follow/follower để hiển thị trạng thái nút Theo dõi chính xác
     LaunchedEffect(Unit) {
         viewModel.loadMyFollowRelations()
     }
 
+    // Dialog thông tin chi tiết địa điểm và tuỳ chọn định hướng Maps
     if (selectedPlaceForDetail != null) {
         val place = selectedPlaceForDetail!!
         AlertDialog(
@@ -55,6 +65,7 @@ fun SearchScreen(
                 SmallButton(
                     text = "Xem trên Google Maps",
                     onClick = {
+                        // Thử mở ứng dụng Google Maps trực tiếp bằng geo-URI
                         val mapUri = Uri.parse("geo:0,0?q=${Uri.encode(place.name)}")
                         val mapIntent = Intent(Intent.ACTION_VIEW, mapUri).apply {
                             setPackage("com.google.android.apps.maps")
@@ -62,6 +73,7 @@ fun SearchScreen(
                         try {
                             context.startActivity(mapIntent)
                         } catch (e: Exception) {
+                            // Nếu thiết bị không cài Google Maps, mở qua liên kết web
                             val webUri = Uri.parse("https://www.google.com/maps/search/?api=1&query=${Uri.encode(place.name)}")
                             val webIntent = Intent(Intent.ACTION_VIEW, webUri)
                             context.startActivity(webIntent)
@@ -126,6 +138,7 @@ fun SearchScreen(
 
     Scaffold(
         topBar = {
+            // Thanh công cụ tìm kiếm trên cùng chứa ô nhập liệu và nút quay lại
             SearchTopBar(
                 query = uiState.query,
                 onQueryChange = viewModel::onQueryChange,
@@ -142,7 +155,9 @@ fun SearchScreen(
         ) {
             val state = uiState
             
+            // Xử lý các trạng thái tải dữ liệu, lỗi và không có kết quả
             when {
+                // Trạng thái đang tải dữ liệu (Loading)
                 state.isLoading -> {
                     LoadingBlock(
                         message = "Đang tìm kiếm...",
@@ -152,7 +167,7 @@ fun SearchScreen(
                     )
                 }
 
-                // TRẠNG THÁI LỖI MẠNG (Đồng bộ xử lý bẫy lỗi Tuần 5)
+                // Trạng thái lỗi (Ví dụ lỗi kết nối mạng)
                 state.errorMessage != null -> {
                     ErrorStateBlock(
                         title = "Không thể tìm kiếm",
@@ -165,6 +180,7 @@ fun SearchScreen(
                     )
                 }
 
+                // Trạng thái không có kết quả tìm kiếm nào khớp
                 state.hasNoResult -> {
                     EmptyStateBlock(
                         title = "Không tìm thấy kết quả",
@@ -181,9 +197,10 @@ fun SearchScreen(
                         contentPadding = PaddingValues(bottom = 48.dp),
                         verticalArrangement = Arrangement.spacedBy(AppDimens.spaceLg),
                     ) {
+                        // CHẾ ĐỘ KHÁM PHÁ (Khi chưa nhập từ khóa tìm kiếm)
                         if (state.isExploreMode) {
                             
-                            // Danh sách từ khóa tìm kiếm gần đây
+                            // 1. Danh sách từ khóa tìm kiếm gần đây (Lịch sử tìm kiếm)
                             if (state.recentSearches.isNotEmpty()) {
                                 item {
                                     Column(modifier = Modifier.padding(top = AppDimens.spaceMd)) {
@@ -226,7 +243,7 @@ fun SearchScreen(
                                 }
                             }
 
-                            // Khám phá gợi ý bạn bè kết nối
+                            // 2. Danh sách gợi ý bạn bè kết nối (Những người dùng khác gợi ý theo dõi)
                             if (state.suggestedPeople.isNotEmpty()) {
                                 item {
                                     Text(
@@ -256,7 +273,7 @@ fun SearchScreen(
                                 }
                             }
 
-                            // Địa điểm ăn uống nổi bật xu hướng
+                            // 3. Danh sách địa điểm ăn uống nổi bật / thịnh hành
                             if (state.trendingPlaces.isNotEmpty()) {
                                 item {
                                     Text(
@@ -281,7 +298,9 @@ fun SearchScreen(
                             }
 
                         } else {
+                            // CHẾ ĐỘ HIỂN THỊ KẾT QUẢ TÌM KIẾM (Khi đã nhập từ khóa)
                             
+                            // Thanh bộ lọc kết quả tìm kiếm (Tất cả, Bài viết, Bạn bè, Địa điểm)
                             item {
                                 LazyRow(
                                     contentPadding = PaddingValues(horizontal = AppDimens.spaceLg, vertical = AppDimens.spaceSm),
@@ -302,9 +321,10 @@ fun SearchScreen(
                                 }
                             }
 
+                            // Phân loại kết quả tìm kiếm theo bộ lọc đang được chọn
                             when (state.selectedFilter) {
                                 SearchFilter.All -> {
-                                    // 1. Phân vùng xem trước: Người dùng tương thích
+                                    // 1. Phân vùng xem trước: Người dùng tương thích (Lấy tối đa 3 kết quả)
                                     if (state.peopleResults.isNotEmpty()) {
                                         item {
                                             Text(
@@ -332,6 +352,7 @@ fun SearchScreen(
                                         }
                                     }
 
+                                    // 2. Phân vùng xem trước: Bài viết ăn uống (Lấy tối đa 5 kết quả)
                                     if (state.postResults.isNotEmpty()) {
                                         item {
                                             Text(
@@ -354,6 +375,7 @@ fun SearchScreen(
                                         }
                                     }
 
+                                    // 3. Phân vùng xem trước: Địa điểm ẩm thực (Lấy tối đa 3 kết quả)
                                     if (state.placeResults.isNotEmpty()) {
                                         item {
                                             Text(
@@ -377,6 +399,7 @@ fun SearchScreen(
                                 }
 
                                 SearchFilter.Posts -> {
+                                    // Lọc duy nhất danh sách Bài viết
                                     items(
                                         items = state.postResults,
                                         key = { "result_post_only_${it.id}" }
@@ -392,6 +415,7 @@ fun SearchScreen(
                                 }
 
                                 SearchFilter.People -> {
+                                    // Lọc duy nhất danh sách Người dùng / Bạn bè
                                     items(
                                         items = state.peopleResults,
                                         key = { "result_person_only_${it.uid}" }
@@ -412,6 +436,7 @@ fun SearchScreen(
                                 }
 
                                 SearchFilter.Places -> {
+                                    // Lọc duy nhất danh sách Địa điểm
                                     items(
                                         items = state.placeResults,
                                         key = { "result_place_only_${it.id}" }

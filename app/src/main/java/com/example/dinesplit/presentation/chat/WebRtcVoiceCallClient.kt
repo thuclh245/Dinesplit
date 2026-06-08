@@ -1,7 +1,11 @@
 package com.example.dinesplit.presentation.chat
 
 import android.content.Context
+import android.media.AudioAttributes
+import android.media.AudioDeviceInfo
 import android.media.AudioManager
+import android.media.MediaRecorder
+import android.os.Build
 import com.example.dinesplit.domain.model.ChatCallSession
 import com.example.dinesplit.domain.model.ChatCallStatus
 import com.example.dinesplit.domain.model.ChatIceCandidate
@@ -18,11 +22,13 @@ import org.webrtc.DataChannel
 import org.webrtc.IceCandidate
 import org.webrtc.MediaConstraints
 import org.webrtc.MediaStream
+import org.webrtc.MediaStreamTrack
 import org.webrtc.PeerConnection
 import org.webrtc.PeerConnectionFactory
 import org.webrtc.RtpReceiver
 import org.webrtc.SdpObserver
 import org.webrtc.SessionDescription
+import org.webrtc.audio.JavaAudioDeviceModule
 import kotlin.coroutines.resume
 import kotlin.coroutines.resumeWithException
 
@@ -62,10 +68,14 @@ class WebRtcVoiceCallClient(
 
     private var factory: PeerConnectionFactory? = null
     private var peerConnection: PeerConnection? = null
+    private var audioDeviceModule: JavaAudioDeviceModule? = null
     private var audioSource: AudioSource? = null
     private var localAudioTrack: AudioTrack? = null
     private var audioManager: AudioManager? = null
     private var originalAudioMode: Int? = null
+    private var originalCommunicationDevice: AudioDeviceInfo? = null
+    private var originalSpeakerphoneOn: Boolean? = null
+    private var originalMicrophoneMute: Boolean? = null
     private var currentCallKey: String = ""
     private var currentUserId: String = ""
     private var remoteDescriptionSet = false
@@ -120,6 +130,7 @@ class WebRtcVoiceCallClient(
      */
     fun setMuted(muted: Boolean) {
         localAudioTrack?.setEnabled(!muted)
+        audioDeviceModule?.setMicrophoneMute(muted)
     }
 
     /**
@@ -133,9 +144,11 @@ class WebRtcVoiceCallClient(
         runCatching { peerConnection?.close() }
         runCatching { peerConnection?.dispose() }
         runCatching { factory?.dispose() }
+        runCatching { audioDeviceModule?.release() }
         restoreAudioMode()
         factory = null
         peerConnection = null
+        audioDeviceModule = null
         audioSource = null
         localAudioTrack = null
         currentCallKey = ""
@@ -177,6 +190,8 @@ class WebRtcVoiceCallClient(
         val config =
             PeerConnection.RTCConfiguration(iceServers).apply {
                 sdpSemantics = PeerConnection.SdpSemantics.UNIFIED_PLAN
+                continualGatheringPolicy = PeerConnection.ContinualGatheringPolicy.GATHER_CONTINUALLY
+                iceCandidatePoolSize = 2
             }
         val nextPeerConnection =
             factory?.createPeerConnection(config, createObserver(call.threadId, call.id))
@@ -281,11 +296,32 @@ class WebRtcVoiceCallClient(
             override fun onIceConnectionChange(state: PeerConnection.IceConnectionState) {
                 when (state) {
                     PeerConnection.IceConnectionState.CONNECTED,
-                    PeerConnection.IceConnectionState.COMPLETED -> {
+                    PeerConnection.IceConnectionState.COMPLETED,
+                    -> {
                         onStateChanged(VoiceCallAudioState(isConnected = true))
                     }
                     PeerConnection.IceConnectionState.FAILED,
-                    PeerConnection.IceConnectionState.DISCONNECTED -> {
+                    PeerConnection.IceConnectionState.DISCONNECTED,
+                    -> {
+                        onStateChanged(
+                            VoiceCallAudioState(
+                                isConnected = false,
+                                errorMessage = "Âm thanh bị ngắt kết nối",
+                            ),
+                        )
+                    }
+                    else -> Unit
+                }
+            }
+
+            override fun onConnectionChange(state: PeerConnection.PeerConnectionState) {
+                when (state) {
+                    PeerConnection.PeerConnectionState.CONNECTED -> {
+                        onStateChanged(VoiceCallAudioState(isConnected = true))
+                    }
+                    PeerConnection.PeerConnectionState.FAILED,
+                    PeerConnection.PeerConnectionState.DISCONNECTED,
+                    -> {
                         onStateChanged(
                             VoiceCallAudioState(
                                 isConnected = false,
@@ -322,7 +358,12 @@ class WebRtcVoiceCallClient(
 
             override fun onIceCandidatesRemoved(candidates: Array<out IceCandidate>) = Unit
 
-            override fun onAddStream(stream: MediaStream) = Unit
+            override fun onAddStream(stream: MediaStream) {
+                stream.audioTracks.forEach { track ->
+                    track.setEnabled(true)
+                    track.setVolume(1.0)
+                }
+            }
 
             override fun onRemoveStream(stream: MediaStream) = Unit
 
@@ -333,7 +374,9 @@ class WebRtcVoiceCallClient(
             override fun onAddTrack(
                 receiver: RtpReceiver,
                 mediaStreams: Array<out MediaStream>,
-            ) = Unit
+            ) {
+                enableRemoteAudio(receiver)
+            }
         }
     }
 
@@ -352,10 +395,73 @@ class WebRtcVoiceCallClient(
                 }
             }
         }
+        val nextAudioDeviceModule = createAudioDeviceModule()
+        audioDeviceModule = nextAudioDeviceModule
         factory =
             PeerConnectionFactory.builder()
                 .setOptions(PeerConnectionFactory.Options())
+                .setAudioDeviceModule(nextAudioDeviceModule)
                 .createPeerConnectionFactory()
+    }
+
+    /**
+     * Tạo [JavaAudioDeviceModule] để WebRTC dùng audio source phù hợp cho cuộc gọi thoại.
+     *
+     * @return [JavaAudioDeviceModule] đã được cấu hình echo cancellation, noise suppress và callback lỗi.
+     */
+    private fun createAudioDeviceModule(): JavaAudioDeviceModule {
+        val audioAttributes =
+            AudioAttributes.Builder()
+                .setUsage(AudioAttributes.USAGE_VOICE_COMMUNICATION)
+                .setContentType(AudioAttributes.CONTENT_TYPE_SPEECH)
+                .build()
+
+        return JavaAudioDeviceModule.builder(appContext)
+            .setAudioSource(MediaRecorder.AudioSource.VOICE_COMMUNICATION)
+            .setAudioAttributes(audioAttributes)
+            .setUseHardwareAcousticEchoCanceler(JavaAudioDeviceModule.isBuiltInAcousticEchoCancelerSupported())
+            .setUseHardwareNoiseSuppressor(JavaAudioDeviceModule.isBuiltInNoiseSuppressorSupported())
+            .setAudioRecordErrorCallback(
+                object : JavaAudioDeviceModule.AudioRecordErrorCallback {
+                    override fun onWebRtcAudioRecordInitError(errorMessage: String) {
+                        reportAudioError("Không thể khởi tạo micro: $errorMessage")
+                    }
+
+                    override fun onWebRtcAudioRecordStartError(
+                        errorCode: JavaAudioDeviceModule.AudioRecordStartErrorCode,
+                        errorMessage: String,
+                    ) {
+                        reportAudioError("Không thể bật micro: $errorMessage")
+                    }
+
+                    override fun onWebRtcAudioRecordError(errorMessage: String) {
+                        reportAudioError("Micro bị lỗi: $errorMessage")
+                    }
+                },
+            )
+            .setAudioTrackErrorCallback(
+                object : JavaAudioDeviceModule.AudioTrackErrorCallback {
+                    override fun onWebRtcAudioTrackInitError(errorMessage: String) {
+                        reportAudioError("Không thể khởi tạo loa: $errorMessage")
+                    }
+
+                    override fun onWebRtcAudioTrackStartError(
+                        errorCode: JavaAudioDeviceModule.AudioTrackStartErrorCode,
+                        errorMessage: String,
+                    ) {
+                        reportAudioError("Không thể phát âm thanh: $errorMessage")
+                    }
+
+                    override fun onWebRtcAudioTrackError(errorMessage: String) {
+                        reportAudioError("Phát âm thanh bị lỗi: $errorMessage")
+                    }
+                },
+            )
+            .createAudioDeviceModule()
+            .also { module ->
+                module.setMicrophoneMute(false)
+                module.setSpeakerMute(false)
+            }
     }
 
     /**
@@ -365,7 +471,16 @@ class WebRtcVoiceCallClient(
         val manager = appContext.getSystemService(Context.AUDIO_SERVICE) as? AudioManager ?: return
         audioManager = manager
         originalAudioMode = manager.mode
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.S) {
+            originalCommunicationDevice = manager.communicationDevice
+        } else {
+            @Suppress("DEPRECATION")
+            originalSpeakerphoneOn = manager.isSpeakerphoneOn
+        }
+        originalMicrophoneMute = manager.isMicrophoneMute
         manager.mode = AudioManager.MODE_IN_COMMUNICATION
+        manager.isMicrophoneMute = false
+        routeAudioToSpeaker(manager)
     }
 
     /**
@@ -373,9 +488,55 @@ class WebRtcVoiceCallClient(
      */
     private fun restoreAudioMode() {
         val manager = audioManager ?: return
+        originalMicrophoneMute?.let { manager.isMicrophoneMute = it }
+        restoreAudioRoute(manager)
         originalAudioMode?.let { manager.mode = it }
         audioManager = null
         originalAudioMode = null
+        originalCommunicationDevice = null
+        originalSpeakerphoneOn = null
+        originalMicrophoneMute = null
+    }
+
+    /**
+     * Ưu tiên route âm thanh ra loa ngoài để người dùng nghe được cuộc gọi thoại.
+     *
+     * @param manager AudioManager đang được cấu hình cho cuộc gọi.
+     */
+    private fun routeAudioToSpeaker(manager: AudioManager) {
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.S) {
+            val speaker =
+                manager.availableCommunicationDevices.firstOrNull {
+                    it.type == AudioDeviceInfo.TYPE_BUILTIN_SPEAKER
+                }
+            if (speaker != null) {
+                manager.setCommunicationDevice(speaker)
+            }
+        } else {
+            @Suppress("DEPRECATION")
+            manager.isSpeakerphoneOn = true
+        }
+    }
+
+    /**
+     * Khôi phục route âm thanh về thiết bị đã dùng trước khi vào cuộc gọi.
+     *
+     * @param manager AudioManager đang được khôi phục.
+     */
+    private fun restoreAudioRoute(manager: AudioManager) {
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.S) {
+            val previousDevice = originalCommunicationDevice
+            if (previousDevice != null) {
+                manager.setCommunicationDevice(previousDevice)
+            } else {
+                manager.clearCommunicationDevice()
+            }
+        } else {
+            originalSpeakerphoneOn?.let { wasSpeakerOn ->
+                @Suppress("DEPRECATION")
+                manager.isSpeakerphoneOn = wasSpeakerOn
+            }
+        }
     }
 
     /**
@@ -387,9 +548,11 @@ class WebRtcVoiceCallClient(
         runCatching { peerConnection?.close() }
         runCatching { peerConnection?.dispose() }
         runCatching { factory?.dispose() }
+        runCatching { audioDeviceModule?.release() }
         restoreAudioMode()
         peerConnection = null
         factory = null
+        audioDeviceModule = null
         audioSource = null
         localAudioTrack = null
         remoteCandidatesAdded.clear()
@@ -512,6 +675,35 @@ class WebRtcVoiceCallClient(
             mandatory.add(MediaConstraints.KeyValuePair("OfferToReceiveAudio", "true"))
             mandatory.add(MediaConstraints.KeyValuePair("OfferToReceiveVideo", "false"))
         }
+    }
+
+    /**
+     * Bật remote audio track khi PeerConnection nhận được track từ phía bên kia.
+     *
+     * @param receiver Receiver của track vừa được thêm vào PeerConnection.
+     */
+    private fun enableRemoteAudio(receiver: RtpReceiver) {
+        val track = receiver.track() ?: return
+        if (track.kind() != MediaStreamTrack.AUDIO_TRACK_KIND) return
+
+        track.setEnabled(true)
+        (track as? AudioTrack)?.setVolume(1.0)
+        onStateChanged(VoiceCallAudioState(isConnected = true))
+    }
+
+    /**
+     * Đẩy lỗi audio lên UI để người dùng biết cuộc gọi không thể khởi tạo/phát âm thanh.
+     *
+     * @param message Nội dung lỗi thân thiện với người dùng.
+     */
+    private fun reportAudioError(message: String) {
+        onStateChanged(
+            VoiceCallAudioState(
+                isStarting = false,
+                isConnected = false,
+                errorMessage = message,
+            ),
+        )
     }
 
     companion object {

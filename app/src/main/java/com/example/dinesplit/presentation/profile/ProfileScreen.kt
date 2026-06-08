@@ -41,6 +41,11 @@ import java.text.NumberFormat
 import java.util.Locale
 
 
+/**
+ * Màn hình Hồ sơ cá nhân (Profile Screen)
+ * Hiển thị thông tin cá nhân của người dùng, thống kê, bài viết đã đăng, bài viết đã lưu,
+ * và các hóa đơn chia tiền được gắn thẻ. Đồng thời hỗ trợ thiết lập quyền riêng tư và đăng xuất.
+ */
 @Composable
 fun ProfileScreen(
     userAvatarUrl: String?,
@@ -72,11 +77,16 @@ fun ProfileScreen(
     onMutePermanentlyChange: (Boolean) -> Unit = {},
     onMuteUntilChange: (Int) -> Unit = {},
 ) {
+    // Xử lý các giá trị mặc định cho Handle và Bio nếu bị trống
     val resolvedHandle = userHandle.ifBlank { "@" }
     val resolvedBio = userBio.ifBlank { "Add a bio so friends know who they are splitting with." }
+    
+    // Trạng thái hiển thị Dialog xác nhận đăng xuất
     var showLogoutConfirmation by remember { mutableStateOf(false) }
+    // Tab đang được chọn: 0 - Bài đăng, 1 - Đã lưu, 2 - Hóa đơn được gắn thẻ
     var selectedTab by remember { mutableStateOf(0) }
  
+    // Dialog xác nhận Đăng xuất
     if (showLogoutConfirmation) {
         AlertDialog(
             onDismissRequest = { if (!isLoggingOut) showLogoutConfirmation = false },
@@ -102,6 +112,7 @@ fun ProfileScreen(
         )
     }
  
+    // Dialog Cài đặt & Riêng tư
     if (isSettingsDialogOpen) {
         AlertDialog(
             onDismissRequest = onCloseSettings,
@@ -125,6 +136,8 @@ fun ProfileScreen(
                         style = MaterialTheme.typography.bodyMedium,
                     )
                     Spacer(modifier = Modifier.height(AppDimens.spaceSm))
+                    
+                    // Nút chuyển trạng thái tài khoản Công khai / Riêng tư
                     Row(
                         modifier = Modifier
                             .fillMaxWidth()
@@ -154,6 +167,7 @@ fun ProfileScreen(
                         color = MaterialTheme.colorScheme.primary
                     )
 
+                    // Nút chuyển trạng thái Nhận thông báo
                     Row(
                         modifier = Modifier
                             .fillMaxWidth()
@@ -189,6 +203,7 @@ fun ProfileScreen(
         )
     }
  
+    // Giao diện chính của tab Hồ sơ
     Scaffold { padding ->
         Column(
             modifier =
@@ -199,6 +214,8 @@ fun ProfileScreen(
                     .verticalScroll(rememberScrollState()),
         ) {
             Spacer(modifier = Modifier.height(64.dp))
+            
+            // Header hồ sơ chứa Avatar, Tên, Bio, và Thống kê nhanh
             ProfileHeader(
                 userName = resolvedHandle,
                 displayName = userName,
@@ -216,10 +233,12 @@ fun ProfileScreen(
                 onFollowersClick = { onNavigateToFollowList(1) }
             )
 
+            // Thanh điều hướng Tab bên dưới Header
             ProfileTabs(selectedTab = selectedTab, onTabSelected = { selectedTab = it })
 
+            // Nội dung thay đổi tương ứng theo Tab đang chọn
             when (selectedTab) {
-                0 -> {
+                0 -> { // Tab 0: Danh sách bài viết của chính người dùng
                     val postsWithImages = posts.filter { it.imageUrls.isNotEmpty() }
                     if (postsWithImages.isEmpty()) {
                         Box(
@@ -249,7 +268,7 @@ fun ProfileScreen(
                         PhotoGrid(posts = posts, onPostClick = onOpenPostDetail)
                     }
                 }
-                1 -> {
+                1 -> { // Tab 1: Danh sách bài viết người dùng đã lưu lại
                     val savedWithImages = savedPosts.filter { it.imageUrls.isNotEmpty() }
                     if (savedWithImages.isEmpty()) {
                         Box(
@@ -279,7 +298,7 @@ fun ProfileScreen(
                         PhotoGrid(posts = savedPosts, onPostClick = onOpenPostDetail)
                     }
                 }
-                2 -> {
+                2 -> { // Tab 2: Danh sách các hoá đơn chia tiền được tag tên vào
                     TaggedBillsList(bills = taggedBills, onBillClick = onBillClick)
                 }
             }
@@ -289,6 +308,11 @@ fun ProfileScreen(
     }
 }
 
+/**
+ * Component hiển thị thông tin phần đầu trang cá nhân (Profile Header)
+ * Bao gồm Avatar (với viền gradient màu thương hiệu), Tên hiển thị, Username, Bio,
+ * Nút "Chỉnh sửa hồ sơ", Thống kê người theo dõi/bài viết, Card Thống kê DineSplit và nút Đăng xuất.
+ */
 @Composable
 private fun ProfileHeader(
     userName: String,
@@ -312,7 +336,7 @@ private fun ProfileHeader(
             verticalAlignment = Alignment.CenterVertically,
             horizontalArrangement = Arrangement.spacedBy(AppDimens.spaceLg),
         ) {
-            // Avatar with Gradient Ring
+            // Ảnh đại diện (Avatar) với viền tròn màu Gradient
             Box(
                 modifier =
                     Modifier
@@ -340,6 +364,7 @@ private fun ProfileHeader(
                 )
             }
 
+            // Username và nút Chỉnh sửa hồ sơ
             Column(modifier = Modifier.weight(1f), verticalArrangement = Arrangement.spacedBy(AppDimens.spaceSm)) {
                 Text(userName, style = MaterialTheme.typography.headlineSmall.copy(fontWeight = FontWeight.ExtraBold))
 
@@ -365,7 +390,7 @@ private fun ProfileHeader(
 
         Spacer(modifier = Modifier.height(AppDimens.spaceXl))
 
-        // Stats
+        // Chỉ số Thống kê cơ bản: Bài viết, Người theo dõi, Đang theo dõi
         Row(
             modifier = Modifier.fillMaxWidth(),
             horizontalArrangement = Arrangement.spacedBy(AppDimens.space2Xl),
@@ -385,7 +410,7 @@ private fun ProfileHeader(
 
         Spacer(modifier = Modifier.height(AppDimens.spaceLg))
 
-        // Info
+        // Thông tin Bio cá nhân
         Column(verticalArrangement = Arrangement.spacedBy(AppDimens.spaceXs)) {
             Text(
                 text = bio,
@@ -403,7 +428,7 @@ private fun ProfileHeader(
 
         Spacer(modifier = Modifier.height(AppDimens.spaceLg))
 
-        // DineSplit Stats Card
+        // Thẻ Thống kê chi tiêu & kết nối (DineSplit Stats Card)
         AppCard(
             modifier = Modifier.fillMaxWidth(),
             contentPadding = PaddingValues(AppDimens.spaceMd),
@@ -423,6 +448,7 @@ private fun ProfileHeader(
                     horizontalArrangement = Arrangement.SpaceBetween,
                     verticalAlignment = Alignment.CenterVertically
                 ) {
+                    // Số lượng bài đăng về món ăn
                     DineSplitStatColumn(
                         modifier = Modifier.weight(1f),
                         icon = Icons.Default.Restaurant,
@@ -433,6 +459,7 @@ private fun ProfileHeader(
                     
                     Box(modifier = Modifier.width(1.dp).height(24.dp).background(MaterialTheme.colorScheme.outlineVariant.copy(alpha = 0.5f)))
                     
+                    // Số lượng hóa đơn chia tiền người dùng tham gia
                     DineSplitStatColumn(
                         modifier = Modifier.weight(1f),
                         icon = Icons.AutoMirrored.Filled.ReceiptLong,
@@ -443,6 +470,7 @@ private fun ProfileHeader(
                     
                     Box(modifier = Modifier.width(1.dp).height(24.dp).background(MaterialTheme.colorScheme.outlineVariant.copy(alpha = 0.5f)))
                     
+                    // Tổng số kết nối (Người theo dõi + Đang theo dõi)
                     DineSplitStatColumn(
                         modifier = Modifier.weight(1f),
                         icon = Icons.Default.People,
@@ -456,6 +484,7 @@ private fun ProfileHeader(
 
         Spacer(modifier = Modifier.height(20.dp))
 
+        // Nút Đăng xuất
         SecondaryButton(
             text = if (isLoggingOut) "Đang đăng xuất..." else "Đăng xuất",
             onClick = onLogout,
@@ -480,6 +509,9 @@ private fun ProfileHeader(
     }
 }
 
+/**
+ * Cột hiển thị một chỉ số thống kê đặc thù của DineSplit (Bài đăng, Hóa đơn chia, Kết nối)
+ */
 @Composable
 private fun DineSplitStatColumn(
     modifier: Modifier = Modifier,
@@ -516,6 +548,9 @@ private fun DineSplitStatColumn(
     }
 }
 
+/**
+ * Một mục hiển thị số lượng thống kê cơ bản ở đầu trang (bài viết, người theo dõi...)
+ */
 @Composable
 private fun StatItem(
     label: String,
@@ -551,6 +586,9 @@ private fun ProfileOverview() {
     }
 }
 
+/**
+ * Thanh chuyển đổi Tab trong trang cá nhân: Bài đăng, Đã lưu, Được gắn thẻ.
+ */
 @Composable
 private fun ProfileTabs(
     selectedTab: Int,
@@ -575,6 +613,7 @@ private fun ProfileTabs(
                             .fillMaxHeight()
                             .clickable { onTabSelected(index) }
                             .drawBehind {
+                                // Vẽ đường line màu thương hiệu ở dưới tab được chọn
                                 if (isSelected) {
                                     drawLine(
                                         color = primaryColor,
@@ -599,6 +638,9 @@ private fun ProfileTabs(
     }
 }
 
+/**
+ * Grid hiển thị ảnh các bài viết (chia làm 3 cột trên một hàng).
+ */
 @Composable
 private fun PhotoGrid(
     posts: List<Post>,
@@ -620,7 +662,7 @@ private fun PhotoGrid(
                             .clickable { onPostClick(post.id) },
                     )
                 }
-                // Fill empty slots if last row has less than 3 photos
+                // Thêm khoảng trống nếu hàng cuối cùng có ít hơn 3 ảnh
                 repeat(3 - rowPosts.size) {
                     Spacer(modifier = Modifier.weight(1f))
                 }
@@ -631,6 +673,10 @@ private fun PhotoGrid(
 
 data class TabInfo(val label: String, val icon: ImageVector)
 
+/**
+ * Danh sách các hóa đơn chia tiền được gắn thẻ (Tagged Bills List).
+ * Hiển thị thông tin tổng tiền, phần tiền của người dùng và trạng thái thanh toán.
+ */
 @Composable
 private fun TaggedBillsList(
     bills: List<LinkedBillSummary>,
@@ -704,6 +750,7 @@ private fun TaggedBillsList(
                                 )
                             }
                             
+                            // Nhãn trạng thái: Đã thanh toán (Màu Secondary) / Chưa thanh toán (Màu Error)
                             Surface(
                                 color = if (summary.isSettled) {
                                     MaterialTheme.colorScheme.secondaryContainer
@@ -730,6 +777,7 @@ private fun TaggedBillsList(
                             horizontalArrangement = Arrangement.SpaceBetween,
                             verticalAlignment = Alignment.CenterVertically
                         ) {
+                            // Tổng số tiền trên hóa đơn
                             Column {
                                 Text(
                                     text = "Tổng hóa đơn",
@@ -742,6 +790,7 @@ private fun TaggedBillsList(
                                 )
                             }
                             
+                            // Số tiền người dùng này cần trả (hoặc đã ứng trước)
                             Column(horizontalAlignment = Alignment.End) {
                                 Text(
                                     text = if (summary.isIPayer) "Bạn đã trả trước" else "Phần của bạn",
@@ -768,6 +817,9 @@ private fun TaggedBillsList(
     }
 }
 
+/**
+ * Hàm hỗ trợ format tiền tệ theo VND (vi-VN)
+ */
 private fun formatMoney(amount: Double): String {
     val formatter = NumberFormat.getCurrencyInstance(Locale("vi", "VN"))
     return formatter.format(amount)

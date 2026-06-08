@@ -339,7 +339,7 @@ class AssistantViewModel(application: Application) : AndroidViewModel(applicatio
             "tim",
             "kiem",
             "ve",
-            "co",
+            "co",a
             "cua",
             "toi",
             "minh",
