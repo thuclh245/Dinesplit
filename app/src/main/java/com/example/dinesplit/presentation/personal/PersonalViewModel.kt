@@ -131,6 +131,12 @@ class PersonalViewModel(application: Application) : AndroidViewModel(application
         splitSyncJob?.cancel()
     }
 
+    /**
+     * Thêm một giao dịch thủ công mới. Nếu giao dịch đi kèm hình ảnh hóa đơn cục bộ,
+     * tự động tải ảnh lên Firebase Storage trước. Sau đó trừ/cộng số dư của ví liên kết (nếu có).
+     *
+     * @param transaction Đối tượng giao dịch [Transaction] cần thêm.
+     */
     fun addTransaction(transaction: Transaction) {
         viewModelScope.launch(Dispatchers.IO) {
             _uiState.value = _uiState.value.copy(isSaving = true, errorMessage = null)
@@ -164,6 +170,11 @@ class PersonalViewModel(application: Application) : AndroidViewModel(application
         }
     }
 
+    /**
+     * Thêm một giao dịch phát sinh từ hóa đơn chia tiền trong nhóm.
+     *
+     * @param bill Đối tượng hóa đơn nhóm [Bill].
+     */
     fun addSplitBillTransaction(bill: Bill) {
         viewModelScope.launch(Dispatchers.IO) {
             runCatching {
@@ -177,6 +188,12 @@ class PersonalViewModel(application: Application) : AndroidViewModel(application
         }
     }
 
+    /**
+     * Xóa giao dịch chia tiền thuộc nhóm khỏi dữ liệu chi tiêu cá nhân.
+     *
+     * @param groupId ID của nhóm chia tiền.
+     * @param billId ID của hóa đơn.
+     */
     fun removeSplitBillTransaction(
         groupId: String,
         billId: String,
@@ -192,6 +209,11 @@ class PersonalViewModel(application: Application) : AndroidViewModel(application
         }
     }
 
+    /**
+     * Đối soát và cập nhật lại giao dịch chia tiền từ hóa đơn nhóm.
+     *
+     * @param bill Đối tượng hóa đơn nhóm [Bill].
+     */
     fun reconcileSplitBillTransaction(bill: Bill) {
         viewModelScope.launch(Dispatchers.IO) {
             runCatching {
@@ -205,6 +227,13 @@ class PersonalViewModel(application: Application) : AndroidViewModel(application
         }
     }
 
+    /**
+     * Đồng bộ hóa thông tin một hóa đơn chia tiền của nhóm thành giao dịch chi tiêu cá nhân của người dùng hiện tại.
+     * Nếu số tiền chia nhỏ hơn hoặc bằng 0, hoặc hóa đơn không thuộc diện chi tiêu cá nhân của người dùng, giao dịch chia tiền sẽ bị xóa.
+     *
+     * @param bill Đối tượng hóa đơn nhóm [Bill].
+     * @param uid ID người dùng hiện tại.
+     */
     private suspend fun syncSplitBillTransactionForCurrentUser(
         bill: Bill,
         uid: String,
@@ -247,6 +276,11 @@ class PersonalViewModel(application: Application) : AndroidViewModel(application
         }
     }
 
+    /**
+     * Tải và đồng bộ hóa toàn bộ các hóa đơn nhóm thành giao dịch cá nhân một lần duy nhất cho người dùng.
+     *
+     * @param uid ID người dùng hiện tại.
+     */
     private suspend fun syncSplitBillsForCurrentUser(uid: String) {
         if (uid.isBlank()) return
 
@@ -259,6 +293,13 @@ class PersonalViewModel(application: Application) : AndroidViewModel(application
         syncSplitBillTransactionsForCurrentUser(uid = uid, bills = bills)
     }
 
+    /**
+     * Đồng bộ hóa hàng loạt danh sách hóa đơn nhóm thành giao dịch cá nhân.
+     * Đồng thời tự động dọn dẹp các giao dịch chia tiền cũ không còn tồn tại hoặc không còn hiệu lực.
+     *
+     * @param uid ID người dùng hiện tại.
+     * @param bills Danh sách các hóa đơn nhóm cần đồng bộ.
+     */
     private suspend fun syncSplitBillTransactionsForCurrentUser(
         uid: String,
         bills: List<Bill>,
@@ -283,6 +324,12 @@ class PersonalViewModel(application: Application) : AndroidViewModel(application
             .forEach { transaction -> repository.deleteTransaction(transaction.id) }
     }
 
+    /**
+     * Khởi động cơ chế lắng nghe thời gian thực (reactive stream listener) từ cơ sở dữ liệu các nhóm chia tiền.
+     * Bất kỳ khi nào có hóa đơn mới hoặc thay đổi chia tiền trong nhóm, hệ thống tự động chạy đồng bộ sang tài chính cá nhân.
+     *
+     * @param expectedUserId ID người dùng mong đợi để đồng bộ dữ liệu.
+     */
     private fun startSplitBillSync(expectedUserId: String) {
         if (expectedUserId.isBlank()) return
 
@@ -325,15 +372,37 @@ class PersonalViewModel(application: Application) : AndroidViewModel(application
             }
     }
 
+    /**
+     * Tạo ID duy nhất cho giao dịch chia tiền thuộc nhóm dựa trên ID nhóm và ID hóa đơn.
+     *
+     * @param groupId ID của nhóm chia tiền.
+     * @param billId ID của hóa đơn trong nhóm.
+     * @return ID giao dịch duy nhất dạng chuỗi.
+     */
     private fun splitTransactionId(
         groupId: String,
         billId: String,
     ): String = "split_${groupId}_$billId"
 
+    /**
+     * Hàm mở rộng kiểm tra xem hóa đơn chia tiền có được tính là chi phí cá nhân của người dùng hay không.
+     * Hóa đơn được tính là chi phí nếu người dùng hiện tại là người thanh toán (payerId) hoặc nằm trong danh sách thành viên tham gia thanh toán.
+     *
+     * @param uid ID người dùng cần kiểm tra.
+     * @return true nếu hóa đơn được tính là chi phí cá nhân, false nếu ngược lại.
+     */
     private fun Bill.shouldCountAsPersonalExpense(uid: String): Boolean {
         return uid == payerId || uid in paidMemberIds
     }
 
+    /**
+     * Thêm một danh mục tài chính mới (Thu nhập hoặc Chi tiêu).
+     *
+     * @param name Tên danh mục.
+     * @param description Mô tả danh mục.
+     * @param type Loại danh mục [TransactionType].
+     * @param isCustom true nếu danh mục do người dùng tự tạo, false nếu là mặc định.
+     */
     fun addCategory(
         name: String,
         description: String,
@@ -364,6 +433,17 @@ class PersonalViewModel(application: Application) : AndroidViewModel(application
         }
     }
 
+    /**
+     * Cập nhật thông tin của danh mục tài chính đã tồn tại. Nếu loại danh mục thay đổi (ví dụ từ chi tiêu sang thu nhập),
+     * tự động cập nhật lại loại của toàn bộ giao dịch đang tham chiếu đến danh mục này.
+     *
+     * @param categoryId ID của danh mục cần cập nhật.
+     * @param name Tên danh mục mới.
+     * @param description Mô tả mới.
+     * @param type Loại danh mục mới.
+     * @param isCustom Trạng thái tùy chỉnh mới.
+     * @param isActive Trạng thái hoạt động mới.
+     */
     fun updateCategory(
         categoryId: String,
         name: String,
@@ -411,6 +491,11 @@ class PersonalViewModel(application: Application) : AndroidViewModel(application
         }
     }
 
+    /**
+     * Xóa một danh mục tài chính.
+     *
+     * @param categoryId ID của danh mục cần xóa.
+     */
     fun deleteCategory(categoryId: String) {
         viewModelScope.launch(Dispatchers.IO) {
             _uiState.value = _uiState.value.copy(isSaving = true, errorMessage = null)
@@ -423,6 +508,9 @@ class PersonalViewModel(application: Application) : AndroidViewModel(application
         }
     }
 
+    /**
+     * Làm mới trạng thái tài chính của người dùng hiện tại một cách không đồng bộ.
+     */
     fun refreshState() {
         val userId = currentUserId()
         if (userId.isBlank()) {
@@ -440,6 +528,15 @@ class PersonalViewModel(application: Application) : AndroidViewModel(application
             }
     }
 
+    /**
+     * Thêm một nhắc nhở chi tiêu ngân sách mới. Đồng thời tự động tạo thông báo thông báo hệ thống về việc thiết lập nhắc nhở thành công.
+     *
+     * @param categoryId ID danh mục muốn đặt nhắc nhở (null nếu là nhắc nhở tổng ngân sách).
+     * @param categoryName Tên danh mục muốn đặt nhắc nhở.
+     * @param budgetAmount Hạn mức ngân sách tối đa.
+     * @param threshold Ngưỡng cảnh báo chi tiêu (ví dụ 0.8 cho 80%).
+     * @param reminderType Loại nhắc nhở [ReminderType] (Hằng ngày, hàng tuần, hàng tháng hoặc theo mốc).
+     */
     fun addSpendingReminder(
         categoryId: String?,
         categoryName: String,
@@ -478,6 +575,17 @@ class PersonalViewModel(application: Application) : AndroidViewModel(application
         }
     }
 
+    /**
+     * Thêm quy tắc giao dịch tự động lặp lại định kỳ mới.
+     *
+     * @param name Tên của quy tắc lặp lại.
+     * @param amount Số tiền của giao dịch.
+     * @param type Loại giao dịch [TransactionType] (Thu nhập hoặc Chi tiêu).
+     * @param categoryId ID danh mục.
+     * @param categoryName Tên danh mục.
+     * @param cadence Chu kỳ lặp lại [RecurringCadence] (Tuần hoặc Tháng).
+     * @param dayOfMonth Ngày cụ thể trong tháng để kích hoạt chạy.
+     */
     fun addRecurringRule(
         name: String,
         amount: Double,
@@ -514,6 +622,11 @@ class PersonalViewModel(application: Application) : AndroidViewModel(application
         }
     }
 
+    /**
+     * Xóa một quy tắc giao dịch lặp lại định kỳ.
+     *
+     * @param ruleId ID của quy tắc cần xóa.
+     */
     fun deleteRecurringRule(ruleId: String) {
         viewModelScope.launch(Dispatchers.IO) {
             runCatching {
@@ -523,6 +636,14 @@ class PersonalViewModel(application: Application) : AndroidViewModel(application
         }
     }
 
+    /**
+     * Thêm mục tiêu tiết kiệm mới cho người dùng.
+     *
+     * @param title Tiêu đề của mục tiêu.
+     * @param targetAmount Số tiền mục tiêu cần tiết kiệm đạt tới.
+     * @param currentAmount Số tiền tích lũy ban đầu có sẵn.
+     * @param categoryId ID của danh mục thu nhập/tiết kiệm liên kết để đồng bộ tự động (nếu có).
+     */
     fun addGoal(
         title: String,
         targetAmount: Double,
@@ -559,6 +680,15 @@ class PersonalViewModel(application: Application) : AndroidViewModel(application
         }
     }
 
+    /**
+     * Cập nhật thông tin của mục tiêu tiết kiệm đã có.
+     *
+     * @param goalId ID của mục tiêu cần sửa.
+     * @param title Tiêu đề mục tiêu mới.
+     * @param targetAmount Số tiền mục tiêu mới.
+     * @param currentAmount Số tiền đã tích lũy hiện tại mới.
+     * @param categoryId ID danh mục liên kết mới.
+     */
     fun updateGoal(
         goalId: String,
         title: String,
@@ -601,6 +731,11 @@ class PersonalViewModel(application: Application) : AndroidViewModel(application
         }
     }
 
+    /**
+     * Xóa một mục tiêu tiết kiệm.
+     *
+     * @param goalId ID của mục tiêu cần xóa.
+     */
     fun deleteGoal(goalId: String) {
         viewModelScope.launch(Dispatchers.IO) {
             runCatching {
@@ -610,6 +745,13 @@ class PersonalViewModel(application: Application) : AndroidViewModel(application
         }
     }
 
+    /**
+     * Tạo một ví cá nhân mới chứa tiền.
+     *
+     * @param name Tên ví.
+     * @param type Loại ví [WalletType] (Tiền mặt, Tài khoản ngân hàng, v.v.).
+     * @param balance Số dư khởi tạo trong ví.
+     */
     fun addWallet(
         name: String,
         type: WalletType,
@@ -638,6 +780,11 @@ class PersonalViewModel(application: Application) : AndroidViewModel(application
         }
     }
 
+    /**
+     * Xóa một ví cá nhân.
+     *
+     * @param walletId ID của ví cần xóa.
+     */
     fun deleteWallet(walletId: String) {
         viewModelScope.launch(Dispatchers.IO) {
             runCatching {
@@ -647,6 +794,11 @@ class PersonalViewModel(application: Application) : AndroidViewModel(application
         }
     }
 
+    /**
+     * Xóa một thiết lập nhắc nhở chi tiêu ngân sách.
+     *
+     * @param reminderId ID của nhắc nhở cần xóa.
+     */
     fun deleteSpendingReminder(reminderId: String) {
         viewModelScope.launch(Dispatchers.IO) {
             _uiState.value = _uiState.value.copy(isSaving = true, errorMessage = null)
@@ -659,6 +811,15 @@ class PersonalViewModel(application: Application) : AndroidViewModel(application
         }
     }
 
+    /**
+     * Hàm nội bộ thực hiện tải lại toàn bộ trạng thái tài chính từ cơ sở dữ liệu.
+     * Đồng bộ hóa hóa đơn nhóm (Split Bills), kiểm tra và tạo các giao dịch lặp lại định kỳ (Recurring),
+     * đồng bộ mục tiêu tiết kiệm, tính toán các biểu đồ phân tích và kiểm tra các nhắc nhở ngân sách.
+     *
+     * @param showLoading Cho phép hiển thị màn hình đang tải (loading spinner) trên UI.
+     * @param expectedUserId ID người dùng thực hiện cập nhật trạng thái.
+     * @param syncSplitBills Cho phép đồng bộ hóa dữ liệu chia tiền từ nhóm.
+     */
     private suspend fun refreshStateInternal(
         showLoading: Boolean = true,
         expectedUserId: String = currentUserId(),
@@ -811,6 +972,17 @@ class PersonalViewModel(application: Application) : AndroidViewModel(application
         }
     }
 
+    /**
+     * Xây dựng đối tượng trạng thái giao diện [PersonalUiState] dựa trên danh sách giao dịch, danh mục,
+     * quy tắc lặp lại, mục tiêu và danh sách ví hiện tại. Tính toán tổng thu, tổng chi và số dư.
+     *
+     * @param transactions Danh sách giao dịch cá nhân.
+     * @param categories Danh sách các danh mục.
+     * @param recurringRules Danh sách các quy tắc lặp lại định kỳ.
+     * @param goals Danh sách các mục tiêu tiết kiệm.
+     * @param wallets Danh sách các ví.
+     * @return Đối tượng [PersonalUiState] đã tính toán đầy đủ số dư.
+     */
     private fun buildUiState(
         transactions: List<Transaction>,
         categories: List<StoredCategory>,
@@ -843,6 +1015,16 @@ class PersonalViewModel(application: Application) : AndroidViewModel(application
         )
     }
 
+    /**
+     * Đồng bộ và sinh các giao dịch định kỳ đã đến hạn (catch-up runs).
+     * Kiểm tra các quy tắc lặp lại xem có lịch chạy nào nhỏ hơn thời gian hiện tại không,
+     * tự động tạo giao dịch cho mỗi chu kỳ bị trôi qua và cập nhật thời điểm chạy kế tiếp của quy tắc.
+     *
+     * @param recurringRules Danh sách các quy tắc lặp lại định kỳ.
+     * @param allTransactions Toàn bộ danh sách giao dịch cá nhân.
+     * @param expectedUserId ID người dùng kiểm tra đồng bộ.
+     * @return true nếu có giao dịch định kỳ mới được tạo, false nếu ngược lại.
+     */
     private suspend fun syncDueRecurringTransactions(
         recurringRules: List<RecurringRule>,
         allTransactions: List<Transaction>,
@@ -913,6 +1095,16 @@ class PersonalViewModel(application: Application) : AndroidViewModel(application
         return changed
     }
 
+    /**
+     * Đồng bộ hóa tiến độ của mục tiêu tiết kiệm dựa trên tổng số giao dịch thuộc danh mục liên kết trong tháng hiện tại.
+     * Cập nhật số tiền tiết kiệm hiện tại và chuyển trạng thái mục tiêu thành COMPLETED nếu đã tích lũy đủ.
+     *
+     * @param goals Danh sách mục tiêu tiết kiệm hiện có.
+     * @param transactions Danh sách giao dịch cá nhân.
+     * @param categories Danh sách danh mục.
+     * @param expectedUserId ID người dùng thực hiện kiểm tra đồng bộ.
+     * @return Danh sách mục tiêu tiết kiệm mới sau khi đã đồng bộ.
+     */
     private suspend fun syncLinkedGoalsWithTransactions(
         goals: List<PersonalGoal>,
         transactions: List<Transaction>,
@@ -968,6 +1160,13 @@ class PersonalViewModel(application: Application) : AndroidViewModel(application
         }
     }
 
+    /**
+     * Đồng bộ hóa số tiền đã chi tiêu thực tế với các thiết lập nhắc nhở chi tiêu ngân sách.
+     * Nếu chi tiêu vượt quá giới hạn và chưa cảnh báo hôm nay, hệ thống tạo và lưu một thông báo cảnh báo.
+     *
+     * @param allTransactions Toàn bộ danh sách giao dịch cá nhân.
+     * @param expectedUserId ID người dùng thực hiện kiểm tra đồng bộ.
+     */
     private suspend fun syncSpendingReminders(
         allTransactions: List<Transaction>,
         expectedUserId: String = currentUserId(),
@@ -1058,6 +1257,14 @@ class PersonalViewModel(application: Application) : AndroidViewModel(application
         }
     }
 
+    /**
+     * Hàm mở rộng kiểm tra xem giao dịch có nằm trong khung thời gian giới hạn của nhắc nhở hay không
+     * (Daily: cùng ngày, Weekly: cùng tuần, Monthly: cùng tháng, Milestone: sau ngày tạo nhắc nhở).
+     *
+     * @param reminder Đối tượng nhắc nhở [SpendingReminder].
+     * @param referenceMillis Thời điểm mốc so sánh (thường là thời gian hiện tại).
+     * @return true nếu giao dịch nằm trong khung thời gian hợp lệ, false nếu ngược lại.
+     */
     private fun Transaction.isInsideReminderWindow(
         reminder: SpendingReminder,
         referenceMillis: Long,
@@ -1079,6 +1286,12 @@ class PersonalViewModel(application: Application) : AndroidViewModel(application
         }
     }
 
+    /**
+     * Hàm mở rộng tải lên ảnh hóa đơn đính kèm nếu Uri của ảnh là cục bộ (Uri dạng content hoặc file).
+     * Sau khi tải lên thành công, cập nhật URL hình ảnh từ xa và chuyển nguồn gốc giao dịch thành RECEIPT.
+     *
+     * @return Đối tượng [Transaction] mới chứa URL đã tải lên hoặc chính đối tượng ban đầu nếu không cần tải lên.
+     */
     private suspend fun Transaction.withUploadedReceiptIfNeeded(): Transaction {
         val receiptValue = receiptImageUrl?.takeIf { it.isNotBlank() } ?: return this
         val receiptUri = receiptValue.toUri()
@@ -1092,6 +1305,11 @@ class PersonalViewModel(application: Application) : AndroidViewModel(application
         )
     }
 
+    /**
+     * Cập nhật trạng thái giao diện khi có lỗi xảy ra. Tắt trạng thái tải/lưu và đưa thông báo lỗi tới UI.
+     *
+     * @param throwable Lỗi xảy ra.
+     */
     private fun setError(throwable: Throwable) {
         _uiState.value =
             _uiState.value.copy(
@@ -1101,14 +1319,32 @@ class PersonalViewModel(application: Application) : AndroidViewModel(application
             )
     }
 
+    /**
+     * Lấy ID người dùng hiện tại đang đăng nhập.
+     *
+     * @return ID người dùng (UID) hoặc chuỗi rỗng nếu chưa đăng nhập.
+     */
     private fun currentUserId(): String {
         return FirebaseProviders.auth.currentUser?.uid.orEmpty()
     }
 
+    /**
+     * Kiểm tra xem ID người dùng truyền vào có khớp với ID người dùng hiện tại đang đăng nhập không.
+     *
+     * @param expectedUserId ID người dùng cần đối sánh.
+     * @return true nếu trùng khớp và không rỗng, false nếu ngược lại.
+     */
     private fun isCurrentUser(expectedUserId: String): Boolean {
         return expectedUserId.isNotBlank() && currentUserId() == expectedUserId
     }
 
+    /**
+     * Tự động sinh mã biểu tượng danh mục gồm 2 chữ cái viết hoa dựa trên tên danh mục.
+     * Ví dụ: "Ăn uống" -> "AU", "Du lịch bụi" -> "DL".
+     *
+     * @param name Tên của danh mục.
+     * @return Chuỗi gồm 2 chữ cái viết hoa.
+     */
     private fun iconCodeForName(name: String): String {
         val parts = name.trim().split(" ").filter { it.isNotBlank() }
         return when {
@@ -1118,6 +1354,12 @@ class PersonalViewModel(application: Application) : AndroidViewModel(application
         }
     }
 
+    /**
+     * Lấy thời điểm bắt đầu của tháng chứa ngày truyền vào (00:00:00.000 ngày 1).
+     *
+     * @param referenceMillis Thời điểm mốc tính bằng mili-giây.
+     * @return Thời điểm bắt đầu tháng tính bằng mili-giây.
+     */
     private fun startOfMonth(referenceMillis: Long): Long {
         return Calendar.getInstance().apply {
             timeInMillis = referenceMillis
@@ -1129,6 +1371,12 @@ class PersonalViewModel(application: Application) : AndroidViewModel(application
         }.timeInMillis
     }
 
+    /**
+     * Lấy thời điểm kết thúc của tháng chứa ngày truyền vào (23:59:59.999 ngày cuối tháng).
+     *
+     * @param referenceMillis Thời điểm mốc tính bằng mili-giây.
+     * @return Thời điểm cuối tháng tính bằng mili-giây.
+     */
     private fun endOfMonth(referenceMillis: Long): Long {
         return Calendar.getInstance().apply {
             timeInMillis = referenceMillis
@@ -1140,6 +1388,13 @@ class PersonalViewModel(application: Application) : AndroidViewModel(application
         }.timeInMillis
     }
 
+    /**
+     * Tính toán thời điểm chạy tiếp theo của một quy tắc lặp lại hàng tháng dựa trên ngày trong tháng.
+     * Nếu ngày chạy dự kiến đã qua so với hôm nay, ngày chạy sẽ tự động được dời sang tháng sau.
+     *
+     * @param dayOfMonth Ngày được chỉ định để chạy (1-31).
+     * @return Thời điểm chạy tiếp theo tính bằng mili-giây.
+     */
     private fun nextMonthlyRunAt(dayOfMonth: Int): Long {
         val nowCalendar = Calendar.getInstance()
         val calendar = Calendar.getInstance()
@@ -1165,6 +1420,13 @@ class PersonalViewModel(application: Application) : AndroidViewModel(application
         return calendar.timeInMillis
     }
 
+    /**
+     * Tính toán thời điểm chạy kế tiếp của quy tắc định kỳ dựa trên thời điểm chạy trước đó và chu kỳ (Tuần/Tháng).
+     *
+     * @param rule Quy tắc lặp lại [RecurringRule].
+     * @param previousRunAt Thời điểm chạy trước đó tính bằng mili-giây.
+     * @return Thời điểm chạy kế tiếp tính bằng mili-giây.
+     */
     private fun nextRecurringRunAt(
         rule: RecurringRule,
         previousRunAt: Long,
@@ -1195,11 +1457,23 @@ class PersonalViewModel(application: Application) : AndroidViewModel(application
         }
     }
 
+    /**
+     * Tạo ID duy nhất cho một giao dịch tự động lặp lại định kỳ.
+     *
+     * @param ruleId ID của quy tắc lặp lại.
+     * @param scheduledAt Thời gian lên lịch chạy giao dịch.
+     * @return ID giao dịch duy nhất dạng chuỗi.
+     */
     private fun recurringTransactionId(
         ruleId: String,
         scheduledAt: Long,
     ): String = "recurring_${ruleId}_$scheduledAt"
 
+    /**
+     * Lấy mốc thời gian kết thúc của tháng hiện tại (23:59:59.999 của ngày cuối cùng trong tháng này).
+     *
+     * @return Thời điểm cuối tháng tính bằng mili-giây.
+     */
     private fun endOfCurrentMonth(): Long {
         return Calendar.getInstance().apply {
             set(Calendar.DAY_OF_MONTH, getActualMaximum(Calendar.DAY_OF_MONTH))

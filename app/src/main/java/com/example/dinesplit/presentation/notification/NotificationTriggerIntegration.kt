@@ -13,20 +13,23 @@ import kotlinx.coroutines.SupervisorJob
 import kotlinx.coroutines.launch
 
 /**
- * Đối tượng trợ giúp để gửi các kích hoạt thông báo từ các mô-đun Feed / Split.
- * Gọi những cái này khi sự kiện xảy ra trong feed (like/comment) hoặc split (payment/bill).
+ * Điểm tích hợp dùng để các module khác phát sinh thông báo mà không cần biết chi tiết lưu trữ.
  *
- * Cách sử dụng từ mô-đun Feed khi người dùng thích một bài đăng:
- *   NotificationTriggerIntegration.triggerFeedNotification(
- *       context = this,  // từ Activity hoặc Fragment
- *       trigger = FeedNotificationTrigger(...),
- *       userId = recipientUserId
- *   )
+ * Các module Feed, Split và Personal chỉ cần tạo trigger domain rồi gọi object này. Integration
+ * sẽ chuyển trigger thành [Notification] thông qua [NotificationFactory] và lưu vào repository
+ * trên coroutine IO riêng để không chặn luồng UI.
  */
 @Suppress("unused")
 object NotificationTriggerIntegration {
     private val notificationScope = CoroutineScope(SupervisorJob() + Dispatchers.IO)
 
+    /**
+     * Tạo thông báo từ sự kiện Feed như thích, bình luận hoặc tương tác bài viết.
+     *
+     * @param context Context dùng để lấy repository từ [AppContainer].
+     * @param trigger Dữ liệu sự kiện feed cần chuyển thành thông báo.
+     * @param userId UID người nhận thông báo.
+     */
     fun triggerFeedNotification(
         context: Context,
         trigger: FeedNotificationTrigger,
@@ -37,6 +40,13 @@ object NotificationTriggerIntegration {
         }
     }
 
+    /**
+     * Tạo thông báo từ sự kiện Split như tạo bill, nhắc thanh toán hoặc hoàn tất thanh toán.
+     *
+     * @param context Context dùng để lấy repository từ [AppContainer].
+     * @param trigger Dữ liệu sự kiện split cần chuyển thành thông báo.
+     * @param userId UID người nhận thông báo.
+     */
     fun triggerSplitNotification(
         context: Context,
         trigger: SplitNotificationTrigger,
@@ -47,6 +57,13 @@ object NotificationTriggerIntegration {
         }
     }
 
+    /**
+     * Tạo thông báo từ sự kiện tài chính cá nhân như reminder vượt ngưỡng ngân sách.
+     *
+     * @param context Context dùng để lấy repository từ [AppContainer].
+     * @param trigger Dữ liệu sự kiện cá nhân cần chuyển thành thông báo.
+     * @param userId UID người nhận thông báo.
+     */
     fun triggerPersonalNotification(
         context: Context,
         trigger: PersonalNotificationTrigger,
@@ -57,6 +74,12 @@ object NotificationTriggerIntegration {
         }
     }
 
+    /**
+     * Thực thi việc ghi thông báo trên coroutine IO riêng.
+     *
+     * @param context Context nguồn gọi; hàm luôn chuyển sang application context để tránh giữ Activity.
+     * @param buildNotification Lambda tạo [Notification] tại thời điểm dispatch.
+     */
     private fun dispatchNotification(
         context: Context,
         buildNotification: () -> Notification,

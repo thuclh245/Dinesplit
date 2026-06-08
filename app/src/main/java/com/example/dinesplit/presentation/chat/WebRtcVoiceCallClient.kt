@@ -26,12 +26,30 @@ import org.webrtc.SessionDescription
 import kotlin.coroutines.resume
 import kotlin.coroutines.resumeWithException
 
+/**
+ * State tối thiểu của tầng audio WebRTC để UI hiển thị trạng thái cuộc gọi.
+ *
+ * @property isStarting true khi peer connection/audio track đang được khởi tạo.
+ * @property isConnected true khi ICE connection đã kết nối hoặc hoàn tất.
+ * @property errorMessage Lỗi audio/signaling cần hiển thị cho người dùng.
+ */
 data class VoiceCallAudioState(
     val isStarting: Boolean = false,
     val isConnected: Boolean = false,
     val errorMessage: String? = null,
 )
 
+/**
+ * Client quản lý kết nối âm thanh WebRTC cho một phiên gọi thoại DineSplit.
+ *
+ * Lớp này tạo local audio track, thiết lập PeerConnection, trao đổi SDP offer/answer và ICE
+ * candidate qua [ChatRepository], đồng thời đổi AudioManager sang chế độ thoại trong lúc gọi.
+ *
+ * @param context Context dùng để khởi tạo WebRTC và truy cập AudioManager.
+ * @property repository Repository dùng làm signaling channel qua Firestore.
+ * @property scope CoroutineScope của ViewModel call.
+ * @property onStateChanged Callback phát trạng thái audio mới cho UI.
+ */
 class WebRtcVoiceCallClient(
     context: Context,
     private val repository: ChatRepository,
@@ -55,6 +73,15 @@ class WebRtcVoiceCallClient(
     private var localAnswerCreated = false
     private var closed = false
 
+    /**
+     * Xử lý bản ghi [ChatCallSession] mới nhất từ Firestore.
+     *
+     * Hàm chỉ bắt đầu audio khi user thuộc cuộc gọi và trạng thái cho phép gọi. Nếu cuộc gọi đã
+     * kết thúc, client sẽ giải phóng toàn bộ tài nguyên cục bộ.
+     *
+     * @param call Phiên gọi mới nhất.
+     * @param userId UID người dùng hiện tại.
+     */
     fun handleCall(
         call: ChatCallSession,
         userId: String,
@@ -86,10 +113,18 @@ class WebRtcVoiceCallClient(
         }
     }
 
+    /**
+     * Bật/tắt local audio track.
+     *
+     * @param muted true nếu cần tắt micro.
+     */
     fun setMuted(muted: Boolean) {
         localAudioTrack?.setEnabled(!muted)
     }
 
+    /**
+     * Đóng hoàn toàn kết nối WebRTC và khôi phục AudioManager về mode ban đầu.
+     */
     fun close() {
         if (closed) return
         closed = true
@@ -111,6 +146,15 @@ class WebRtcVoiceCallClient(
         onStateChanged(VoiceCallAudioState())
     }
 
+    /**
+     * Đảm bảo PeerConnection cho đúng cuộc gọi đang tồn tại.
+     *
+     * Nếu chuyển sang call khác, client sẽ cleanup tài nguyên cũ rồi tạo factory, audio source,
+     * local audio track và PeerConnection mới.
+     *
+     * @param call Phiên gọi cần kết nối.
+     * @param userId UID người hiện tại.
+     */
     private fun ensurePeerConnection(
         call: ChatCallSession,
         userId: String,
@@ -149,6 +193,15 @@ class WebRtcVoiceCallClient(
         onStateChanged(VoiceCallAudioState(isStarting = true))
     }
 
+    /**
+     * Áp dụng quy trình signaling WebRTC dựa trên vai trò caller/callee.
+     *
+     * Caller tạo offer, lưu lên repository, chờ answer rồi add candidate của callee.
+     * Callee nhận offer, tạo answer, lưu lại rồi add candidate của caller.
+     *
+     * @param call Phiên gọi chứa SDP/candidate hiện tại.
+     * @param userId UID người hiện tại.
+     */
     private suspend fun applySignaling(
         call: ChatCallSession,
         userId: String,
@@ -187,6 +240,13 @@ class WebRtcVoiceCallClient(
         }
     }
 
+    /**
+     * Thêm các ICE candidate từ phía remote vào PeerConnection.
+     *
+     * Candidate đã thêm được lưu key để tránh add trùng khi Firestore phát lại snapshot.
+     *
+     * @param candidates Danh sách candidate từ caller hoặc callee.
+     */
     private fun addRemoteCandidates(candidates: List<ChatIceCandidate>) {
         val connection = peerConnection ?: return
         candidates
@@ -204,6 +264,13 @@ class WebRtcVoiceCallClient(
             }
     }
 
+    /**
+     * Tạo observer cho PeerConnection để cập nhật trạng thái ICE và đẩy local candidate lên repository.
+     *
+     * @param threadId ID thread dùng khi lưu candidate.
+     * @param callId ID phiên gọi dùng khi lưu candidate.
+     * @return [PeerConnection.Observer] gắn vào PeerConnection.
+     */
     private fun createObserver(
         threadId: String,
         callId: String,
@@ -270,6 +337,9 @@ class WebRtcVoiceCallClient(
         }
     }
 
+    /**
+     * Khởi tạo WebRTC global factory một lần và tạo [PeerConnectionFactory] cho client hiện tại.
+     */
     private fun initializeFactory() {
         if (!factoryInitialized) {
             synchronized(WebRtcVoiceCallClient::class.java) {
@@ -288,6 +358,9 @@ class WebRtcVoiceCallClient(
                 .createPeerConnectionFactory()
     }
 
+    /**
+     * Chuyển Android audio mode sang [AudioManager.MODE_IN_COMMUNICATION] để ưu tiên luồng thoại.
+     */
     private fun configureAudioMode() {
         val manager = appContext.getSystemService(Context.AUDIO_SERVICE) as? AudioManager ?: return
         audioManager = manager
@@ -295,6 +368,9 @@ class WebRtcVoiceCallClient(
         manager.mode = AudioManager.MODE_IN_COMMUNICATION
     }
 
+    /**
+     * Khôi phục audio mode ban đầu sau khi đóng cuộc gọi.
+     */
     private fun restoreAudioMode() {
         val manager = audioManager ?: return
         originalAudioMode?.let { manager.mode = it }
@@ -302,6 +378,9 @@ class WebRtcVoiceCallClient(
         originalAudioMode = null
     }
 
+    /**
+     * Cleanup tài nguyên hiện tại trước khi chuyển sang một cuộc gọi khác.
+     */
     private fun closeForRestart() {
         runCatching { localAudioTrack?.dispose() }
         runCatching { audioSource?.dispose() }
@@ -319,6 +398,11 @@ class WebRtcVoiceCallClient(
         localAnswerCreated = false
     }
 
+    /**
+     * Tạo SDP offer bằng callback WebRTC và chuyển sang suspend.
+     *
+     * @return [SessionDescription] dạng OFFER.
+     */
     private suspend fun PeerConnection.createOfferSuspend(): SessionDescription {
         return suspendCancellableCoroutine { continuation ->
             createOffer(
@@ -340,6 +424,11 @@ class WebRtcVoiceCallClient(
         }
     }
 
+    /**
+     * Tạo SDP answer bằng callback WebRTC và chuyển sang suspend.
+     *
+     * @return [SessionDescription] dạng ANSWER.
+     */
     private suspend fun PeerConnection.createAnswerSuspend(): SessionDescription {
         return suspendCancellableCoroutine { continuation ->
             createAnswer(
@@ -361,6 +450,11 @@ class WebRtcVoiceCallClient(
         }
     }
 
+    /**
+     * Set local SDP description bằng callback WebRTC và chuyển sang suspend.
+     *
+     * @param description SDP offer/answer phía local.
+     */
     private suspend fun PeerConnection.setLocalDescriptionSuspend(description: SessionDescription) {
         suspendCancellableCoroutine<Unit> { continuation ->
             setLocalDescription(
@@ -382,6 +476,11 @@ class WebRtcVoiceCallClient(
         }
     }
 
+    /**
+     * Set remote SDP description bằng callback WebRTC và chuyển sang suspend.
+     *
+     * @param description SDP offer/answer phía remote.
+     */
     private suspend fun PeerConnection.setRemoteDescriptionSuspend(description: SessionDescription) {
         suspendCancellableCoroutine<Unit> { continuation ->
             setRemoteDescription(
@@ -403,6 +502,11 @@ class WebRtcVoiceCallClient(
         }
     }
 
+    /**
+     * Tạo constraint cho cuộc gọi chỉ nhận audio, không nhận video.
+     *
+     * @return [MediaConstraints] dùng khi create offer/answer.
+     */
     private fun audioOnlyConstraints(): MediaConstraints {
         return MediaConstraints().apply {
             mandatory.add(MediaConstraints.KeyValuePair("OfferToReceiveAudio", "true"))

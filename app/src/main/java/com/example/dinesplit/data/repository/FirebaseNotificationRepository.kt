@@ -16,10 +16,23 @@ import kotlinx.coroutines.suspendCancellableCoroutine
 import kotlin.coroutines.resume
 import kotlin.coroutines.resumeWithException
 
+/**
+ * Repository lưu trữ và đọc thông báo người dùng bằng Firebase Firestore.
+ *
+ * Dữ liệu được tách theo collection `user_notifications/{uid}/notifications` để mỗi người dùng
+ * chỉ quan sát và thao tác với thông báo của chính họ.
+ *
+ * @property firestore Thực thể Firestore dùng để đọc/ghi thông báo.
+ */
 class FirebaseNotificationRepository private constructor(
     @Suppress("UNUSED_PARAMETER") context: Context,
     private val firestore: FirebaseFirestore = FirebaseProviders.firestore,
 ) : NotificationRepository {
+    /**
+     * Lắng nghe danh sách thông báo của người dùng hiện tại theo thời gian thực.
+     *
+     * @return [Flow] phát ra danh sách [Notification] đã lọc dữ liệu demo cũ và sắp xếp mới nhất trước.
+     */
     override fun observeNotifications(): Flow<List<Notification>> =
         callbackFlow {
             val uid = FirebaseProviders.auth.currentUser?.uid
@@ -54,6 +67,12 @@ class FirebaseNotificationRepository private constructor(
             awaitClose { registration.remove() }
         }
 
+    /**
+     * Tải danh sách thông báo một lần từ server Firestore.
+     *
+     * @return Danh sách thông báo hiện có của người dùng hiện tại.
+     * @throws IllegalStateException nếu người dùng chưa đăng nhập.
+     */
     override suspend fun getNotifications(): List<Notification> {
         val uid = requireCurrentUserId()
         val snapshot =
@@ -70,6 +89,12 @@ class FirebaseNotificationRepository private constructor(
         }.withoutLegacyDemoNotifications().orderedNewestFirst()
     }
 
+    /**
+     * Lưu một thông báo mới vào nhánh thông báo của người nhận.
+     *
+     * @param notification Thông báo cần lưu. Nếu [Notification.userId] rỗng, hàm dùng UID đăng nhập hiện tại.
+     * @throws IllegalStateException nếu không xác định được người dùng nhận thông báo.
+     */
     override suspend fun insertNotification(notification: Notification) {
         val uid = notification.userId.ifBlank { requireCurrentUserId() }
         firestore
@@ -81,14 +106,31 @@ class FirebaseNotificationRepository private constructor(
             .awaitFirebase()
     }
 
+    /**
+     * Đánh dấu một thông báo là đã đọc.
+     *
+     * @param notificationId ID thông báo cần cập nhật.
+     */
     override suspend fun markAsRead(notificationId: String) {
         updateReadState(notificationId = notificationId, isRead = true)
     }
 
+    /**
+     * Đánh dấu một thông báo là chưa đọc.
+     *
+     * @param notificationId ID thông báo cần cập nhật.
+     */
     override suspend fun markAsUnread(notificationId: String) {
         updateReadState(notificationId = notificationId, isRead = false)
     }
 
+    /**
+     * Cập nhật trạng thái đọc/chưa đọc và thời điểm cập nhật cuối cùng cho một thông báo.
+     *
+     * @param notificationId ID thông báo cần cập nhật.
+     * @param isRead Trạng thái đọc mới.
+     * @throws IllegalStateException nếu người dùng chưa đăng nhập.
+     */
     private suspend fun updateReadState(
         notificationId: String,
         isRead: Boolean,
@@ -108,11 +150,25 @@ class FirebaseNotificationRepository private constructor(
             .awaitFirebase()
     }
 
+    /**
+     * Lấy UID của người dùng đang đăng nhập.
+     *
+     * @return UID hiện tại.
+     * @throws IllegalStateException nếu Firebase Auth chưa có người dùng.
+     */
     private fun requireCurrentUserId(): String {
         return FirebaseProviders.auth.currentUser?.uid
             ?: throw IllegalStateException("Vui lòng đăng nhập để sử dụng thông báo")
     }
 
+    /**
+     * Đọc trường thời gian từ Firestore theo cách chịu lỗi.
+     *
+     * Firestore có thể trả về Timestamp hoặc Long tùy nguồn ghi dữ liệu, nên hàm thử cả hai kiểu.
+     *
+     * @param field Tên trường cần đọc.
+     * @return Thời điểm dạng epoch millis hoặc null nếu dữ liệu thiếu/không hợp lệ.
+     */
     private fun com.google.firebase.firestore.DocumentSnapshot.getLongDateSafe(field: String): Long? {
         return try {
             getTimestamp(field)?.toDate()?.time
@@ -125,6 +181,12 @@ class FirebaseNotificationRepository private constructor(
         }
     }
 
+    /**
+     * Chuyển một document Firestore thành domain model [Notification].
+     *
+     * @param uid UID fallback khi document không có trường `userId`.
+     * @return [Notification] hợp lệ hoặc null nếu thiếu trường bắt buộc.
+     */
     private fun com.google.firebase.firestore.DocumentSnapshot.toNotification(uid: String): Notification? {
         val type =
             getString(FIELD_TYPE)?.let { value ->
@@ -148,6 +210,11 @@ class FirebaseNotificationRepository private constructor(
         )
     }
 
+    /**
+     * Chuyển domain model [Notification] thành map dữ liệu để ghi lên Firestore.
+     *
+     * @return Map gồm các field ổn định, dùng chuỗi rỗng cho giá trị optional để tránh thiếu schema.
+     */
     private fun Notification.toFirestoreMap(): Map<String, Any> {
         return mapOf(
             FIELD_ID to id,
@@ -166,10 +233,20 @@ class FirebaseNotificationRepository private constructor(
         )
     }
 
+    /**
+     * Loại bỏ các thông báo demo cũ từng được seed trong giai đoạn phát triển.
+     *
+     * @return Danh sách thông báo thực tế sau khi lọc.
+     */
     private fun List<Notification>.withoutLegacyDemoNotifications(): List<Notification> {
         return filterNot { notification -> notification.isLegacyDemoNotification() }
     }
 
+    /**
+     * Sắp xếp thông báo theo thứ tự mới nhất trước, dùng `updatedAt` và `id` làm tiêu chí phụ.
+     *
+     * @return Danh sách thông báo đã sắp xếp.
+     */
     private fun List<Notification>.orderedNewestFirst(): List<Notification> {
         return sortedWith(
             compareByDescending<Notification> { it.createdAt }
@@ -178,6 +255,11 @@ class FirebaseNotificationRepository private constructor(
         )
     }
 
+    /**
+     * Nhận diện các bản ghi thông báo demo cũ để không hiển thị trong tài khoản thật.
+     *
+     * @return true nếu thông báo khớp mẫu dữ liệu demo cần ẩn.
+     */
     private fun Notification.isLegacyDemoNotification(): Boolean {
         return when {
             type == NotificationType.TRANSACTION_ALERT &&
@@ -201,6 +283,12 @@ class FirebaseNotificationRepository private constructor(
         }
     }
 
+    /**
+     * Chuyển callback của Firebase Task thành suspend function để dùng trong coroutine.
+     *
+     * @return Kết quả của [Task] khi thành công.
+     * @throws Exception lỗi Firebase tương ứng nếu task thất bại.
+     */
     private suspend fun <T> Task<T>.awaitFirebase(): T {
         return suspendCancellableCoroutine { continuation ->
             addOnCompleteListener { task ->
@@ -236,6 +324,12 @@ class FirebaseNotificationRepository private constructor(
         @Volatile
         private var INSTANCE: FirebaseNotificationRepository? = null
 
+        /**
+         * Lấy singleton repository cho tầng notification.
+         *
+         * @param context Context ứng dụng hoặc activity.
+         * @return Thực thể [FirebaseNotificationRepository] dùng chung.
+         */
         fun getInstance(context: Context): FirebaseNotificationRepository {
             return INSTANCE ?: synchronized(this) {
                 INSTANCE ?: FirebaseNotificationRepository(context.applicationContext).also { INSTANCE = it }

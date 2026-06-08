@@ -4,6 +4,11 @@ import com.example.dinesplit.domain.model.TransactionType
 import com.example.dinesplit.domain.model.ReminderType
 import com.example.dinesplit.domain.model.WalletType
 
+/**
+ * Lấy nhãn hiển thị tiếng Việt tương ứng cho loại giao dịch [TransactionType].
+ *
+ * @return Chuỗi mô tả tiếng Việt ("Thu nhập" hoặc "Chi tiêu").
+ */
 fun TransactionType.displayLabel(): String {
     return when (this) {
         TransactionType.INCOME -> "Thu nhập"
@@ -11,6 +16,11 @@ fun TransactionType.displayLabel(): String {
     }
 }
 
+/**
+ * Lấy nhãn hiển thị tiếng Việt tương ứng cho trạng thái an toàn chi tiêu [SafeToSpendStatus].
+ *
+ * @return Chuỗi mô tả tiếng Việt ("Khỏe mạnh", "Cần theo dõi" hoặc "Vượt ngưỡng").
+ */
 fun SafeToSpendStatus.displayLabel(): String {
     return when (this) {
         SafeToSpendStatus.HEALTHY -> "Khỏe mạnh"
@@ -19,6 +29,11 @@ fun SafeToSpendStatus.displayLabel(): String {
     }
 }
 
+/**
+ * Lấy nhãn hiển thị tiếng Việt tương ứng cho loại nhắc nhở [ReminderType].
+ *
+ * @return Chuỗi mô tả tần suất nhắc nhở tiếng Việt.
+ */
 fun ReminderType.displayLabel(): String {
     return when (this) {
         ReminderType.DAILY -> "Hằng ngày"
@@ -28,6 +43,11 @@ fun ReminderType.displayLabel(): String {
     }
 }
 
+/**
+ * Lấy nhãn hiển thị tiếng Việt tương ứng cho loại ví [WalletType].
+ *
+ * @return Chuỗi mô tả loại tài khoản ví tiếng Việt.
+ */
 fun WalletType.displayLabel(): String {
     return when (this) {
         WalletType.CASH -> "Tiền mặt"
@@ -37,6 +57,11 @@ fun WalletType.displayLabel(): String {
     }
 }
 
+/**
+ * Chuyển đổi loại giao dịch sang giá trị chuỗi dùng để cấu hình tham số định tuyến (navigation routing).
+ *
+ * @return Chuỗi route tương ứng ("income" hoặc "expense").
+ */
 fun TransactionType.toRouteValue(): String {
     return when (this) {
         TransactionType.INCOME -> "income"
@@ -44,6 +69,12 @@ fun TransactionType.toRouteValue(): String {
     }
 }
 
+/**
+ * Phân tích và tạo đối tượng [TransactionType] tương ứng từ giá trị chuỗi cấu hình route.
+ *
+ * @param value Chuỗi truyền vào từ route tham số.
+ * @return Đối tượng [TransactionType] tương ứng hoặc null nếu không thể ánh xạ.
+ */
 fun transactionTypeFromRoute(value: String?): TransactionType? {
     if (value.isNullOrBlank()) return null
     return when (value.trim().lowercase()) {

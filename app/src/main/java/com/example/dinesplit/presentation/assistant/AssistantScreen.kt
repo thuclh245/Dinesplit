@@ -84,12 +84,26 @@ import java.util.UUID
 import kotlin.math.roundToInt
 import kotlin.math.roundToLong
 
+/**
+ * Một dòng hội thoại trong Assistant.
+ *
+ * @property id ID ổn định để LazyColumn diff item.
+ * @property text Nội dung tin nhắn.
+ * @property fromUser true nếu message do người dùng gửi, false nếu là phản hồi của Assistant.
+ */
 data class AssistantMessage(
     val id: String = UUID.randomUUID().toString(),
     val text: String,
     val fromUser: Boolean,
 )
 
+/**
+ * State của màn hình Assistant.
+ *
+ * @property input Nội dung hiện tại trong ô nhập.
+ * @property messages Danh sách hội thoại đang hiển thị.
+ * @property isLoading true khi Assistant đang đọc dữ liệu repository và tạo câu trả lời.
+ */
 data class AssistantUiState(
     val input: String = "",
     val messages: List<AssistantMessage> =
@@ -104,6 +118,14 @@ data class AssistantUiState(
     val isLoading: Boolean = false,
 )
 
+/**
+ * Kết quả gợi ý địa điểm dùng trong câu trả lời về place/restaurant.
+ *
+ * @property name Tên địa điểm.
+ * @property category Mô tả/category ngắn.
+ * @property count Số lần xuất hiện hoặc điểm ưu tiên để sắp xếp.
+ * @property imageHint URL ảnh gợi ý nếu lấy được từ bài đăng.
+ */
 private data class PlaceAnswer(
     val name: String,
     val category: String,
@@ -111,12 +133,26 @@ private data class PlaceAnswer(
     val imageHint: String = "",
 )
 
+/**
+ * Ngữ cảnh bill đã được gắn thêm tên nhóm và map tên thành viên để format câu trả lời split.
+ *
+ * @property groupName Tên nhóm chứa bill.
+ * @property bill Bill cần phân tích.
+ * @property memberNames Map từ memberId sang tên hiển thị.
+ */
 private data class BillContext(
     val groupName: String,
     val bill: Bill,
     val memberNames: Map<String, String>,
 )
 
+/**
+ * ViewModel cho Assistant nội bộ của DineSplit.
+ *
+ * Assistant này không gọi LLM bên ngoài; nó dùng intent keyword matching, normalize tiếng Việt
+ * không dấu và truy vấn các repository sẵn có để trả lời về feed, story, profile, split bill,
+ * tài chính cá nhân, ví, goal và reminder.
+ */
 class AssistantViewModel(application: Application) : AndroidViewModel(application) {
     private val feedRepository = AppContainer.feedRepository()
     private val profileRepository = AppContainer.profileRepository(application)
@@ -127,10 +163,20 @@ class AssistantViewModel(application: Application) : AndroidViewModel(applicatio
     private val _uiState = MutableStateFlow(AssistantUiState())
     val uiState: StateFlow<AssistantUiState> = _uiState.asStateFlow()
 
+    /**
+     * Cập nhật text đang nhập trong ô hỏi Assistant.
+     *
+     * @param value Nội dung mới.
+     */
     fun onInputChange(value: String) {
         _uiState.update { it.copy(input = value) }
     }
 
+    /**
+     * Gửi câu hỏi hiện tại, thêm message người dùng vào hội thoại và tạo câu trả lời bất đồng bộ.
+     *
+     * @param text Nội dung câu hỏi; mặc định lấy từ [AssistantUiState.input].
+     */
     fun submit(text: String = _uiState.value.input) {
         val question = text.trim()
         if (question.isBlank() || _uiState.value.isLoading) return
@@ -159,6 +205,16 @@ class AssistantViewModel(application: Application) : AndroidViewModel(applicatio
         }
     }
 
+    /**
+     * Router intent chính của Assistant.
+     *
+     * Hàm normalize câu hỏi thành search key không dấu, tách token, lấy UID hiện tại rồi chuyển
+     * sang nhóm trả lời phù hợp theo thứ tự ưu tiên: help, group, split, personal, story, place,
+     * post, people, profile, general search.
+     *
+     * @param question Câu hỏi gốc của người dùng.
+     * @return Chuỗi phản hồi đã format để hiển thị trong bubble Assistant.
+     */
     private suspend fun answer(question: String): String {
         val key = question.toSearchKey()
         val tokens = key.tokens()
@@ -178,6 +234,11 @@ class AssistantViewModel(application: Application) : AndroidViewModel(applicatio
         }
     }
 
+    /**
+     * Trả lời hướng dẫn các nhóm câu hỏi Assistant đang hỗ trợ.
+     *
+     * @return Nội dung help nhiều dòng.
+     */
     private fun helpAnswer(): String {
         return listOf(
             "Bạn có thể hỏi theo các nhóm này:",
@@ -191,6 +252,17 @@ class AssistantViewModel(application: Application) : AndroidViewModel(applicatio
         ).joinToString("\n")
     }
 
+    /**
+     * Trả lời câu hỏi liên quan đến bài đăng.
+     *
+     * Hiện tại hàm chuyển sang [answerPostsFlexible] để dùng logic tìm kiếm rộng hơn; phần code
+     * phía sau được giữ lại như fallback/legacy nếu cần khôi phục cách search cũ.
+     *
+     * @param question Câu hỏi gốc.
+     * @param key Câu hỏi đã normalize.
+     * @param uid UID người hiện tại, có thể rỗng nếu chưa đăng nhập.
+     * @return Câu trả lời về bài đăng hoặc bài đã lưu.
+     */
     private suspend fun answerPosts(
         question: String,
         key: String,
@@ -232,6 +304,17 @@ class AssistantViewModel(application: Application) : AndroidViewModel(applicatio
             }
     }
 
+    /**
+     * Tìm và format bài đăng theo nhiều kiểu intent hơn cách search cơ bản.
+     *
+     * Hàm nhận diện bài đã lưu, bài của tôi, feed mới hoặc term tự do rồi lọc trên caption,
+     * tên tác giả và địa điểm.
+     *
+     * @param question Câu hỏi gốc.
+     * @param key Câu hỏi đã normalize.
+     * @param uid UID người hiện tại.
+     * @return Câu trả lời về tối đa 6 bài đăng phù hợp.
+     */
     private suspend fun answerPostsFlexible(
         question: String,
         key: String,
@@ -298,6 +381,14 @@ class AssistantViewModel(application: Application) : AndroidViewModel(applicatio
         return formatPostAnswer(title, posts, uid)
     }
 
+    /**
+     * Format danh sách bài đăng thành câu trả lời nhiều dòng.
+     *
+     * @param title Tiêu đề nhóm kết quả.
+     * @param posts Danh sách bài đăng cần hiển thị.
+     * @param uid UID người hiện tại để đổi tên tác giả thành "Bạn" nếu phù hợp.
+     * @return Chuỗi phản hồi đã format.
+     */
     private fun formatPostAnswer(
         title: String,
         posts: List<Post>,
@@ -312,6 +403,15 @@ class AssistantViewModel(application: Application) : AndroidViewModel(applicatio
         return "$title:\n$lines"
     }
 
+    /**
+     * Trả lời câu hỏi về story/tin đang hoạt động.
+     *
+     * Hàm hỗ trợ story của tôi, story đã thích, story mới và search story theo caption/tác giả/địa điểm.
+     *
+     * @param key Câu hỏi đã normalize.
+     * @param uid UID người hiện tại.
+     * @return Câu trả lời về story.
+     */
     private suspend fun answerStories(
         key: String,
         uid: String,
@@ -385,6 +485,14 @@ class AssistantViewModel(application: Application) : AndroidViewModel(applicatio
         return formatStoryAnswer(title, stories, uid)
     }
 
+    /**
+     * Format danh sách story thành câu trả lời nhiều dòng.
+     *
+     * @param title Tiêu đề nhóm kết quả.
+     * @param stories Danh sách story cần hiển thị.
+     * @param uid UID người hiện tại để đổi tên tác giả thành "Bạn" nếu phù hợp.
+     * @return Chuỗi phản hồi đã format.
+     */
     private fun formatStoryAnswer(
         title: String,
         stories: List<Story>,
@@ -403,6 +511,14 @@ class AssistantViewModel(application: Application) : AndroidViewModel(applicatio
         return "$title:\n$lines"
     }
 
+    /**
+     * Trả lời câu hỏi về bạn bè, người đang theo dõi hoặc tìm người dùng.
+     *
+     * @param question Câu hỏi gốc để lấy search term có dấu nếu cần.
+     * @param key Câu hỏi đã normalize.
+     * @param uid UID người hiện tại.
+     * @return Câu trả lời về quan hệ follow/friend hoặc kết quả profile search.
+     */
     private suspend fun answerPeople(
         question: String,
         key: String,
@@ -452,6 +568,16 @@ class AssistantViewModel(application: Application) : AndroidViewModel(applicatio
             }
     }
 
+    /**
+     * Trả lời câu hỏi về địa điểm/quán ăn.
+     *
+     * Nguồn dữ liệu chính là location trong các bài đăng feed; nếu thiếu dữ liệu thì trộn thêm
+     * danh sách gợi ý tĩnh để Assistant vẫn có phản hồi hữu ích.
+     *
+     * @param question Câu hỏi gốc.
+     * @param key Câu hỏi đã normalize.
+     * @return Câu trả lời về tối đa 6 địa điểm phù hợp.
+     */
     private suspend fun answerPlaces(
         question: String,
         key: String,
@@ -499,6 +625,15 @@ class AssistantViewModel(application: Application) : AndroidViewModel(applicatio
             }
     }
 
+    /**
+     * Trả lời câu hỏi về các nhóm chia tiền hiện tại của người dùng.
+     *
+     * Với mỗi nhóm, hàm tải bills, tính số tiền người dùng cần trả/được nợ và số bill chưa settled.
+     *
+     * @param uid UID người hiện tại.
+     * @param key Câu hỏi đã normalize, dùng để lọc theo tên nhóm nếu có term.
+     * @return Tóm tắt nhóm hoặc thông báo không có nhóm phù hợp.
+     */
     private suspend fun answerGroups(
         uid: String,
         key: String,
@@ -550,6 +685,16 @@ class AssistantViewModel(application: Application) : AndroidViewModel(applicatio
         return "Nhóm hiện tại của bạn:\n$lines"
     }
 
+    /**
+     * Trả lời câu hỏi về split bill và các khoản nợ.
+     *
+     * Hàm tính tổng balance bằng [SplitCalculationEngine], sau đó tách hai hướng:
+     * người dùng còn nợ người khác và người khác còn nợ người dùng.
+     *
+     * @param uid UID người hiện tại.
+     * @param key Câu hỏi đã normalize để phân biệt "tôi nợ ai" và "ai nợ tôi".
+     * @return Tóm tắt split hoặc danh sách khoản cần trả/được nhận.
+     */
     private suspend fun answerSplit(
         uid: String,
         key: String,
@@ -614,6 +759,16 @@ class AssistantViewModel(application: Application) : AndroidViewModel(applicatio
         }
     }
 
+    /**
+     * Trả lời câu hỏi về tài chính cá nhân: giao dịch, ví, goal, reminder và recurring rule.
+     *
+     * Nếu intent nhắm vào một nhóm cụ thể, hàm trả lời nhóm đó. Nếu không, hàm tổng hợp thu/chi
+     * trong tháng hiện tại và các category chi tiêu lớn nhất.
+     *
+     * @param uid UID người hiện tại.
+     * @param key Câu hỏi đã normalize.
+     * @return Câu trả lời tài chính cá nhân.
+     */
     private suspend fun answerPersonal(
         uid: String,
         key: String,
@@ -685,6 +840,12 @@ class AssistantViewModel(application: Application) : AndroidViewModel(applicatio
         }
     }
 
+    /**
+     * Trả lời câu hỏi về profile của người dùng hiện tại.
+     *
+     * @param uid UID người hiện tại.
+     * @return Tóm tắt tên, username, số bài viết, follow và bio.
+     */
     private suspend fun answerProfile(uid: String): String {
         if (uid.isBlank()) return "Bạn cần đăng nhập để xem profile."
         val profile = profileRepository.getProfile(uid) ?: return "Mình chưa tìm thấy profile của bạn."
@@ -698,6 +859,16 @@ class AssistantViewModel(application: Application) : AndroidViewModel(applicatio
         ).joinToString("\n")
     }
 
+    /**
+     * Fallback khi Assistant chưa xác định chắc intent.
+     *
+     * Hàm thử tìm theo nhiều miền dữ liệu: post, story, people và places rồi trả về một cụm
+     * kết quả liên quan.
+     *
+     * @param question Câu hỏi gốc.
+     * @param uid UID người hiện tại.
+     * @return Câu trả lời tổng hợp.
+     */
     private suspend fun answerGeneralSearch(
         question: String,
         uid: String,
@@ -728,6 +899,11 @@ class AssistantViewModel(application: Application) : AndroidViewModel(applicatio
         }
     }
 
+    /**
+     * Tải toàn bộ bill hiện có kèm tên nhóm và tên thành viên để trả lời split.
+     *
+     * @return Danh sách [BillContext] từ tất cả nhóm người dùng tham gia.
+     */
     private suspend fun loadBillContexts(): List<BillContext> {
         val groups = splitRepository.getGroups().first()
         return groups.flatMap { group ->
@@ -746,10 +922,21 @@ class AssistantViewModel(application: Application) : AndroidViewModel(applicatio
         }
     }
 
+    /**
+     * Lấy tên hiển thị của một thành viên trong context bill.
+     *
+     * @param memberId ID thành viên.
+     * @return Tên hiển thị hoặc 8 ký tự đầu của ID nếu thiếu tên.
+     */
     private fun BillContext.nameOf(memberId: String): String {
         return memberNames[memberId]?.takeIf { it.isNotBlank() } ?: memberId.take(8)
     }
 
+    /**
+     * Danh sách gợi ý địa điểm fallback khi dữ liệu feed chưa đủ.
+     *
+     * @return Danh sách [PlaceAnswer] tĩnh.
+     */
     private fun suggestedPlaces(): List<PlaceAnswer> {
         return listOf(
             PlaceAnswer("Pizza 4P's Tràng Tiền", "Pizza & Italian", 0),
@@ -760,6 +947,9 @@ class AssistantViewModel(application: Application) : AndroidViewModel(applicatio
         )
     }
 
+    /**
+     * Factory tạo [AssistantViewModel] với [Application] từ Compose.
+     */
     class Factory(private val application: Application) : ViewModelProvider.Factory {
         @Suppress("UNCHECKED_CAST")
         override fun <T : ViewModel> create(modelClass: Class<T>): T {
@@ -768,6 +958,14 @@ class AssistantViewModel(application: Application) : AndroidViewModel(applicatio
     }
 }
 
+/**
+ * Entry point UI của màn hình Assistant.
+ *
+ * Composable này dựng layout hội thoại, quick prompt và input bar; toàn bộ xử lý câu hỏi nằm trong
+ * [AssistantViewModel].
+ *
+ * @param onBack Callback điều hướng quay lại.
+ */
 @Composable
 fun AssistantScreen(onBack: () -> Unit = {}) {
     val application = LocalContext.current.applicationContext as Application
@@ -835,6 +1033,11 @@ fun AssistantScreen(onBack: () -> Unit = {}) {
     }
 }
 
+/**
+ * Bubble hiển thị một message người dùng hoặc Assistant.
+ *
+ * @param message Message cần render.
+ */
 @Composable
 private fun AssistantBubble(message: AssistantMessage) {
     val colorScheme = MaterialTheme.colorScheme
@@ -862,6 +1065,12 @@ private fun AssistantBubble(message: AssistantMessage) {
     }
 }
 
+/**
+ * Danh sách prompt nhanh để người dùng gửi một câu hỏi mẫu.
+ *
+ * @param enabled true nếu Assistant không đang xử lý câu trước đó.
+ * @param onPromptClick Callback gửi prompt được chọn.
+ */
 @Composable
 private fun AssistantQuickPrompts(
     enabled: Boolean,
@@ -916,6 +1125,14 @@ private fun AssistantQuickPrompts(
     }
 }
 
+/**
+ * Thanh nhập câu hỏi ở cuối màn hình Assistant.
+ *
+ * @param input Nội dung đang nhập.
+ * @param enabled true nếu cho phép nhập/gửi.
+ * @param onInputChange Callback khi text thay đổi.
+ * @param onSubmit Callback gửi câu hỏi.
+ */
 @Composable
 private fun AssistantInputBar(
     input: String,
@@ -966,16 +1183,32 @@ private fun AssistantInputBar(
     }
 }
 
+/**
+ * Nhận diện câu hỏi thuộc miền split/bill/debt.
+ *
+ * @param tokens Danh sách token đã normalize.
+ * @return true nếu câu hỏi nói về hóa đơn, thanh toán hoặc nợ.
+ */
 private fun String.isSplitQuestion(tokens: List<String>): Boolean {
     return hasAny("bill", "hoa don", "split", "thanh toan", "qr", "can tra", "phai tra", "ai no", "no toi") ||
         "no" in tokens ||
         "tra" in tokens
 }
 
+/**
+ * Nhận diện câu hỏi về nhóm chia tiền.
+ *
+ * @return true nếu chuỗi chứa keyword nhóm/group.
+ */
 private fun String.isGroupQuestion(): Boolean {
     return hasAny("nhom", "group", "nhom hien tai", "nhom cua toi", "group hien tai", "cac nhom")
 }
 
+/**
+ * Nhận diện câu hỏi về tài chính cá nhân.
+ *
+ * @return true nếu chuỗi chứa keyword ví, chi tiêu, goal, reminder hoặc recurring.
+ */
 private fun String.isPersonalQuestion(): Boolean {
     return hasAny(
         "vi",
@@ -993,10 +1226,21 @@ private fun String.isPersonalQuestion(): Boolean {
     )
 }
 
+/**
+ * Nhận diện câu hỏi về địa điểm/quán ăn.
+ *
+ * @return true nếu chuỗi chứa keyword place/restaurant.
+ */
 private fun String.isPlaceQuestion(): Boolean {
     return hasAny("dia diem", "noi bat", "quan", "nha hang", "cafe", "restaurant", "place", "an o dau")
 }
 
+/**
+ * Nhận diện câu hỏi về story mà không nhầm với cụm "thông tin".
+ *
+ * @param tokens Danh sách token đã normalize.
+ * @return true nếu câu hỏi nhắm vào story/tin.
+ */
 private fun String.isStoryQuestion(tokens: List<String>): Boolean {
     if (hasAny("story", "stories")) return true
     if ("tin" !in tokens) return false
@@ -1028,22 +1272,49 @@ private fun String.isStoryQuestion(tokens: List<String>): Boolean {
         )
 }
 
+/**
+ * Nhận diện câu hỏi về bài đăng/feed.
+ *
+ * @return true nếu chuỗi chứa keyword post/caption/saved.
+ */
 private fun String.isPostQuestion(): Boolean {
     return hasAny("bai dang", "bai viet", "post", "caption", "bai luu", "da luu", "saved")
 }
 
+/**
+ * Nhận diện câu hỏi về bạn bè/người dùng/follow.
+ *
+ * @return true nếu chuỗi chứa keyword people/user/follow.
+ */
 private fun String.isPeopleQuestion(): Boolean {
     return hasAny("ban be", "nguoi dung", "tim nguoi", "user", "follow", "theo doi", "followers", "following")
 }
 
+/**
+ * Kiểm tra chuỗi đã normalize có chứa bất kỳ keyword nào không.
+ *
+ * @param needles Danh sách keyword có thể có dấu hoặc không dấu.
+ * @return true nếu có ít nhất một keyword xuất hiện.
+ */
 private fun String.hasAny(vararg needles: String): Boolean {
     return needles.any { contains(it.toSearchKey()) }
 }
 
+/**
+ * Tách search key thành token theo khoảng trắng.
+ *
+ * @return Danh sách token khác rỗng.
+ */
 private fun String.tokens(): List<String> {
     return split(" ").filter { it.isNotBlank() }
 }
 
+/**
+ * Loại bỏ các stop word khỏi search key để lấy term intent còn lại.
+ *
+ * @param stopWords Các từ/cụm từ cần bỏ qua.
+ * @return Search key đã loại stop word.
+ */
 private fun String.intentKeyWithout(vararg stopWords: String): String {
     val stops = stopWords.flatMap { it.toSearchKey().tokens() }.toSet()
     return tokens()
@@ -1052,6 +1323,11 @@ private fun String.intentKeyWithout(vararg stopWords: String): String {
         .trim()
 }
 
+/**
+ * Normalize text để search không phân biệt hoa/thường, dấu tiếng Việt và ký tự đặc biệt.
+ *
+ * @return Chuỗi lowercase, không dấu, chỉ còn chữ/số/khoảng trắng đơn.
+ */
 private fun String.toSearchKey(): String {
     val decomposed = Normalizer.normalize(lowercase(Locale.ROOT), Normalizer.Form.NFD)
     return decomposed
@@ -1062,6 +1338,12 @@ private fun String.toSearchKey(): String {
         .replace(Regex("\\s+"), " ")
 }
 
+/**
+ * Lấy cụm từ tìm kiếm từ câu gốc bằng cách bỏ stop word nhưng giữ lại chữ có dấu nếu có.
+ *
+ * @param stopWords Các từ/cụm từ cần bỏ qua.
+ * @return Term còn lại để truyền vào repository search.
+ */
 private fun String.intentTerm(vararg stopWords: String): String {
     val normalizedStops = stopWords.map { it.toSearchKey() }.toSet()
     val words = trim().split(Regex("\\s+"))
@@ -1071,6 +1353,12 @@ private fun String.intentTerm(vararg stopWords: String): String {
         .trim()
 }
 
+/**
+ * Lọc bài đăng theo caption, tên tác giả hoặc location.
+ *
+ * @param term Cụm từ tìm kiếm.
+ * @return Danh sách [Post] khớp term.
+ */
 private fun List<Post>.filterByPostTerm(term: String): List<Post> {
     val key = term.toSearchKey()
     return filter { post ->
@@ -1080,6 +1368,12 @@ private fun List<Post>.filterByPostTerm(term: String): List<Post> {
     }
 }
 
+/**
+ * Lọc story theo caption, tên tác giả hoặc location.
+ *
+ * @param term Cụm từ tìm kiếm.
+ * @return Danh sách [Story] khớp term.
+ */
 private fun List<Story>.filterByStoryTerm(term: String): List<Story> {
     val key = term.toSearchKey()
     if (key.isBlank()) return this
@@ -1090,6 +1384,12 @@ private fun List<Story>.filterByStoryTerm(term: String): List<Story> {
     }
 }
 
+/**
+ * Rút gọn text để hiển thị trong câu trả lời Assistant.
+ *
+ * @param maxLength Độ dài tối đa.
+ * @return Text một dòng, có dấu `...` nếu bị cắt.
+ */
 private fun String.previewText(maxLength: Int = 72): String {
     val clean = replace("\n", " ").trim()
     return when {
@@ -1099,6 +1399,11 @@ private fun String.previewText(maxLength: Int = 72): String {
     }
 }
 
+/**
+ * Lọc giao dịch thuộc tháng hiện tại theo thời gian thiết bị.
+ *
+ * @return Danh sách giao dịch trong cùng năm/tháng hiện tại.
+ */
 private fun List<Transaction>.filterCurrentMonth(): List<Transaction> {
     val now = Calendar.getInstance()
     return filter { transaction ->
@@ -1108,11 +1413,22 @@ private fun List<Transaction>.filterCurrentMonth(): List<Transaction> {
     }
 }
 
+/**
+ * Format số tiền theo locale Việt Nam.
+ *
+ * @param amount Số tiền cần format.
+ * @return Chuỗi dạng `x VND`.
+ */
 private fun formatMoney(amount: Double): String {
     val formatter = NumberFormat.getNumberInstance(Locale("vi", "VN"))
     return "${formatter.format(amount.roundToLong())} VND"
 }
 
+/**
+ * Chuyển [GoalStatus] sang nhãn tiếng Việt.
+ *
+ * @return Nhãn trạng thái goal.
+ */
 private fun GoalStatus.toVietnamese(): String {
     return when (this) {
         GoalStatus.ACTIVE -> "đang chạy"
@@ -1121,6 +1437,11 @@ private fun GoalStatus.toVietnamese(): String {
     }
 }
 
+/**
+ * Chuyển [ReminderType] sang nhãn tiếng Việt.
+ *
+ * @return Nhãn loại reminder.
+ */
 private fun ReminderType.toVietnamese(): String {
     return when (this) {
         ReminderType.DAILY -> "hằng ngày"
@@ -1130,11 +1451,22 @@ private fun ReminderType.toVietnamese(): String {
     }
 }
 
+/**
+ * Tính phần trăm hoàn thành mục tiêu tiết kiệm.
+ *
+ * @return Phần trăm nguyên, giới hạn từ 0 đến 999.
+ */
 private fun com.example.dinesplit.domain.model.PersonalGoal.progressPercent(): Int {
     if (targetAmount <= 0.0) return 0
     return ((currentAmount / targetAmount) * 100).roundToInt().coerceIn(0, 999)
 }
 
+/**
+ * Format epoch millis thành ngày `dd/MM/yyyy`.
+ *
+ * @param epochMillis Thời điểm cần format.
+ * @return Chuỗi ngày hoặc thông báo chưa đặt nếu giá trị không hợp lệ.
+ */
 @Suppress("unused")
 private fun formatDate(epochMillis: Long): String {
     if (epochMillis <= 0L) return "Chưa đặt"

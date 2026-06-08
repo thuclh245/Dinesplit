@@ -28,10 +28,25 @@ import java.util.UUID
 import kotlin.coroutines.resume
 import kotlin.coroutines.resumeWithException
 
+/**
+ * Triển khai [ChatRepository] bằng Firestore và Firebase Storage.
+ *
+ * Firestore lưu thread, messages và signaling data của cuộc gọi; Storage lưu media ảnh/video
+ * trước khi message được ghi vào thread.
+ *
+ * @property context Context ứng dụng dùng để đọc MIME type khi upload media.
+ * @property firestore Thực thể Firestore dùng cho chat realtime.
+ */
 class FirebaseChatRepository private constructor(
     private val context: Context,
     private val firestore: FirebaseFirestore = FirebaseProviders.firestore,
 ) : ChatRepository {
+    /**
+     * Quan sát danh sách thread mà người dùng hiện tại tham gia.
+     *
+     * @param userId UID người dùng cần lấy thread.
+     * @return [Flow] phát danh sách thread sắp xếp theo tin nhắn/cập nhật mới nhất.
+     */
     override fun observeThreads(userId: String): Flow<List<ChatThread>> =
         callbackFlow {
             val listener =
@@ -57,6 +72,12 @@ class FirebaseChatRepository private constructor(
             awaitClose { listener.remove() }
         }
 
+    /**
+     * Quan sát metadata của một thread cụ thể.
+     *
+     * @param threadId ID thread cần theo dõi.
+     * @return [Flow] phát [ChatThread] mới nhất hoặc null nếu document không tồn tại.
+     */
     override fun observeThread(threadId: String): Flow<ChatThread?> =
         callbackFlow {
             val listener =
@@ -72,6 +93,13 @@ class FirebaseChatRepository private constructor(
             awaitClose { listener.remove() }
         }
 
+    /**
+     * Quan sát tin nhắn của một thread theo thời gian tăng dần.
+     *
+     * @param threadId ID thread cần đọc message.
+     * @param currentUserId UID người hiện tại, dùng để lọc message đã xóa phía mình.
+     * @return [Flow] phát danh sách [ChatMessage].
+     */
     override fun observeMessages(
         threadId: String,
         currentUserId: String,
@@ -95,6 +123,13 @@ class FirebaseChatRepository private constructor(
             awaitClose { listener.remove() }
         }
 
+    /**
+     * Quan sát document cuộc gọi thoại trong một thread.
+     *
+     * @param threadId ID thread chứa cuộc gọi.
+     * @param callId ID cuộc gọi.
+     * @return [Flow] phát [ChatCallSession] mới nhất hoặc null nếu không có.
+     */
     override fun observeCall(
         threadId: String,
         callId: String,
@@ -113,6 +148,16 @@ class FirebaseChatRepository private constructor(
             awaitClose { listener.remove() }
         }
 
+    /**
+     * Lấy hoặc tạo thread chat một-một dựa trên hai UID đã sort.
+     *
+     * Nếu thread đã tồn tại nhưng thiếu `participantLookup`, hàm bổ sung field đó để query
+     * danh sách thread theo người dùng hoạt động ổn định.
+     *
+     * @param currentUser Hồ sơ người dùng hiện tại.
+     * @param otherUser Hồ sơ người dùng còn lại.
+     * @return Thread đã tồn tại hoặc vừa tạo mới.
+     */
     override suspend fun getOrCreateThread(
         currentUser: UserProfile,
         otherUser: UserProfile,
@@ -155,6 +200,13 @@ class FirebaseChatRepository private constructor(
         return thread
     }
 
+    /**
+     * Gửi tin nhắn text sau khi trim và bỏ qua nội dung rỗng.
+     *
+     * @param thread Thread đích.
+     * @param sender Người gửi.
+     * @param text Nội dung tin nhắn.
+     */
     override suspend fun sendText(
         thread: ChatThread,
         sender: UserProfile,
@@ -171,6 +223,13 @@ class FirebaseChatRepository private constructor(
         )
     }
 
+    /**
+     * Gửi sticker vào thread.
+     *
+     * @param thread Thread đích.
+     * @param sender Người gửi.
+     * @param sticker Mã/ký hiệu sticker.
+     */
     override suspend fun sendSticker(
         thread: ChatThread,
         sender: UserProfile,
@@ -186,6 +245,14 @@ class FirebaseChatRepository private constructor(
         )
     }
 
+    /**
+     * Upload media ảnh/video lên Firebase Storage rồi ghi message media vào Firestore.
+     *
+     * @param thread Thread đích.
+     * @param sender Người gửi media.
+     * @param uri Uri cục bộ của ảnh/video.
+     * @param mediaType Loại media mong muốn, mặc định ngoài video sẽ được xử lý như ảnh.
+     */
     override suspend fun sendMedia(
         thread: ChatThread,
         sender: UserProfile,
@@ -218,6 +285,13 @@ class FirebaseChatRepository private constructor(
         )
     }
 
+    /**
+     * Cập nhật trạng thái đang gõ của một người dùng trong thread.
+     *
+     * @param threadId ID thread.
+     * @param userId UID người đang gõ.
+     * @param isTyping true nếu đang nhập nội dung.
+     */
     override suspend fun setTyping(
         threadId: String,
         userId: String,
@@ -234,6 +308,12 @@ class FirebaseChatRepository private constructor(
             .awaitFirebase()
     }
 
+    /**
+     * Đánh dấu các tin nhắn gần nhất là đã giao/đã đọc và reset số unread của người dùng.
+     *
+     * @param threadId ID thread.
+     * @param userId UID người đọc.
+     */
     override suspend fun markThreadRead(
         threadId: String,
         userId: String,
@@ -271,6 +351,14 @@ class FirebaseChatRepository private constructor(
         batch.commit().awaitFirebase()
     }
 
+    /**
+     * Thêm, thay đổi hoặc xóa reaction của người dùng trên một tin nhắn.
+     *
+     * @param threadId ID thread.
+     * @param messageId ID tin nhắn.
+     * @param userId UID người reaction.
+     * @param reaction Giá trị reaction mới; null/rỗng sẽ xóa reaction.
+     */
     override suspend fun setReaction(
         threadId: String,
         messageId: String,
@@ -289,6 +377,14 @@ class FirebaseChatRepository private constructor(
             .awaitFirebase()
     }
 
+    /**
+     * Thu hồi tin nhắn cho toàn bộ thread bằng cách xóa nội dung hiển thị và đánh dấu recalled.
+     *
+     * @param threadId ID thread.
+     * @param messageId ID tin nhắn.
+     * @param userId UID người yêu cầu thu hồi; phải là sender.
+     * @throws IllegalArgumentException nếu người yêu cầu không phải người gửi.
+     */
     override suspend fun recallMessage(
         threadId: String,
         messageId: String,
@@ -310,6 +406,13 @@ class FirebaseChatRepository private constructor(
         ).awaitFirebase()
     }
 
+    /**
+     * Xóa tin nhắn ở phía người dùng hiện tại bằng cách thêm UID vào `deletedFor`.
+     *
+     * @param threadId ID thread.
+     * @param messageId ID tin nhắn.
+     * @param userId UID người xóa.
+     */
     override suspend fun deleteMessageForMe(
         threadId: String,
         messageId: String,
@@ -326,6 +429,14 @@ class FirebaseChatRepository private constructor(
             .awaitFirebase()
     }
 
+    /**
+     * Tạo phiên gọi thoại mới, ghi một message loại CALL và gắn `activeCallId` vào thread.
+     *
+     * @param thread Thread chứa cuộc gọi.
+     * @param caller Người gọi.
+     * @param callee Người nhận cuộc gọi.
+     * @return [ChatCallSession] mới ở trạng thái [ChatCallStatus.RINGING].
+     */
     override suspend fun startVoiceCall(
         thread: ChatThread,
         caller: UserProfile,
@@ -371,6 +482,13 @@ class FirebaseChatRepository private constructor(
         return call
     }
 
+    /**
+     * Chấp nhận cuộc gọi và ghi thời điểm trả lời.
+     *
+     * @param threadId ID thread.
+     * @param callId ID cuộc gọi.
+     * @param userId UID người chấp nhận.
+     */
     override suspend fun acceptCall(
         threadId: String,
         callId: String,
@@ -379,6 +497,13 @@ class FirebaseChatRepository private constructor(
         updateCallStatus(threadId, callId, ChatCallStatus.ACCEPTED, userId, answered = true)
     }
 
+    /**
+     * Từ chối cuộc gọi và kết thúc phiên ringing.
+     *
+     * @param threadId ID thread.
+     * @param callId ID cuộc gọi.
+     * @param userId UID người từ chối.
+     */
     override suspend fun declineCall(
         threadId: String,
         callId: String,
@@ -387,6 +512,13 @@ class FirebaseChatRepository private constructor(
         updateCallStatus(threadId, callId, ChatCallStatus.DECLINED, userId, ended = true)
     }
 
+    /**
+     * Kết thúc cuộc gọi đang diễn ra.
+     *
+     * @param threadId ID thread.
+     * @param callId ID cuộc gọi.
+     * @param userId UID người kết thúc.
+     */
     override suspend fun endCall(
         threadId: String,
         callId: String,
@@ -395,6 +527,14 @@ class FirebaseChatRepository private constructor(
         updateCallStatus(threadId, callId, ChatCallStatus.ENDED, userId, ended = true)
     }
 
+    /**
+     * Ghi trạng thái mute của một participant vào document call.
+     *
+     * @param threadId ID thread.
+     * @param callId ID cuộc gọi.
+     * @param userId UID người cần cập nhật.
+     * @param muted true nếu đã tắt micro.
+     */
     override suspend fun setCallMuted(
         threadId: String,
         callId: String,
@@ -412,6 +552,13 @@ class FirebaseChatRepository private constructor(
             .awaitFirebase()
     }
 
+    /**
+     * Lưu SDP offer do caller tạo vào document call để callee đọc.
+     *
+     * @param threadId ID thread.
+     * @param callId ID cuộc gọi.
+     * @param sdp Nội dung SDP offer.
+     */
     override suspend fun saveCallOffer(
         threadId: String,
         callId: String,
@@ -428,6 +575,13 @@ class FirebaseChatRepository private constructor(
             .awaitFirebase()
     }
 
+    /**
+     * Lưu SDP answer do callee tạo vào document call để caller đọc.
+     *
+     * @param threadId ID thread.
+     * @param callId ID cuộc gọi.
+     * @param sdp Nội dung SDP answer.
+     */
     override suspend fun saveCallAnswer(
         threadId: String,
         callId: String,
@@ -444,6 +598,15 @@ class FirebaseChatRepository private constructor(
             .awaitFirebase()
     }
 
+    /**
+     * Lưu ICE candidate của caller/callee vào đúng mảng candidate trong document call.
+     *
+     * @param threadId ID thread.
+     * @param callId ID cuộc gọi.
+     * @param userId UID người tạo candidate.
+     * @param candidate ICE candidate cần lưu.
+     * @throws IllegalStateException nếu call không tồn tại hoặc user không thuộc cuộc gọi.
+     */
     override suspend fun addCallIceCandidate(
         threadId: String,
         callId: String,
@@ -475,6 +638,20 @@ class FirebaseChatRepository private constructor(
             .awaitFirebase()
     }
 
+    /**
+     * Ghi một message mới và cập nhật metadata thread trong cùng một batch Firestore.
+     *
+     * @param thread Thread đích.
+     * @param sender Người gửi.
+     * @param messageId ID message; mặc định tạo document ID mới.
+     * @param type Loại message.
+     * @param text Nội dung text nếu có.
+     * @param mediaUrl URL media nếu có.
+     * @param mediaMimeType MIME type của media nếu có.
+     * @param mediaName Tên file media nếu có.
+     * @param sticker Mã sticker nếu có.
+     * @param threadPreview Nội dung preview hiển thị ở danh sách thread.
+     */
     private suspend fun sendMessage(
         thread: ChatThread,
         sender: UserProfile,
@@ -514,6 +691,19 @@ class FirebaseChatRepository private constructor(
         batch.commit().awaitFirebase()
     }
 
+    /**
+     * Tạo map dữ liệu cơ sở cho document message.
+     *
+     * @param thread Thread chứa message.
+     * @param sender Người gửi.
+     * @param type Loại message.
+     * @param text Nội dung text.
+     * @param mediaUrl URL media.
+     * @param mediaMimeType MIME type media.
+     * @param mediaName Tên file media.
+     * @param sticker Mã sticker.
+     * @return Map sẵn sàng ghi vào Firestore.
+     */
     private fun baseMessageMap(
         thread: ChatThread,
         sender: UserProfile,
@@ -546,6 +736,18 @@ class FirebaseChatRepository private constructor(
         )
     }
 
+    /**
+     * Tạo map cập nhật thread sau khi có message/call mới.
+     *
+     * Hàm cập nhật preview, sender cuối, thời gian cuối, tắt typing của sender và tăng unread
+     * cho các participant còn lại.
+     *
+     * @param thread Thread cần cập nhật.
+     * @param senderId UID người gửi message.
+     * @param preview Nội dung preview cuối.
+     * @param type Loại message cuối.
+     * @return Map dùng cho Firestore update.
+     */
     private fun threadUpdateMap(
         thread: ChatThread,
         senderId: String,
@@ -567,6 +769,16 @@ class FirebaseChatRepository private constructor(
         ) + receiverUpdates
     }
 
+    /**
+     * Cập nhật trạng thái cuộc gọi và xóa `activeCallId` khỏi thread khi cuộc gọi kết thúc.
+     *
+     * @param threadId ID thread.
+     * @param callId ID cuộc gọi.
+     * @param status Trạng thái mới theo [ChatCallStatus].
+     * @param userId UID người thực hiện thao tác.
+     * @param answered true nếu cần ghi thời điểm trả lời.
+     * @param ended true nếu cần ghi thời điểm kết thúc và clear active call.
+     */
     private suspend fun updateCallStatus(
         threadId: String,
         callId: String,
@@ -597,26 +809,55 @@ class FirebaseChatRepository private constructor(
         batch.commit().awaitFirebase()
     }
 
+    /**
+     * Lấy collection messages của một thread.
+     *
+     * @param threadId ID thread.
+     * @return CollectionReference tới `chat_threads/{threadId}/messages`.
+     */
     private fun messagesRef(threadId: String) =
         firestore.collection(COLLECTION_THREADS)
             .document(threadId)
             .collection(COLLECTION_MESSAGES)
 
+    /**
+     * Lấy collection calls của một thread.
+     *
+     * @param threadId ID thread.
+     * @return CollectionReference tới `chat_threads/{threadId}/calls`.
+     */
     private fun callsRef(threadId: String) =
         firestore.collection(COLLECTION_THREADS)
             .document(threadId)
             .collection(COLLECTION_CALLS)
 
+    /**
+     * Chuyển document Firestore thành [ChatThread].
+     *
+     * @return [ChatThread] hoặc null nếu document không tồn tại/không parse được.
+     */
     private fun DocumentSnapshot.toChatThread(): ChatThread? {
         if (!exists()) return null
         return runCatching { toObject(ChatThread::class.java)?.copy(id = id) }.getOrNull()
     }
 
+    /**
+     * Chuyển document Firestore thành [ChatMessage] và gắn lại `threadId`.
+     *
+     * @param threadId ID thread chứa message.
+     * @return [ChatMessage] hoặc null nếu document không tồn tại/không parse được.
+     */
     private fun DocumentSnapshot.toChatMessage(threadId: String): ChatMessage? {
         if (!exists()) return null
         return runCatching { toObject(ChatMessage::class.java)?.copy(id = id, threadId = threadId) }.getOrNull()
     }
 
+    /**
+     * Chuyển document Firestore thành [ChatCallSession] kèm danh sách ICE candidate đã parse.
+     *
+     * @param threadId ID thread chứa call.
+     * @return [ChatCallSession] hoặc null nếu document không tồn tại/không parse được.
+     */
     private fun DocumentSnapshot.toCallSession(threadId: String): ChatCallSession? {
         if (!exists()) return null
         return runCatching {
@@ -629,6 +870,12 @@ class FirebaseChatRepository private constructor(
         }.getOrNull()
     }
 
+    /**
+     * Parse danh sách ICE candidate từ một field array trong Firestore.
+     *
+     * @param field Tên field candidate (`callerCandidates` hoặc `calleeCandidates`).
+     * @return Danh sách [ChatIceCandidate] hợp lệ.
+     */
     private fun DocumentSnapshot.parseIceCandidates(field: String): List<ChatIceCandidate> {
         val rawCandidates = get(field) as? List<*> ?: return emptyList()
         return rawCandidates.mapNotNull { raw ->
@@ -643,6 +890,11 @@ class FirebaseChatRepository private constructor(
         }
     }
 
+    /**
+     * Chuyển [ChatIceCandidate] thành map để ghi bằng FieldValue.arrayUnion.
+     *
+     * @return Map dữ liệu candidate.
+     */
     private fun ChatIceCandidate.toFirestoreMap(): Map<String, Any> {
         return mapOf(
             "sdpMid" to sdpMid,
@@ -653,6 +905,12 @@ class FirebaseChatRepository private constructor(
         )
     }
 
+    /**
+     * Chuyển callback Firebase Task thành suspend function.
+     *
+     * @return Kết quả của task khi thành công.
+     * @throws Exception lỗi Firebase nếu task thất bại.
+     */
     private suspend fun <T> Task<T>.awaitFirebase(): T {
         return suspendCancellableCoroutine { continuation ->
             addOnCompleteListener { task ->
@@ -675,6 +933,12 @@ class FirebaseChatRepository private constructor(
         @Volatile
         private var instance: FirebaseChatRepository? = null
 
+        /**
+         * Lấy singleton repository chat dùng chung trong ứng dụng.
+         *
+         * @param context Context ứng dụng hoặc activity.
+         * @return Thực thể [FirebaseChatRepository].
+         */
         fun getInstance(context: Context): FirebaseChatRepository {
             return instance ?: synchronized(this) {
                 instance ?: FirebaseChatRepository(context.applicationContext).also { instance = it }
