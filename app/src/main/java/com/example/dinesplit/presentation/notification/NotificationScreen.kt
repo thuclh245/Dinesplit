@@ -61,19 +61,31 @@ import com.example.dinesplit.core.ui.LoadingBlock
 import com.example.dinesplit.domain.model.Notification
 import com.example.dinesplit.domain.model.NotificationType
 
+/**
+ * Màn hình Thông báo (Notification Screen)
+ * Hiển thị danh sách thông báo của người dùng như: Nhắc nhở chi tiêu, cập nhật chia tiền, và hoạt động bảng tin.
+ * Cho phép lọc thông báo, đánh dấu đã đọc/chưa đọc, làm mới danh sách và xem thống kê tổng quát.
+ */
 @Composable
 fun NotificationScreen(
     onBack: () -> Unit = {},
     onNotificationClick: (Notification) -> Unit = {},
 ) {
     val viewModel: NotificationViewModel = viewModel()
+    // Flow danh sách thông báo và trạng thái UI từ ViewModel
     val notifications by viewModel.notifications.collectAsState()
     val uiState by viewModel.uiState.collectAsState()
+    
+    // Bộ lọc thông báo hiện tại (Tất cả, Chưa đọc, Nhắc nhở, Chia tiền, Bảng tin)
     var selectedFilter by rememberSaveable { mutableStateOf(NotificationFilter.ALL) }
+    
+    // Danh sách thông báo đã qua bộ lọc và sắp xếp theo thời gian mới nhất trước
     val filteredNotifications =
         notifications
             .filter { it.matches(selectedFilter) }
             .sortedByDescending { it.createdAt }
+            
+    // Phân vùng thông báo mới (chưa đọc hoặc được nhận trong vòng 24 giờ qua) và thông báo trước đó
     val recentCutoffMillis = System.currentTimeMillis() - RECENT_NOTIFICATION_WINDOW_MS
     val (newNotifications, earlierNotifications) =
         filteredNotifications.partition { notification ->
@@ -86,12 +98,14 @@ fun NotificationScreen(
             BackNavigationButton(onClick = onBack)
         },
         actions = {
+            // Nút Làm mới danh sách thông báo
             IconButton(onClick = viewModel::refreshNotifications) {
                 Icon(
                     imageVector = Icons.Default.Refresh,
                     contentDescription = "Làm mới thông báo"
                 )
             }
+            // Nút Đánh dấu tất cả thông báo là đã đọc (Chỉ khả dụng khi có thông báo chưa đọc)
             IconButton(
                 onClick = viewModel::markAllAsRead,
                 enabled = uiState.unreadCount > 0,
@@ -108,11 +122,13 @@ fun NotificationScreen(
             contentPadding = PaddingValues(bottom = AppDimens.spaceXl),
             verticalArrangement = Arrangement.spacedBy(AppDimens.spaceLg),
         ) {
+            // Hiển thị trạng thái đang tải (Loading)
             if (uiState.isLoading) {
                 item {
                     LoadingBlock(message = "Đang tải thông báo...")
                 }
             } else {
+                // Hiển thị lỗi nếu có
                 uiState.errorMessage?.let { message ->
                     item {
                         ErrorStateBlock(
@@ -123,6 +139,7 @@ fun NotificationScreen(
                     }
                 }
 
+                // Card tổng quan chỉ số thông báo (chưa đọc, loại nhắc nhở, chia tiền,...)
                 item {
                     NotificationOverviewCard(
                         unreadCount = uiState.unreadCount,
@@ -133,6 +150,7 @@ fun NotificationScreen(
                     )
                 }
 
+                // Thanh bộ lọc thông báo
                 item {
                     NotificationFilterBar(
                         selectedFilter = selectedFilter,
@@ -141,6 +159,7 @@ fun NotificationScreen(
                     )
                 }
 
+                // Hiển thị màn hình trống nếu không có thông báo nào khớp bộ lọc
                 if (filteredNotifications.isEmpty()) {
                     item {
                         EmptyStateBlock(
@@ -149,6 +168,7 @@ fun NotificationScreen(
                         )
                     }
                 } else {
+                    // Phân mục: Thông báo "Mới"
                     if (newNotifications.isNotEmpty()) {
                         notificationSection(
                             title = "Mới",
@@ -158,6 +178,7 @@ fun NotificationScreen(
                         )
                     }
 
+                    // Phân mục: Thông báo "Trước đó"
                     if (earlierNotifications.isNotEmpty()) {
                         notificationSection(
                             title = "Trước đó",
@@ -172,6 +193,11 @@ fun NotificationScreen(
     }
 }
 
+/**
+ * Card Tổng quan thông báo
+ * Hiển thị số lượng thông báo chưa đọc, tổng lượng và phân tích cụ thể
+ * số lượng thông báo theo từng nhóm: Nhắc nhở, Chia tiền, Bảng tin.
+ */
 @Composable
 private fun NotificationOverviewCard(
     unreadCount: Int,
@@ -187,6 +213,7 @@ private fun NotificationOverviewCard(
                 horizontalArrangement = Arrangement.spacedBy(AppDimens.spaceMd),
                 verticalAlignment = Alignment.CenterVertically,
             ) {
+                // Biểu tượng chuông thông báo hoạt động
                 Box(
                     modifier =
                         Modifier
@@ -219,6 +246,7 @@ private fun NotificationOverviewCard(
                 }
             }
 
+            // Hàng chỉ số metrics thứ nhất: Nhắc nhở chi tiêu & Chia tiền
             Row(horizontalArrangement = Arrangement.spacedBy(AppDimens.spaceMd)) {
                 NotificationMetric(
                     modifier = Modifier.weight(1f),
@@ -234,6 +262,7 @@ private fun NotificationOverviewCard(
                 )
             }
 
+            // Hàng chỉ số metrics thứ hai: Bảng tin & Chưa đọc
             Row(horizontalArrangement = Arrangement.spacedBy(AppDimens.spaceMd)) {
                 NotificationMetric(
                     modifier = Modifier.weight(1f),
@@ -252,6 +281,9 @@ private fun NotificationOverviewCard(
     }
 }
 
+/**
+ * Component hiển thị một ô chỉ số thông báo (Metric Box) có màu sắc tương ứng với loại thông báo
+ */
 @Composable
 private fun NotificationMetric(
     modifier: Modifier,
@@ -287,6 +319,9 @@ private fun NotificationMetric(
     }
 }
 
+/**
+ * Thanh bộ lọc các loại thông báo (Tất cả, Chưa đọc, Nhắc nhở, Chia tiền, Bảng tin)
+ */
 @Composable
 private fun NotificationFilterBar(
     selectedFilter: NotificationFilter,
@@ -315,6 +350,9 @@ private fun NotificationFilterBar(
     }
 }
 
+/**
+ * Chip bộ lọc hiển thị nhãn và số lượng tương ứng với từng loại bộ lọc
+ */
 @Composable
 private fun NotificationFilterChip(
     filter: NotificationFilter,
@@ -336,6 +374,9 @@ private fun NotificationFilterChip(
     )
 }
 
+/**
+ * Helper thêm một phân vùng nhóm thông báo (Ví dụ phân vùng Mới/Trước đó) vào LazyColumn
+ */
 private fun LazyListScope.notificationSection(
     title: String,
     notifications: List<Notification>,
@@ -350,6 +391,7 @@ private fun LazyListScope.notificationSection(
         NotificationItemCard(
             notification = notification,
             onToggleRead = {
+                // Đảo trạng thái đã đọc/chưa đọc của thông báo
                 if (notification.isRead) {
                     viewModel.markAsUnread(notification.id)
                 } else {
@@ -357,6 +399,7 @@ private fun LazyListScope.notificationSection(
                 }
             },
             onClick = {
+                // Đánh dấu là đã đọc và điều hướng đến chi tiết thông báo
                 if (!notification.isRead) {
                     viewModel.markAsRead(notification.id)
                 }
@@ -366,6 +409,9 @@ private fun LazyListScope.notificationSection(
     }
 }
 
+/**
+ * Tiêu đề của phân mục thông báo (Ví dụ: "Mới 2" hoặc "Trước đó 15")
+ */
 @Composable
 private fun NotificationSectionHeader(
     title: String,
@@ -393,6 +439,11 @@ private fun NotificationSectionHeader(
     }
 }
 
+/**
+ * Thẻ hiển thị một thông báo riêng lẻ (Notification Item Card).
+ * Hiển thị chỉ báo chưa đọc, icon tương ứng theo loại thông báo, tiêu đề, thời gian trôi qua,
+ * nhãn phân loại, nội dung phụ, và nút thay đổi trạng thái đọc/chưa đọc.
+ */
 @Composable
 private fun NotificationItemCard(
     notification: Notification,
@@ -402,6 +453,7 @@ private fun NotificationItemCard(
     val isUnread = !notification.isRead
     val icon = notificationIcon(notification.type)
     val accentColor = notificationAccentColor(notification)
+    // Màu nền thay đổi theo trạng thái chưa đọc (sáng hơn) và đã đọc
     val containerColor =
         if (isUnread) {
             MaterialTheme.colorScheme.surfaceContainerLowest
@@ -430,6 +482,7 @@ private fun NotificationItemCard(
                         onClick = onClick,
                     ),
         ) {
+            // Thanh màu dọc nhỏ bên trái chỉ báo trạng thái chưa đọc
             if (isUnread) {
                 Box(
                     modifier =
@@ -455,6 +508,7 @@ private fun NotificationItemCard(
                 verticalAlignment = Alignment.Top,
                 horizontalArrangement = Arrangement.spacedBy(AppDimens.spaceMd),
             ) {
+                // Icon của thông báo đặt trong vòng tròn màu nhạt
                 Box(
                     modifier =
                         Modifier
@@ -480,6 +534,7 @@ private fun NotificationItemCard(
                         horizontalArrangement = Arrangement.spacedBy(AppDimens.spaceSm),
                         verticalAlignment = Alignment.Top,
                     ) {
+                        // Tiêu đề thông báo (In đậm hơn nếu chưa đọc)
                         Text(
                             modifier = Modifier.weight(1f),
                             text = notification.title,
@@ -489,6 +544,7 @@ private fun NotificationItemCard(
                             maxLines = 2,
                             overflow = TextOverflow.Ellipsis,
                         )
+                        // Thời gian nhận thông báo (dạng 5p, 2g, 3n...)
                         Text(
                             modifier = Modifier.widthIn(min = 36.dp),
                             text = formatTimeAgo(notification.createdAt),
@@ -499,6 +555,7 @@ private fun NotificationItemCard(
                         )
                     }
 
+                    // Nội dung chi tiết của thông báo
                     Text(
                         text = notification.subtitle,
                         style = MaterialTheme.typography.bodySmall,
@@ -512,11 +569,13 @@ private fun NotificationItemCard(
                         horizontalArrangement = Arrangement.SpaceBetween,
                         verticalAlignment = Alignment.CenterVertically,
                     ) {
+                        // Nhãn phân loại loại thông báo (Ví dụ: Nhắc nhở, Chia tiền, Bảng tin)
                         NotificationTypePill(
                             label = notificationTypeLabel(notification),
                             isUnread = isUnread,
                             color = accentColor,
                         )
+                        // Nút chuyển đổi nhanh trạng thái đã đọc / chưa đọc thông báo
                         IconButton(
                             onClick = onToggleRead,
                             modifier = Modifier.size(40.dp),
@@ -542,6 +601,9 @@ private fun NotificationItemCard(
     }
 }
 
+/**
+ * Nhãn phân loại hình tròn hiển thị loại thông báo (Ví dụ: Nhắc nhở, Chia tiền, Bảng tin...)
+ */
 @Composable
 private fun NotificationTypePill(
     label: String,
@@ -558,6 +620,7 @@ private fun NotificationTypePill(
             horizontalArrangement = Arrangement.spacedBy(AppDimens.spaceSm),
             verticalAlignment = Alignment.CenterVertically,
         ) {
+            // Hiển thị chấm tròn nhỏ màu đỏ/nhấn mạnh nếu là thông báo chưa đọc
             if (isUnread) {
                 Box(
                     modifier =
@@ -578,6 +641,9 @@ private fun NotificationTypePill(
     }
 }
 
+/**
+ * Xác định Icon phù hợp cho mỗi loại thông báo (NotificationType)
+ */
 private fun notificationIcon(type: NotificationType): ImageVector {
     return when (type) {
         NotificationType.PAYMENT_COMPLETED -> Icons.Filled.CheckCircle
@@ -590,6 +656,10 @@ private fun notificationIcon(type: NotificationType): ImageVector {
     }
 }
 
+/**
+ * Xác định màu sắc nhấn mạnh (Accent Color) tương ứng cho mỗi loại thông báo chưa đọc.
+ * Nếu đã đọc, trả về màu Outline xám trung tính.
+ */
 @Composable
 private fun notificationAccentColor(notification: Notification): Color {
     if (notification.isRead) return MaterialTheme.colorScheme.outline
@@ -601,6 +671,9 @@ private fun notificationAccentColor(notification: Notification): Color {
     }
 }
 
+/**
+ * Lấy nhãn chuỗi đại diện tiếng Việt cho từng nhóm thông báo
+ */
 private fun notificationTypeLabel(notification: Notification): String {
     return when {
         notification.isPersonalAlert() -> "Nhắc nhở"
@@ -610,6 +683,9 @@ private fun notificationTypeLabel(notification: Notification): String {
     }
 }
 
+/**
+ * Định nghĩa Enum cho các lựa chọn Bộ lọc thông báo trên UI
+ */
 private enum class NotificationFilter(val label: String) {
     ALL("Tất cả"),
     UNREAD("Chưa đọc"),
@@ -618,6 +694,9 @@ private enum class NotificationFilter(val label: String) {
     FEED("Bảng tin"),
 }
 
+/**
+ * Kiểm tra xem một thông báo có khớp với điều kiện lọc đang chọn hay không
+ */
 private fun Notification.matches(filter: NotificationFilter): Boolean {
     return when (filter) {
         NotificationFilter.ALL -> true
@@ -628,10 +707,16 @@ private fun Notification.matches(filter: NotificationFilter): Boolean {
     }
 }
 
+/**
+ * Kiểm tra xem thông báo này có phải loại Nhắc nhở cá nhân (Ví dụ nhắc nhở chi tiêu)
+ */
 private fun Notification.isPersonalAlert(): Boolean {
     return type == NotificationType.TRANSACTION_ALERT
 }
 
+/**
+ * Kiểm tra xem thông báo này có thuộc nhóm Chia tiền / Hóa đơn nhóm hay không
+ */
 private fun Notification.isSplitAlert(): Boolean {
     return type in
         setOf(
@@ -642,6 +727,9 @@ private fun Notification.isSplitAlert(): Boolean {
         )
 }
 
+/**
+ * Chuẩn bị tiêu đề hiển thị phù hợp khi danh sách thông báo trống theo từng bộ lọc
+ */
 private fun emptyTitleFor(filter: NotificationFilter): String {
     return when (filter) {
         NotificationFilter.ALL -> "Chưa có thông báo nào"
@@ -652,6 +740,9 @@ private fun emptyTitleFor(filter: NotificationFilter): String {
     }
 }
 
+/**
+ * Định dạng thời gian tương đối trôi qua (Ví dụ: "vừa xong", "15p", "2g", "4n", "2t"...)
+ */
 private fun formatTimeAgo(epochMillis: Long): String {
     val now = System.currentTimeMillis()
     val diffMillis = now - epochMillis
@@ -668,4 +759,5 @@ private fun formatTimeAgo(epochMillis: Long): String {
     }
 }
 
+// Cửa sổ thời gian xác định một thông báo là "Gần đây" (24 tiếng)
 private const val RECENT_NOTIFICATION_WINDOW_MS = 24L * 60L * 60L * 1000L
